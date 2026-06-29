@@ -19,6 +19,14 @@ class LocalAnimals extends Table {
   RealColumn get salvageValue => real().withDefault(const Constant(0.0))();
   TextColumn get imagePath => text().nullable()();
   
+  // New comprehensive fields
+  RealColumn get weight => real().nullable()();
+  TextColumn get color => text().nullable()();
+  TextColumn get uniqueMarks => text().nullable()();
+  TextColumn get pedigreeType => text().nullable()();
+  TextColumn get purpose => text().nullable()();
+  TextColumn get vaccinationStatus => text().nullable()();
+  
   @override
   Set<Column> get primaryKey => {id};
 }
@@ -117,7 +125,7 @@ class LocalDatabase extends _$LocalDatabase {
   LocalDatabase() : super(_openConnection());
 
   @override
-  int get schemaVersion => 5;
+  int get schemaVersion => 6;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -135,6 +143,14 @@ class LocalDatabase extends _$LocalDatabase {
       }
       if (from < 5) {
         await m.addColumn(localAnimals, localAnimals.imagePath);
+      }
+      if (from < 6) {
+        await m.addColumn(localAnimals, localAnimals.weight);
+        await m.addColumn(localAnimals, localAnimals.color);
+        await m.addColumn(localAnimals, localAnimals.uniqueMarks);
+        await m.addColumn(localAnimals, localAnimals.pedigreeType);
+        await m.addColumn(localAnimals, localAnimals.purpose);
+        await m.addColumn(localAnimals, localAnimals.vaccinationStatus);
       }
     },
   );

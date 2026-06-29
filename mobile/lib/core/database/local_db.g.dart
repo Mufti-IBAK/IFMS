@@ -78,6 +78,40 @@ class $LocalAnimalsTable extends LocalAnimals
   late final GeneratedColumn<String> imagePath = GeneratedColumn<String>(
       'image_path', aliasedName, true,
       type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _weightMeta = const VerificationMeta('weight');
+  @override
+  late final GeneratedColumn<double> weight = GeneratedColumn<double>(
+      'weight', aliasedName, true,
+      type: DriftSqlType.double, requiredDuringInsert: false);
+  static const VerificationMeta _colorMeta = const VerificationMeta('color');
+  @override
+  late final GeneratedColumn<String> color = GeneratedColumn<String>(
+      'color', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _uniqueMarksMeta =
+      const VerificationMeta('uniqueMarks');
+  @override
+  late final GeneratedColumn<String> uniqueMarks = GeneratedColumn<String>(
+      'unique_marks', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _pedigreeTypeMeta =
+      const VerificationMeta('pedigreeType');
+  @override
+  late final GeneratedColumn<String> pedigreeType = GeneratedColumn<String>(
+      'pedigree_type', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _purposeMeta =
+      const VerificationMeta('purpose');
+  @override
+  late final GeneratedColumn<String> purpose = GeneratedColumn<String>(
+      'purpose', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _vaccinationStatusMeta =
+      const VerificationMeta('vaccinationStatus');
+  @override
+  late final GeneratedColumn<String> vaccinationStatus =
+      GeneratedColumn<String>('vaccination_status', aliasedName, true,
+          type: DriftSqlType.string, requiredDuringInsert: false);
   @override
   List<GeneratedColumn> get $columns => [
         id,
@@ -90,7 +124,13 @@ class $LocalAnimalsTable extends LocalAnimals
         currentReproductiveStatus,
         acquisitionCost,
         salvageValue,
-        imagePath
+        imagePath,
+        weight,
+        color,
+        uniqueMarks,
+        pedigreeType,
+        purpose,
+        vaccinationStatus
       ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -168,6 +208,36 @@ class $LocalAnimalsTable extends LocalAnimals
       context.handle(_imagePathMeta,
           imagePath.isAcceptableOrUnknown(data['image_path']!, _imagePathMeta));
     }
+    if (data.containsKey('weight')) {
+      context.handle(_weightMeta,
+          weight.isAcceptableOrUnknown(data['weight']!, _weightMeta));
+    }
+    if (data.containsKey('color')) {
+      context.handle(
+          _colorMeta, color.isAcceptableOrUnknown(data['color']!, _colorMeta));
+    }
+    if (data.containsKey('unique_marks')) {
+      context.handle(
+          _uniqueMarksMeta,
+          uniqueMarks.isAcceptableOrUnknown(
+              data['unique_marks']!, _uniqueMarksMeta));
+    }
+    if (data.containsKey('pedigree_type')) {
+      context.handle(
+          _pedigreeTypeMeta,
+          pedigreeType.isAcceptableOrUnknown(
+              data['pedigree_type']!, _pedigreeTypeMeta));
+    }
+    if (data.containsKey('purpose')) {
+      context.handle(_purposeMeta,
+          purpose.isAcceptableOrUnknown(data['purpose']!, _purposeMeta));
+    }
+    if (data.containsKey('vaccination_status')) {
+      context.handle(
+          _vaccinationStatusMeta,
+          vaccinationStatus.isAcceptableOrUnknown(
+              data['vaccination_status']!, _vaccinationStatusMeta));
+    }
     return context;
   }
 
@@ -200,6 +270,18 @@ class $LocalAnimalsTable extends LocalAnimals
           .read(DriftSqlType.double, data['${effectivePrefix}salvage_value'])!,
       imagePath: attachedDatabase.typeMapping
           .read(DriftSqlType.string, data['${effectivePrefix}image_path']),
+      weight: attachedDatabase.typeMapping
+          .read(DriftSqlType.double, data['${effectivePrefix}weight']),
+      color: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}color']),
+      uniqueMarks: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}unique_marks']),
+      pedigreeType: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}pedigree_type']),
+      purpose: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}purpose']),
+      vaccinationStatus: attachedDatabase.typeMapping.read(
+          DriftSqlType.string, data['${effectivePrefix}vaccination_status']),
     );
   }
 
@@ -221,6 +303,12 @@ class LocalAnimal extends DataClass implements Insertable<LocalAnimal> {
   final double acquisitionCost;
   final double salvageValue;
   final String? imagePath;
+  final double? weight;
+  final String? color;
+  final String? uniqueMarks;
+  final String? pedigreeType;
+  final String? purpose;
+  final String? vaccinationStatus;
   const LocalAnimal(
       {required this.id,
       required this.tagId,
@@ -232,7 +320,13 @@ class LocalAnimal extends DataClass implements Insertable<LocalAnimal> {
       required this.currentReproductiveStatus,
       required this.acquisitionCost,
       required this.salvageValue,
-      this.imagePath});
+      this.imagePath,
+      this.weight,
+      this.color,
+      this.uniqueMarks,
+      this.pedigreeType,
+      this.purpose,
+      this.vaccinationStatus});
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
@@ -253,6 +347,24 @@ class LocalAnimal extends DataClass implements Insertable<LocalAnimal> {
     map['salvage_value'] = Variable<double>(salvageValue);
     if (!nullToAbsent || imagePath != null) {
       map['image_path'] = Variable<String>(imagePath);
+    }
+    if (!nullToAbsent || weight != null) {
+      map['weight'] = Variable<double>(weight);
+    }
+    if (!nullToAbsent || color != null) {
+      map['color'] = Variable<String>(color);
+    }
+    if (!nullToAbsent || uniqueMarks != null) {
+      map['unique_marks'] = Variable<String>(uniqueMarks);
+    }
+    if (!nullToAbsent || pedigreeType != null) {
+      map['pedigree_type'] = Variable<String>(pedigreeType);
+    }
+    if (!nullToAbsent || purpose != null) {
+      map['purpose'] = Variable<String>(purpose);
+    }
+    if (!nullToAbsent || vaccinationStatus != null) {
+      map['vaccination_status'] = Variable<String>(vaccinationStatus);
     }
     return map;
   }
@@ -275,6 +387,22 @@ class LocalAnimal extends DataClass implements Insertable<LocalAnimal> {
       imagePath: imagePath == null && nullToAbsent
           ? const Value.absent()
           : Value(imagePath),
+      weight:
+          weight == null && nullToAbsent ? const Value.absent() : Value(weight),
+      color:
+          color == null && nullToAbsent ? const Value.absent() : Value(color),
+      uniqueMarks: uniqueMarks == null && nullToAbsent
+          ? const Value.absent()
+          : Value(uniqueMarks),
+      pedigreeType: pedigreeType == null && nullToAbsent
+          ? const Value.absent()
+          : Value(pedigreeType),
+      purpose: purpose == null && nullToAbsent
+          ? const Value.absent()
+          : Value(purpose),
+      vaccinationStatus: vaccinationStatus == null && nullToAbsent
+          ? const Value.absent()
+          : Value(vaccinationStatus),
     );
   }
 
@@ -294,6 +422,13 @@ class LocalAnimal extends DataClass implements Insertable<LocalAnimal> {
       acquisitionCost: serializer.fromJson<double>(json['acquisitionCost']),
       salvageValue: serializer.fromJson<double>(json['salvageValue']),
       imagePath: serializer.fromJson<String?>(json['imagePath']),
+      weight: serializer.fromJson<double?>(json['weight']),
+      color: serializer.fromJson<String?>(json['color']),
+      uniqueMarks: serializer.fromJson<String?>(json['uniqueMarks']),
+      pedigreeType: serializer.fromJson<String?>(json['pedigreeType']),
+      purpose: serializer.fromJson<String?>(json['purpose']),
+      vaccinationStatus:
+          serializer.fromJson<String?>(json['vaccinationStatus']),
     );
   }
   @override
@@ -312,6 +447,12 @@ class LocalAnimal extends DataClass implements Insertable<LocalAnimal> {
       'acquisitionCost': serializer.toJson<double>(acquisitionCost),
       'salvageValue': serializer.toJson<double>(salvageValue),
       'imagePath': serializer.toJson<String?>(imagePath),
+      'weight': serializer.toJson<double?>(weight),
+      'color': serializer.toJson<String?>(color),
+      'uniqueMarks': serializer.toJson<String?>(uniqueMarks),
+      'pedigreeType': serializer.toJson<String?>(pedigreeType),
+      'purpose': serializer.toJson<String?>(purpose),
+      'vaccinationStatus': serializer.toJson<String?>(vaccinationStatus),
     };
   }
 
@@ -326,7 +467,13 @@ class LocalAnimal extends DataClass implements Insertable<LocalAnimal> {
           String? currentReproductiveStatus,
           double? acquisitionCost,
           double? salvageValue,
-          Value<String?> imagePath = const Value.absent()}) =>
+          Value<String?> imagePath = const Value.absent(),
+          Value<double?> weight = const Value.absent(),
+          Value<String?> color = const Value.absent(),
+          Value<String?> uniqueMarks = const Value.absent(),
+          Value<String?> pedigreeType = const Value.absent(),
+          Value<String?> purpose = const Value.absent(),
+          Value<String?> vaccinationStatus = const Value.absent()}) =>
       LocalAnimal(
         id: id ?? this.id,
         tagId: tagId ?? this.tagId,
@@ -340,6 +487,15 @@ class LocalAnimal extends DataClass implements Insertable<LocalAnimal> {
         acquisitionCost: acquisitionCost ?? this.acquisitionCost,
         salvageValue: salvageValue ?? this.salvageValue,
         imagePath: imagePath.present ? imagePath.value : this.imagePath,
+        weight: weight.present ? weight.value : this.weight,
+        color: color.present ? color.value : this.color,
+        uniqueMarks: uniqueMarks.present ? uniqueMarks.value : this.uniqueMarks,
+        pedigreeType:
+            pedigreeType.present ? pedigreeType.value : this.pedigreeType,
+        purpose: purpose.present ? purpose.value : this.purpose,
+        vaccinationStatus: vaccinationStatus.present
+            ? vaccinationStatus.value
+            : this.vaccinationStatus,
       );
   LocalAnimal copyWithCompanion(LocalAnimalsCompanion data) {
     return LocalAnimal(
@@ -362,6 +518,17 @@ class LocalAnimal extends DataClass implements Insertable<LocalAnimal> {
           ? data.salvageValue.value
           : this.salvageValue,
       imagePath: data.imagePath.present ? data.imagePath.value : this.imagePath,
+      weight: data.weight.present ? data.weight.value : this.weight,
+      color: data.color.present ? data.color.value : this.color,
+      uniqueMarks:
+          data.uniqueMarks.present ? data.uniqueMarks.value : this.uniqueMarks,
+      pedigreeType: data.pedigreeType.present
+          ? data.pedigreeType.value
+          : this.pedigreeType,
+      purpose: data.purpose.present ? data.purpose.value : this.purpose,
+      vaccinationStatus: data.vaccinationStatus.present
+          ? data.vaccinationStatus.value
+          : this.vaccinationStatus,
     );
   }
 
@@ -378,7 +545,13 @@ class LocalAnimal extends DataClass implements Insertable<LocalAnimal> {
           ..write('currentReproductiveStatus: $currentReproductiveStatus, ')
           ..write('acquisitionCost: $acquisitionCost, ')
           ..write('salvageValue: $salvageValue, ')
-          ..write('imagePath: $imagePath')
+          ..write('imagePath: $imagePath, ')
+          ..write('weight: $weight, ')
+          ..write('color: $color, ')
+          ..write('uniqueMarks: $uniqueMarks, ')
+          ..write('pedigreeType: $pedigreeType, ')
+          ..write('purpose: $purpose, ')
+          ..write('vaccinationStatus: $vaccinationStatus')
           ..write(')'))
         .toString();
   }
@@ -395,7 +568,13 @@ class LocalAnimal extends DataClass implements Insertable<LocalAnimal> {
       currentReproductiveStatus,
       acquisitionCost,
       salvageValue,
-      imagePath);
+      imagePath,
+      weight,
+      color,
+      uniqueMarks,
+      pedigreeType,
+      purpose,
+      vaccinationStatus);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -410,7 +589,13 @@ class LocalAnimal extends DataClass implements Insertable<LocalAnimal> {
           other.currentReproductiveStatus == this.currentReproductiveStatus &&
           other.acquisitionCost == this.acquisitionCost &&
           other.salvageValue == this.salvageValue &&
-          other.imagePath == this.imagePath);
+          other.imagePath == this.imagePath &&
+          other.weight == this.weight &&
+          other.color == this.color &&
+          other.uniqueMarks == this.uniqueMarks &&
+          other.pedigreeType == this.pedigreeType &&
+          other.purpose == this.purpose &&
+          other.vaccinationStatus == this.vaccinationStatus);
 }
 
 class LocalAnimalsCompanion extends UpdateCompanion<LocalAnimal> {
@@ -425,6 +610,12 @@ class LocalAnimalsCompanion extends UpdateCompanion<LocalAnimal> {
   final Value<double> acquisitionCost;
   final Value<double> salvageValue;
   final Value<String?> imagePath;
+  final Value<double?> weight;
+  final Value<String?> color;
+  final Value<String?> uniqueMarks;
+  final Value<String?> pedigreeType;
+  final Value<String?> purpose;
+  final Value<String?> vaccinationStatus;
   final Value<int> rowid;
   const LocalAnimalsCompanion({
     this.id = const Value.absent(),
@@ -438,6 +629,12 @@ class LocalAnimalsCompanion extends UpdateCompanion<LocalAnimal> {
     this.acquisitionCost = const Value.absent(),
     this.salvageValue = const Value.absent(),
     this.imagePath = const Value.absent(),
+    this.weight = const Value.absent(),
+    this.color = const Value.absent(),
+    this.uniqueMarks = const Value.absent(),
+    this.pedigreeType = const Value.absent(),
+    this.purpose = const Value.absent(),
+    this.vaccinationStatus = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   LocalAnimalsCompanion.insert({
@@ -452,6 +649,12 @@ class LocalAnimalsCompanion extends UpdateCompanion<LocalAnimal> {
     this.acquisitionCost = const Value.absent(),
     this.salvageValue = const Value.absent(),
     this.imagePath = const Value.absent(),
+    this.weight = const Value.absent(),
+    this.color = const Value.absent(),
+    this.uniqueMarks = const Value.absent(),
+    this.pedigreeType = const Value.absent(),
+    this.purpose = const Value.absent(),
+    this.vaccinationStatus = const Value.absent(),
     this.rowid = const Value.absent(),
   })  : id = Value(id),
         tagId = Value(tagId),
@@ -471,6 +674,12 @@ class LocalAnimalsCompanion extends UpdateCompanion<LocalAnimal> {
     Expression<double>? acquisitionCost,
     Expression<double>? salvageValue,
     Expression<String>? imagePath,
+    Expression<double>? weight,
+    Expression<String>? color,
+    Expression<String>? uniqueMarks,
+    Expression<String>? pedigreeType,
+    Expression<String>? purpose,
+    Expression<String>? vaccinationStatus,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
@@ -486,6 +695,12 @@ class LocalAnimalsCompanion extends UpdateCompanion<LocalAnimal> {
       if (acquisitionCost != null) 'acquisition_cost': acquisitionCost,
       if (salvageValue != null) 'salvage_value': salvageValue,
       if (imagePath != null) 'image_path': imagePath,
+      if (weight != null) 'weight': weight,
+      if (color != null) 'color': color,
+      if (uniqueMarks != null) 'unique_marks': uniqueMarks,
+      if (pedigreeType != null) 'pedigree_type': pedigreeType,
+      if (purpose != null) 'purpose': purpose,
+      if (vaccinationStatus != null) 'vaccination_status': vaccinationStatus,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -502,6 +717,12 @@ class LocalAnimalsCompanion extends UpdateCompanion<LocalAnimal> {
       Value<double>? acquisitionCost,
       Value<double>? salvageValue,
       Value<String?>? imagePath,
+      Value<double?>? weight,
+      Value<String?>? color,
+      Value<String?>? uniqueMarks,
+      Value<String?>? pedigreeType,
+      Value<String?>? purpose,
+      Value<String?>? vaccinationStatus,
       Value<int>? rowid}) {
     return LocalAnimalsCompanion(
       id: id ?? this.id,
@@ -516,6 +737,12 @@ class LocalAnimalsCompanion extends UpdateCompanion<LocalAnimal> {
       acquisitionCost: acquisitionCost ?? this.acquisitionCost,
       salvageValue: salvageValue ?? this.salvageValue,
       imagePath: imagePath ?? this.imagePath,
+      weight: weight ?? this.weight,
+      color: color ?? this.color,
+      uniqueMarks: uniqueMarks ?? this.uniqueMarks,
+      pedigreeType: pedigreeType ?? this.pedigreeType,
+      purpose: purpose ?? this.purpose,
+      vaccinationStatus: vaccinationStatus ?? this.vaccinationStatus,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -557,6 +784,24 @@ class LocalAnimalsCompanion extends UpdateCompanion<LocalAnimal> {
     if (imagePath.present) {
       map['image_path'] = Variable<String>(imagePath.value);
     }
+    if (weight.present) {
+      map['weight'] = Variable<double>(weight.value);
+    }
+    if (color.present) {
+      map['color'] = Variable<String>(color.value);
+    }
+    if (uniqueMarks.present) {
+      map['unique_marks'] = Variable<String>(uniqueMarks.value);
+    }
+    if (pedigreeType.present) {
+      map['pedigree_type'] = Variable<String>(pedigreeType.value);
+    }
+    if (purpose.present) {
+      map['purpose'] = Variable<String>(purpose.value);
+    }
+    if (vaccinationStatus.present) {
+      map['vaccination_status'] = Variable<String>(vaccinationStatus.value);
+    }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
     }
@@ -577,6 +822,12 @@ class LocalAnimalsCompanion extends UpdateCompanion<LocalAnimal> {
           ..write('acquisitionCost: $acquisitionCost, ')
           ..write('salvageValue: $salvageValue, ')
           ..write('imagePath: $imagePath, ')
+          ..write('weight: $weight, ')
+          ..write('color: $color, ')
+          ..write('uniqueMarks: $uniqueMarks, ')
+          ..write('pedigreeType: $pedigreeType, ')
+          ..write('purpose: $purpose, ')
+          ..write('vaccinationStatus: $vaccinationStatus, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -3556,6 +3807,12 @@ typedef $$LocalAnimalsTableCreateCompanionBuilder = LocalAnimalsCompanion
   Value<double> acquisitionCost,
   Value<double> salvageValue,
   Value<String?> imagePath,
+  Value<double?> weight,
+  Value<String?> color,
+  Value<String?> uniqueMarks,
+  Value<String?> pedigreeType,
+  Value<String?> purpose,
+  Value<String?> vaccinationStatus,
   Value<int> rowid,
 });
 typedef $$LocalAnimalsTableUpdateCompanionBuilder = LocalAnimalsCompanion
@@ -3571,6 +3828,12 @@ typedef $$LocalAnimalsTableUpdateCompanionBuilder = LocalAnimalsCompanion
   Value<double> acquisitionCost,
   Value<double> salvageValue,
   Value<String?> imagePath,
+  Value<double?> weight,
+  Value<String?> color,
+  Value<String?> uniqueMarks,
+  Value<String?> pedigreeType,
+  Value<String?> purpose,
+  Value<String?> vaccinationStatus,
   Value<int> rowid,
 });
 
@@ -3617,6 +3880,25 @@ class $$LocalAnimalsTableFilterComposer
 
   ColumnFilters<String> get imagePath => $composableBuilder(
       column: $table.imagePath, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<double> get weight => $composableBuilder(
+      column: $table.weight, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get color => $composableBuilder(
+      column: $table.color, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get uniqueMarks => $composableBuilder(
+      column: $table.uniqueMarks, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get pedigreeType => $composableBuilder(
+      column: $table.pedigreeType, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get purpose => $composableBuilder(
+      column: $table.purpose, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get vaccinationStatus => $composableBuilder(
+      column: $table.vaccinationStatus,
+      builder: (column) => ColumnFilters(column));
 }
 
 class $$LocalAnimalsTableOrderingComposer
@@ -3663,6 +3945,26 @@ class $$LocalAnimalsTableOrderingComposer
 
   ColumnOrderings<String> get imagePath => $composableBuilder(
       column: $table.imagePath, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<double> get weight => $composableBuilder(
+      column: $table.weight, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get color => $composableBuilder(
+      column: $table.color, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get uniqueMarks => $composableBuilder(
+      column: $table.uniqueMarks, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get pedigreeType => $composableBuilder(
+      column: $table.pedigreeType,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get purpose => $composableBuilder(
+      column: $table.purpose, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get vaccinationStatus => $composableBuilder(
+      column: $table.vaccinationStatus,
+      builder: (column) => ColumnOrderings(column));
 }
 
 class $$LocalAnimalsTableAnnotationComposer
@@ -3706,6 +4008,24 @@ class $$LocalAnimalsTableAnnotationComposer
 
   GeneratedColumn<String> get imagePath =>
       $composableBuilder(column: $table.imagePath, builder: (column) => column);
+
+  GeneratedColumn<double> get weight =>
+      $composableBuilder(column: $table.weight, builder: (column) => column);
+
+  GeneratedColumn<String> get color =>
+      $composableBuilder(column: $table.color, builder: (column) => column);
+
+  GeneratedColumn<String> get uniqueMarks => $composableBuilder(
+      column: $table.uniqueMarks, builder: (column) => column);
+
+  GeneratedColumn<String> get pedigreeType => $composableBuilder(
+      column: $table.pedigreeType, builder: (column) => column);
+
+  GeneratedColumn<String> get purpose =>
+      $composableBuilder(column: $table.purpose, builder: (column) => column);
+
+  GeneratedColumn<String> get vaccinationStatus => $composableBuilder(
+      column: $table.vaccinationStatus, builder: (column) => column);
 }
 
 class $$LocalAnimalsTableTableManager extends RootTableManager<
@@ -3745,6 +4065,12 @@ class $$LocalAnimalsTableTableManager extends RootTableManager<
             Value<double> acquisitionCost = const Value.absent(),
             Value<double> salvageValue = const Value.absent(),
             Value<String?> imagePath = const Value.absent(),
+            Value<double?> weight = const Value.absent(),
+            Value<String?> color = const Value.absent(),
+            Value<String?> uniqueMarks = const Value.absent(),
+            Value<String?> pedigreeType = const Value.absent(),
+            Value<String?> purpose = const Value.absent(),
+            Value<String?> vaccinationStatus = const Value.absent(),
             Value<int> rowid = const Value.absent(),
           }) =>
               LocalAnimalsCompanion(
@@ -3759,6 +4085,12 @@ class $$LocalAnimalsTableTableManager extends RootTableManager<
             acquisitionCost: acquisitionCost,
             salvageValue: salvageValue,
             imagePath: imagePath,
+            weight: weight,
+            color: color,
+            uniqueMarks: uniqueMarks,
+            pedigreeType: pedigreeType,
+            purpose: purpose,
+            vaccinationStatus: vaccinationStatus,
             rowid: rowid,
           ),
           createCompanionCallback: ({
@@ -3773,6 +4105,12 @@ class $$LocalAnimalsTableTableManager extends RootTableManager<
             Value<double> acquisitionCost = const Value.absent(),
             Value<double> salvageValue = const Value.absent(),
             Value<String?> imagePath = const Value.absent(),
+            Value<double?> weight = const Value.absent(),
+            Value<String?> color = const Value.absent(),
+            Value<String?> uniqueMarks = const Value.absent(),
+            Value<String?> pedigreeType = const Value.absent(),
+            Value<String?> purpose = const Value.absent(),
+            Value<String?> vaccinationStatus = const Value.absent(),
             Value<int> rowid = const Value.absent(),
           }) =>
               LocalAnimalsCompanion.insert(
@@ -3787,6 +4125,12 @@ class $$LocalAnimalsTableTableManager extends RootTableManager<
             acquisitionCost: acquisitionCost,
             salvageValue: salvageValue,
             imagePath: imagePath,
+            weight: weight,
+            color: color,
+            uniqueMarks: uniqueMarks,
+            pedigreeType: pedigreeType,
+            purpose: purpose,
+            vaccinationStatus: vaccinationStatus,
             rowid: rowid,
           ),
           withReferenceMapper: (p0) => p0

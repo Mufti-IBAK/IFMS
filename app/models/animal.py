@@ -48,3 +48,10 @@ class Animal(BaseModel):
     acquisition_cost = Column(Float, nullable=False, default=0.0)
     salvage_value = Column(Float, nullable=False, default=0.0)
     image_path = Column(String(255), nullable=True)
+    
+    weight = Column(Float, nullable=True)
+    color = Column(String(100), nullable=True)
+    unique_marks = Column(String(255), nullable=True)
+    pedigree_type = Column(String(50), nullable=True)  # "pure" or "cross"
+    purpose = Column(String(50), nullable=True)  # "breeding", "meat", or "milk"
+    vaccination_status = Column(String(255), nullable=True)

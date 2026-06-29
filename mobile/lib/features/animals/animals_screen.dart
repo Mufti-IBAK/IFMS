@@ -182,75 +182,259 @@ class AnimalsScreen extends StatelessWidget {
 
   void _showAddAnimalDialog(BuildContext context) {
     final tagController = TextEditingController();
-    final speciesController = TextEditingController(text: 'cow');
-    final sexController = TextEditingController(text: 'female');
+    final breedController = TextEditingController();
+    final weightController = TextEditingController();
+    final colorController = TextEditingController();
+    final marksController = TextEditingController();
+    final vaccinationController = TextEditingController();
+    
+    DateTime? selectedDob;
+    String selectedSpecies = 'cow';
+    String selectedSex = 'female';
+    String selectedPedigree = 'pure';
+    String selectedPurpose = 'breeding';
+    String selectedReproductive = 'open';
     String? selectedImagePath;
 
     showDialog(
       context: context,
       builder: (dialogContext) => StatefulBuilder(
-        builder: (context, setState) => AlertDialog(
-          title: const Text('Add Animal'),
-          content: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                GestureDetector(
-                  onTap: () async {
-                    final picker = ImagePicker();
-                    final image = await picker.pickImage(source: ImageSource.camera);
-                    if (image != null) {
-                      setState(() => selectedImagePath = image.path);
-                    }
-                  },
-                  child: Container(
-                    height: 100,
-                    width: double.infinity,
-                    decoration: BoxDecoration(
-                      color: AppColors.surfaceContainer,
-                      borderRadius: BorderRadius.circular(8),
-                      image: selectedImagePath != null
-                          ? DecorationImage(image: FileImage(File(selectedImagePath!)), fit: BoxFit.cover)
-                          : null,
+        builder: (context, setState) {
+          final isFemale = selectedSex == 'female';
+          
+          return AlertDialog(
+            title: const Text('Register New Animal'),
+            content: SizedBox(
+              width: MediaQuery.of(context).size.width * 0.9,
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Photo Section
+                    Center(
+                      child: GestureDetector(
+                        onTap: () async {
+                          final picker = ImagePicker();
+                          final image = await picker.pickImage(source: ImageSource.camera);
+                          if (image != null) {
+                            setState(() => selectedImagePath = image.path);
+                          }
+                        },
+                        child: Container(
+                          height: 120,
+                          width: 120,
+                          decoration: BoxDecoration(
+                            color: AppColors.surfaceContainer,
+                            shape: BoxShape.circle,
+                            image: selectedImagePath != null
+                                ? DecorationImage(image: FileImage(File(selectedImagePath!)), fit: BoxFit.cover)
+                                : null,
+                            border: Border.all(color: AppColors.outlineVariant),
+                          ),
+                          child: selectedImagePath == null
+                              ? const Column(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Icon(Icons.camera_alt, color: AppColors.primary, size: 30),
+                                    SizedBox(height: 4),
+                                    Text('Take Photo', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold)),
+                                  ],
+                                )
+                              : null,
+                        ),
+                      ),
                     ),
-                    child: selectedImagePath == null
-                        ? const Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Icon(Icons.camera_alt, color: AppColors.outline),
-                              Text('Tap to take photo', style: TextStyle(fontSize: 10)),
+                    const SizedBox(height: 20),
+                    
+                    const Text('Basic Profile', style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.primary)),
+                    const Divider(),
+                    
+                    TextField(
+                      controller: tagController, 
+                      decoration: const InputDecoration(labelText: 'Tag ID / Ear Tag *', hintText: 'e.g. COW-109'),
+                    ),
+                    const SizedBox(height: 8),
+                    
+                    Row(
+                      children: [
+                        Expanded(
+                          child: DropdownButtonFormField<String>(
+                            value: selectedSpecies,
+                            decoration: const InputDecoration(labelText: 'Species'),
+                            items: const [
+                              DropdownMenuItem(value: 'cow', child: Text('Cattle')),
+                              DropdownMenuItem(value: 'goat', child: Text('Goat')),
+                              DropdownMenuItem(value: 'sheep', child: Text('Sheep')),
                             ],
-                          )
-                        : null,
-                  ),
+                            onChanged: (val) => setState(() => selectedSpecies = val!),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: DropdownButtonFormField<String>(
+                            value: selectedSex,
+                            decoration: const InputDecoration(labelText: 'Sex'),
+                            items: const [
+                              DropdownMenuItem(value: 'female', child: Text('Female')),
+                              DropdownMenuItem(value: 'male', child: Text('Male')),
+                            ],
+                            onChanged: (val) => setState(() => selectedSex = val!),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    
+                    TextField(
+                      controller: breedController, 
+                      decoration: const InputDecoration(labelText: 'Breed', hintText: 'e.g. Holstein Friesian'),
+                    ),
+                    const SizedBox(height: 16),
+                    
+                    const Text('Physical & Pedigree', style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.primary)),
+                    const Divider(),
+                    
+                    // Date of Birth Selector
+                    ListTile(
+                      contentPadding: EdgeInsets.zero,
+                      title: Text(selectedDob == null 
+                          ? 'Select Date of Birth *' 
+                          : 'DOB: ${selectedDob!.toLocal().toString().split(' ')[0]}'),
+                      subtitle: selectedDob != null
+                          ? Text('Age: ${(DateTime.now().difference(selectedDob!).inDays / 365).toStringAsFixed(1)} years')
+                          : null,
+                      trailing: const Icon(Icons.calendar_today, color: AppColors.primary),
+                      onTap: () async {
+                        final picked = await showDatePicker(
+                          context: context,
+                          initialDate: DateTime.now().subtract(const Duration(days: 365)),
+                          firstDate: DateTime(2000),
+                          lastDate: DateTime.now(),
+                        );
+                        if (picked != null) {
+                          setState(() => selectedDob = picked);
+                        }
+                      },
+                    ),
+                    const SizedBox(height: 8),
+                    
+                    TextField(
+                      controller: weightController, 
+                      keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                      decoration: const InputDecoration(labelText: 'Weight (kg)', hintText: 'e.g. 450.5'),
+                    ),
+                    const SizedBox(height: 8),
+                    
+                    Row(
+                      children: [
+                        Expanded(
+                          child: TextField(
+                            controller: colorController, 
+                            decoration: const InputDecoration(labelText: 'Color', hintText: 'Black/White'),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: DropdownButtonFormField<String>(
+                            value: selectedPedigree,
+                            decoration: const InputDecoration(labelText: 'Pedigree'),
+                            items: const [
+                              DropdownMenuItem(value: 'pure', child: Text('Purebreed')),
+                              DropdownMenuItem(value: 'cross', child: Text('Crossbreed')),
+                            ],
+                            onChanged: (val) => setState(() => selectedPedigree = val!),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    
+                    TextField(
+                      controller: marksController, 
+                      decoration: const InputDecoration(labelText: 'Unique Marks / Brands', hintText: 'e.g. Notch on left ear'),
+                    ),
+                    const SizedBox(height: 16),
+                    
+                    const Text('Purpose & Status', style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.primary)),
+                    const Divider(),
+                    
+                    Row(
+                      children: [
+                        Expanded(
+                          child: DropdownButtonFormField<String>(
+                            value: selectedPurpose,
+                            decoration: const InputDecoration(labelText: 'Purpose'),
+                            items: const [
+                              DropdownMenuItem(value: 'breeding', child: Text('Breeding')),
+                              DropdownMenuItem(value: 'milk', child: Text('Dairy (Milk)')),
+                              DropdownMenuItem(value: 'meat', child: Text('Beef (Meat)')),
+                            ],
+                            onChanged: (val) => setState(() => selectedPurpose = val!),
+                          ),
+                        ),
+                        if (isFemale) ...[
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: DropdownButtonFormField<String>(
+                              value: selectedReproductive,
+                              decoration: const InputDecoration(labelText: 'Reprod. Status'),
+                              items: const [
+                                DropdownMenuItem(value: 'open', child: Text('Open')),
+                                DropdownMenuItem(value: 'pregnant', child: Text('Pregnant')),
+                                DropdownMenuItem(value: 'lactating', child: Text('Lactating')),
+                                DropdownMenuItem(value: 'dry', child: Text('Dry')),
+                              ],
+                              onChanged: (val) => setState(() => selectedReproductive = val!),
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    
+                    TextField(
+                      controller: vaccinationController, 
+                      decoration: const InputDecoration(labelText: 'Vaccination Notes', hintText: 'e.g. FMD booster done'),
+                    ),
+                  ],
                 ),
-                const SizedBox(height: 16),
-                TextField(controller: tagController, decoration: const InputDecoration(labelText: 'Tag ID')),
-                TextField(controller: speciesController, decoration: const InputDecoration(labelText: 'Species')),
-                TextField(controller: sexController, decoration: const InputDecoration(labelText: 'Sex')),
-              ],
+              ),
             ),
-          ),
-          actions: [
-            TextButton(onPressed: () => Navigator.pop(dialogContext), child: const Text('Cancel')),
-            ElevatedButton(
-              onPressed: () {
-                if (tagController.text.isNotEmpty) {
-                  final dateStr = DateTime.now().toIso8601String().split('T')[0];
-                  BlocProvider.of<AnimalsBloc>(context).add(AddAnimal({
-                    'tag_id': tagController.text,
-                    'species': speciesController.text.toLowerCase(),
-                    'sex': sexController.text.toLowerCase(),
-                    'date_of_birth': dateStr,
-                    'image_path': selectedImagePath,
-                  }));
-                  Navigator.pop(dialogContext);
-                }
-              },
-              child: const Text('Save'),
-            ),
-          ],
-        ),
+            actions: [
+              TextButton(onPressed: () => Navigator.pop(dialogContext), child: const Text('Cancel')),
+              ElevatedButton(
+                onPressed: () {
+                  if (tagController.text.isNotEmpty && selectedDob != null) {
+                    final dobStr = selectedDob!.toIso8601String().split('T')[0];
+                    
+                    BlocProvider.of<AnimalsBloc>(context).add(AddAnimal({
+                      'tag_id': tagController.text.trim(),
+                      'species': selectedSpecies,
+                      'sex': selectedSex,
+                      'breed': breedController.text.trim().isNotEmpty ? breedController.text.trim() : null,
+                      'date_of_birth': dobStr,
+                      'weight': weightController.text.isNotEmpty ? double.tryParse(weightController.text) : null,
+                      'color': colorController.text.trim().isNotEmpty ? colorController.text.trim() : null,
+                      'unique_marks': marksController.text.trim().isNotEmpty ? marksController.text.trim() : null,
+                      'pedigree_type': selectedPedigree,
+                      'purpose': selectedPurpose,
+                      'current_reproductive_status': isFemale ? selectedReproductive : 'open',
+                      'vaccination_status': vaccinationController.text.trim().isNotEmpty ? vaccinationController.text.trim() : null,
+                      'image_path': selectedImagePath,
+                    }));
+                    Navigator.pop(dialogContext);
+                  } else {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Tag ID and Date of Birth are required!')),
+                    );
+                  }
+                },
+                child: const Text('Register'),
+              ),
+            ],
+          );
+        },
       ),
     );
   }

@@ -17,6 +17,14 @@ class AnimalBase(BaseModel):
     genetic_line: Optional[str] = None
     acquisition_cost: float = Field(0.0, ge=0.0)
     salvage_value: float = Field(0.0, ge=0.0)
+    
+    # New fields for comprehensive logging
+    weight: Optional[float] = Field(None, ge=0.0)
+    color: Optional[str] = None
+    unique_marks: Optional[str] = None
+    pedigree_type: Optional[str] = None
+    purpose: Optional[str] = None
+    vaccination_status: Optional[str] = None
 
 class AnimalCreate(AnimalBase):
     pass
@@ -32,6 +40,14 @@ class AnimalUpdate(BaseModel):
     current_reproductive_status: Optional[ReproductiveStatus] = None
     acquisition_cost: Optional[float] = Field(None, ge=0.0)
     salvage_value: Optional[float] = Field(None, ge=0.0)
+    
+    # New updateable fields
+    weight: Optional[float] = Field(None, ge=0.0)
+    color: Optional[str] = None
+    unique_marks: Optional[str] = None
+    pedigree_type: Optional[str] = None
+    purpose: Optional[str] = None
+    vaccination_status: Optional[str] = None
 
 class AnimalResponse(AnimalBase):
     id: UUID

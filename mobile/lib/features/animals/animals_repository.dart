@@ -49,8 +49,14 @@ class AnimalsRepository {
         species: animalData['species'],
         sex: animalData['sex'],
         dateOfBirth: DateTime.parse(animalData['date_of_birth']),
-        currentReproductiveStatus: 'open',
+        currentReproductiveStatus: animalData['current_reproductive_status'] ?? 'open',
         imagePath: Value(imagePath),
+        weight: Value(animalData['weight'] != null ? double.tryParse(animalData['weight'].toString()) : null),
+        color: Value(animalData['color']),
+        uniqueMarks: Value(animalData['unique_marks']),
+        pedigreeType: Value(animalData['pedigree_type']),
+        purpose: Value(animalData['purpose']),
+        vaccinationStatus: Value(animalData['vaccination_status']),
       ));
 
       await db.into(db.syncQueue).insert(SyncQueueCompanion.insert(
@@ -73,6 +79,12 @@ class AnimalsRepository {
         dateOfBirth: DateTime.parse(animal['date_of_birth']),
         currentReproductiveStatus: animal['current_reproductive_status'] ?? 'open',
         breed: Value(animal['breed']),
+        weight: Value(animal['weight'] != null ? double.tryParse(animal['weight'].toString()) : null),
+        color: Value(animal['color']),
+        uniqueMarks: Value(animal['unique_marks']),
+        pedigreeType: Value(animal['pedigree_type']),
+        purpose: Value(animal['purpose']),
+        vaccinationStatus: Value(animal['vaccination_status']),
       ));
     }
   }
