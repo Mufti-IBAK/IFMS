@@ -7,8 +7,57 @@ import '../../core/theme/app_colors.dart';
 import '../../core/database/local_db.dart';
 import 'animals_bloc.dart';
 
-class AnimalsScreen extends StatelessWidget {
+class AnimalsScreen extends StatefulWidget {
   const AnimalsScreen({super.key});
+
+  @override
+  State<AnimalsScreen> createState() => _AnimalsScreenState();
+}
+
+class _AnimalsScreenState extends State<AnimalsScreen> {
+  String _selectedFilter = 'all';
+  String _searchQuery = '';
+  final TextEditingController _searchController = TextEditingController();
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  String _getSpeciesDisplayName(String sp) {
+    switch (sp.toLowerCase()) {
+      case 'bovine':
+      case 'cow':
+        return 'Cattle';
+      case 'avian':
+        return 'Avian';
+      case 'caprine':
+      case 'goat':
+        return 'Goats';
+      case 'ovine':
+      case 'sheep':
+        return 'Sheep';
+      case 'feline':
+        return 'Cats';
+      case 'canine':
+        return 'Dogs';
+      case 'leprine':
+        return 'Rabbits';
+      default:
+        return sp.isNotEmpty ? (sp[0].toUpperCase() + sp.substring(1)) : 'Others';
+    }
+  }
+
+  IconData _getSpeciesIcon(String sp, String sex) {
+    final lowerSp = sp.toLowerCase();
+    
+    if (lowerSp == 'bovine' || lowerSp == 'cow') return Icons.pets;
+    if (lowerSp == 'feline') return Icons.pets_sharp;
+    if (lowerSp == 'canine') return Icons.pets;
+    if (lowerSp == 'leprine') return Icons.cruelty_free;
+    return Icons.agriculture;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -37,6 +86,42 @@ class AnimalsScreen extends StatelessWidget {
           if (state is AnimalsLoading) {
             return const Center(child: CircularProgressIndicator());
           } else if (state is AnimalsLoaded) {
+            // Apply search query
+            final filtered = state.animals.where((animal) {
+              final tagId = (animal is Map ? animal['tag_id'] : animal.tagId).toString().toLowerCase();
+              final breed = ((animal is Map ? animal['breed'] : animal.breed) ?? '').toString().toLowerCase();
+              return tagId.contains(_searchQuery) || breed.contains(_searchQuery);
+            }).toList();
+
+            // Apply species filter
+            final speciesFiltered = filtered.where((animal) {
+              if (_selectedFilter == 'all') return true;
+              final sp = (animal is Map ? animal['species'] : animal.species).toString().toLowerCase();
+              String norm = sp;
+              if (sp == 'cow') norm = 'bovine';
+              if (sp == 'goat') norm = 'caprine';
+              if (sp == 'sheep') norm = 'ovine';
+              return norm == _selectedFilter;
+            }).toList();
+
+            // Group by species
+            final Map<String, List<dynamic>> grouped = {};
+            for (var animal in speciesFiltered) {
+              final sp = (animal is Map ? animal['species'] : animal.species).toString().toLowerCase();
+              String norm = sp;
+              if (sp == 'cow') norm = 'bovine';
+              if (sp == 'goat') norm = 'caprine';
+              if (sp == 'sheep') norm = 'ovine';
+              grouped.putIfAbsent(norm, () => []).add(animal);
+            }
+
+            // Flatten into list items
+            final List<dynamic> items = [];
+            grouped.forEach((speciesKey, animalList) {
+              items.add(speciesKey); // Header string
+              items.addAll(animalList); // animal entries
+            });
+
             return Column(
               children: [
                 _buildFilterChips(state.animals),
@@ -53,158 +138,193 @@ class AnimalsScreen extends StatelessWidget {
                     ),
                   ),
                 Expanded(
-                  child: ListView.builder(
-                    itemCount: state.animals.length,
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    itemBuilder: (context, index) {
-                      final animal = state.animals[index];
-                      final isMap = animal is Map;
-                      final id = isMap ? animal['id'] : animal.id;
-                      final tagId = isMap ? animal['tag_id'] : animal.tagId;
-                      final species = isMap ? animal['species'] : animal.species;
-                      final sex = isMap ? animal['sex'] : animal.sex;
-                      final breed = (isMap ? animal['breed'] : animal.breed) ?? 'Unknown';
-                      final status = (isMap ? animal['current_reproductive_status'] : animal.currentReproductiveStatus) ?? 'Open';
-                      final liveStatus = (isMap ? animal['status'] : animal.status) ?? 'active';
-                      final isDead = liveStatus.toString().toLowerCase() == 'dead';
+                  child: items.isEmpty
+                      ? const Center(child: Text('No matching animals found.'))
+                      : ListView.builder(
+                          itemCount: items.length,
+                          padding: const EdgeInsets.symmetric(horizontal: 16),
+                          itemBuilder: (context, index) {
+                            final item = items[index];
 
-                      return Opacity(
-                        opacity: isDead ? 0.65 : 1.0,
-                        child: Card(
-                          margin: const EdgeInsets.only(bottom: 12),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                            side: BorderSide(
-                              color: isDead ? Colors.grey.shade300 : AppColors.outlineVariant,
-                              width: 0.5,
-                            ),
-                          ),
-                          child: Padding(
-                            padding: const EdgeInsets.all(12),
-                            child: Row(
-                              children: [
-                                Container(
-                                  width: 48,
-                                  height: 48,
-                                  decoration: BoxDecoration(
-                                    color: isDead 
-                                        ? Colors.grey.shade100
-                                        : (sex.toString().toLowerCase() == 'female' 
-                                            ? Colors.pink.shade50 
-                                            : Colors.blue.shade50),
-                                    borderRadius: BorderRadius.circular(8),
-                                  ),
-                                  child: Icon(
-                                    isDead 
-                                        ? Icons.sentiment_very_dissatisfied
-                                        : (species.toString().toLowerCase() == 'bovine' || species.toString().toLowerCase() == 'cow'
-                                            ? Icons.pets 
-                                            : Icons.agriculture),
-                                    color: isDead 
-                                        ? Colors.grey
-                                        : (sex.toString().toLowerCase() == 'female' 
-                                            ? Colors.pink 
-                                            : Colors.blue),
+                            // Section Header UI
+                            if (item is String) {
+                              final displayName = _getSpeciesDisplayName(item).toUpperCase();
+                              final count = grouped[item]?.length ?? 0;
+                              return Padding(
+                                padding: const EdgeInsets.symmetric(vertical: 12.0, horizontal: 4),
+                                child: Row(
+                                  children: [
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                                      decoration: BoxDecoration(
+                                        color: AppColors.primary.withOpacity(0.08),
+                                        borderRadius: BorderRadius.circular(20),
+                                        border: Border.all(color: AppColors.primary.withOpacity(0.2), width: 0.5),
+                                      ),
+                                      child: Text(
+                                        '$displayName ($count)',
+                                        style: const TextStyle(
+                                          fontSize: 11,
+                                          fontWeight: FontWeight.bold,
+                                          color: AppColors.primary,
+                                          letterSpacing: 0.5,
+                                        ),
+                                      ),
+                                    ),
+                                    const SizedBox(width: 8),
+                                    const Expanded(child: Divider(color: AppColors.outlineVariant, thickness: 0.5)),
+                                  ],
+                                ),
+                              );
+                            }
+
+                            // Animal Card UI
+                            final animal = item;
+                            final isMap = animal is Map;
+                            final id = isMap ? animal['id'] : animal.id;
+                            final tagId = isMap ? animal['tag_id'] : animal.tagId;
+                            final species = isMap ? animal['species'] : animal.species;
+                            final sex = isMap ? animal['sex'] : animal.sex;
+                            final breed = (isMap ? animal['breed'] : animal.breed) ?? 'Unknown';
+                            final status = (isMap ? animal['current_reproductive_status'] : animal.currentReproductiveStatus) ?? 'Open';
+                            final liveStatus = (isMap ? animal['status'] : animal.status) ?? 'active';
+                            final isDead = liveStatus.toString().toLowerCase() == 'dead';
+
+                            return Opacity(
+                              opacity: isDead ? 0.65 : 1.0,
+                              child: Card(
+                                margin: const EdgeInsets.only(bottom: 12),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                  side: BorderSide(
+                                    color: isDead ? Colors.grey.shade300 : AppColors.outlineVariant,
+                                    width: 0.5,
                                   ),
                                 ),
-                                const SizedBox(width: 12),
-                                Expanded(
-                                  child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                child: Padding(
+                                  padding: const EdgeInsets.all(12),
+                                  child: Row(
                                     children: [
-                                      Row(
-                                        children: [
-                                          Text(
-                                            '#$tagId',
-                                            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-                                          ),
-                                          if (isDead) ...[
-                                            const SizedBox(width: 8),
-                                            Container(
-                                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                                              decoration: BoxDecoration(
-                                                color: Colors.grey.shade200,
-                                                borderRadius: BorderRadius.circular(4),
-                                              ),
-                                              child: const Text(
-                                                'DECEASED',
-                                                style: TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: Colors.black54),
+                                      Container(
+                                        width: 48,
+                                        height: 48,
+                                        decoration: BoxDecoration(
+                                          color: isDead 
+                                              ? Colors.grey.shade100
+                                              : (sex.toString().toLowerCase() == 'female' 
+                                                  ? Colors.pink.shade50 
+                                                  : Colors.blue.shade50),
+                                          borderRadius: BorderRadius.circular(8),
+                                        ),
+                                        child: Icon(
+                                          isDead 
+                                              ? Icons.sentiment_very_dissatisfied
+                                              : _getSpeciesIcon(species.toString(), sex.toString()),
+                                          color: isDead 
+                                              ? Colors.grey
+                                              : (sex.toString().toLowerCase() == 'female' 
+                                                  ? Colors.pink 
+                                                  : Colors.blue),
+                                        ),
+                                      ),
+                                      const SizedBox(width: 12),
+                                      Expanded(
+                                        child: Column(
+                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          children: [
+                                            Row(
+                                              children: [
+                                                Text(
+                                                  '#$tagId',
+                                                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                                                ),
+                                                if (isDead) ...[
+                                                  const SizedBox(width: 8),
+                                                  Container(
+                                                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                                    decoration: BoxDecoration(
+                                                      color: Colors.grey.shade200,
+                                                      borderRadius: BorderRadius.circular(4),
+                                                    ),
+                                                    child: const Text(
+                                                      'DECEASED',
+                                                      style: TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: Colors.black54),
+                                                    ),
+                                                  ),
+                                                ],
+                                              ],
+                                            ),
+                                            const SizedBox(height: 4),
+                                            Text(
+                                              isDead ? 'Status: Deceased' : '$breed • ${status.toString().toUpperCase()}',
+                                              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                                color: isDead ? Colors.grey : null,
                                               ),
                                             ),
                                           ],
-                                        ],
-                                      ),
-                                      const SizedBox(height: 4),
-                                      Text(
-                                        isDead ? 'Status: Deceased' : '$breed • ${status.toString().toUpperCase()}',
-                                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                          color: isDead ? Colors.grey : null,
                                         ),
                                       ),
-                                    ],
-                                  ),
-                                ),
-                                if (!isDead && (species.toString().toLowerCase() == 'bovine' || species.toString().toLowerCase() == 'cow'))
-                                  const Column(
-                                    crossAxisAlignment: CrossAxisAlignment.end,
-                                    mainAxisAlignment: MainAxisAlignment.center,
-                                    children: [
-                                      Text('Dairy Barn', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w500)),
-                                      Text('Yield: 24L', style: TextStyle(fontSize: 11, color: AppColors.primary, fontWeight: FontWeight.bold)),
-                                    ],
-                                  ),
-                                PopupMenuButton<String>(
-                                  icon: const Icon(Icons.more_vert, size: 20),
-                                  onSelected: (action) {
-                                    if (action == 'edit') {
-                                      _showEditAnimalSheet(context, animal);
-                                    } else if (action == 'dead') {
-                                      _confirmMarkDead(context, id, tagId);
-                                    } else if (action == 'delete') {
-                                      _confirmDelete(context, id, tagId);
-                                    }
-                                  },
-                                  itemBuilder: (context) => [
-                                    const PopupMenuItem(
-                                      value: 'edit',
-                                      child: Row(
-                                        children: [
-                                          Icon(Icons.edit, size: 18),
-                                          SizedBox(width: 8),
-                                          Text('Edit Info'),
-                                        ],
-                                      ),
-                                    ),
-                                    if (!isDead)
-                                      const PopupMenuItem(
-                                        value: 'dead',
-                                        child: Row(
+                                      if (!isDead && (species.toString().toLowerCase() == 'bovine' || species.toString().toLowerCase() == 'cow'))
+                                        const Column(
+                                          crossAxisAlignment: CrossAxisAlignment.end,
+                                          mainAxisAlignment: MainAxisAlignment.center,
                                           children: [
-                                            Icon(Icons.heart_broken, size: 18, color: Colors.orange),
-                                            SizedBox(width: 8),
-                                            Text('Mark Deceased'),
+                                            Text('Dairy Barn', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w500)),
+                                            Text('Yield: 24L', style: TextStyle(fontSize: 11, color: AppColors.primary, fontWeight: FontWeight.bold)),
                                           ],
                                         ),
-                                      ),
-                                    const PopupMenuItem(
-                                      value: 'delete',
-                                      child: Row(
-                                        children: [
-                                          Icon(Icons.delete, size: 18, color: Colors.red),
-                                          SizedBox(width: 8),
-                                          Text('Delete Record', style: TextStyle(color: Colors.red)),
+                                      PopupMenuButton<String>(
+                                        icon: const Icon(Icons.more_vert, size: 20),
+                                        onSelected: (action) {
+                                          if (action == 'edit') {
+                                            _showEditAnimalSheet(context, animal);
+                                          } else if (action == 'dead') {
+                                            _confirmMarkDead(context, id, tagId);
+                                          } else if (action == 'delete') {
+                                            _confirmDelete(context, id, tagId);
+                                          }
+                                        },
+                                        itemBuilder: (context) => [
+                                          const PopupMenuItem(
+                                            value: 'edit',
+                                            child: Row(
+                                              children: [
+                                                Icon(Icons.edit, size: 18),
+                                                SizedBox(width: 8),
+                                                Text('Edit Info'),
+                                              ],
+                                            ),
+                                          ),
+                                          if (!isDead)
+                                            const PopupMenuItem(
+                                              value: 'dead',
+                                              child: Row(
+                                                children: [
+                                                  Icon(Icons.heart_broken, size: 18, color: Colors.orange),
+                                                  SizedBox(width: 8),
+                                                  Text('Mark Deceased'),
+                                                ],
+                                              ),
+                                            ),
+                                          const PopupMenuItem(
+                                            value: 'delete',
+                                            child: Row(
+                                              children: [
+                                                Icon(Icons.delete, size: 18, color: Colors.red),
+                                                SizedBox(width: 8),
+                                                Text('Delete Record', style: TextStyle(color: Colors.red)),
+                                              ],
+                                            ),
+                                          ),
                                         ],
                                       ),
-                                    ),
-                                  ],
+                                    ],
+                                  ),
                                 ),
-                              ],
-                            ),
-                          ),
+                              ),
+                            );
+                          },
                         ),
-                      );
-                    },
-                  ),
                 ),
               ],
             );
@@ -223,43 +343,47 @@ class AnimalsScreen extends StatelessWidget {
   }
 
   Widget _buildFilterChips(List<dynamic> animals) {
-    int countSpecies(String speciesName) {
-      return animals.where((a) {
-        final sp = (a is Map ? a['species'] : a.species).toString().toLowerCase();
-        if (speciesName == 'bovine') return sp == 'bovine' || sp == 'cow';
-        if (speciesName == 'caprine') return sp == 'caprine' || sp == 'goat';
-        if (speciesName == 'ovine') return sp == 'ovine' || sp == 'sheep';
-        return sp == speciesName;
-      }).length;
+    final Map<String, int> speciesCounts = {};
+    for (var a in animals) {
+      final sp = (a is Map ? a['species'] : a.species).toString().toLowerCase();
+      String norm = sp;
+      if (sp == 'cow') norm = 'bovine';
+      if (sp == 'goat') norm = 'caprine';
+      if (sp == 'sheep') norm = 'ovine';
+      speciesCounts[norm] = (speciesCounts[norm] ?? 0) + 1;
     }
-
-    final cattleCount = countSpecies('bovine');
-    final avianCount = countSpecies('avian');
-    final goatCount = countSpecies('caprine');
-    final sheepCount = countSpecies('ovine');
 
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       child: Row(
         children: [
-          _filterChip('All (${animals.length})', true),
-          _filterChip('Cattle ($cattleCount)', false),
-          _filterChip('Avian ($avianCount)', false),
-          _filterChip('Goats ($goatCount)', false),
-          _filterChip('Sheep ($sheepCount)', false),
+          _filterChip(
+            label: 'All (${animals.length})',
+            isSelected: _selectedFilter == 'all',
+            onTap: () => setState(() => _selectedFilter = 'all'),
+          ),
+          ...speciesCounts.entries.map((entry) {
+            final speciesKey = entry.key;
+            final count = entry.value;
+            return _filterChip(
+              label: '${_getSpeciesDisplayName(speciesKey)} ($count)',
+              isSelected: _selectedFilter == speciesKey,
+              onTap: () => setState(() => _selectedFilter = speciesKey),
+            );
+          }),
         ],
       ),
     );
   }
 
-  Widget _filterChip(String label, bool isSelected) {
+  Widget _filterChip({required String label, required bool isSelected, required VoidCallback onTap}) {
     return Padding(
       padding: const EdgeInsets.only(right: 8),
       child: FilterChip(
         label: Text(label),
         selected: isSelected,
-        onSelected: (v) {},
+        onSelected: (v) => onTap(),
         backgroundColor: AppColors.surfaceContainer,
         selectedColor: AppColors.secondaryContainer,
         labelStyle: TextStyle(
@@ -272,14 +396,26 @@ class AnimalsScreen extends StatelessWidget {
   }
 
   Widget _buildSearchBar() {
-    return const Padding(
-      padding: EdgeInsets.fromLTRB(16, 0, 16, 16),
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
       child: TextField(
+        controller: _searchController,
         decoration: InputDecoration(
-          hintText: 'Search Tag or Scan RFID...',
-          prefixIcon: Icon(Icons.search),
-          suffixIcon: Icon(Icons.qr_code_scanner),
+          hintText: 'Search Tag or Breed...',
+          prefixIcon: const Icon(Icons.search),
+          suffixIcon: _searchController.text.isNotEmpty
+              ? IconButton(
+                  icon: const Icon(Icons.clear),
+                  onPressed: () {
+                    _searchController.clear();
+                    setState(() => _searchQuery = '');
+                  },
+                )
+              : const Icon(Icons.qr_code_scanner),
         ),
+        onChanged: (val) {
+          setState(() => _searchQuery = val.trim().toLowerCase());
+        },
       ),
     );
   }
