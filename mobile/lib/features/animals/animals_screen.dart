@@ -476,7 +476,9 @@ class AnimalsScreen extends StatelessWidget {
                                           DropdownMenuItem(value: 'avian', child: Text('Avian (Poultry)')),
                                           DropdownMenuItem(value: 'caprine', child: Text('Caprine (Goat)')),
                                           DropdownMenuItem(value: 'ovine', child: Text('Ovine (Sheep)')),
-                                          DropdownMenuItem(value: 'porcine', child: Text('Porcine (Pig)')),
+                                          DropdownMenuItem(value: 'feline', child: Text('Feline (Cat)')),
+                                          DropdownMenuItem(value: 'canine', child: Text('Canine (Dog)')),
+                                          DropdownMenuItem(value: 'leprine', child: Text('Leprine (Rabbit)')),
                                           DropdownMenuItem(value: 'others', child: Text('Others')),
                                         ],
                                         onChanged: (val) => setState(() => selectedSpecies = val!),
@@ -505,17 +507,6 @@ class AnimalsScreen extends StatelessWidget {
                                       ),
                                     ),
                                   ),
-                                  
-                                  buildInputField(
-                                    label: 'Breed',
-                                    child: TextField(
-                                      controller: breedController,
-                                      decoration: const InputDecoration(
-                                        hintText: 'e.g. Holstein Friesian / Cobb 500',
-                                        prefixIcon: Icon(Icons.pets, size: 20),
-                                      ),
-                                    ),
-                                  ),
                                 ],
                               ),
                             ),
@@ -537,6 +528,17 @@ class AnimalsScreen extends StatelessWidget {
                                 children: [
                                   const Text('2. PHYSICAL CHARACTERISTICS', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: AppColors.primary)),
                                   const SizedBox(height: 12),
+                                  
+                                  buildInputField(
+                                    label: 'Breed',
+                                    child: TextField(
+                                      controller: breedController,
+                                      decoration: const InputDecoration(
+                                        hintText: 'e.g. Holstein Friesian / Cobb 500',
+                                        prefixIcon: Icon(Icons.pets, size: 20),
+                                      ),
+                                    ),
+                                  ),
                                   
                                   buildInputField(
                                     label: 'Date of Birth *',
@@ -947,7 +949,9 @@ class AnimalsScreen extends StatelessWidget {
                                           DropdownMenuItem(value: 'avian', child: Text('Avian (Poultry)')),
                                           DropdownMenuItem(value: 'caprine', child: Text('Caprine (Goat)')),
                                           DropdownMenuItem(value: 'ovine', child: Text('Ovine (Sheep)')),
-                                          DropdownMenuItem(value: 'porcine', child: Text('Porcine (Pig)')),
+                                          DropdownMenuItem(value: 'feline', child: Text('Feline (Cat)')),
+                                          DropdownMenuItem(value: 'canine', child: Text('Canine (Dog)')),
+                                          DropdownMenuItem(value: 'leprine', child: Text('Leprine (Rabbit)')),
                                           DropdownMenuItem(value: 'others', child: Text('Others')),
                                         ],
                                         onChanged: (val) => setState(() => selectedSpecies = val!),
@@ -976,16 +980,6 @@ class AnimalsScreen extends StatelessWidget {
                                       ),
                                     ),
                                   ),
-                                  buildInputField(
-                                    label: 'Breed',
-                                    child: TextField(
-                                      controller: breedController,
-                                      decoration: const InputDecoration(
-                                        hintText: 'e.g. Holstein Friesian',
-                                        prefixIcon: Icon(Icons.pets, size: 20),
-                                      ),
-                                    ),
-                                  ),
                                 ],
                               ),
                             ),
@@ -1005,6 +999,16 @@ class AnimalsScreen extends StatelessWidget {
                                 children: [
                                   const Text('2. PHYSICAL CHARACTERISTICS', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: AppColors.primary)),
                                   const SizedBox(height: 12),
+                                  buildInputField(
+                                    label: 'Breed',
+                                    child: TextField(
+                                      controller: breedController,
+                                      decoration: const InputDecoration(
+                                        hintText: 'e.g. Holstein Friesian',
+                                        prefixIcon: Icon(Icons.pets, size: 20),
+                                      ),
+                                    ),
+                                  ),
                                   buildInputField(
                                     label: 'Date of Birth *',
                                     child: InkWell(

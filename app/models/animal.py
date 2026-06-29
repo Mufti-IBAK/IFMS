@@ -11,6 +11,9 @@ class AnimalSpecies(str, enum.Enum):
     OVINE = "ovine"
     BOVINE = "bovine"
     PORCINE = "porcine"
+    FELINE = "feline"
+    CANINE = "canine"
+    LEPRINE = "leprine"
     OTHERS = "others"
 
 class AnimalStatus(str, enum.Enum):
