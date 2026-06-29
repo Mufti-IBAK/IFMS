@@ -161,3 +161,7 @@ def get_animal_events(db: Session, animal_id: UUID) -> List[AnimalEvent]:
 
 def get_reproduction_events(db: Session) -> List[AnimalEvent]:
     return db.query(AnimalEvent).filter(AnimalEvent.event_category == EventCategory.REPRODUCTION).order_by(AnimalEvent.event_timestamp.desc()).all()
+
+def delete_animal(db: Session, db_animal: Animal) -> None:
+    db.delete(db_animal)
+    db.commit()

@@ -26,6 +26,7 @@ class LocalAnimals extends Table {
   TextColumn get pedigreeType => text().nullable()();
   TextColumn get purpose => text().nullable()();
   TextColumn get vaccinationStatus => text().nullable()();
+  TextColumn get status => text().withDefault(const Constant('active'))();
   
   @override
   Set<Column> get primaryKey => {id};
@@ -125,7 +126,7 @@ class LocalDatabase extends _$LocalDatabase {
   LocalDatabase() : super(_openConnection());
 
   @override
-  int get schemaVersion => 6;
+  int get schemaVersion => 7;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -151,6 +152,9 @@ class LocalDatabase extends _$LocalDatabase {
         await m.addColumn(localAnimals, localAnimals.pedigreeType);
         await m.addColumn(localAnimals, localAnimals.purpose);
         await m.addColumn(localAnimals, localAnimals.vaccinationStatus);
+      }
+      if (from < 7) {
+        await m.addColumn(localAnimals, localAnimals.status);
       }
     },
   );

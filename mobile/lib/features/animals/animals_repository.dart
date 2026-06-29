@@ -88,4 +88,52 @@ class AnimalsRepository {
       ));
     }
   }
+
+  Future<void> updateAnimal(String id, Map<String, dynamic> updateData) async {
+    try {
+      await apiClient.dio.patch('/animals/$id', data: updateData);
+    } catch (e) {
+      // Local Drift DB Update
+      final companion = LocalAnimalsCompanion(
+        tagId: updateData['tag_id'] != null ? Value(updateData['tag_id']) : const Value.absent(),
+        species: updateData['species'] != null ? Value(updateData['species']) : const Value.absent(),
+        sex: updateData['sex'] != null ? Value(updateData['sex']) : const Value.absent(),
+        breed: updateData.containsKey('breed') ? Value(updateData['breed']) : const Value.absent(),
+        dateOfBirth: updateData['date_of_birth'] != null ? Value(DateTime.parse(updateData['date_of_birth'])) : const Value.absent(),
+        currentReproductiveStatus: updateData['current_reproductive_status'] != null ? Value(updateData['current_reproductive_status']) : const Value.absent(),
+        weight: updateData.containsKey('weight') ? Value(updateData['weight'] != null ? double.tryParse(updateData['weight'].toString()) : null) : const Value.absent(),
+        color: updateData.containsKey('color') ? Value(updateData['color']) : const Value.absent(),
+        uniqueMarks: updateData.containsKey('unique_marks') ? Value(updateData['unique_marks']) : const Value.absent(),
+        pedigreeType: updateData['pedigree_type'] != null ? Value(updateData['pedigree_type']) : const Value.absent(),
+        purpose: updateData['purpose'] != null ? Value(updateData['purpose']) : const Value.absent(),
+        vaccinationStatus: updateData.containsKey('vaccination_status') ? Value(updateData['vaccination_status']) : const Value.absent(),
+      );
+      await (db.update(db.localAnimals)..where((t) => t.id.equals(id))).write(companion);
+
+      // Add to SyncQueue
+      await db.into(db.syncQueue).insert(SyncQueueCompanion.insert(
+        endpoint: '/animals/$id',
+        method: 'PATCH',
+        body: jsonEncode(updateData),
+        queuedAt: DateTime.now(),
+      ));
+    }
+  }
+
+  Future<void> deleteAnimal(String id) async {
+    try {
+      await apiClient.dio.delete('/animals/$id');
+    } catch (e) {
+      // Local Drift DB Delete
+      await (db.delete(db.localAnimals)..where((t) => t.id.equals(id))).go();
+
+      // Add to SyncQueue
+      await db.into(db.syncQueue).insert(SyncQueueCompanion.insert(
+        endpoint: '/animals/$id',
+        method: 'DELETE',
+        body: '',
+        queuedAt: DateTime.now(),
+      ));
+    }
+  }
 }

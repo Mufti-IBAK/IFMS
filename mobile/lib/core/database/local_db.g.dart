@@ -112,6 +112,13 @@ class $LocalAnimalsTable extends LocalAnimals
   late final GeneratedColumn<String> vaccinationStatus =
       GeneratedColumn<String>('vaccination_status', aliasedName, true,
           type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _statusMeta = const VerificationMeta('status');
+  @override
+  late final GeneratedColumn<String> status = GeneratedColumn<String>(
+      'status', aliasedName, false,
+      type: DriftSqlType.string,
+      requiredDuringInsert: false,
+      defaultValue: const Constant('active'));
   @override
   List<GeneratedColumn> get $columns => [
         id,
@@ -130,7 +137,8 @@ class $LocalAnimalsTable extends LocalAnimals
         uniqueMarks,
         pedigreeType,
         purpose,
-        vaccinationStatus
+        vaccinationStatus,
+        status
       ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -238,6 +246,10 @@ class $LocalAnimalsTable extends LocalAnimals
           vaccinationStatus.isAcceptableOrUnknown(
               data['vaccination_status']!, _vaccinationStatusMeta));
     }
+    if (data.containsKey('status')) {
+      context.handle(_statusMeta,
+          status.isAcceptableOrUnknown(data['status']!, _statusMeta));
+    }
     return context;
   }
 
@@ -282,6 +294,8 @@ class $LocalAnimalsTable extends LocalAnimals
           .read(DriftSqlType.string, data['${effectivePrefix}purpose']),
       vaccinationStatus: attachedDatabase.typeMapping.read(
           DriftSqlType.string, data['${effectivePrefix}vaccination_status']),
+      status: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}status'])!,
     );
   }
 
@@ -309,6 +323,7 @@ class LocalAnimal extends DataClass implements Insertable<LocalAnimal> {
   final String? pedigreeType;
   final String? purpose;
   final String? vaccinationStatus;
+  final String status;
   const LocalAnimal(
       {required this.id,
       required this.tagId,
@@ -326,7 +341,8 @@ class LocalAnimal extends DataClass implements Insertable<LocalAnimal> {
       this.uniqueMarks,
       this.pedigreeType,
       this.purpose,
-      this.vaccinationStatus});
+      this.vaccinationStatus,
+      required this.status});
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
@@ -366,6 +382,7 @@ class LocalAnimal extends DataClass implements Insertable<LocalAnimal> {
     if (!nullToAbsent || vaccinationStatus != null) {
       map['vaccination_status'] = Variable<String>(vaccinationStatus);
     }
+    map['status'] = Variable<String>(status);
     return map;
   }
 
@@ -403,6 +420,7 @@ class LocalAnimal extends DataClass implements Insertable<LocalAnimal> {
       vaccinationStatus: vaccinationStatus == null && nullToAbsent
           ? const Value.absent()
           : Value(vaccinationStatus),
+      status: Value(status),
     );
   }
 
@@ -429,6 +447,7 @@ class LocalAnimal extends DataClass implements Insertable<LocalAnimal> {
       purpose: serializer.fromJson<String?>(json['purpose']),
       vaccinationStatus:
           serializer.fromJson<String?>(json['vaccinationStatus']),
+      status: serializer.fromJson<String>(json['status']),
     );
   }
   @override
@@ -453,6 +472,7 @@ class LocalAnimal extends DataClass implements Insertable<LocalAnimal> {
       'pedigreeType': serializer.toJson<String?>(pedigreeType),
       'purpose': serializer.toJson<String?>(purpose),
       'vaccinationStatus': serializer.toJson<String?>(vaccinationStatus),
+      'status': serializer.toJson<String>(status),
     };
   }
 
@@ -473,7 +493,8 @@ class LocalAnimal extends DataClass implements Insertable<LocalAnimal> {
           Value<String?> uniqueMarks = const Value.absent(),
           Value<String?> pedigreeType = const Value.absent(),
           Value<String?> purpose = const Value.absent(),
-          Value<String?> vaccinationStatus = const Value.absent()}) =>
+          Value<String?> vaccinationStatus = const Value.absent(),
+          String? status}) =>
       LocalAnimal(
         id: id ?? this.id,
         tagId: tagId ?? this.tagId,
@@ -496,6 +517,7 @@ class LocalAnimal extends DataClass implements Insertable<LocalAnimal> {
         vaccinationStatus: vaccinationStatus.present
             ? vaccinationStatus.value
             : this.vaccinationStatus,
+        status: status ?? this.status,
       );
   LocalAnimal copyWithCompanion(LocalAnimalsCompanion data) {
     return LocalAnimal(
@@ -529,6 +551,7 @@ class LocalAnimal extends DataClass implements Insertable<LocalAnimal> {
       vaccinationStatus: data.vaccinationStatus.present
           ? data.vaccinationStatus.value
           : this.vaccinationStatus,
+      status: data.status.present ? data.status.value : this.status,
     );
   }
 
@@ -551,7 +574,8 @@ class LocalAnimal extends DataClass implements Insertable<LocalAnimal> {
           ..write('uniqueMarks: $uniqueMarks, ')
           ..write('pedigreeType: $pedigreeType, ')
           ..write('purpose: $purpose, ')
-          ..write('vaccinationStatus: $vaccinationStatus')
+          ..write('vaccinationStatus: $vaccinationStatus, ')
+          ..write('status: $status')
           ..write(')'))
         .toString();
   }
@@ -574,7 +598,8 @@ class LocalAnimal extends DataClass implements Insertable<LocalAnimal> {
       uniqueMarks,
       pedigreeType,
       purpose,
-      vaccinationStatus);
+      vaccinationStatus,
+      status);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -595,7 +620,8 @@ class LocalAnimal extends DataClass implements Insertable<LocalAnimal> {
           other.uniqueMarks == this.uniqueMarks &&
           other.pedigreeType == this.pedigreeType &&
           other.purpose == this.purpose &&
-          other.vaccinationStatus == this.vaccinationStatus);
+          other.vaccinationStatus == this.vaccinationStatus &&
+          other.status == this.status);
 }
 
 class LocalAnimalsCompanion extends UpdateCompanion<LocalAnimal> {
@@ -616,6 +642,7 @@ class LocalAnimalsCompanion extends UpdateCompanion<LocalAnimal> {
   final Value<String?> pedigreeType;
   final Value<String?> purpose;
   final Value<String?> vaccinationStatus;
+  final Value<String> status;
   final Value<int> rowid;
   const LocalAnimalsCompanion({
     this.id = const Value.absent(),
@@ -635,6 +662,7 @@ class LocalAnimalsCompanion extends UpdateCompanion<LocalAnimal> {
     this.pedigreeType = const Value.absent(),
     this.purpose = const Value.absent(),
     this.vaccinationStatus = const Value.absent(),
+    this.status = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   LocalAnimalsCompanion.insert({
@@ -655,6 +683,7 @@ class LocalAnimalsCompanion extends UpdateCompanion<LocalAnimal> {
     this.pedigreeType = const Value.absent(),
     this.purpose = const Value.absent(),
     this.vaccinationStatus = const Value.absent(),
+    this.status = const Value.absent(),
     this.rowid = const Value.absent(),
   })  : id = Value(id),
         tagId = Value(tagId),
@@ -680,6 +709,7 @@ class LocalAnimalsCompanion extends UpdateCompanion<LocalAnimal> {
     Expression<String>? pedigreeType,
     Expression<String>? purpose,
     Expression<String>? vaccinationStatus,
+    Expression<String>? status,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
@@ -701,6 +731,7 @@ class LocalAnimalsCompanion extends UpdateCompanion<LocalAnimal> {
       if (pedigreeType != null) 'pedigree_type': pedigreeType,
       if (purpose != null) 'purpose': purpose,
       if (vaccinationStatus != null) 'vaccination_status': vaccinationStatus,
+      if (status != null) 'status': status,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -723,6 +754,7 @@ class LocalAnimalsCompanion extends UpdateCompanion<LocalAnimal> {
       Value<String?>? pedigreeType,
       Value<String?>? purpose,
       Value<String?>? vaccinationStatus,
+      Value<String>? status,
       Value<int>? rowid}) {
     return LocalAnimalsCompanion(
       id: id ?? this.id,
@@ -743,6 +775,7 @@ class LocalAnimalsCompanion extends UpdateCompanion<LocalAnimal> {
       pedigreeType: pedigreeType ?? this.pedigreeType,
       purpose: purpose ?? this.purpose,
       vaccinationStatus: vaccinationStatus ?? this.vaccinationStatus,
+      status: status ?? this.status,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -802,6 +835,9 @@ class LocalAnimalsCompanion extends UpdateCompanion<LocalAnimal> {
     if (vaccinationStatus.present) {
       map['vaccination_status'] = Variable<String>(vaccinationStatus.value);
     }
+    if (status.present) {
+      map['status'] = Variable<String>(status.value);
+    }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
     }
@@ -828,6 +864,7 @@ class LocalAnimalsCompanion extends UpdateCompanion<LocalAnimal> {
           ..write('pedigreeType: $pedigreeType, ')
           ..write('purpose: $purpose, ')
           ..write('vaccinationStatus: $vaccinationStatus, ')
+          ..write('status: $status, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -3813,6 +3850,7 @@ typedef $$LocalAnimalsTableCreateCompanionBuilder = LocalAnimalsCompanion
   Value<String?> pedigreeType,
   Value<String?> purpose,
   Value<String?> vaccinationStatus,
+  Value<String> status,
   Value<int> rowid,
 });
 typedef $$LocalAnimalsTableUpdateCompanionBuilder = LocalAnimalsCompanion
@@ -3834,6 +3872,7 @@ typedef $$LocalAnimalsTableUpdateCompanionBuilder = LocalAnimalsCompanion
   Value<String?> pedigreeType,
   Value<String?> purpose,
   Value<String?> vaccinationStatus,
+  Value<String> status,
   Value<int> rowid,
 });
 
@@ -3899,6 +3938,9 @@ class $$LocalAnimalsTableFilterComposer
   ColumnFilters<String> get vaccinationStatus => $composableBuilder(
       column: $table.vaccinationStatus,
       builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get status => $composableBuilder(
+      column: $table.status, builder: (column) => ColumnFilters(column));
 }
 
 class $$LocalAnimalsTableOrderingComposer
@@ -3965,6 +4007,9 @@ class $$LocalAnimalsTableOrderingComposer
   ColumnOrderings<String> get vaccinationStatus => $composableBuilder(
       column: $table.vaccinationStatus,
       builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get status => $composableBuilder(
+      column: $table.status, builder: (column) => ColumnOrderings(column));
 }
 
 class $$LocalAnimalsTableAnnotationComposer
@@ -4026,6 +4071,9 @@ class $$LocalAnimalsTableAnnotationComposer
 
   GeneratedColumn<String> get vaccinationStatus => $composableBuilder(
       column: $table.vaccinationStatus, builder: (column) => column);
+
+  GeneratedColumn<String> get status =>
+      $composableBuilder(column: $table.status, builder: (column) => column);
 }
 
 class $$LocalAnimalsTableTableManager extends RootTableManager<
@@ -4071,6 +4119,7 @@ class $$LocalAnimalsTableTableManager extends RootTableManager<
             Value<String?> pedigreeType = const Value.absent(),
             Value<String?> purpose = const Value.absent(),
             Value<String?> vaccinationStatus = const Value.absent(),
+            Value<String> status = const Value.absent(),
             Value<int> rowid = const Value.absent(),
           }) =>
               LocalAnimalsCompanion(
@@ -4091,6 +4140,7 @@ class $$LocalAnimalsTableTableManager extends RootTableManager<
             pedigreeType: pedigreeType,
             purpose: purpose,
             vaccinationStatus: vaccinationStatus,
+            status: status,
             rowid: rowid,
           ),
           createCompanionCallback: ({
@@ -4111,6 +4161,7 @@ class $$LocalAnimalsTableTableManager extends RootTableManager<
             Value<String?> pedigreeType = const Value.absent(),
             Value<String?> purpose = const Value.absent(),
             Value<String?> vaccinationStatus = const Value.absent(),
+            Value<String> status = const Value.absent(),
             Value<int> rowid = const Value.absent(),
           }) =>
               LocalAnimalsCompanion.insert(
@@ -4131,6 +4182,7 @@ class $$LocalAnimalsTableTableManager extends RootTableManager<
             pedigreeType: pedigreeType,
             purpose: purpose,
             vaccinationStatus: vaccinationStatus,
+            status: status,
             rowid: rowid,
           ),
           withReferenceMapper: (p0) => p0

@@ -293,3 +293,27 @@ def test_get_herd_analytics(client):
     assert data["species_breakdown"]["sheep"] == 0
     assert data["reproductive_breakdown"]["pregnant"] == 1
     assert data["reproductive_breakdown"]["open"] == 2
+
+def test_delete_and_status_update_animal(client):
+    headers = get_auth_headers(client)
+    
+    # 1. Create animal
+    animal = client.post("/api/v1/animals", json={
+        "tag_id": "TEST-DEL1", "species": "cow", "sex": "female", "date_of_birth": "2023-01-01"
+    }, headers=headers).json()
+    animal_id = animal["id"]
+    
+    # 2. Update status to dead
+    resp_update = client.patch(f"/api/v1/animals/{animal_id}", json={
+        "status": "dead"
+    }, headers=headers)
+    assert resp_update.status_code == 200
+    assert resp_update.json()["status"] == "dead"
+    
+    # 3. Delete animal
+    resp_del = client.delete(f"/api/v1/animals/{animal_id}", headers=headers)
+    assert resp_del.status_code == 204
+    
+    # 4. Confirm deleted
+    resp_get = client.get(f"/api/v1/animals/{animal_id}", headers=headers)
+    assert resp_get.status_code == 404

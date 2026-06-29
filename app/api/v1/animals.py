@@ -147,3 +147,18 @@ def get_animal_events_endpoint(
             detail="Animal not found."
         )
     return animal_service.get_animal_events(db, id)
+
+@router.delete("/{id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_animal_endpoint(
+    id: UUID,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_active_user)
+):
+    db_animal = animal_service.get_animal(db, id)
+    if not db_animal:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Animal not found."
+        )
+    animal_service.delete_animal(db, db_animal)
+    return None

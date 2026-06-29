@@ -8,6 +8,15 @@ class AddAnimal extends AnimalsEvent {
   final Map<String, dynamic> animalData;
   AddAnimal(this.animalData);
 }
+class UpdateAnimal extends AnimalsEvent {
+  final String id;
+  final Map<String, dynamic> updateData;
+  UpdateAnimal(this.id, this.updateData);
+}
+class DeleteAnimal extends AnimalsEvent {
+  final String id;
+  DeleteAnimal(this.id);
+}
 
 // STATES
 abstract class AnimalsState {}
@@ -43,6 +52,24 @@ class AnimalsBloc extends Bloc<AnimalsEvent, AnimalsState> {
         add(LoadAnimals());
       } catch (e) {
         emit(AnimalsError('Failed to add animal: ${e.toString()}'));
+      }
+    });
+
+    on<UpdateAnimal>((event, emit) async {
+      try {
+        await repository.updateAnimal(event.id, event.updateData);
+        add(LoadAnimals());
+      } catch (e) {
+        emit(AnimalsError('Failed to update animal: ${e.toString()}'));
+      }
+    });
+
+    on<DeleteAnimal>((event, emit) async {
+      try {
+        await repository.deleteAnimal(event.id);
+        add(LoadAnimals());
+      } catch (e) {
+        emit(AnimalsError('Failed to delete animal: ${e.toString()}'));
       }
     });
   }
