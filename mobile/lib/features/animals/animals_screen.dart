@@ -39,7 +39,7 @@ class AnimalsScreen extends StatelessWidget {
           } else if (state is AnimalsLoaded) {
             return Column(
               children: [
-                _buildFilterChips(),
+                _buildFilterChips(state.animals),
                 _buildSearchBar(),
                 if (state.isOffline)
                   Container(
@@ -134,16 +134,32 @@ class AnimalsScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildFilterChips() {
+  Widget _buildFilterChips(List<dynamic> animals) {
+    int countSpecies(String speciesName) {
+      return animals.where((a) {
+        final sp = (a is Map ? a['species'] : a.species).toString().toLowerCase();
+        if (speciesName == 'bovine') return sp == 'bovine' || sp == 'cow';
+        if (speciesName == 'caprine') return sp == 'caprine' || sp == 'goat';
+        if (speciesName == 'ovine') return sp == 'ovine' || sp == 'sheep';
+        return sp == speciesName;
+      }).length;
+    }
+
+    final cattleCount = countSpecies('bovine');
+    final avianCount = countSpecies('avian');
+    final goatCount = countSpecies('caprine');
+    final sheepCount = countSpecies('ovine');
+
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       child: Row(
         children: [
-          _filterChip('All', true),
-          _filterChip('Cattle (142)', false),
-          _filterChip('Goats (84)', false),
-          _filterChip('Sheep (60)', false),
+          _filterChip('All (${animals.length})', true),
+          _filterChip('Cattle ($cattleCount)', false),
+          _filterChip('Avian ($avianCount)', false),
+          _filterChip('Goats ($goatCount)', false),
+          _filterChip('Sheep ($sheepCount)', false),
         ],
       ),
     );
