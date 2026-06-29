@@ -4,7 +4,7 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 class ApiClient {
   final Dio dio;
   final FlutterSecureStorage _storage = const FlutterSecureStorage();
-  static const String baseUrl = 'http://localhost:8000/api/v1';
+  static const String baseUrl = 'https://ifms-backend-8g9r.onrender.com/api/v1';
 
   ApiClient() : dio = Dio(BaseOptions(baseUrl: baseUrl, connectTimeout: const Duration(seconds: 10))) {
     dio.interceptors.add(InterceptorsWrapper(
