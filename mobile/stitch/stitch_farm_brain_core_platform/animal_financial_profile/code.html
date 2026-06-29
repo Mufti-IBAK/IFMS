@@ -1,0 +1,414 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Animal Financial Profile</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                      "surface-tint": "#2a6b2c",
+                      "background": "#f7fbf1",
+                      "surface-container": "#ecefe6",
+                      "on-background": "#191d17",
+                      "on-tertiary": "#ffffff",
+                      "on-secondary-container": "#217128",
+                      "surface": "#f7fbf1",
+                      "secondary-fixed-dim": "#88d982",
+                      "on-primary-container": "#90d689",
+                      "error-container": "#ffdad6",
+                      "tertiary-container": "#883454",
+                      "on-secondary-fixed-variant": "#005312",
+                      "on-surface": "#191d17",
+                      "surface-variant": "#e0e4db",
+                      "secondary": "#1b6d24",
+                      "primary-container": "#1b5e20",
+                      "inverse-primary": "#91d78a",
+                      "surface-dim": "#d8dbd2",
+                      "on-secondary": "#ffffff",
+                      "on-surface-variant": "#41493e",
+                      "surface-container-high": "#e6e9e0",
+                      "primary": "#00450d",
+                      "on-tertiary-fixed-variant": "#7a2949",
+                      "primary-fixed-dim": "#91d78a",
+                      "outline": "#717a6d",
+                      "on-primary": "#ffffff",
+                      "inverse-surface": "#2d322c",
+                      "outline-variant": "#c0c9bb",
+                      "on-error": "#ffffff",
+                      "secondary-fixed": "#a3f69c",
+                      "tertiary": "#6b1d3d",
+                      "secondary-container": "#a0f399",
+                      "on-tertiary-container": "#ffaec6",
+                      "surface-container-lowest": "#ffffff",
+                      "surface-container-highest": "#e0e4db",
+                      "on-secondary-fixed": "#002204",
+                      "on-error-container": "#93000a",
+                      "surface-bright": "#f7fbf1",
+                      "on-tertiary-fixed": "#3e001d",
+                      "primary-fixed": "#acf4a4",
+                      "inverse-on-surface": "#eff2e9",
+                      "error": "#ba1a1a",
+                      "tertiary-fixed": "#ffd9e2",
+                      "tertiary-fixed-dim": "#ffb1c8",
+                      "on-primary-fixed-variant": "#0c5216",
+                      "surface-container-low": "#f2f5ec",
+                      "on-primary-fixed": "#002203"
+              },
+              "borderRadius": {
+                      "DEFAULT": "0.25rem",
+                      "lg": "0.5rem",
+                      "xl": "0.75rem",
+                      "full": "9999px"
+              },
+              "spacing": {
+                      "base_unit": "8px",
+                      "stack_sm": "4px",
+                      "stack_md": "8px",
+                      "stack_lg": "16px",
+                      "margin_mobile": "16px",
+                      "margin_desktop": "24px",
+                      "gutter": "16px"
+              },
+              "fontFamily": {
+                      "label-md": [
+                              "Inter"
+                      ],
+                      "body-md": [
+                              "Inter"
+                      ],
+                      "headline-lg": [
+                              "Inter"
+                      ],
+                      "body-sm": [
+                              "Inter"
+                      ],
+                      "data-mono": [
+                              "monospace"
+                      ],
+                      "display-lg": [
+                              "Inter"
+                      ],
+                      "title-md": [
+                              "Inter"
+                      ],
+                      "headline-lg-mobile": [
+                              "Inter"
+                      ]
+              },
+              "fontSize": {
+                      "label-md": [
+                              "12px",
+                              {
+                                      "lineHeight": "16px",
+                                      "letterSpacing": "0.5px",
+                                      "fontWeight": "500"
+                              }
+                      ],
+                      "body-md": [
+                              "16px",
+                              {
+                                      "lineHeight": "24px",
+                                      "fontWeight": "400"
+                              }
+                      ],
+                      "headline-lg": [
+                              "32px",
+                              {
+                                      "lineHeight": "40px",
+                                      "letterSpacing": "-0.01em",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "body-sm": [
+                              "14px",
+                              {
+                                      "lineHeight": "20px",
+                                      "fontWeight": "400"
+                              }
+                      ],
+                      "data-mono": [
+                              "14px",
+                              {
+                                      "lineHeight": "20px",
+                                      "fontWeight": "500"
+                              }
+                      ],
+                      "display-lg": [
+                              "48px",
+                              {
+                                      "lineHeight": "56px",
+                                      "letterSpacing": "-0.02em",
+                                      "fontWeight": "700"
+                              }
+                      ],
+                      "title-md": [
+                              "18px",
+                              {
+                                      "lineHeight": "24px",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "headline-lg-mobile": [
+                              "24px",
+                              {
+                                      "lineHeight": "32px",
+                                      "fontWeight": "600"
+                              }
+                      ]
+              }
+            },
+          }
+        }
+    </script>
+<style>
+        body {
+            background-color: theme('colors.background');
+            color: theme('colors.on-background');
+        }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .material-symbols-outlined.filled {
+            font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        /* Subdued scrollbar for data lists */
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 4px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background-color: theme('colors.surface-variant');
+            border-radius: 10px;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background pb-[88px] pt-[64px] min-h-screen">
+<!-- TopAppBar -->
+<header class="fixed top-0 left-0 w-full z-50 flex justify-between items-center px-margin_mobile py-stack_md bg-surface shadow-sm">
+<div class="flex items-center gap-stack_md">
+<button class="text-on-surface-variant hover:bg-surface-container-highest rounded-full p-2 transition-colors">
+<span class="material-symbols-outlined">arrow_back</span>
+</button>
+<div class="flex flex-col">
+<span class="font-title-md text-title-md font-bold text-primary">Cow #8492</span>
+<span class="font-label-md text-label-md text-on-surface-variant">Financial Profile</span>
+</div>
+</div>
+<div class="flex items-center gap-stack_sm">
+<button class="text-on-surface-variant hover:bg-surface-container-highest rounded-full p-2 transition-colors">
+<span class="material-symbols-outlined text-inverse-primary">sync</span>
+</button>
+</div>
+</header>
+<main class="px-margin_mobile md:px-margin_desktop max-w-7xl mx-auto space-y-stack_lg pt-stack_lg">
+<!-- Animal Summary Card -->
+<section class="bg-surface-container-lowest border border-outline-variant rounded-xl p-stack_lg shadow-sm flex flex-col sm:flex-row gap-stack_lg items-start sm:items-center">
+<div class="w-24 h-24 rounded-lg overflow-hidden flex-shrink-0 border border-surface-variant">
+<img class="w-full h-full object-cover" data-alt="A close-up, high-quality photograph of a healthy Holstein dairy cow in a clean, modern agricultural setting. Bright, natural daylight illuminating the distinct black and white markings. The mood is calm and professional, suitable for a farm management application." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAV6CCrS1Yin2eNa8v2wGK92FXk7Un2efR_pF0JGBBHzKr61W9xbqQz8FKerE7Kn4ExOMZdgLGAovNOrSzVIU5hdh0VhYTQ-FUueyTOCg2zAW6oeI4MFOFAAy81XHjxw0SVSkqeWwCPOrLRR4tYmYtzTqJNRImbxuHB_LVxjL7veBkM_3XXwMPhqRUdJ1SQREuh_-Nerrah_xoqZo2tBg3jpIhOSfzBWEoQC-S1yVGV0ZmrTEwG1QP7D42bkPpp7SFsdAsvS1ttED4"/>
+</div>
+<div class="flex-grow space-y-stack_sm">
+<div class="flex justify-between items-start">
+<div>
+<h2 class="font-title-md text-title-md text-on-surface font-semibold">Holstein Cow</h2>
+<p class="font-body-sm text-body-sm text-on-surface-variant">Tag: #8492 • DOB: 12 May 2020</p>
+</div>
+<span class="bg-secondary-container text-on-secondary-container font-label-md text-label-md px-2 py-1 rounded-full flex items-center gap-1">
+<span class="material-symbols-outlined text-[16px]">check_circle</span> Active
+                    </span>
+</div>
+<div class="grid grid-cols-2 gap-stack_sm pt-stack_sm border-t border-surface-variant mt-stack_md">
+<div>
+<span class="font-label-md text-label-md text-on-surface-variant">Current Phase</span>
+<p class="font-body-md text-body-md text-on-surface">Lactating</p>
+</div>
+<div>
+<span class="font-label-md text-label-md text-on-surface-variant">Location</span>
+<p class="font-body-md text-body-md text-on-surface">Barn A - Pen 3</p>
+</div>
+</div>
+</div>
+</section>
+<!-- KPI Grid -->
+<section class="grid grid-cols-2 md:grid-cols-4 gap-stack_md">
+<!-- Lifetime Revenue -->
+<div class="bg-surface-container-lowest border border-outline-variant rounded-xl p-stack_md shadow-sm">
+<div class="flex items-center gap-2 mb-2 text-on-surface-variant">
+<span class="material-symbols-outlined text-[20px]">payments</span>
+<span class="font-label-md text-label-md">Lifetime Revenue</span>
+</div>
+<div class="font-headline-lg-mobile text-headline-lg-mobile text-on-surface">$12,450</div>
+<div class="mt-1 font-label-md text-label-md text-secondary flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px]">trending_up</span> +8% YTD
+                </div>
+</div>
+<!-- Total Maintenance Cost -->
+<div class="bg-surface-container-lowest border border-outline-variant rounded-xl p-stack_md shadow-sm">
+<div class="flex items-center gap-2 mb-2 text-on-surface-variant">
+<span class="material-symbols-outlined text-[20px]">shopping_cart</span>
+<span class="font-label-md text-label-md">Total Cost</span>
+</div>
+<div class="font-headline-lg-mobile text-headline-lg-mobile text-on-surface">$8,120</div>
+<div class="mt-1 font-label-md text-label-md text-error flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px]">trending_up</span> +2% YTD
+                </div>
+</div>
+<!-- Net Profit/Loss -->
+<div class="bg-surface-container-lowest border border-primary-container rounded-xl p-stack_md shadow-sm relative overflow-hidden">
+<div class="absolute -right-4 -top-4 w-16 h-16 bg-primary-container opacity-10 rounded-full blur-xl"></div>
+<div class="flex items-center gap-2 mb-2 text-on-surface-variant">
+<span class="material-symbols-outlined text-[20px]">account_balance_wallet</span>
+<span class="font-label-md text-label-md">Net Profit</span>
+</div>
+<div class="font-headline-lg-mobile text-headline-lg-mobile text-primary">$4,330</div>
+<div class="mt-1 font-label-md text-label-md text-secondary flex items-center gap-1">
+                    Positive Margin
+                </div>
+</div>
+<!-- Profitability Index -->
+<div class="bg-surface-container-lowest border border-outline-variant rounded-xl p-stack_md shadow-sm">
+<div class="flex items-center gap-2 mb-2 text-on-surface-variant">
+<span class="material-symbols-outlined text-[20px]">insert_chart</span>
+<span class="font-label-md text-label-md">Profitability Index</span>
+</div>
+<div class="font-headline-lg-mobile text-headline-lg-mobile text-on-surface">1.53</div>
+<div class="mt-1 font-label-md text-label-md text-on-surface-variant flex items-center gap-1">
+                    Target: &gt; 1.2
+                </div>
+</div>
+</section>
+<!-- Chart Section Placeholder -->
+<section class="bg-surface-container-lowest border border-outline-variant rounded-xl p-stack_lg shadow-sm">
+<div class="flex justify-between items-center mb-stack_md">
+<h3 class="font-title-md text-title-md text-on-surface">Cumulative Profit vs Cost</h3>
+<button class="text-on-surface-variant hover:bg-surface-container-highest rounded p-1">
+<span class="material-symbols-outlined">more_vert</span>
+</button>
+</div>
+<div class="h-48 w-full bg-surface-container-low rounded flex items-center justify-center border border-surface-variant relative overflow-hidden">
+<!-- Abstract chart representation -->
+<div class="absolute bottom-0 left-0 w-full h-1/2 bg-gradient-to-t from-secondary-container/30 to-transparent"></div>
+<svg class="absolute inset-0 w-full h-full" preserveaspectratio="none" viewbox="0 0 100 100">
+<path d="M0 100 L20 80 L40 60 L60 70 L80 40 L100 20" fill="none" stroke="theme('colors.secondary')" stroke-width="2"></path>
+<path d="M0 100 L20 90 L40 85 L60 75 L80 65 L100 55" fill="none" stroke="theme('colors.error')" stroke-dasharray="4" stroke-width="2"></path>
+</svg>
+<div class="absolute inset-0 flex items-center justify-center pointer-events-none">
+<span class="font-label-md text-label-md text-on-surface-variant bg-surface-container px-2 py-1 rounded opacity-70">Chart Visualization</span>
+</div>
+</div>
+</section>
+<!-- Transaction Ledger -->
+<section class="bg-surface-container-lowest border border-outline-variant rounded-xl shadow-sm overflow-hidden">
+<div class="p-stack_md border-b border-surface-variant bg-surface-container-low flex justify-between items-center">
+<h3 class="font-title-md text-title-md text-on-surface">Financial Ledger</h3>
+<button class="flex items-center gap-1 text-primary font-label-md text-label-md hover:bg-surface-variant px-2 py-1 rounded">
+<span class="material-symbols-outlined text-[18px]">filter_list</span> Filter
+                </button>
+</div>
+<div class="flex flex-col max-h-[300px] overflow-y-auto custom-scrollbar">
+<!-- Income Row -->
+<div class="flex items-center justify-between p-stack_md border-b border-surface-variant hover:bg-surface-container-lowest transition-colors">
+<div class="flex items-center gap-stack_md">
+<div class="w-10 h-10 rounded-full bg-secondary-container flex items-center justify-center text-on-secondary-container">
+<span class="material-symbols-outlined">water_drop</span>
+</div>
+<div>
+<p class="font-body-md text-body-md text-on-surface font-medium">Milk Yield - October</p>
+<p class="font-label-md text-label-md text-on-surface-variant">24 Oct 2023 • Production</p>
+</div>
+</div>
+<div class="text-right">
+<p class="font-data-mono text-data-mono text-secondary font-medium">+$450.00</p>
+</div>
+</div>
+<!-- Expense Row 1 -->
+<div class="flex items-center justify-between p-stack_md border-b border-surface-variant hover:bg-surface-container-lowest transition-colors">
+<div class="flex items-center gap-stack_md">
+<div class="w-10 h-10 rounded-full bg-error-container flex items-center justify-center text-on-error-container">
+<span class="material-symbols-outlined">vaccines</span>
+</div>
+<div>
+<p class="font-body-md text-body-md text-on-surface font-medium">Routine Vaccination</p>
+<p class="font-label-md text-label-md text-on-surface-variant">15 Oct 2023 • Veterinary</p>
+</div>
+</div>
+<div class="text-right">
+<p class="font-data-mono text-data-mono text-on-surface font-medium">-$85.00</p>
+</div>
+</div>
+<!-- Expense Row 2 -->
+<div class="flex items-center justify-between p-stack_md border-b border-surface-variant hover:bg-surface-container-lowest transition-colors">
+<div class="flex items-center gap-stack_md">
+<div class="w-10 h-10 rounded-full bg-surface-variant flex items-center justify-center text-on-surface-variant">
+<span class="material-symbols-outlined">grass</span>
+</div>
+<div>
+<p class="font-body-md text-body-md text-on-surface font-medium">Premium Feed Allocation</p>
+<p class="font-label-md text-label-md text-on-surface-variant">01 Oct 2023 • Feed</p>
+</div>
+</div>
+<div class="text-right">
+<p class="font-data-mono text-data-mono text-on-surface font-medium">-$120.00</p>
+</div>
+</div>
+<!-- Income Row 2 -->
+<div class="flex items-center justify-between p-stack_md border-b border-surface-variant hover:bg-surface-container-lowest transition-colors">
+<div class="flex items-center gap-stack_md">
+<div class="w-10 h-10 rounded-full bg-secondary-container flex items-center justify-center text-on-secondary-container">
+<span class="material-symbols-outlined">water_drop</span>
+</div>
+<div>
+<p class="font-body-md text-body-md text-on-surface font-medium">Milk Yield - September</p>
+<p class="font-label-md text-label-md text-on-surface-variant">28 Sep 2023 • Production</p>
+</div>
+</div>
+<div class="text-right">
+<p class="font-data-mono text-data-mono text-secondary font-medium">+$430.00</p>
+</div>
+</div>
+</div>
+<div class="p-stack_sm bg-surface-container-lowest text-center">
+<button class="text-primary font-label-md text-label-md hover:bg-surface-variant px-4 py-2 rounded w-full transition-colors">
+                    View Full History
+                </button>
+</div>
+</section>
+</main>
+<!-- BottomNavBar -->
+<nav class="fixed bottom-0 left-0 w-full z-50 flex justify-around items-center px-stack_md pb-4 pt-2 bg-surface shadow-lg md:hidden">
+<a class="flex flex-col items-center justify-center text-on-surface-variant px-4 py-1 hover:bg-surface-variant transition-colors rounded-lg group" href="#">
+<span class="material-symbols-outlined group-hover:scale-110 transition-transform">home</span>
+<span class="font-label-md text-label-md mt-1">Home</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant px-4 py-1 hover:bg-surface-variant transition-colors rounded-lg group" href="#">
+<span class="material-symbols-outlined group-hover:scale-110 transition-transform">group_work</span>
+<span class="font-label-md text-label-md mt-1">Batches</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant px-4 py-1 hover:bg-surface-variant transition-colors rounded-lg group" href="#">
+<span class="material-symbols-outlined group-hover:scale-110 transition-transform">precision_manufacturing</span>
+<span class="font-label-md text-label-md mt-1">Production</span>
+</a>
+<a class="flex flex-col items-center justify-center bg-secondary-container text-on-secondary-container rounded-full px-4 py-1 scale-95 transition-transform duration-100" href="#">
+<span class="material-symbols-outlined filled">payments</span>
+<span class="font-label-md text-label-md mt-1">Finance</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant px-4 py-1 hover:bg-surface-variant transition-colors rounded-lg group" href="#">
+<span class="material-symbols-outlined group-hover:scale-110 transition-transform">notifications</span>
+<span class="font-label-md text-label-md mt-1">Alerts</span>
+</a>
+</nav>
+</body></html>

@@ -1,0 +1,420 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>IFMS - Farm Brain Core: Hatchery Incubation Batch Lifecycle Tracker</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                      "inverse-on-surface": "#eff2e9",
+                      "surface": "#f7fbf1",
+                      "on-tertiary-container": "#ffaec6",
+                      "on-surface": "#191d17",
+                      "on-tertiary-fixed": "#3e001d",
+                      "surface-container-high": "#e6e9e0",
+                      "outline-variant": "#c0c9bb",
+                      "on-background": "#191d17",
+                      "error": "#ba1a1a",
+                      "on-primary-fixed-variant": "#0c5216",
+                      "on-primary": "#ffffff",
+                      "secondary-fixed-dim": "#88d982",
+                      "on-secondary-fixed": "#002204",
+                      "primary-container": "#1b5e20",
+                      "on-primary-container": "#90d689",
+                      "surface-container": "#ecefe6",
+                      "primary-fixed": "#acf4a4",
+                      "background": "#f7fbf1",
+                      "tertiary-container": "#883454",
+                      "surface-container-low": "#f2f5ec",
+                      "secondary": "#1b6d24",
+                      "surface-container-highest": "#e0e4db",
+                      "error-container": "#ffdad6",
+                      "surface-container-lowest": "#ffffff",
+                      "surface-dim": "#d8dbd2",
+                      "tertiary": "#6b1d3d",
+                      "inverse-primary": "#91d78a",
+                      "outline": "#717a6d",
+                      "secondary-fixed": "#a3f69c",
+                      "tertiary-fixed": "#ffd9e2",
+                      "on-error": "#ffffff",
+                      "tertiary-fixed-dim": "#ffb1c8",
+                      "on-secondary": "#ffffff",
+                      "inverse-surface": "#2d322c",
+                      "on-tertiary": "#ffffff",
+                      "secondary-container": "#a0f399",
+                      "on-surface-variant": "#41493e",
+                      "on-tertiary-fixed-variant": "#7a2949",
+                      "on-secondary-container": "#217128",
+                      "primary-fixed-dim": "#91d78a",
+                      "surface-variant": "#e0e4db",
+                      "primary": "#00450d",
+                      "surface-tint": "#2a6b2c",
+                      "on-error-container": "#93000a",
+                      "on-secondary-fixed-variant": "#005312",
+                      "surface-bright": "#f7fbf1",
+                      "on-primary-fixed": "#002203"
+              },
+              "borderRadius": {
+                      "DEFAULT": "0.25rem",
+                      "lg": "0.5rem",
+                      "xl": "0.75rem",
+                      "full": "9999px"
+              },
+              "spacing": {
+                      "margin_desktop": "24px",
+                      "stack_sm": "4px",
+                      "gutter": "16px",
+                      "stack_md": "8px",
+                      "base_unit": "8px",
+                      "margin_mobile": "16px",
+                      "stack_lg": "16px"
+              },
+              "fontFamily": {
+                      "body-md": [
+                              "Inter"
+                      ],
+                      "data-mono": [
+                              "monospace"
+                      ],
+                      "headline-lg-mobile": [
+                              "Inter"
+                      ],
+                      "label-md": [
+                              "Inter"
+                      ],
+                      "body-sm": [
+                              "Inter"
+                      ],
+                      "title-md": [
+                              "Inter"
+                      ],
+                      "display-lg": [
+                              "Inter"
+                      ],
+                      "headline-lg": [
+                              "Inter"
+                      ]
+              },
+              "fontSize": {
+                      "body-md": [
+                              "16px",
+                              {
+                                      "lineHeight": "24px",
+                                      "fontWeight": "400"
+                              }
+                      ],
+                      "data-mono": [
+                              "14px",
+                              {
+                                      "lineHeight": "20px",
+                                      "fontWeight": "500"
+                              }
+                      ],
+                      "headline-lg-mobile": [
+                              "24px",
+                              {
+                                      "lineHeight": "32px",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "label-md": [
+                              "12px",
+                              {
+                                      "lineHeight": "16px",
+                                      "letterSpacing": "0.5px",
+                                      "fontWeight": "500"
+                              }
+                      ],
+                      "body-sm": [
+                              "14px",
+                              {
+                                      "lineHeight": "20px",
+                                      "fontWeight": "400"
+                              }
+                      ],
+                      "title-md": [
+                              "18px",
+                              {
+                                      "lineHeight": "24px",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "display-lg": [
+                              "48px",
+                              {
+                                      "lineHeight": "56px",
+                                      "letterSpacing": "-0.02em",
+                                      "fontWeight": "700"
+                              }
+                      ],
+                      "headline-lg": [
+                              "32px",
+                              {
+                                      "lineHeight": "40px",
+                                      "letterSpacing": "-0.01em",
+                                      "fontWeight": "600"
+                              }
+                      ]
+              }
+      },
+          },
+        }
+      </script>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background text-on-background font-body-md pt-20 pb-24 md:pb-8 min-h-screen">
+<!-- TopAppBar -->
+<header class="fixed top-0 left-0 w-full z-50 flex justify-between items-center px-margin_mobile md:px-margin_desktop py-stack_md bg-surface dark:bg-surface-dim bg-surface-container dark:bg-surface-container-high shadow-sm shadow-sm dark:shadow-none">
+<div class="flex items-center gap-stack_md">
+<div class="w-10 h-10 rounded-full bg-primary-container text-on-primary-container flex items-center justify-center font-title-md font-bold text-title-md">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">admin_panel_settings</span>
+</div>
+<h1 class="font-headline-lg-mobile text-headline-lg-mobile md:font-headline-lg md:text-headline-lg font-bold text-primary dark:text-primary-fixed text-primary dark:text-primary-fixed">IFMS - Farm Brain Core</h1>
+</div>
+<!-- Desktop Navigation (Hidden on Mobile) -->
+<nav class="hidden md:flex items-center gap-margin_desktop">
+<a class="flex flex-col items-center justify-center text-on-surface-variant dark:text-outline-variant hover:bg-surface-container-highest dark:hover:bg-surface-container-high transition-colors px-4 py-2 rounded-lg" href="#">
+<span class="material-symbols-outlined mb-1">home</span>
+<span class="font-label-md text-label-md">Home</span>
+</a>
+<a class="flex flex-col items-center justify-center text-primary dark:text-primary-fixed hover:bg-surface-container-highest dark:hover:bg-surface-container-high transition-colors px-4 py-2 rounded-lg bg-surface-variant dark:bg-surface-container-high" href="#">
+<span class="material-symbols-outlined mb-1" style="font-variation-settings: 'FILL' 1;">group_work</span>
+<span class="font-label-md text-label-md">Batches</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant dark:text-outline-variant hover:bg-surface-container-highest dark:hover:bg-surface-container-high transition-colors px-4 py-2 rounded-lg" href="#">
+<span class="material-symbols-outlined mb-1">precision_manufacturing</span>
+<span class="font-label-md text-label-md">Production</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant dark:text-outline-variant hover:bg-surface-container-highest dark:hover:bg-surface-container-high transition-colors px-4 py-2 rounded-lg" href="#">
+<span class="material-symbols-outlined mb-1">payments</span>
+<span class="font-label-md text-label-md">Finance</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant dark:text-outline-variant hover:bg-surface-container-highest dark:hover:bg-surface-container-high transition-colors px-4 py-2 rounded-lg" href="#">
+<span class="material-symbols-outlined mb-1">notifications</span>
+<span class="font-label-md text-label-md">Alerts</span>
+</a>
+</nav>
+<button class="text-primary dark:text-primary-fixed p-2 rounded-full hover:bg-surface-container-highest dark:hover:bg-surface-container-high transition-colors opacity-80 transition-opacity">
+<span class="material-symbols-outlined text-[#00450d]" style="font-variation-settings: 'FILL' 1;">sync</span>
+</button>
+</header>
+<main class="px-margin_mobile md:px-margin_desktop max-w-7xl mx-auto space-y-gutter">
+<!-- Header Section -->
+<div class="flex flex-col md:flex-row justify-between items-start md:items-end gap-stack_md pt-stack_lg">
+<div>
+<div class="flex items-center gap-2 mb-stack_sm">
+<span class="px-2 py-1 bg-secondary-container text-on-secondary-container font-label-md text-label-md rounded-full">Batch B-842</span>
+<span class="px-2 py-1 bg-surface-container-high text-on-surface font-label-md text-label-md rounded-full flex items-center gap-1"><span class="material-symbols-outlined text-[14px]">calendar_today</span> Day 14</span>
+</div>
+<h2 class="font-title-md text-title-md text-on-surface">Setter #4 • Ross 308</h2>
+</div>
+<div class="flex gap-stack_md">
+<button class="px-4 py-2 border border-outline text-on-surface font-label-md text-label-md rounded-lg hover:bg-surface-variant transition-colors flex items-center gap-2">
+<span class="material-symbols-outlined text-[18px]">history</span> Log Candling
+                </button>
+<button class="px-4 py-2 bg-primary text-on-primary font-label-md text-label-md rounded-lg hover:bg-surface-tint transition-colors flex items-center gap-2 shadow-sm">
+<span class="material-symbols-outlined text-[18px]">check_circle</span> Complete Batch
+                </button>
+</div>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-12 gap-gutter">
+<!-- Matrix: Visual Tray Grid (Bento Style) -->
+<section class="md:col-span-8 bg-surface-container-lowest rounded-xl border border-surface-variant p-margin_mobile shadow-sm flex flex-col">
+<div class="flex justify-between items-center mb-stack_lg">
+<h3 class="font-title-md text-title-md text-on-surface flex items-center gap-2">
+<span class="material-symbols-outlined text-primary">grid_view</span> Incubation Matrix
+                    </h3>
+<div class="flex items-center gap-4 text-on-surface-variant font-label-md text-label-md">
+<div class="flex items-center gap-1"><div class="w-3 h-3 rounded-full bg-secondary-container"></div> Viable</div>
+<div class="flex items-center gap-1"><div class="w-3 h-3 rounded-full bg-error-container"></div> Infertile</div>
+<div class="flex items-center gap-1"><div class="w-3 h-3 rounded-full bg-surface-variant"></div> Empty</div>
+</div>
+</div>
+<!-- Bento Grid for Trays -->
+<div class="grid grid-cols-2 sm:grid-cols-4 gap-stack_md flex-grow">
+<!-- Tray Card 1 -->
+<div class="bg-surface-container-low rounded-lg p-stack_md border border-surface-variant flex flex-col justify-between hover:border-outline transition-colors group cursor-pointer">
+<div class="flex justify-between items-start">
+<span class="font-label-md text-label-md text-on-surface-variant">Tray A1</span>
+<span class="material-symbols-outlined text-outline-variant group-hover:text-primary text-[18px]">more_vert</span>
+</div>
+<div class="mt-stack_md">
+<div class="font-data-mono text-data-mono text-on-surface text-lg">144/150</div>
+<div class="w-full bg-surface-variant rounded-full h-1.5 mt-2">
+<div class="bg-secondary h-1.5 rounded-full" style="width: 96%"></div>
+</div>
+</div>
+</div>
+<!-- Tray Card 2 -->
+<div class="bg-surface-container-low rounded-lg p-stack_md border border-surface-variant flex flex-col justify-between hover:border-outline transition-colors group cursor-pointer">
+<div class="flex justify-between items-start">
+<span class="font-label-md text-label-md text-on-surface-variant">Tray A2</span>
+<span class="material-symbols-outlined text-outline-variant group-hover:text-primary text-[18px]">more_vert</span>
+</div>
+<div class="mt-stack_md">
+<div class="font-data-mono text-data-mono text-on-surface text-lg">148/150</div>
+<div class="w-full bg-surface-variant rounded-full h-1.5 mt-2">
+<div class="bg-secondary h-1.5 rounded-full" style="width: 98%"></div>
+</div>
+</div>
+</div>
+<!-- Tray Card 3 -->
+<div class="bg-error-container rounded-lg p-stack_md border border-error bg-opacity-20 flex flex-col justify-between hover:border-error transition-colors group cursor-pointer">
+<div class="flex justify-between items-start">
+<span class="font-label-md text-label-md text-on-error-container font-semibold">Tray B1</span>
+<span class="material-symbols-outlined text-error text-[18px]">warning</span>
+</div>
+<div class="mt-stack_md">
+<div class="font-data-mono text-data-mono text-on-error-container text-lg">120/150</div>
+<div class="w-full bg-surface-variant rounded-full h-1.5 mt-2">
+<div class="bg-error h-1.5 rounded-full" style="width: 80%"></div>
+</div>
+</div>
+</div>
+<!-- Tray Card 4 -->
+<div class="bg-surface-container-low rounded-lg p-stack_md border border-surface-variant flex flex-col justify-between hover:border-outline transition-colors group cursor-pointer">
+<div class="flex justify-between items-start">
+<span class="font-label-md text-label-md text-on-surface-variant">Tray B2</span>
+<span class="material-symbols-outlined text-outline-variant group-hover:text-primary text-[18px]">more_vert</span>
+</div>
+<div class="mt-stack_md">
+<div class="font-data-mono text-data-mono text-on-surface text-lg">145/150</div>
+<div class="w-full bg-surface-variant rounded-full h-1.5 mt-2">
+<div class="bg-secondary h-1.5 rounded-full" style="width: 96.6%"></div>
+</div>
+</div>
+</div>
+<!-- More Trays (Simplified for layout) -->
+<div class="bg-surface-container-low rounded-lg p-stack_md border border-surface-variant flex flex-col justify-between opacity-70">
+<div class="flex justify-between items-start">
+<span class="font-label-md text-label-md text-on-surface-variant">Tray C1</span>
+</div>
+<div class="mt-stack_md font-data-mono text-data-mono">146/150</div>
+</div>
+<div class="bg-surface-container-low rounded-lg p-stack_md border border-surface-variant flex flex-col justify-between opacity-70">
+<div class="flex justify-between items-start">
+<span class="font-label-md text-label-md text-on-surface-variant">Tray C2</span>
+</div>
+<div class="mt-stack_md font-data-mono text-data-mono">142/150</div>
+</div>
+<div class="bg-surface-container-low rounded-lg p-stack_md border border-surface-variant flex flex-col justify-between opacity-70">
+<div class="flex justify-between items-start">
+<span class="font-label-md text-label-md text-on-surface-variant">Tray D1</span>
+</div>
+<div class="mt-stack_md font-data-mono text-data-mono">149/150</div>
+</div>
+<div class="bg-surface-container-low rounded-lg p-stack_md border border-surface-variant flex flex-col justify-between opacity-70">
+<div class="flex justify-between items-start">
+<span class="font-label-md text-label-md text-on-surface-variant">Tray D2</span>
+</div>
+<div class="mt-stack_md font-data-mono text-data-mono">147/150</div>
+</div>
+</div>
+</section>
+<!-- Sidebar Data -->
+<div class="md:col-span-4 flex flex-col gap-gutter">
+<!-- Assessment: Candling Log Card -->
+<section class="bg-surface-container-lowest rounded-xl border border-surface-variant p-margin_mobile shadow-sm">
+<h3 class="font-title-md text-title-md text-on-surface flex items-center gap-2 mb-stack_md">
+<span class="material-symbols-outlined text-primary">highlight</span> Day 10 Candling
+                    </h3>
+<div class="space-y-stack_md">
+<div class="flex justify-between items-center p-stack_sm bg-surface-container-low rounded-lg">
+<span class="font-body-sm text-body-sm text-on-surface-variant">Total Set</span>
+<span class="font-data-mono text-data-mono text-on-surface">1,200</span>
+</div>
+<div class="flex justify-between items-center p-stack_sm bg-error-container bg-opacity-20 rounded-lg">
+<span class="font-body-sm text-body-sm text-on-error-container">Infertile / Clear</span>
+<span class="font-data-mono text-data-mono text-on-error-container">48</span>
+</div>
+<div class="flex justify-between items-center p-stack_sm bg-surface-variant bg-opacity-50 rounded-lg">
+<span class="font-body-sm text-body-sm text-on-surface-variant">Early Dead</span>
+<span class="font-data-mono text-data-mono text-on-surface">12</span>
+</div>
+<div class="pt-stack_md mt-stack_md border-t border-surface-variant">
+<div class="flex justify-between items-end">
+<span class="font-label-md text-label-md text-on-surface-variant">Fertility Rate</span>
+<span class="font-headline-lg-mobile text-headline-lg-mobile font-bold text-primary">95.0%</span>
+</div>
+<div class="w-full bg-surface-variant rounded-full h-2 mt-2">
+<div class="bg-primary h-2 rounded-full" style="width: 95%"></div>
+</div>
+</div>
+</div>
+</section>
+<!-- Outcome: Hatchability Projection (Glassmorphism inspired) -->
+<section class="bg-gradient-to-br from-surface-container-lowest to-surface-container-low rounded-xl border border-surface-variant p-margin_mobile shadow-sm relative overflow-hidden">
+<!-- Decorative background element -->
+<div class="absolute -bottom-6 -right-6 w-32 h-32 bg-primary-container opacity-10 rounded-full blur-2xl"></div>
+<h3 class="font-title-md text-title-md text-on-surface flex items-center gap-2 mb-stack_md relative z-10">
+<span class="material-symbols-outlined text-secondary">analytics</span> Est. Outcome
+                    </h3>
+<div class="relative z-10">
+<div class="flex items-baseline gap-2 mb-1">
+<span class="font-display-lg text-display-lg text-on-surface">88</span>
+<span class="font-title-md text-title-md text-on-surface-variant">%</span>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface-variant mb-stack_lg">Projected Hatchability Rate</p>
+<div class="space-y-stack_sm">
+<div class="flex justify-between items-center text-sm">
+<span class="font-body-sm text-body-sm text-on-surface-variant">Est. Saleable Chicks</span>
+<span class="font-data-mono text-data-mono text-on-surface font-medium">1,056</span>
+</div>
+<div class="flex justify-between items-center text-sm">
+<span class="font-body-sm text-body-sm text-on-surface-variant">Est. Culls (2%)</span>
+<span class="font-data-mono text-data-mono text-on-surface font-medium">21</span>
+</div>
+</div>
+</div>
+</section>
+<!-- Countdown -->
+<section class="bg-primary-container text-on-primary-container rounded-xl p-margin_mobile shadow-sm flex items-center justify-between">
+<div>
+<p class="font-label-md text-label-md opacity-80 uppercase tracking-wider mb-1">Time to Hatch</p>
+<div class="font-headline-lg-mobile text-headline-lg-mobile font-bold">7 Days</div>
+</div>
+<div class="w-12 h-12 rounded-full bg-on-primary-container text-primary-container flex items-center justify-center">
+<span class="material-symbols-outlined">hourglass_top</span>
+</div>
+</section>
+</div>
+</div>
+</main>
+<!-- BottomNavBar (Mobile Only) -->
+<nav class="md:hidden fixed bottom-0 left-0 w-full z-50 flex justify-around items-center px-stack_md pb-4 pt-2 bg-surface dark:bg-surface-container-lowest bg-surface dark:bg-surface-container-lowest shadow-lg shadow-lg dark:shadow-none border-t border-surface-variant">
+<a class="flex flex-col items-center justify-center text-on-surface-variant dark:text-outline-variant px-4 py-1 hover:bg-surface-variant dark:hover:bg-surface-container-high rounded-xl" href="#">
+<span class="material-symbols-outlined mb-1 text-[24px]">home</span>
+<span class="font-label-md text-label-md text-[10px]">Home</span>
+</a>
+<a class="flex flex-col items-center justify-center bg-secondary-container dark:bg-secondary-fixed-dim text-on-secondary-container dark:text-on-secondary-fixed rounded-full px-4 py-1 hover:bg-surface-variant dark:hover:bg-surface-container-high scale-95 transition-transform duration-100" href="#">
+<span class="material-symbols-outlined mb-1 text-[24px]" style="font-variation-settings: 'FILL' 1;">group_work</span>
+<span class="font-label-md text-label-md text-[10px] font-bold">Batches</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant dark:text-outline-variant px-4 py-1 hover:bg-surface-variant dark:hover:bg-surface-container-high rounded-xl" href="#">
+<span class="material-symbols-outlined mb-1 text-[24px]">precision_manufacturing</span>
+<span class="font-label-md text-label-md text-[10px]">Production</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant dark:text-outline-variant px-4 py-1 hover:bg-surface-variant dark:hover:bg-surface-container-high rounded-xl" href="#">
+<span class="material-symbols-outlined mb-1 text-[24px]">payments</span>
+<span class="font-label-md text-label-md text-[10px]">Finance</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant dark:text-outline-variant px-4 py-1 hover:bg-surface-variant dark:hover:bg-surface-container-high rounded-xl" href="#">
+<span class="material-symbols-outlined mb-1 text-[24px]">notifications</span>
+<span class="font-label-md text-label-md text-[10px]">Alerts</span>
+</a>
+</nav>
+</body></html>

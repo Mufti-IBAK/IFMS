@@ -1,0 +1,432 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Transaction Entry Form - IFMS Farm Brain Core</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "inverse-on-surface": "#eff2e9",
+                        "surface": "#f7fbf1",
+                        "on-tertiary-container": "#ffaec6",
+                        "on-surface": "#191d17",
+                        "on-tertiary-fixed": "#3e001d",
+                        "surface-container-high": "#e6e9e0",
+                        "outline-variant": "#c0c9bb",
+                        "on-background": "#191d17",
+                        "error": "#ba1a1a",
+                        "on-primary-fixed-variant": "#0c5216",
+                        "on-primary": "#ffffff",
+                        "secondary-fixed-dim": "#88d982",
+                        "on-secondary-fixed": "#002204",
+                        "primary-container": "#1b5e20",
+                        "on-primary-container": "#90d689",
+                        "surface-container": "#ecefe6",
+                        "primary-fixed": "#acf4a4",
+                        "background": "#f7fbf1",
+                        "tertiary-container": "#883454",
+                        "surface-container-low": "#f2f5ec",
+                        "secondary": "#1b6d24",
+                        "surface-container-highest": "#e0e4db",
+                        "error-container": "#ffdad6",
+                        "surface-container-lowest": "#ffffff",
+                        "surface-dim": "#d8dbd2",
+                        "tertiary": "#6b1d3d",
+                        "inverse-primary": "#91d78a",
+                        "outline": "#717a6d",
+                        "secondary-fixed": "#a3f69c",
+                        "tertiary-fixed": "#ffd9e2",
+                        "on-error": "#ffffff",
+                        "tertiary-fixed-dim": "#ffb1c8",
+                        "on-secondary": "#ffffff",
+                        "inverse-surface": "#2d322c",
+                        "on-tertiary": "#ffffff",
+                        "secondary-container": "#a0f399",
+                        "on-surface-variant": "#41493e",
+                        "on-tertiary-fixed-variant": "#7a2949",
+                        "on-secondary-container": "#217128",
+                        "primary-fixed-dim": "#91d78a",
+                        "surface-variant": "#e0e4db",
+                        "primary": "#00450d",
+                        "surface-tint": "#2a6b2c",
+                        "on-error-container": "#93000a",
+                        "on-secondary-fixed-variant": "#005312",
+                        "surface-bright": "#f7fbf1",
+                        "on-primary-fixed": "#002203"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "margin_desktop": "24px",
+                        "stack_sm": "4px",
+                        "gutter": "16px",
+                        "stack_md": "8px",
+                        "base_unit": "8px",
+                        "margin_mobile": "16px",
+                        "stack_lg": "16px"
+                    },
+                    "fontFamily": {
+                        "body-md": ["Inter"],
+                        "data-mono": ["monospace"],
+                        "headline-lg-mobile": ["Inter"],
+                        "label-md": ["Inter"],
+                        "body-sm": ["Inter"],
+                        "title-md": ["Inter"],
+                        "display-lg": ["Inter"],
+                        "headline-lg": ["Inter"]
+                    },
+                    "fontSize": {
+                        "body-md": ["16px", { "lineHeight": "24px", "fontWeight": "400" }],
+                        "data-mono": ["14px", { "lineHeight": "20px", "fontWeight": "500" }],
+                        "headline-lg-mobile": ["24px", { "lineHeight": "32px", "fontWeight": "600" }],
+                        "label-md": ["12px", { "lineHeight": "16px", "letterSpacing": "0.5px", "fontWeight": "500" }],
+                        "body-sm": ["14px", { "lineHeight": "20px", "fontWeight": "400" }],
+                        "title-md": ["18px", { "lineHeight": "24px", "fontWeight": "600" }],
+                        "display-lg": ["48px", { "lineHeight": "56px", "letterSpacing": "-0.02em", "fontWeight": "700" }],
+                        "headline-lg": ["32px", { "lineHeight": "40px", "letterSpacing": "-0.01em", "fontWeight": "600" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .material-symbols-outlined.fill {
+            font-variation-settings: 'FILL' 1;
+        }
+        
+        /* Custom scrollbar for dropdown */
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 4px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background-color: theme('colors.outline-variant');
+            border-radius: theme('borderRadius.full');
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background text-on-background antialiased min-h-screen flex flex-col pt-[72px]">
+<!-- TopAppBar (Transactional context, no Bottom Nav) -->
+<header class="fixed top-0 left-0 w-full z-50 flex justify-between items-center px-margin_mobile py-stack_md bg-surface shadow-sm shadow-surface-container-high transition-colors">
+<div class="flex items-center gap-4">
+<button aria-label="Go back" class="w-10 h-10 flex items-center justify-center rounded-full hover:bg-surface-container-highest transition-colors text-on-surface">
+<span class="material-symbols-outlined">arrow_back</span>
+</button>
+<h1 class="font-headline-lg-mobile text-headline-lg-mobile font-bold text-primary">New Transaction</h1>
+</div>
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-outline-variant" title="Sync Status: Online">cloud_sync</span>
+<div class="w-8 h-8 rounded-full bg-primary-container text-on-primary-container flex items-center justify-center font-title-md text-title-md font-bold ml-2">
+                 JD
+             </div>
+</div>
+</header>
+<main class="flex-grow px-margin_mobile py-margin_desktop md:px-margin_desktop md:py-8 max-w-3xl mx-auto w-full">
+<!-- Form Container -->
+<div class="bg-surface-container-lowest border border-surface-variant rounded-xl shadow-sm overflow-hidden mb-8 relative">
+<!-- Success Overlay (Hidden by default) -->
+<div class="absolute inset-0 bg-surface-container-lowest/95 backdrop-blur-sm z-20 flex flex-col items-center justify-center hidden opacity-0 transition-opacity duration-300" id="successOverlay">
+<div class="w-16 h-16 rounded-full bg-secondary-container flex items-center justify-center mb-4 scale-50 transition-transform duration-500 ease-out" id="successIcon">
+<span class="material-symbols-outlined fill text-on-secondary-container text-4xl">check_circle</span>
+</div>
+<h2 class="font-title-md text-title-md text-primary mb-2">Transaction Saved</h2>
+<p class="font-body-sm text-body-sm text-on-surface-variant mb-6 text-center px-6">Linked to Herd Registry successfully.</p>
+<button class="px-6 py-2 bg-surface-container-high hover:bg-surface-variant text-on-surface rounded-full font-label-md text-label-md transition-colors" onclick="resetForm()">
+                    Add Another
+                </button>
+</div>
+<form class="p-6 md:p-8 flex flex-col gap-6" id="transactionForm" onsubmit="handleFormSubmit(event)">
+<!-- Amount & Date Row -->
+<div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+<div class="flex flex-col gap-2">
+<label class="font-label-md text-label-md text-on-surface-variant" for="amount">Amount ($)</label>
+<div class="relative">
+<span class="absolute left-3 top-1/2 -translate-y-1/2 font-data-mono text-data-mono text-on-surface-variant">$</span>
+<input class="w-full bg-surface pl-8 pr-4 py-3 rounded-lg border border-outline-variant focus:border-primary focus:ring-1 focus:ring-primary font-data-mono text-data-mono text-on-surface outline-none transition-all placeholder:text-outline-variant" id="amount" name="amount" placeholder="0.00" required="" step="0.01" type="number"/>
+</div>
+</div>
+<div class="flex flex-col gap-2">
+<label class="font-label-md text-label-md text-on-surface-variant" for="date">Date</label>
+<div class="relative">
+<span class="absolute left-3 top-1/2 -translate-y-1/2 material-symbols-outlined text-on-surface-variant text-[20px]">calendar_today</span>
+<input class="w-full bg-surface pl-10 pr-4 py-3 rounded-lg border border-outline-variant focus:border-primary focus:ring-1 focus:ring-primary font-body-md text-body-md text-on-surface outline-none transition-all" id="date" name="date" required="" type="date"/>
+</div>
+</div>
+</div>
+<hr class="border-surface-variant"/>
+<!-- Category Selection -->
+<div class="flex flex-col gap-3">
+<label class="font-label-md text-label-md text-on-surface-variant">Category</label>
+<div class="grid grid-cols-3 gap-3">
+<!-- Radio group styled as pills -->
+<label class="relative cursor-pointer">
+<input class="peer sr-only" name="category" required="" type="radio" value="feed"/>
+<div class="flex flex-col items-center justify-center p-4 rounded-xl border border-outline-variant bg-surface hover:bg-surface-container-high peer-checked:bg-primary-container peer-checked:border-primary-container peer-checked:text-on-primary-container text-on-surface-variant transition-all text-center h-full">
+<span class="material-symbols-outlined mb-2 peer-checked:fill">agriculture</span>
+<span class="font-label-md text-label-md">Feed</span>
+</div>
+</label>
+<label class="relative cursor-pointer">
+<input class="peer sr-only" name="category" required="" type="radio" value="vet"/>
+<div class="flex flex-col items-center justify-center p-4 rounded-xl border border-outline-variant bg-surface hover:bg-surface-container-high peer-checked:bg-primary-container peer-checked:border-primary-container peer-checked:text-on-primary-container text-on-surface-variant transition-all text-center h-full">
+<span class="material-symbols-outlined mb-2 peer-checked:fill">medical_services</span>
+<span class="font-label-md text-label-md">Vet</span>
+</div>
+</label>
+<label class="relative cursor-pointer">
+<input class="peer sr-only" name="category" required="" type="radio" value="sales"/>
+<div class="flex flex-col items-center justify-center p-4 rounded-xl border border-outline-variant bg-surface hover:bg-surface-container-high peer-checked:bg-primary-container peer-checked:border-primary-container peer-checked:text-on-primary-container text-on-surface-variant transition-all text-center h-full">
+<span class="material-symbols-outlined mb-2 peer-checked:fill">storefront</span>
+<span class="font-label-md text-label-md">Sales</span>
+</div>
+</label>
+</div>
+</div>
+<hr class="border-surface-variant"/>
+<!-- Biological Link (Searchable Dropdown) -->
+<div class="flex flex-col gap-2 relative">
+<label class="font-label-md text-label-md text-on-surface-variant flex items-center justify-between" for="bioLinkSearch">
+<span>Link to Biological Entity</span>
+<span class="bg-surface-container-high text-on-surface px-2 py-0.5 rounded text-[10px] uppercase tracking-wider">Required</span>
+</label>
+<div class="relative">
+<span class="absolute left-3 top-1/2 -translate-y-1/2 material-symbols-outlined text-outline-variant">search</span>
+<input autocomplete="off" class="w-full bg-surface pl-10 pr-10 py-3 rounded-lg border border-outline-variant focus:border-primary focus:ring-1 focus:ring-primary font-body-md text-body-md text-on-surface outline-none transition-all placeholder:text-outline-variant" id="bioLinkSearch" onfocus="showDropdown()" oninput="filterEntities()" placeholder="Search Cow ID, Batch, or Tray..." type="text"/>
+<button class="absolute right-3 top-1/2 -translate-y-1/2 material-symbols-outlined text-outline-variant hover:text-on-surface hidden transition-colors" id="clearBioLink" onclick="clearEntitySelection()" type="button">close</button>
+</div>
+<!-- Hidden input to store selected ID -->
+<input id="entityId" name="entityId" required="" type="hidden"/>
+<!-- Dropdown List -->
+<div class="absolute top-full left-0 w-full mt-1 bg-surface-container-lowest border border-outline-variant rounded-lg shadow-lg z-10 hidden max-h-64 overflow-y-auto custom-scrollbar" id="entityDropdown">
+<ul class="py-2" id="entityList">
+<!-- Populated by JS -->
+</ul>
+</div>
+<div class="hidden mt-3 p-3 rounded-lg border border-primary-container bg-surface flex items-center justify-between" id="selectedEntityCard">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded-full bg-primary-container/20 flex items-center justify-center" id="selectedEntityIconContainer">
+<span class="material-symbols-outlined text-primary-container" id="selectedEntityIcon">pets</span>
+</div>
+<div>
+<p class="font-title-md text-title-md text-on-surface m-0" id="selectedEntityTitle">Entity Title</p>
+<p class="font-label-md text-label-md text-on-surface-variant m-0" id="selectedEntitySubtitle">Type</p>
+</div>
+</div>
+<span class="material-symbols-outlined text-secondary">check_circle</span>
+</div>
+</div>
+<div class="pt-6 mt-2 border-t border-surface-variant flex justify-end gap-4">
+<button class="px-6 py-2.5 rounded-full border border-outline-variant text-on-surface hover:bg-surface-container-high font-label-md text-label-md transition-colors" type="button">
+                        Cancel
+                    </button>
+<button class="px-6 py-2.5 rounded-full bg-primary hover:bg-primary/90 text-on-primary font-label-md text-label-md transition-colors flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed" id="submitBtn" type="submit">
+<span>Save Transaction</span>
+<span class="material-symbols-outlined text-[18px]">save</span>
+</button>
+</div>
+</form>
+</div>
+</main>
+<script>
+        // Set today's date as default
+        document.getElementById('date').valueAsDate = new Date();
+
+        // Mock data for biological entities
+        const entities = [
+            { id: 'c-1042', type: 'Cow', title: 'TAG-1042', subtitle: 'Lactating', icon: 'pets' },
+            { id: 'c-1088', type: 'Cow', title: 'TAG-1088', subtitle: 'Dry', icon: 'pets' },
+            { id: 'c-1105', type: 'Cow', title: 'TAG-1105', subtitle: 'Heifer', icon: 'pets' },
+            { id: 'b-2401', type: 'Batch', title: 'Batch Alpha-24', subtitle: '50 Head - Pen 4', icon: 'group_work' },
+            { id: 'b-2402', type: 'Batch', title: 'Batch Beta-24', subtitle: '45 Head - Pen 2', icon: 'group_work' },
+            { id: 't-A12', type: 'Tray', title: 'Hatchery Tray A12', subtitle: 'Incubator 1', icon: 'egg' },
+            { id: 't-B04', type: 'Tray', title: 'Hatchery Tray B04', subtitle: 'Incubator 2', icon: 'egg' },
+        ];
+
+        const searchInput = document.getElementById('bioLinkSearch');
+        const dropdown = document.getElementById('entityDropdown');
+        const entityList = document.getElementById('entityList');
+        const entityIdInput = document.getElementById('entityId');
+        const clearBtn = document.getElementById('clearBioLink');
+        const selectedCard = document.getElementById('selectedEntityCard');
+        const submitBtn = document.getElementById('submitBtn');
+
+        function renderList(items) {
+            entityList.innerHTML = '';
+            if (items.length === 0) {
+                entityList.innerHTML = '<li class="px-4 py-3 text-on-surface-variant font-body-sm text-center">No entities found</li>';
+                return;
+            }
+
+            items.forEach(item => {
+                const li = document.createElement('li');
+                li.className = 'px-4 py-3 hover:bg-surface-container-high cursor-pointer flex items-center gap-3 transition-colors';
+                li.onclick = () => selectEntity(item);
+                li.innerHTML = `
+                    <div class="w-8 h-8 rounded-full bg-surface-variant flex items-center justify-center shrink-0">
+                        <span class="material-symbols-outlined text-[18px] text-on-surface-variant">${item.icon}</span>
+                    </div>
+                    <div class="flex flex-col">
+                        <span class="font-body-sm text-on-surface font-medium">${item.title}</span>
+                        <span class="font-label-md text-on-surface-variant">${item.type} • ${item.subtitle}</span>
+                    </div>
+                `;
+                entityList.appendChild(li);
+            });
+        }
+
+        function filterEntities() {
+            const query = searchInput.value.toLowerCase();
+            const filtered = entities.filter(e => 
+                e.title.toLowerCase().includes(query) || 
+                e.id.toLowerCase().includes(query) ||
+                e.type.toLowerCase().includes(query)
+            );
+            renderList(filtered);
+            showDropdown();
+            
+            if(query.length > 0) {
+                clearBtn.classList.remove('hidden');
+            } else {
+                clearBtn.classList.add('hidden');
+            }
+        }
+
+        function showDropdown() {
+            if(!entityIdInput.value) {
+                dropdown.classList.remove('hidden');
+                if(entityList.children.length === 0) {
+                    renderList(entities);
+                }
+            }
+        }
+
+        function hideDropdown() {
+            setTimeout(() => {
+                dropdown.classList.add('hidden');
+            }, 200);
+        }
+
+        function selectEntity(entity) {
+            entityIdInput.value = entity.id;
+            searchInput.value = entity.title;
+            dropdown.classList.add('hidden');
+            clearBtn.classList.remove('hidden');
+            
+            // Show selected card
+            document.getElementById('selectedEntityTitle').textContent = entity.title;
+            document.getElementById('selectedEntitySubtitle').textContent = `${entity.type} • ${entity.id}`;
+            document.getElementById('selectedEntityIcon').textContent = entity.icon;
+            
+            // Adjust input visual state
+            searchInput.classList.add('hidden');
+            selectedCard.classList.remove('hidden');
+            clearBtn.style.top = '2rem'; // Adjust clear button position relative to card
+            selectedCard.parentElement.appendChild(clearBtn); // Move clear button to container
+            
+            checkFormValidity();
+        }
+
+        function clearEntitySelection() {
+            entityIdInput.value = '';
+            searchInput.value = '';
+            searchInput.classList.remove('hidden');
+            selectedCard.classList.add('hidden');
+            clearBtn.classList.add('hidden');
+            searchInput.parentElement.appendChild(clearBtn); // Move back to input wrapper
+            clearBtn.style.top = '50%';
+            searchInput.focus();
+            checkFormValidity();
+        }
+
+        // Close dropdown when clicking outside
+        document.addEventListener('click', (e) => {
+            if (!searchInput.contains(e.target) && !dropdown.contains(e.target)) {
+                dropdown.classList.add('hidden');
+            }
+        });
+
+        // Basic form validation check
+        const form = document.getElementById('transactionForm');
+        function checkFormValidity() {
+            const isValid = form.checkValidity();
+            // Optional: toggle visual state of submit button based on validity
+        }
+        form.addEventListener('input', checkFormValidity);
+        form.addEventListener('change', checkFormValidity);
+
+        function handleFormSubmit(e) {
+            e.preventDefault();
+            if(!form.checkValidity()) return;
+
+            // Simulate API call
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<span class="material-symbols-outlined animate-spin">sync</span><span>Saving...</span>';
+
+            setTimeout(() => {
+                // Show Success Overlay
+                const overlay = document.getElementById('successOverlay');
+                const icon = document.getElementById('successIcon');
+                
+                overlay.classList.remove('hidden');
+                // Trigger reflow
+                void overlay.offsetWidth;
+                
+                overlay.classList.remove('opacity-0');
+                overlay.classList.add('opacity-100');
+                
+                setTimeout(() => {
+                    icon.classList.remove('scale-50');
+                    icon.classList.add('scale-100');
+                }, 100);
+
+            }, 800);
+        }
+
+        function resetForm() {
+            form.reset();
+            clearEntitySelection();
+            document.getElementById('date').valueAsDate = new Date();
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = '<span>Save Transaction</span><span class="material-symbols-outlined text-[18px]">save</span>';
+            
+            const overlay = document.getElementById('successOverlay');
+            const icon = document.getElementById('successIcon');
+            
+            overlay.classList.remove('opacity-100');
+            overlay.classList.add('opacity-0');
+            icon.classList.remove('scale-100');
+            icon.classList.add('scale-50');
+            
+            setTimeout(() => {
+                overlay.classList.add('hidden');
+            }, 300);
+        }
+
+        // Initialize empty list
+        renderList(entities);
+    </script>
+</body></html>

@@ -1,0 +1,4204 @@
+
+
+# 📄 PRODUCT REQUIREMENTS DOCUMENT (PRD)
+
+# Integrated Farm Management System (IFMS)
+
+### Version 1.0 — “Farm Brain Core”
+
+---
+
+# 1. PRODUCT VISION
+
+To build a **real-time, intelligent livestock operating system** that unifies dairy production, goat & sheep genetics, hatchery operations, and poultry production into a single data-driven ecosystem that:
+
+* Captures all farm activities in real time
+* Converts raw farm activity into financial intelligence
+* Optimizes profitability per animal, batch, and enterprise
+* Automates decision-making through rules and alerts
+* Enables scalable, transparent farm management
+
+---
+
+# 2. PROBLEM STATEMENT
+
+Most livestock farms in West Africa suffer from:
+
+* Fragmented record keeping (paper, WhatsApp, memory)
+* No real-time visibility of production or health status
+* Lack of cost-per-unit understanding (milk, meat, chick)
+* Weak reproductive tracking → long calving intervals
+* Poor batch performance tracking in poultry
+* No integration between enterprises
+* Delayed or missing financial reporting
+* Reactive rather than predictive management
+
+---
+
+# 3. PRODUCT GOALS
+
+## Primary Goals
+
+1. Centralize all farm data into one system
+2. Enable real-time monitoring of farm operations
+3. Link every animal/batch to financial performance
+4. Improve reproductive efficiency across species
+5. Reduce operational waste and inefficiency
+6. Enable data-driven decision-making
+
+---
+
+## Secondary Goals
+
+* Enable mobile-first farm operations
+* Provide WhatsApp-based reporting
+* Support offline data capture
+* Enable future AI-based predictions
+* Support scalability to multi-farm operations
+
+---
+
+# 4. SCOPE (IN-SCOPE ENTERPRISES)
+
+The system will focus ONLY on:
+
+## Core Enterprises
+
+### 1. Dairy Production & Dairy Products
+
+* Milk production tracking
+* Milk quality tracking
+* Dairy product sales
+
+### 2. Goat & Sheep Breeding Programs
+
+* Genetic tracking
+* Breeding cycles
+* Growth and sales
+
+### 3. Hatchery Services
+
+* Egg incubation
+* Hatch rate tracking
+* Chick sales & service incubation
+
+### 4. Poultry Production
+
+* Broilers (meat production)
+* Batch-based lifecycle tracking
+* Cost per kg production
+
+---
+
+# 5. OUT OF SCOPE (INTENTIONALLY EXCLUDED)
+
+To avoid complexity:
+
+* Fish farming
+* Geese
+* Pigeons
+* External crop farming
+* Non-livestock inventory systems
+* General ERP accounting system (only farm-linked finance included)
+
+---
+
+# 6. USER ROLES
+
+## 1. Farm Owner
+
+* Strategic overview
+* Profitability dashboard
+* Enterprise comparison
+* Alerts
+
+---
+
+## 2. Veterinarian (System Admin Role — YOU)
+
+* Health management
+* Reproduction control
+* Treatment oversight
+* Disease analytics
+* KPI monitoring
+
+---
+
+## 3. Farm Manager
+
+* Daily operations
+* Feed management
+* Staff assignment
+* Production tracking
+
+---
+
+## 4. Field Workers
+
+* Task execution
+* Data entry (minimal)
+* Status updates
+
+---
+
+# 7. CORE SYSTEM MODULES
+
+---
+
+# MODULE 1: ANIMAL MANAGEMENT SYSTEM (AMS)
+
+### Applicable to:
+
+* Cattle
+* Goats
+* Sheep
+
+### Features:
+
+* Unique animal ID system
+* Breed registry
+* Lifecycle tracking
+* Health history
+* Reproduction history
+* Weight tracking
+* Photo timeline
+
+### Output:
+
+* Animal performance index
+* Profit per animal
+* Reproductive efficiency score
+
+---
+
+# MODULE 2: DAIRY MANAGEMENT SYSTEM (DMS)
+
+### Features:
+
+* Daily milk recording (per cow)
+* Milk quality tracking (fat %, protein %, SCC optional)
+* Lactation tracking
+* Milk sales tracking
+* Withdrawal tracking (antibiotics)
+* Fresh cow monitoring
+
+### Key Metrics:
+
+* Milk per cow/day
+* Cost per liter
+* Lactation yield
+* Mastitis incidence rate
+
+---
+
+# MODULE 3: BREEDING & GENETICS SYSTEM (BGS)
+
+### Features:
+
+* Heat detection logs
+* AI / natural mating records
+* Pregnancy diagnosis tracking
+* Calving prediction
+* Superovulation support (advanced)
+* Genetic lineage tracking
+
+### Key Metrics:
+
+* Conception rate
+* Calving interval
+* Days open
+* Genetic value index
+
+---
+
+# MODULE 4: HATCHERY MANAGEMENT SYSTEM (HMS)
+
+### Features:
+
+* Egg batch tracking
+* Incubation monitoring
+* Candling records
+* Fertility rate tracking
+* Hatchability rate tracking
+* Chick output tracking
+* External incubation service billing
+
+### Key Metrics:
+
+* Hatch rate %
+* Fertility %
+* Cost per chick
+* Profit per batch
+
+---
+
+# MODULE 5: POULTRY PRODUCTION SYSTEM (PPS)
+
+### Focus: Broilers (primary)
+
+### Features:
+
+* Batch lifecycle tracking
+* Feed consumption logs
+* Mortality tracking
+* Weight gain tracking
+* Sales tracking
+
+### Key Metrics:
+
+* FCR (Feed Conversion Ratio)
+* Cost per kg meat
+* Mortality rate
+* Profit per batch
+
+---
+
+# MODULE 6: FEED & INVENTORY SYSTEM (FIS)
+
+### Features:
+
+* Feed stock tracking
+* Drug inventory
+* Vaccine tracking
+* Expiry alerts
+* Consumption tracking per enterprise
+
+### Key Metrics:
+
+* Feed cost per unit production
+* Stock depletion rate
+
+---
+
+# MODULE 7: FINANCIAL SYSTEM (FS)
+
+### Features:
+
+* Revenue tracking per enterprise
+* Expense tracking
+* Cashflow monitoring
+* Profit/loss dashboard
+
+### Key Outputs:
+
+* Enterprise profitability ranking
+* Daily/weekly/monthly P&L
+* Cost breakdown per product
+
+---
+
+# MODULE 8: TASK & WORKFLOW SYSTEM (TWS)
+
+### Features:
+
+* Task assignment
+* Completion tracking
+* Worker accountability
+* SOP enforcement
+
+### Example Tasks:
+
+* Vaccinate goats
+* Feed broilers
+* Clean dairy parlor
+
+---
+
+# MODULE 9: ALERT & RULE ENGINE (ARE)
+
+### Features:
+
+* Real-time alerts
+* Rule-based triggers
+* Event-driven notifications
+
+### Example Rules:
+
+* IF cow calved → start lactation tracking
+* IF antibiotic used → block milk sales
+* IF mortality > threshold → alert manager
+* IF feed low → trigger procurement
+
+---
+
+# MODULE 10: DASHBOARD & ANALYTICS (DAS)
+
+### Owner Dashboard:
+
+* Total profit
+* Enterprise ranking
+* Alerts summary
+
+### Vet Dashboard:
+
+* Health status
+* Reproduction status
+* Disease trends
+
+### Manager Dashboard:
+
+* Feed usage
+* Tasks
+* Production output
+
+---
+
+# 8. DATA MODEL (HIGH LEVEL)
+
+## Core Entities:
+
+* Animal
+* Batch (poultry/hatchery)
+* Product (milk, meat, chicks)
+* Transaction
+* Location
+* Task
+* Event (critical system backbone)
+
+---
+
+# 9. SYSTEM ARCHITECTURE
+
+## Frontend:
+
+* Flutter mobile app (offline-first)
+* Web dashboard (React optional later)
+
+---
+
+## Backend:
+
+* Python (FastAPI or Django)
+* PostgreSQL (core relational DB)
+* Redis (real-time alerts/cache)
+
+---
+
+## Event System:
+
+* Event-driven architecture
+* Every farm activity generates an event
+
+---
+
+## Sync Layer:
+
+* Offline-first mobile sync
+* Conflict resolution rules
+
+---
+
+# 10. KEY PERFORMANCE INDICATORS (KPIs)
+
+## Dairy:
+
+* Milk yield per cow
+* Cost per liter
+* Reproduction rate
+
+## Goat/Sheep:
+
+* Growth rate
+* Kid survival rate
+* Breeding success rate
+
+## Poultry:
+
+* FCR
+* Mortality rate
+* Cost per kg
+
+## Hatchery:
+
+* Hatchability %
+* Fertility %
+* Cost per chick
+
+## Financial:
+
+* Profit per enterprise
+* ROI per batch
+
+---
+
+# 11. NON-FUNCTIONAL REQUIREMENTS
+
+* Offline-first functionality
+* Mobile responsiveness
+* Real-time sync capability
+* Secure role-based access
+* Data backup and recovery
+* Scalable to multi-farm deployment
+
+---
+
+# 12. SUCCESS METRICS
+
+The system is successful if:
+
+* All farm activities are digitally recorded (>90%)
+* Profit per enterprise is visible daily
+* Decision-making becomes data-driven
+* Mortality and disease rates reduce over time
+* Feed waste decreases significantly
+* Reproductive efficiency improves measurably
+
+---
+
+# 13. FUTURE EXTENSIONS (POST-MVP)
+
+* AI predictive disease detection
+* Milk yield forecasting
+* Automated feed optimization
+* Computer vision animal monitoring
+* IoT sensor integration
+* Multi-farm network system
+
+---
+
+# FINAL NOTE (IMPORTANT)
+
+Dr. Mufti, this PRD is intentionally designed as:
+
+> A **decision intelligence system disguised as a farm management tool**
+
+If implemented correctly, your farm will shift from:
+
+* Reactive management → Predictive control
+* Manual tracking → Automated intelligence
+* Fragmented operations → Unified system
+
+---
+
+If you're ready next, the logical step is:
+
+# 👉 MVP DESIGN (VERY IMPORTANT)
+
+Where we define:
+
+* exact database schema (tables)
+* API endpoints
+* app screens (UI structure)
+* event flows
+* first build sprint plan
+
+That is where we convert this PRD into something you can actually start coding immediately.
+
+
+# 🚀 MVP DESIGN — IFMS (FARM BRAIN CORE v0.1)
+
+## 🎯 MVP GOAL
+
+Build a **working real-time farm intelligence system** that can:
+
+1. Register and track animals (cattle, goats, sheep)
+2. Track milk production (dairy cows only)
+3. Manage breeding cycles
+4. Run poultry as batch-based production (broilers only in MVP)
+5. Track hatchery egg batches
+6. Record financial transactions
+7. Generate basic profitability + alerts
+
+Everything else is **post-MVP**
+
+---
+
+# 🧠 CORE MVP PRINCIPLE
+
+> “If it doesn’t affect health, reproduction, or profit — it does NOT go into MVP.”
+
+---
+
+# 🧱 1. SYSTEM ARCHITECTURE (MVP LEVEL)
+
+## Frontend (Mobile First)
+
+* Flutter (Android first, iOS optional later)
+* Offline-first local DB (SQLite)
+* Sync when network available
+
+---
+
+## Backend
+
+* FastAPI (Python) OR Django REST Framework
+* PostgreSQL (primary database)
+* Redis (alerts + caching, optional but recommended)
+
+---
+
+## Event System (Lightweight)
+
+Instead of Kafka (too heavy for MVP):
+
+* Simple **Event Table + Worker (Celery)**
+
+Every action = event:
+
+* milk recorded
+* birth recorded
+* feed updated
+* sale recorded
+
+---
+
+# 🧬 2. CORE DATA MODEL (MVP DATABASE SCHEMA)
+
+This is the REAL foundation.
+
+---
+
+## 🟩 TABLE 1: animals
+
+```sql
+id (UUID)
+tag_id (string)
+species (cow/goat/sheep)
+breed
+sex
+date_of_birth
+status (active/sold/dead)
+current_location_id
+created_at
+```
+
+---
+
+## 🟩 TABLE 2: animal_events (VERY IMPORTANT)
+
+Everything important goes here.
+
+```sql
+id
+animal_id
+event_type (birth, milk, mating, disease, treatment, vaccination, weight)
+value_json (flexible JSON)
+event_date
+created_by
+```
+
+👉 This is your “memory system”
+👉 This is what makes it scalable
+
+---
+
+## 🟩 TABLE 3: milk_records
+
+```sql
+id
+animal_id
+date
+morning_liters
+evening_liters
+fat_percentage (optional MVP)
+created_by
+```
+
+---
+
+## 🟩 TABLE 4: reproduction_records
+
+```sql
+id
+animal_id
+event_type (heat, AI, natural_mating, pregnancy_check, calving)
+date
+result (pregnant/not_pregnant)
+expected_delivery_date
+notes
+```
+
+---
+
+## 🟩 TABLE 5: poultry_batches
+
+```sql
+id
+batch_type (broiler)
+start_date
+initial_count
+current_count
+status (active/closed)
+location_id
+```
+
+---
+
+## 🟩 TABLE 6: poultry_events
+
+```sql
+id
+batch_id
+event_type (feed, mortality, weight_sample, vaccination, sale)
+value_json
+event_date
+```
+
+---
+
+## 🟩 TABLE 7: hatchery_batches
+
+```sql
+id
+egg_count
+breed
+set_date
+expected_hatch_date
+hatched_count
+failed_count
+status
+```
+
+---
+
+## 🟩 TABLE 8: financial_transactions
+
+```sql
+id
+type (income/expense)
+category (milk, feed, drugs, sales, salary)
+amount
+related_entity_type (animal/batch/hatchery)
+related_entity_id
+date
+```
+
+---
+
+## 🟩 TABLE 9: locations
+
+```sql
+id
+name
+type (dairy, goat_pen, sheep_pen, poultry_house, hatchery)
+```
+
+---
+
+## 🟩 TABLE 10: users
+
+```sql
+id
+name
+role (owner, vet, manager, worker)
+phone
+password_hash
+```
+
+---
+
+# ⚙️ 3. CORE MVP MODULES (WHAT YOU ACTUALLY BUILD)
+
+---
+
+# MODULE A: ANIMAL CORE SYSTEM
+
+### Features:
+
+* Register animals
+* View animal profile
+* Add health events
+* Add reproduction events
+
+### Output:
+
+* Animal timeline
+* Basic performance view
+
+---
+
+# MODULE B: DAIRY MODULE
+
+### Features:
+
+* Daily milk entry per cow
+* Milk summary per day/week
+* Simple alerts (low milk drop)
+
+### Output:
+
+* Milk per cow
+* Total farm milk
+
+---
+
+# MODULE C: BREEDING MODULE
+
+### Features:
+
+* Heat detection logs
+* AI recording
+* Pregnancy tracking
+* Expected calving list
+
+### Output:
+
+* Due calving dashboard
+* Open cows list
+
+---
+
+# MODULE D: POULTRY BATCH MODULE
+
+### Features:
+
+* Create broiler batch
+* Record feed usage
+* Record mortality
+* Record sales
+
+### Output:
+
+* Batch profitability estimate
+
+---
+
+# MODULE E: HATCHERY MODULE
+
+### Features:
+
+* Create egg batch
+* Track incubation
+* Hatch results
+
+### Output:
+
+* Hatch rate %
+* Cost per chick
+
+---
+
+# MODULE F: FINANCIAL MODULE
+
+### Features:
+
+* Add income/expense
+* Link to animal/batch
+* Simple profit view
+
+### Output:
+
+* Profit per enterprise (basic version)
+
+---
+
+# MODULE G: ALERT SYSTEM (MVP VERSION)
+
+Rule-based alerts only:
+
+Examples:
+
+* Calving due in 7 days
+* Milk drop detected
+* High mortality batch
+* Feed stock low
+
+Delivery:
+
+* In-app notifications
+* WhatsApp (optional early integration)
+
+---
+
+# 📱 4. MVP APP SCREENS (VERY IMPORTANT)
+
+---
+
+## 🏠 1. Home Dashboard
+
+Shows:
+
+* Total animals
+* Milk today
+* Active poultry batches
+* Hatchery status
+* Profit snapshot
+
+---
+
+## 🐄 2. Animal List
+
+Filter:
+
+* cattle
+* goats
+* sheep
+
+---
+
+## 🐄 3. Animal Profile Page
+
+Tabs:
+
+* Overview
+* Health
+* Reproduction
+* Milk (if cow)
+
+---
+
+## 🥛 4. Milk Entry Screen
+
+* Select cow
+* Enter liters
+* Save
+
+---
+
+## 🐐 5. Breeding Screen
+
+* Heat
+* AI
+* Pregnancy check
+
+---
+
+## 🐓 6. Poultry Batch Screen
+
+* Create batch
+* Feed log
+* Mortality log
+* Sales
+
+---
+
+## 🥚 7. Hatchery Screen
+
+* Egg batch creation
+* Hatch results
+
+---
+
+## 💰 8. Finance Screen
+
+* Add expense
+* Add income
+* View summary
+
+---
+
+## 🚨 9. Alerts Screen
+
+* Upcoming calving
+* Low feed
+* Disease alerts
+
+---
+
+# 🔄 5. CORE EVENT FLOW (HOW SYSTEM THINKS)
+
+Example:
+
+### Milk recorded:
+
+1. Save record
+2. Trigger event
+3. Update animal KPI
+4. Update daily milk total
+5. Update profit estimate
+6. Notify dashboard
+
+---
+
+### Cow bred:
+
+1. Save breeding event
+2. Calculate expected calving date
+3. Add to alerts
+4. Update reproduction status
+
+---
+
+### Poultry mortality:
+
+1. Record event
+2. Update batch count
+3. Recalculate FCR
+4. Trigger alert if threshold exceeded
+
+---
+
+# 🧠 6. MVP “FARM BRAIN” LOGIC (CRITICAL)
+
+Even in MVP, system must compute:
+
+## Dairy:
+
+* milk per cow/day
+
+## Breeding:
+
+* calving predictions
+
+## Poultry:
+
+* mortality rate
+
+## Hatchery:
+
+* hatch rate %
+
+## Finance:
+
+* simple profit/loss
+
+---
+
+# ⚠️ 7. WHAT IS EXPLICITLY REMOVED (MVP CONTROL)
+
+To prevent failure:
+
+❌ No AI models yet
+❌ No IoT integration
+❌ No image recognition
+❌ No multi-farm system
+❌ No advanced genetics engine
+❌ No complex analytics dashboards
+
+---
+
+# 🚀 8. MVP SUCCESS CRITERIA
+
+Your MVP is successful if:
+
+* All animals are digitally registered
+* Milk is recorded daily
+* Breeding cycles are tracked
+* Poultry batches are measurable in profit terms
+* Hatchery is tracked properly
+* Owner can see daily profit snapshot
+* Alerts work reliably
+
+---
+
+# 🧭 FINAL STRATEGIC ADVICE
+
+Dr. Mufti, here is the truth:
+
+> The power of your system will NOT come from features. It will come from disciplined data structure.
+
+If your:
+
+* animal_event system is solid
+* batch system is clean
+* financial linking is correct
+
+Then everything else (AI, automation, prediction) becomes easy later.
+
+---
+
+# NEXT STEP (IF YOU SAY GO)
+
+We move into:
+
+## 👉 SYSTEM BLUEPRINT FOR CODING
+
+That includes:
+
+* Exact API endpoints (FastAPI routes)
+* Flutter app folder structure
+* State management approach
+* Offline sync logic
+* Database migrations
+* First 2-week build sprint plan
+
+That is where we turn this into a real deployable product.
+
+
+# 🧭 MILESTONE 0 — FOUNDATION (DETAILED ENGINEERING SPEC)
+
+## 🎯 PURPOSE OF M0
+
+You are building a **multi-tenant, event-driven livestock OS backend skeleton** with:
+
+* authentication + roles
+* database foundation
+* API structure
+* event backbone
+* deployment readiness
+
+Nothing “farm-specific” is built yet.
+
+Only infrastructure that everything else plugs into.
+
+---
+
+# 🧱 0.1 SYSTEM DESIGN DECISIONS (DO THIS FIRST)
+
+## 🧠 Architecture Style
+
+Use:
+
+### ✅ Modular Monolith (NOT microservices yet)
+
+Why:
+
+* faster to build
+* easier debugging
+* perfect for MVP scale farms
+* can split into microservices later if needed
+
+---
+
+## ⚙️ Core Principle
+
+> Everything in the system must eventually be traceable to an EVENT.
+
+Even in M0, we prepare for this.
+
+---
+
+## 🧰 STACK (FINALIZED)
+
+### Backend
+
+* FastAPI (Python)
+* Uvicorn
+* Pydantic v2
+
+### Database
+
+* PostgreSQL
+
+### ORM
+
+* SQLAlchemy 2.0 (modern style)
+
+### Migrations
+
+* Alembic
+
+### Auth
+
+* JWT (access + refresh tokens)
+
+### Background Jobs (light MVP)
+
+* Celery + Redis (optional in M0 but structure prepared)
+
+---
+
+# 🗂️ 0.2 PROJECT STRUCTURE (DETAILED)
+
+```plaintext
+ifms_backend/
+│
+├── app/
+│   ├── main.py                  # FastAPI entry point
+│   ├── core/
+│   │   ├── config.py           # env configs
+│   │   ├── database.py         # DB connection
+│   │   ├── security.py         # JWT logic
+│   │   ├── roles.py            # role definitions
+│   │
+│   ├── models/                 # SQLAlchemy models
+│   │   ├── base.py
+│   │   ├── user.py
+│   │   ├── role.py
+│   │
+│   ├── schemas/                # Pydantic schemas
+│   │   ├── user.py
+│   │
+│   ├── api/
+│   │   ├── v1/
+│   │   │   ├── routes.py      # router aggregator
+│   │   │   ├── auth.py
+│   │   │   ├── health.py
+│   │
+│   ├── services/
+│   │   ├── auth_service.py
+│   │
+│   ├── events/                # EVENT ENGINE FOUNDATION
+│   │   ├── base.py
+│   │   ├── dispatcher.py
+│   │
+│   ├── utils/
+│   │   ├── time.py
+│   │
+├── alembic/
+├── tests/
+├── requirements.txt
+├── .env
+├── docker-compose.yml
+```
+
+---
+
+# 🧠 0.3 CORE DATABASE FOUNDATION
+
+## 🧩 BASE MODEL (VERY IMPORTANT)
+
+Everything inherits from this.
+
+```python
+class BaseModel:
+    id = UUID primary key
+    created_at
+    updated_at
+```
+
+---
+
+## 👤 USERS TABLE
+
+```sql
+id (UUID)
+name
+phone (unique optional)
+password_hash
+role (owner, vet, manager, worker)
+is_active
+created_at
+```
+
+---
+
+## 🔐 ROLE MODEL (SIMPLE MVP)
+
+Hardcoded enum initially:
+
+```python
+OWNER
+VET
+MANAGER
+WORKER
+```
+
+Later you can upgrade to RBAC.
+
+---
+
+# 🔐 0.4 AUTH SYSTEM (CRITICAL FOUNDATION)
+
+## AUTH FLOW
+
+### 1. Register user
+
+### 2. Login
+
+### 3. Issue JWT
+
+### 4. Validate token per request
+
+---
+
+## JWT STRUCTURE
+
+```json
+{
+  "user_id": "...",
+  "role": "vet",
+  "exp": "timestamp"
+}
+```
+
+---
+
+## ENDPOINTS
+
+### Auth Routes
+
+```http
+POST /auth/register
+POST /auth/login
+POST /auth/refresh
+GET  /auth/me
+```
+
+---
+
+## SECURITY RULES
+
+* Password hashing: bcrypt
+* Token expiration: 24h access, 7d refresh
+* Role-based middleware
+
+---
+
+# 🌐 0.5 API ARCHITECTURE
+
+## VERSIONING
+
+All APIs:
+
+```plaintext
+/api/v1/
+```
+
+---
+
+## ROUTER STRUCTURE
+
+```python
+app.include_router(auth_router, prefix="/api/v1/auth")
+app.include_router(health_router, prefix="/api/v1/health")
+```
+
+---
+
+## HEALTH CHECK (VERY IMPORTANT)
+
+```http
+GET /health
+```
+
+Returns:
+
+```json
+{
+  "status": "ok",
+  "db": "connected"
+}
+```
+
+---
+
+# 🧠 0.6 EVENT SYSTEM FOUNDATION (MOST IMPORTANT DESIGN CHOICE)
+
+Even though we don’t fully implement farm logic yet, we prepare the brain.
+
+---
+
+## EVENT MODEL
+
+```python
+class Event:
+    id
+    entity_type  # animal, batch, user, etc.
+    entity_id
+    event_type
+    payload (JSON)
+    timestamp
+```
+
+---
+
+## WHY THIS MATTERS
+
+Everything in your farm becomes:
+
+* milk recorded → event
+* cow calved → event
+* goat vaccinated → event
+* chick died → event
+
+This gives you:
+
+### 🧠 FULL TRACEABILITY
+
+AND enables:
+
+* analytics
+* AI
+* alerts
+* automation
+
+---
+
+## EVENT DISPATCHER (MVP VERSION)
+
+Simple function:
+
+```python
+def dispatch_event(event):
+    save_to_db(event)
+    trigger_rules(event)
+```
+
+---
+
+# 🧪 0.7 ENVIRONMENT SETUP
+
+## .env FILE
+
+```plaintext
+DATABASE_URL=postgresql://user:pass@localhost:5432/ifms
+SECRET_KEY=your_secret
+ACCESS_TOKEN_EXPIRE=1440
+```
+
+---
+
+## DOCKER (RECOMMENDED)
+
+```yaml
+services:
+  db:
+    image: postgres
+    environment:
+      POSTGRES_DB: ifms
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: pass
+```
+
+---
+
+# 🚨 0.8 MILESTONE 0 TASK LIST (STEP-BY-STEP)
+
+## STEP 1: Setup project
+
+* create FastAPI app
+* run server
+
+## STEP 2: Setup database
+
+* PostgreSQL connection
+* SQLAlchemy base
+
+## STEP 3: Create user model
+
+* migrate DB
+
+## STEP 4: Build auth system
+
+* register/login
+* JWT working
+
+## STEP 5: Role middleware
+
+* restrict endpoints
+
+## STEP 6: Create health check
+
+* verify DB connection
+
+## STEP 7: Setup event base structure
+
+* event model
+* dispatcher function
+
+---
+
+# ✅ M0 EXIT CRITERIA (VERY STRICT)
+
+You are NOT done until:
+
+* You can register a user
+* You can login and get JWT
+* You can access protected route
+* Database is connected and migrated
+* Event model exists and can store data
+* API structure is clean and modular
+
+---
+
+# 🧠 WHAT M0 GIVES YOU (STRATEGIC VALUE)
+
+After M0 you have:
+
+### ✔ Secure system foundation
+
+### ✔ Scalable backend structure
+
+### ✔ Event-driven architecture base
+
+### ✔ Role-based farm control system
+
+### ✔ Clean API framework for expansion
+
+---
+
+# ⚠️ REALITY CHECK (IMPORTANT)
+
+Most developers fail here because they:
+
+* start building animals immediately
+* skip auth structure
+* ignore event design
+* don’t structure API properly
+
+You are doing the opposite:
+👉 building the nervous system before organs
+
+That is correct engineering.
+
+---
+
+# 🚀 NEXT STEP
+
+If you are satisfied with M0 depth, next I will go into:
+
+# 👉 MILESTONE 1 (ANIMAL BRAIN) — FULL ENGINEERING SPEC
+
+That will include:
+
+* exact animal schema (production-grade)
+* event taxonomy design (VERY IMPORTANT)
+* reproduction logic engine
+* API design (real endpoints)
+* lifecycle state machine for animals
+* performance indexes for queries
+
+This is where the system starts “thinking in livestock terms.”
+
+
+# 🧭 MILESTONE 1 — ANIMAL BRAIN (CORE LIVESTOCK DATA ENGINE)
+
+## 🎯 PURPOSE OF M1
+
+To create a **unified biological entity system** that can:
+
+* represent any farm animal (cow, goat, sheep)
+* track its full lifecycle
+* store every biological event
+* support reproduction + health intelligence
+* serve as the foundation for ALL future modules
+
+---
+
+# 🧠 DESIGN PHILOSOPHY (CRITICAL)
+
+> “Every animal is not a record. It is a timeline of biological events.”
+
+So instead of:
+
+* static animal profiles ❌
+
+You build:
+
+* event-driven living identity system ✅
+
+---
+
+# 🧬 1. CORE DATA MODEL
+
+We refine and expand your M0 foundation.
+
+---
+
+## 🟩 1.1 ANIMAL TABLE (MASTER ENTITY)
+
+This is the **anchor of the entire system**
+
+```sql id="animal_core_001"
+id (UUID)
+tag_id (string, UNIQUE)   -- ear tag / RFID
+species (cow, goat, sheep)
+breed
+sex (male/female)
+date_of_birth
+date_of_acquisition
+status (active, sold, dead, quarantined)
+
+current_location_id
+current_reproductive_status (open, pregnant, lactating, dry)
+
+created_at
+updated_at
+```
+
+---
+
+## 🧠 IMPORTANT DESIGN DECISION
+
+You NEVER store:
+
+* milk here
+* treatments here
+* reproduction details here
+
+👉 Only identity + current state
+
+Everything else goes to EVENTS.
+
+---
+
+# 📜 1.2 ANIMAL EVENT SYSTEM (CORE INTELLIGENCE LAYER)
+
+This is your **true brain**
+
+```sql id="animal_event_001"
+id (UUID)
+animal_id (FK)
+event_type (ENUM)
+event_category (health, reproduction, production, movement, management)
+
+event_timestamp
+
+payload (JSONB)  -- flexible structured data
+created_by (user_id)
+```
+
+---
+
+## 🧠 EVENT TYPES (MVP COMPLETE SET)
+
+### 🟢 Identity Events
+
+* birth
+* acquisition
+* transfer
+* death
+
+---
+
+### 🔵 Health Events
+
+* vaccination
+* treatment
+* disease_diagnosis
+* surgery
+* weight_measurement
+
+---
+
+### 🟣 Reproduction Events
+
+* heat_detected
+* mating
+* AI_insemination
+* pregnancy_check
+* confirmed_pregnant
+* calving
+* abortion
+
+---
+
+### 🟡 Production Events (M1 supports structure only)
+
+* milk_record (handled in M2 fully)
+* lactation_start
+* lactation_end
+
+---
+
+### ⚪ Management Events
+
+* relocation
+* tagging
+* status_change
+
+---
+
+# 🧠 WHY THIS EVENT SYSTEM IS POWERFUL
+
+Because now you can:
+
+* reconstruct full animal history
+* calculate performance metrics dynamically
+* detect patterns
+* build AI models later
+
+---
+
+# 🔁 1.3 LIFECYCLE STATE MACHINE (VERY IMPORTANT)
+
+Each animal has evolving states:
+
+## COW STATE FLOW
+
+```plaintext id="cow_state"
+Calf → Heifer → Pregnant → Lactating → Dry → Culling Candidate
+```
+
+---
+
+## GOAT / SHEEP FLOW
+
+```plaintext id="goat_state"
+Kid → Grower → Breeding Female/Male → Active Breeder → Culling Candidate
+```
+
+---
+
+## STATE UPDATE RULES
+
+State is NOT manually edited.
+
+It is computed from events:
+
+Example:
+
+* “calving event” → lactation starts
+* “pregnancy confirmed” → state changes to pregnant
+
+---
+
+# 📡 2. EVENT ENGINE LOGIC
+
+## EVENT CREATION FLOW
+
+```plaintext id="event_flow_001"
+User Action → API → Validate → Store Event → Trigger Rules → Update Animal State → Return Response
+```
+
+---
+
+## EVENT DISPATCHER (CORE FUNCTION)
+
+```python id="event_dispatch_001"
+def dispatch_event(event):
+    save_event(event)
+    update_animal_state(event.animal_id)
+    run_reproduction_rules(event)
+    run_health_rules(event)
+```
+
+---
+
+# 🧠 3. REPRODUCTION INTELLIGENCE (CORE VALUE OF M1)
+
+This is where your system starts becoming “smart.”
+
+---
+
+## AUTOMATIC CALCULATIONS
+
+### After mating event:
+
+* calculate expected pregnancy check date
+* calculate expected calving date (EDD)
+
+---
+
+## FORMULA (STANDARD DAIRY)
+
+* Cow gestation ≈ 283 days
+* Goat ≈ 150 days
+* Sheep ≈ 147 days
+
+---
+
+## AUTO-GENERATED DATA
+
+After AI or mating event:
+
+```json id="repro_calc"
+{
+  "expected_pregnancy_check": "30 days",
+  "expected_calving_date": "283 days",
+  "risk_flag": "low"
+}
+```
+
+---
+
+# 🧪 4. HEALTH INTELLIGENCE (M1 LIGHT VERSION)
+
+We do NOT build full disease AI yet.
+
+We only prepare structure:
+
+---
+
+## RULES ENGINE (BASIC)
+
+Examples:
+
+* if treatment = antibiotic → mark milk withdrawal period
+* if repeated illness → flag animal risk
+* if vaccination missed → alert
+
+---
+
+# 🐄 5. KEY API DESIGN (M1 BACKEND)
+
+---
+
+## ANIMAL APIs
+
+```http id="animal_api_001"
+POST   /api/v1/animals
+GET    /api/v1/animals
+GET    /api/v1/animals/{id}
+PATCH  /api/v1/animals/{id}
+```
+
+---
+
+## EVENT APIs
+
+```http id="event_api_001"
+POST   /api/v1/animals/{id}/events
+GET    /api/v1/animals/{id}/events
+GET    /api/v1/events?type=reproduction
+```
+
+---
+
+## STATE API
+
+```http id="state_api_001"
+GET /api/v1/animals/{id}/state
+```
+
+Returns computed state.
+
+---
+
+# 📊 6. ANIMAL PROFILE VIEW (MOBILE UI STRUCTURE)
+
+Each animal screen shows:
+
+---
+
+## HEADER
+
+* Tag ID
+* Species
+* Current state
+
+---
+
+## TABS
+
+### 1. Overview
+
+* age
+* breed
+* location
+
+---
+
+### 2. Timeline (VERY IMPORTANT)
+
+Chronological event feed:
+
+* birth
+* vaccination
+* mating
+* treatment
+
+---
+
+### 3. Health
+
+* all medical events
+* risk flags
+
+---
+
+### 4. Reproduction
+
+* heat cycles
+* mating
+* pregnancy status
+* expected calving
+
+---
+
+### 5. Production (placeholder for M2)
+
+---
+
+# 📈 7. M1 INTELLIGENCE OUTPUTS
+
+Even in M1, system should already generate:
+
+---
+
+## HERD LEVEL INSIGHTS
+
+* total animals by species
+* pregnant animals count
+* open animals count
+* animals due for reproduction events
+
+---
+
+## INDIVIDUAL INSIGHTS
+
+* days since last heat
+* days to calving
+* reproduction efficiency score (basic)
+
+---
+
+# ⚙️ 8. INDEXING STRATEGY (CRITICAL FOR SCALE)
+
+PostgreSQL indexes:
+
+```sql id="index_001"
+INDEX animal_events_animal_id
+INDEX animal_events_type
+INDEX animal_events_timestamp
+INDEX animals_species
+INDEX animals_status
+```
+
+---
+
+# 🚨 9. M1 EXIT CRITERIA (STRICT)
+
+You ONLY move forward if:
+
+### ✔ Animals can be created
+
+### ✔ Events can be recorded
+
+### ✔ Full event history is retrievable
+
+### ✔ Reproductive calculations work
+
+### ✔ Animal state is computed (not stored manually)
+
+### ✔ Timeline view works
+
+---
+
+# 🧠 10. WHAT YOU HAVE BUILT AFTER M1
+
+You now have:
+
+## A LIVE BIOLOGICAL DATA SYSTEM
+
+Not software.
+
+A **digital twin of your herd**
+
+Each animal now has:
+
+* identity
+* history
+* biological state
+* reproductive intelligence
+
+---
+
+# ⚠️ KEY ENGINEERING INSIGHT
+
+Dr. Mufti, this is the most important concept in the entire system:
+
+> “Events are the truth. Everything else is interpretation.”
+
+If you maintain that rule:
+
+* your system becomes scalable
+* AI becomes easy later
+* analytics become automatic
+* debugging becomes trivial
+
+If you break it:
+
+* system becomes messy ERP like most farm software
+
+
+
+# 👉 MILESTONE 2 — DAIRY INTELLIGENCE ENGINE
+
+Where we build:
+
+* milk recording system
+* lactation curves
+* per-cow profitability
+* mastitis risk detection (rule-based)
+* milk withdrawal automation
+* dairy KPI engine
+
+This is where **real farm revenue intelligence begins.**
+
+
+# 🧭 MILESTONE 2 — DAIRY INTELLIGENCE ENGINE (FULL SPEC)
+
+## 🎯 PURPOSE OF M2
+
+To transform raw milk production into a **financial + biological intelligence system** that can:
+
+* track milk at cow level
+* compute lactation performance
+* calculate cost/profit per cow (basic version)
+* detect production anomalies
+* enforce milk safety rules (withdrawal logic)
+* generate daily dairy insights automatically
+
+---
+
+# 🧠 DESIGN SHIFT (IMPORTANT)
+
+At M1 you built:
+
+> “Animal = timeline of events”
+
+At M2 you extend it to:
+
+> “Milk = financial output of biological state”
+
+So milk is NOT just production.
+
+It is:
+
+* biological expression
+* economic output
+* quality-sensitive product
+
+---
+
+# 🧱 2.1 CORE DATA MODEL EXTENSION
+
+We now add dairy-specific structures.
+
+---
+
+## 🟩 2.1.1 MILK RECORD TABLE (CORE)
+
+```sql id="milk_record_001"
+id (UUID)
+animal_id (FK → animals)
+
+record_date
+milking_session (morning / evening / total_day)
+
+quantity_liters
+
+fat_percentage (optional MVP)
+protein_percentage (optional MVP)
+
+created_by (user_id)
+
+created_at
+```
+
+---
+
+## 🧠 DESIGN NOTE
+
+You DO NOT store:
+
+* cost
+* profit
+* performance here
+
+👉 These are computed dynamically in analytics layer.
+
+---
+
+# 🟨 2.2 LACTATION TRACKING MODEL
+
+We now introduce lactation intelligence.
+
+---
+
+## 🟩 LACTATION SESSION LOGIC
+
+Derived from M1 events:
+
+* calving event → lactation_start
+* drying_off event → lactation_end
+
+---
+
+## 🟩 LACTATION TABLE
+
+```sql id="lactation_001"
+id
+animal_id
+
+start_date
+end_date (nullable)
+
+lactation_number (1st, 2nd, etc.)
+
+status (active, completed)
+```
+
+---
+
+## 🧠 WHY THIS MATTERS
+
+Without lactation tracking:
+
+* you cannot compute productivity curves
+* you cannot detect drop in yield
+* you cannot evaluate cow profitability
+
+---
+
+# 📊 2.3 DAIRY KPI ENGINE (CORE INTELLIGENCE LAYER)
+
+This is where the system becomes “smart.”
+
+---
+
+## 🧮 CORE METRICS
+
+### Per Cow
+
+* Daily milk yield
+* 7-day rolling average
+* Peak lactation yield
+* Days in milk (DIM)
+
+---
+
+### Herd Level
+
+* Total milk/day
+* Average milk/cow/day
+* Production variance
+* Top 10 cows
+
+---
+
+## 🧠 COMPUTATION LOGIC
+
+Example:
+
+```plaintext id="kpi_001"
+Milk per cow per day =
+SUM(milk_liters per day per cow)
+```
+
+---
+
+## ROLLING AVERAGE (IMPORTANT)
+
+```plaintext id="rolling_001"
+7-day average = sum(last 7 days milk) / 7
+```
+
+Used for:
+
+* trend detection
+* anomaly alerts
+
+---
+
+# 🚨 2.4 DAIRY ALERT ENGINE (RULE BASED)
+
+This is your first real **decision intelligence system**
+
+---
+
+## RULE SETS
+
+### 🟢 Milk Drop Detection
+
+```plaintext id="rule_001"
+IF daily_milk < (7-day avg - 20%)
+THEN alert = "milk drop detected"
+```
+
+---
+
+### 🟡 Mastitis Risk (Basic MVP)
+
+```plaintext id="rule_002"
+IF sudden drop + abnormal milk event exists
+THEN flag cow = "risk_mastitis"
+```
+
+---
+
+### 🔴 Withdrawal Enforcement (VERY IMPORTANT)
+
+From M1 health events:
+
+```plaintext id="rule_003"
+IF antibiotic_treatment_active
+THEN block milk from sale
+```
+
+---
+
+# 💰 2.5 COST & PROFIT ENGINE (MVP VERSION)
+
+We now introduce **basic economics**
+
+---
+
+## INPUTS
+
+* feed cost per cow (manual entry MVP)
+* milk yield
+* milk selling price
+
+---
+
+## OUTPUTS
+
+### Per Cow Profit
+
+```plaintext id="profit_001"
+Profit = (milk_liters × price_per_liter) - feed_cost
+```
+
+---
+
+### Herd Profit
+
+Sum of all cows
+
+---
+
+## 🧠 IMPORTANT
+
+We keep it simple in MVP:
+
+* no complex feed modeling yet
+* no ration formulation yet
+
+Just **direct measurable profitability**
+
+---
+
+# 📡 2.6 DAIRY API DESIGN
+
+---
+
+## MILK APIs
+
+```http id="api_milk_001"
+POST /api/v1/dairy/milk
+GET  /api/v1/dairy/milk?animal_id=
+GET  /api/v1/dairy/milk/daily-summary
+```
+
+---
+
+## LACTATION APIs
+
+```http id="api_lact_001"
+GET /api/v1/dairy/lactation/{animal_id}
+```
+
+---
+
+## KPI APIs
+
+```http id="api_kpi_001"
+GET /api/v1/dairy/kpi/herd
+GET /api/v1/dairy/kpi/animal/{id}
+```
+
+---
+
+## PROFIT APIs
+
+```http id="api_profit_001"
+GET /api/v1/dairy/profit/summary
+GET /api/v1/dairy/profit/by-animal
+```
+
+---
+
+# 📱 2.7 MOBILE UI DESIGN (DAIRY MODULE)
+
+---
+
+## 🏠 DAIRY DASHBOARD
+
+Displays:
+
+* Total milk today
+* Average per cow
+* Best cow today
+* Lowest cow today
+* Estimated revenue
+
+---
+
+## 🐄 COW PROFILE (DAIRY TAB)
+
+* Daily milk graph
+* 7-day trend
+* Lactation stage
+* Alerts
+
+---
+
+## 🥛 MILK ENTRY SCREEN
+
+Simple form:
+
+* Select cow
+* Enter liters
+* Save
+
+Optional:
+
+* fat %
+* notes
+
+---
+
+## 📊 ANALYTICS SCREEN
+
+* herd trend graph
+* top producers
+* low performers
+
+---
+
+# 🧠 2.8 DAIRY INTELLIGENCE OUTPUTS
+
+After M2, system can answer:
+
+### Operational Questions
+
+* Which cows are underperforming?
+* Which cow is most profitable?
+* Is milk production dropping?
+
+---
+
+### Financial Questions
+
+* How much did we earn today from milk?
+* Which cows are losing money?
+
+---
+
+### Health Questions
+
+* Which cows may have mastitis risk?
+* Which cows are under stress?
+
+---
+
+# ⚙️ 2.9 DATA RELATIONSHIP FLOW
+
+This is critical for system thinking:
+
+```plaintext id="flow_001"
+Animal (M1)
+   ↓
+Milk Records (M2)
+   ↓
+Lactation (M2)
+   ↓
+KPIs (M2 Engine)
+   ↓
+Profit Calculation
+   ↓
+Alerts + Dashboard
+```
+
+---
+
+# 📈 2.10 INDEXING (IMPORTANT FOR SPEED)
+
+```sql id="index_m2"
+INDEX milk_record_animal_id
+INDEX milk_record_date
+INDEX lactation_animal_id
+```
+
+---
+
+# 🚨 2.11 M2 EXIT CRITERIA (NON-NEGOTIABLE)
+
+You only proceed if:
+
+### ✔ Milk can be recorded per cow
+
+### ✔ Herd milk totals compute correctly
+
+### ✔ Lactation tracking works
+
+### ✔ 7-day trend works
+
+### ✔ Basic profit per cow works
+
+### ✔ Milk withdrawal rules function
+
+### ✔ Dairy dashboard is operational
+
+---
+
+# 🧠 WHAT YOU NOW HAVE AFTER M2
+
+You now have:
+
+## A REAL DAIRY INTELLIGENCE SYSTEM
+
+Not a record book.
+
+A system that:
+
+* tracks biological output (milk)
+* converts it into financial intelligence
+* detects production problems early
+* enforces safety rules automatically
+
+---
+
+# ⚠️ STRATEGIC INSIGHT
+
+Dr. Mufti, this is where your system becomes powerful:
+
+> “Milk is the first real bridge between biology and economics.”
+
+If M2 is done correctly:
+
+* every cow becomes a financial asset
+* every liter becomes traceable income
+* every drop becomes measurable intelligence
+
+---
+
+# 👉 MILESTONE 3 — BREEDING & GENETICS ENGINE
+
+This is where we build:
+
+* heat detection intelligence
+* mating optimization
+* pregnancy prediction system
+* calving pipeline automation
+* genetic value scoring (basic MVP)
+
+This is the **reproductive control center of the entire farm brain**.
+
+
+# 🧭 MILESTONE 3 — BREEDING & GENETICS ENGINE (FULL SPEC)
+
+## 🎯 PURPOSE OF M3
+
+To build a system that can:
+
+* track all reproductive events
+* predict calving automatically
+* optimize conception efficiency
+* reduce “open days”
+* structure breeding decisions
+* improve genetic value tracking (basic MVP)
+
+---
+
+# 🧠 DESIGN SHIFT
+
+At this stage your system evolves again:
+
+* M1 → animal timeline
+* M2 → production intelligence (milk)
+* M3 → **future production control (reproduction)**
+
+> Reproduction is not biology in your system. It is a scheduling + optimization problem.
+
+---
+
+# 🧬 3.1 CORE REPRODUCTION DATA MODEL
+
+We refine and expand M1 reproduction events into structured intelligence.
+
+---
+
+## 🟩 3.1.1 BREEDING EVENT TABLE (NORMALIZED CORE)
+
+Instead of relying only on generic events, we formalize reproduction:
+
+```sql id="breeding_event_001"
+id (UUID)
+animal_id (FK)
+
+event_type (
+  heat,
+  mating,
+  ai_insemination,
+  pregnancy_check,
+  confirmed_pregnant,
+  abortion,
+  calving
+)
+
+event_date
+
+result (nullable)
+notes (text)
+
+created_by
+```
+
+---
+
+## 🧠 WHY THIS EXISTS
+
+Because reproduction is:
+
+* sequential
+* time-sensitive
+* highly predictive
+
+You need structure, not just events.
+
+---
+
+# 📅 3.2 REPRODUCTION STATE ENGINE (CORE INTELLIGENCE)
+
+Each female animal has a computed state:
+
+---
+
+## 🐄 COW STATES
+
+```plaintext id="cow_states"
+HEIFER
+OPEN
+IN_HEAT
+SERVICED
+PREGNANT
+DRY
+CALVED
+```
+
+---
+
+## 🐐 GOAT / SHEEP STATES
+
+```plaintext id="small_ruminant_states"
+JUVENILE
+READY_FOR_BREEDING
+SERVICED
+PREGNANT
+KIDDING/LAMBING
+```
+
+---
+
+## 🧠 STATE IS NEVER MANUAL
+
+State is derived from events.
+
+Example:
+
+* AI recorded → state = SERVICED
+* pregnancy confirmed → state = PREGNANT
+* calving event → state = LACTATING
+
+---
+
+# 📆 3.3 AUTOMATIC CALENDAR GENERATION ENGINE
+
+This is where intelligence starts.
+
+---
+
+## AFTER MATING EVENT:
+
+System auto-generates:
+
+### COW
+
+* Pregnancy check date (≈ 30 days)
+* Expected calving date (≈ 283 days)
+
+### GOAT
+
+* Pregnancy check (~30 days)
+* Expected kidding (~150 days)
+
+### SHEEP
+
+* Pregnancy check (~30 days)
+* Expected lambing (~147 days)
+
+---
+
+## OUTPUT STRUCTURE
+
+```json id="calendar_001"
+{
+  "pregnancy_check_date": "2026-07-20",
+  "expected_birth_date": "2027-03-10",
+  "risk_level": "normal"
+}
+```
+
+---
+
+# 🚨 3.4 BREEDING ALERT ENGINE
+
+This is your **first predictive subsystem**
+
+---
+
+## RULE SETS
+
+### 🟡 Heat Detection Reminder
+
+```plaintext id="rule_heat"
+IF cow not serviced AND no heat recorded in 21 days
+THEN alert = "possible silent heat or missed cycle"
+```
+
+---
+
+### 🔵 Pregnancy Check Reminder
+
+```plaintext id="rule_preg"
+IF mating event + 30 days passed
+THEN alert = "pregnancy diagnosis due"
+```
+
+---
+
+### 🔴 Overdue Calving Risk
+
+```plaintext id="rule_overdue"
+IF today > expected_calving_date + 7 days
+THEN alert = "possible dystocia risk"
+```
+
+---
+
+### 🟠 Open Cow Alert
+
+```plaintext id="rule_open"
+IF days_since_last_service > 60–90 days
+THEN flag = "open cow"
+```
+
+---
+
+# 🧬 3.5 BREEDING PERFORMANCE KPIs
+
+This is where you start measuring reproductive efficiency.
+
+---
+
+## INDIVIDUAL KPIs
+
+### For each cow:
+
+* Conception rate
+* Services per conception
+* Days open
+* Calving interval
+
+---
+
+## HERD KPIs
+
+* Overall conception rate (%)
+* Heat detection efficiency
+* Pregnancy rate
+* Average days open
+
+---
+
+# 🧠 3.6 GENETICS TRACKING (MVP VERSION)
+
+We keep this simple but powerful.
+
+---
+
+## BASIC GENETIC FIELDS
+
+Add to animal table:
+
+```sql id="genetics_001"
+sire_id
+dam_id
+genetic_line (optional tag)
+```
+
+---
+
+## WHY THIS MATTERS
+
+It allows:
+
+* lineage tracking
+* breeding optimization later
+* selection of best animals
+
+---
+
+# 📡 3.7 API DESIGN (M3)
+
+---
+
+## BREEDING EVENTS
+
+```http id="api_breed_001"
+POST /api/v1/breeding/event
+GET  /api/v1/breeding/{animal_id}
+```
+
+---
+
+## CALENDAR
+
+```http id="api_calendar_001"
+GET /api/v1/breeding/calendar
+GET /api/v1/breeding/due-calvings
+```
+
+---
+
+## KPI
+
+```http id="api_kpi_003"
+GET /api/v1/breeding/kpi/herd
+GET /api/v1/breeding/kpi/animal/{id}
+```
+
+---
+
+# 📱 3.8 MOBILE UI DESIGN (BREEDING MODULE)
+
+---
+
+## 🏠 BREEDING DASHBOARD
+
+* cows in heat
+* recently serviced
+* pregnancy confirmed
+* due calving list
+
+---
+
+## 🐄 ANIMAL BREEDING TAB
+
+Timeline view:
+
+* heat events
+* AI records
+* pregnancy results
+* calving history
+
+---
+
+## 📆 BREEDING CALENDAR
+
+* upcoming pregnancy checks
+* expected calvings
+* overdue cases
+
+---
+
+## ➕ BREEDING ENTRY SCREEN
+
+Simple inputs:
+
+* select animal
+* event type
+* date
+* notes
+
+---
+
+# 🔁 3.9 DATA FLOW ARCHITECTURE
+
+```plaintext id="flow_m3"
+Mating Event
+   ↓
+Calculate EDD
+   ↓
+Update Animal State
+   ↓
+Generate Calendar Events
+   ↓
+Trigger Alerts
+   ↓
+Update KPIs
+```
+
+---
+
+# 📊 3.10 BREEDING INTELLIGENCE OUTPUTS
+
+After M3, system can answer:
+
+---
+
+## OPERATIONAL
+
+* Which cows are not conceiving?
+* Which animals are overdue for pregnancy check?
+* Which cows are likely open?
+
+---
+
+## STRATEGIC
+
+* What is herd fertility rate?
+* What is calving efficiency?
+* Which sire lines perform best?
+
+---
+
+## FINANCIAL (PREVIEW)
+
+* Which cows are underperforming reproductively?
+* Which cows are too costly to maintain?
+
+---
+
+# ⚙️ 3.11 INDEXING STRATEGY
+
+```sql id="index_m3"
+INDEX breeding_event_animal_id
+INDEX breeding_event_type
+INDEX breeding_event_date
+INDEX animal_sire_id
+INDEX animal_dam_id
+```
+
+---
+
+# 🚨 3.12 M3 EXIT CRITERIA (STRICT)
+
+You only proceed if:
+
+### ✔ All breeding events are tracked
+
+### ✔ Calving dates are auto-calculated
+
+### ✔ Pregnancy check alerts work
+
+### ✔ Herd reproductive calendar works
+
+### ✔ Animal states update automatically
+
+### ✔ Basic KPIs are visible
+
+---
+
+# 🧠 WHAT YOU NOW HAVE AFTER M3
+
+You now have a:
+
+## 🧬 REPRODUCTIVE CONTROL SYSTEM
+
+Your farm can now:
+
+* predict births
+* track fertility efficiency
+* detect reproductive failures early
+* optimize breeding cycles
+
+---
+
+# ⚠️ STRATEGIC INSIGHT
+
+Dr. Mufti, this milestone is critical:
+
+> “Profit in livestock is determined 50% by reproduction efficiency, not production.”
+
+If M3 is strong:
+
+* calving intervals shrink
+* milk production stabilizes
+* herd growth becomes predictable
+* genetic quality improves over time
+
+
+
+# 👉 MILESTONE 4 — POULTRY + HATCHERY BATCH ENGINE
+
+This is where your system shifts from:
+
+* animal-based logic → batch-based industrial logic
+
+We will build:
+
+* broiler lifecycle system
+* feed-to-growth intelligence
+* hatchery incubation engine
+* cost-per-kg and cost-per-chick computation
+
+This is your **industrial production intelligence layer**.
+
+
+ 🧭 MILESTONE 4 — POULTRY + HATCHERY BATCH ENGINE (FULL SPEC)
+
+## 🎯 PURPOSE OF M4
+
+To build a system that can:
+
+* manage poultry as **production cycles (batches)**
+* track feed → growth → mortality → revenue
+* compute cost per kg meat
+* manage hatchery incubation cycles
+* compute cost per chick
+* link production directly to profitability
+
+---
+
+# 🧠 CORE SHIFT IN M4
+
+### Before (M1–M3):
+
+> “Each animal matters individually”
+
+### Now (M4):
+
+> “Each batch is a financial unit”
+
+So:
+
+* broilers = batch economy
+* eggs = incubation economy
+* chicks = output units
+* feed = cost driver
+
+---
+
+# 🐓 4.1 POULTRY BATCH CORE MODEL
+
+## 🟩 BATCH TABLE (CENTRAL ENTITY)
+
+```sql id="batch_001"
+id (UUID)
+
+batch_type (broiler)
+breed (optional)
+
+start_date
+end_date (nullable)
+
+initial_count
+current_count
+
+status (active, closed)
+
+location_id
+
+created_by
+created_at
+```
+
+---
+
+## 🧠 WHY BATCH MODEL?
+
+Because poultry profitability is:
+
+> Input (chicks + feed + time) → Output (meat)
+
+NOT individual tracking.
+
+---
+
+# 📊 4.2 POULTRY EVENT SYSTEM
+
+Every action inside a batch is an event.
+
+---
+
+## 🟩 POULTRY EVENTS TABLE
+
+```sql id="poultry_event_001"
+id
+batch_id
+
+event_type (
+  feed,
+  mortality,
+  vaccination,
+  weight_sample,
+  sale,
+  transfer
+)
+
+event_date
+
+quantity
+value_json (optional)
+
+created_by
+```
+
+---
+
+## 🧠 WHY THIS DESIGN IS POWERFUL
+
+It allows:
+
+* FCR calculation
+* mortality tracking
+* profit per batch
+* performance comparison across cycles
+
+---
+
+# 🧮 4.3 CORE POULTRY KPIs
+
+This is where intelligence starts.
+
+---
+
+## 📌 FEED CONVERSION RATIO (FCR)
+
+```plaintext id="fcr_001"
+FCR = Total Feed Consumed (kg) / Total Weight Gain (kg)
+```
+
+---
+
+## 📌 MORTALITY RATE
+
+```plaintext id="mortality_001"
+Mortality % = (Dead Birds / Initial Birds) × 100
+```
+
+---
+
+## 📌 COST PER KG MEAT
+
+```plaintext id="costkg_001"
+Cost per kg = Total Cost / Total Weight Sold
+```
+
+---
+
+## 📌 BATCH PROFIT
+
+```plaintext id="profit_batch_001"
+Profit = Revenue - (Feed Cost + Chick Cost + Medication + Labour share)
+```
+
+---
+
+# 🧠 4.4 POULTRY INTELLIGENCE ENGINE
+
+---
+
+## RULES ENGINE
+
+### 🔴 High Mortality Alert
+
+```plaintext id="rule_p1"
+IF mortality_rate > 5% (early stage)
+THEN alert = "critical flock health issue"
+```
+
+---
+
+### 🟡 Poor FCR Alert
+
+```plaintext id="rule_p2"
+IF FCR > 2.2–2.5 (broiler threshold)
+THEN alert = "feed inefficiency detected"
+```
+
+---
+
+### 🟠 Batch Risk Warning
+
+```plaintext id="rule_p3"
+IF mortality spikes in 48 hours
+THEN flag = "disease outbreak risk"
+```
+
+---
+
+# 🐣 4.5 HATCHERY SYSTEM (INCUBATION ENGINE)
+
+Now we build the second half.
+
+---
+
+## 🟩 HATCHERY BATCH TABLE
+
+```sql id="hatch_001"
+id (UUID)
+
+egg_source (farm / external supplier)
+
+egg_count
+breed
+
+set_date
+expected_hatch_date
+
+fertile_eggs (nullable)
+hatched_chicks (nullable)
+failed_eggs (nullable)
+
+status (incubating, completed)
+
+created_by
+```
+
+---
+
+# 🧪 4.6 HATCHERY EVENTS
+
+```sql id="hatch_event_001"
+id
+batch_id
+
+event_type (
+  candling,
+  temperature_check,
+  humidity_check,
+  turning,
+  hatch_start,
+  hatch_complete
+)
+
+event_date
+
+value_json
+```
+
+---
+
+# 📊 4.7 HATCHERY KPIs
+
+---
+
+## 📌 FERTILITY RATE
+
+```plaintext id="fertility_001"
+Fertility % = Fertile Eggs / Total Eggs × 100
+```
+
+---
+
+## 📌 HATCHABILITY RATE
+
+```plaintext id="hatch_002"
+Hatchability % = Chicks Hatched / Fertile Eggs × 100
+```
+
+---
+
+## 📌 COST PER CHICK
+
+```plaintext id="cost_chick_001"
+Cost per chick = Total incubation cost / Chicks hatched
+```
+
+---
+
+# 📡 4.8 API DESIGN (M4)
+
+---
+
+## POULTRY APIs
+
+```http id="api_p1"
+POST /api/v1/poultry/batch
+GET  /api/v1/poultry/batch/{id}
+POST /api/v1/poultry/batch/{id}/event
+GET  /api/v1/poultry/batch/{id}/kpi
+```
+
+---
+
+## HATCHERY APIs
+
+```http id="api_h1"
+POST /api/v1/hatchery/batch
+GET  /api/v1/hatchery/batch/{id}
+POST /api/v1/hatchery/batch/{id}/event
+GET  /api/v1/hatchery/batch/{id}/kpi
+```
+
+---
+
+## ANALYTICS APIs
+
+```http id="api_a1"
+GET /api/v1/poultry/profit/summary
+GET /api/v1/hatchery/profit/summary
+```
+
+---
+
+# 📱 4.9 MOBILE UI DESIGN
+
+---
+
+## 🐓 POULTRY DASHBOARD
+
+* active batches
+* mortality rate today
+* feed usage
+* estimated profit
+
+---
+
+## 📦 BATCH DETAIL SCREEN
+
+Tabs:
+
+* overview
+* feed log
+* mortality log
+* weight sampling
+* financial summary
+
+---
+
+## 🥚 HATCHERY DASHBOARD
+
+* eggs incubating
+* expected hatch dates
+* fertility rate
+* hatch rate
+
+---
+
+## ➕ ENTRY SCREENS
+
+### Poultry:
+
+* feed entry
+* mortality entry
+* weight sampling
+
+### Hatchery:
+
+* egg batch entry
+* candling results
+
+---
+
+# 🔁 4.10 DATA FLOW ARCHITECTURE
+
+---
+
+## POULTRY FLOW
+
+```plaintext id="flow_p1"
+Batch Created
+   ↓
+Feed / Mortality Events
+   ↓
+KPI Calculation
+   ↓
+FCR Computation
+   ↓
+Profit Calculation
+   ↓
+Alerts Triggered
+```
+
+---
+
+## HATCHERY FLOW
+
+```plaintext id="flow_h1"
+Egg Batch Created
+   ↓
+Incubation Events
+   ↓
+Candling Updates
+   ↓
+Hatch Outcome
+   ↓
+Cost per Chick Computed
+```
+
+---
+
+# 📊 4.11 INTELLIGENCE OUTPUTS
+
+After M4, system can answer:
+
+---
+
+## POULTRY
+
+* Which batch is most profitable?
+* Which batch has highest mortality?
+* What is current FCR?
+
+---
+
+## HATCHERY
+
+* What is hatch success rate?
+* Which egg source performs best?
+* What is cost per chick?
+
+---
+
+## STRATEGIC
+
+* Should we expand poultry or hatchery?
+* Which system gives better ROI?
+
+---
+
+# ⚙️ 4.12 INDEXING STRATEGY
+
+```sql id="index_m4"
+INDEX poultry_batch_status
+INDEX poultry_event_batch_id
+INDEX hatch_batch_status
+INDEX hatch_event_batch_id
+```
+
+---
+
+# 🚨 4.13 M4 EXIT CRITERIA (STRICT)
+
+You only proceed if:
+
+### ✔ Poultry batches can be created
+
+### ✔ Feed and mortality tracked correctly
+
+### ✔ FCR is calculated
+
+### ✔ Profit per batch is visible
+
+### ✔ Hatchery cycles work end-to-end
+
+### ✔ Hatch rate is computed correctly
+
+### ✔ Cost per chick is calculated
+
+---
+
+# 🧠 WHAT YOU NOW HAVE AFTER M4
+
+You now have:
+
+## 🏭 INDUSTRIAL LIVESTOCK PRODUCTION ENGINE
+
+Your farm system can now:
+
+* treat poultry as a production factory
+* treat hatchery as a biological manufacturing unit
+* calculate efficiency like an industrial system
+* compare profitability across production cycles
+
+---
+
+# ⚠️ STRATEGIC INSIGHT
+
+Dr. Mufti, this milestone is critical because:
+
+> “Poultry and hatchery are where livestock becomes manufacturing, not husbandry.”
+
+This is where:
+
+* feed efficiency becomes profit
+* mortality becomes financial loss
+* timing becomes ROI factor
+
+
+# 👉 MILESTONE 5 — FINANCIAL INTELLIGENCE ENGINE
+
+This is where we unify everything:
+
+* dairy revenue
+* reproduction value
+* poultry batch profit
+* hatchery income
+
+And convert the entire farm into:
+
+> A single profit intelligence system per enterprise, per animal, per batch.
+
+This is where your system becomes a **true farm ERP brain.**
+
+
+# 🧭 MILESTONE 5 — FINANCIAL INTELLIGENCE ENGINE (FIE)
+
+## 🎯 PURPOSE OF M5
+
+To build a system that:
+
+* captures every income and expense in real time
+* links every transaction to biological/production entities
+* computes profit per cow, per batch, per hatchery cycle
+* reveals true enterprise profitability
+* enables financial decision-making per unit of production
+
+---
+
+# 🧠 CORE DESIGN PRINCIPLE
+
+> “Every naira must be traceable to a biological or production source.”
+
+No “general expenses without origin”.
+
+Everything must attach to:
+
+* animal (cow/goat/sheep)
+* batch (poultry)
+* hatchery cycle
+* or general overhead (rare)
+
+---
+
+# 💰 5.1 CORE FINANCIAL DATA MODEL
+
+## 🟩 5.1.1 TRANSACTIONS TABLE (CORE LEDGER)
+
+```sql id="finance_txn_001"
+id (UUID)
+
+transaction_type (income, expense)
+
+category (
+  milk_sales,
+  animal_sales,
+  poultry_sales,
+  hatchery_sales,
+  feed,
+  medication,
+  labor,
+  equipment,
+  utilities,
+  misc
+)
+
+amount
+
+currency (NGN default)
+
+related_entity_type (
+  animal,
+  poultry_batch,
+  hatchery_batch,
+  null
+)
+
+related_entity_id
+
+description
+
+transaction_date
+
+created_by
+```
+
+---
+
+## 🧠 WHY THIS DESIGN IS CRITICAL
+
+This enables:
+
+* per-cow profit tracking
+* per-batch ROI
+* enterprise comparison
+* full traceability
+
+---
+
+# 📊 5.2 COST ALLOCATION ENGINE (VERY IMPORTANT)
+
+This is where most farm systems fail.
+
+You must allocate shared costs intelligently.
+
+---
+
+## TYPES OF COSTS
+
+### 1. Direct Costs
+
+* feed for poultry batch
+* medication for cow
+* chick purchase
+
+These are directly linked.
+
+---
+
+### 2. Indirect Costs (Allocated)
+
+* labor
+* electricity
+* water
+* transport
+
+---
+
+## SIMPLE MVP ALLOCATION RULE
+
+```plaintext id="alloc_001"
+Indirect cost per unit =
+Total indirect cost / total active production units
+```
+
+Example:
+
+* 10 cows
+* 5 poultry batches
+* 2 hatchery cycles
+
+→ divide overhead proportionally
+
+---
+
+# 📈 5.3 PROFIT ENGINE (CORE INTELLIGENCE LAYER)
+
+Now we unify everything.
+
+---
+
+## 🐄 PER COW PROFIT
+
+```plaintext id="cow_profit_001"
+Milk revenue + animal sale value
+- feed cost
+- medical cost
+- allocated overhead
+```
+
+---
+
+## 🐓 PER POULTRY BATCH PROFIT
+
+```plaintext id="batch_profit_001"
+Total sales revenue
+- feed cost
+- chick cost
+- medication cost
+- allocated overhead
+```
+
+---
+
+## 🥚 HATCHERY PROFIT
+
+```plaintext id="hatch_profit_001"
+Chick sales revenue
+- egg cost
+- incubation cost
+- electricity
+- labor
+- overhead allocation
+```
+
+---
+
+## 🏭 TOTAL FARM PROFIT
+
+```plaintext id="farm_profit_001"
+Sum(all enterprise profits)
+```
+
+---
+
+# 📊 5.4 FINANCIAL KPI ENGINE
+
+This is where intelligence becomes visible.
+
+---
+
+## CORE KPIs
+
+### 📌 Revenue Breakdown
+
+* dairy %
+* poultry %
+* hatchery %
+
+---
+
+### 📌 Profitability Ratios
+
+* ROI per enterprise
+* cost-to-revenue ratio
+* margin per unit
+
+---
+
+### 📌 Efficiency Metrics
+
+* cost per liter milk
+* cost per kg meat
+* cost per chick
+
+---
+
+### 📌 Loss Detection
+
+* highest cost center
+* unprofitable batches
+* negative margin animals
+
+---
+
+# 🚨 5.5 FINANCIAL ALERT ENGINE
+
+---
+
+## RULE SETS
+
+### 🔴 Negative Profit Alert
+
+```plaintext id="rule_fin_1"
+IF entity_profit < 0
+THEN alert = "loss-making unit detected"
+```
+
+---
+
+### 🟡 Cost Spike Alert
+
+```plaintext id="rule_fin_2"
+IF feed_cost increases > 20% in 7 days
+THEN alert = "feed cost spike"
+```
+
+---
+
+### 🔵 Low ROI Warning
+
+```plaintext id="rule_fin_3"
+IF ROI < threshold (enterprise-specific)
+THEN flag entity
+```
+
+---
+
+# 📡 5.6 FINANCIAL API DESIGN
+
+---
+
+## TRANSACTIONS
+
+```http id="api_fin_001"
+POST /api/v1/finance/transaction
+GET  /api/v1/finance/transactions
+```
+
+---
+
+## PROFIT ANALYTICS
+
+```http id="api_fin_002"
+GET /api/v1/finance/profit/farm
+GET /api/v1/finance/profit/animal/{id}
+GET /api/v1/finance/profit/batch/{id}
+```
+
+---
+
+## KPI ENDPOINTS
+
+```http id="api_fin_003"
+GET /api/v1/finance/kpi/summary
+GET /api/v1/finance/kpi/enterprise-breakdown
+```
+
+---
+
+# 📱 5.7 MOBILE UI DESIGN (FINANCE MODULE)
+
+---
+
+## 🏠 FINANCE DASHBOARD
+
+* total revenue today
+* total expenses today
+* net profit
+* top earning enterprise
+
+---
+
+## 📊 ENTERPRISE BREAKDOWN
+
+Tabs:
+
+* dairy
+* poultry
+* hatchery
+
+Each shows:
+
+* revenue
+* cost
+* profit
+* trend
+
+---
+
+## 🧾 TRANSACTION ENTRY
+
+Simple form:
+
+* type (income/expense)
+* category
+* amount
+* link entity (optional but encouraged)
+
+---
+
+## 📈 PROFIT ANALYTICS SCREEN
+
+* per cow profit ranking
+* per batch profitability
+* hatchery cycle performance
+
+---
+
+# 🔁 5.8 DATA FLOW ARCHITECTURE
+
+```plaintext id="flow_fin_001"
+Production Events (M1–M4)
+        ↓
+Revenue + Expense Capture
+        ↓
+Transaction Ledger
+        ↓
+Cost Allocation Engine
+        ↓
+Profit Computation Engine
+        ↓
+KPI Dashboard
+        ↓
+Alerts System
+```
+
+---
+
+# 📊 5.9 INTELLIGENCE OUTPUTS
+
+After M5, system can answer:
+
+---
+
+## OPERATIONAL
+
+* Which cow is profitable?
+* Which poultry batch is losing money?
+* What is today's net cashflow?
+
+---
+
+## STRATEGIC
+
+* Which enterprise should be expanded?
+* Which system is draining resources?
+* Where is inefficiency occurring?
+
+---
+
+## EXECUTIVE
+
+* Should we scale dairy or poultry?
+* What is ROI per enterprise?
+* What is break-even point?
+
+---
+
+# ⚙️ 5.10 INDEXING STRATEGY
+
+```sql id="index_fin_001"
+INDEX finance_txn_type
+INDEX finance_txn_category
+INDEX finance_txn_entity
+INDEX finance_txn_date
+```
+
+---
+
+# 🚨 5.11 M5 EXIT CRITERIA (STRICT)
+
+You only proceed if:
+
+### ✔ All transactions can be recorded
+
+### ✔ Every enterprise has profit visibility
+
+### ✔ Cost allocation works
+
+### ✔ Per cow / batch profit is accurate
+
+### ✔ Farm-level profit is computed
+
+### ✔ Loss-making units are detectable
+
+---
+
+# 🧠 WHAT YOU NOW HAVE AFTER M5
+
+You now have:
+
+## 💰 A FULL FARM FINANCIAL OPERATING SYSTEM
+
+Your farm is no longer just:
+
+* animals
+* production
+* batches
+
+It is now:
+
+> A real-time profit computing organism
+
+---
+
+# ⚠️ STRATEGIC INSIGHT
+
+Dr. Mufti, this is the turning point:
+
+> “Until you measure profit per biological unit, you are not farming—you are guessing.”
+
+After M5:
+
+* every cow is a business unit
+* every batch is a financial project
+* every chick is a revenue unit
+* every decision becomes data-backed
+
+
+# 👉 MILESTONE 6 — REAL-TIME ALERT & OPTIMIZATION ENGINE
+
+This is where the system becomes truly intelligent:
+
+* proactive alerts
+* anomaly detection
+* rule-based automation
+* early disease warning patterns
+* production optimization suggestions
+
+This is the final step where your system becomes a **true farm brain (not just ERP).**
+
+
+# 🧭 MILESTONE 6 — REAL-TIME ALERT & OPTIMIZATION ENGINE (RTAOE)
+
+## 🎯 PURPOSE OF M6
+
+To build a system that can:
+
+* detect anomalies across all farm operations in real time
+* trigger alerts before problems become losses
+* automate routine decisions
+* recommend corrective actions
+* continuously optimize farm performance
+
+---
+
+# 🧠 CORE CONCEPT
+
+> “If M5 tells you what happened financially, M6 tells you what is about to go wrong.”
+
+This is predictive + reactive intelligence.
+
+---
+
+# ⚙️ 6.1 SYSTEM ARCHITECTURE (EVENT-FIRST DESIGN)
+
+Everything flows through events:
+
+```plaintext id="flow_m6_001"
+Data Input (Milk, Birth, Feed, Mortality, Finance)
+        ↓
+Event Stream
+        ↓
+Rule Engine
+        ↓
+Anomaly Detection Engine
+        ↓
+Alert Generator
+        ↓
+Notification Dispatcher
+        ↓
+Dashboard + Action Suggestions
+```
+
+---
+
+# 🧩 6.2 CORE COMPONENTS
+
+We break M6 into 5 subsystems:
+
+---
+
+## 1. RULE ENGINE (DETERMINISTIC LOGIC)
+
+## 2. ANOMALY DETECTION ENGINE (STATISTICAL)
+
+## 3. ALERT ENGINE (CONSOLIDATION LAYER)
+
+## 4. NOTIFICATION SYSTEM (DELIVERY LAYER)
+
+## 5. OPTIMIZATION ENGINE (RECOMMENDATION LAYER)
+
+---
+
+# 📜 6.3 RULE ENGINE (CORE LOGIC LAYER)
+
+This is your **hard-coded intelligence layer**
+
+---
+
+## RULE STRUCTURE
+
+```sql id="rule_001"
+id
+name
+entity_type (animal, batch, finance, hatchery)
+condition_json
+severity (low, medium, high, critical)
+action_type (alert, block, recommend)
+active
+```
+
+---
+
+## EXAMPLE RULES
+
+### 🐄 Dairy Rule — Milk Drop
+
+```plaintext id="rule_milk_drop"
+IF milk_today < 0.8 × average_7_days
+THEN alert = "Milk drop detected"
+SEVERITY = medium
+```
+
+---
+
+### 🐄 Health Rule — Disease Risk
+
+```plaintext id="rule_health"
+IF (treatment_count > 2 in 7 days)
+THEN alert = "Chronic illness risk"
+```
+
+---
+
+### 🐓 Poultry Rule — Mortality Spike
+
+```plaintext id="rule_poultry"
+IF mortality_rate_24h > 2%
+THEN alert = "Possible outbreak"
+SEVERITY = critical
+```
+
+---
+
+### 💰 Finance Rule — Loss Detection
+
+```plaintext id="rule_finance"
+IF entity_profit < 0 for 3 consecutive days
+THEN alert = "Consistent loss detected"
+```
+
+---
+
+# 📊 6.4 ANOMALY DETECTION ENGINE (STATISTICAL LAYER)
+
+This is where you go beyond rules.
+
+---
+
+## CORE METHODS (MVP LEVEL)
+
+### 1. Moving Average Deviation
+
+```plaintext id="anom_001"
+If value deviates > 2 standard deviations → anomaly
+```
+
+---
+
+### 2. Trend Break Detection
+
+* sudden drop in milk
+* sudden spike in mortality
+* feed consumption irregularity
+
+---
+
+### 3. Comparative Benchmarking
+
+Compare:
+
+* cow vs herd average
+* batch vs batch performance
+* hatch cycle vs historical cycles
+
+---
+
+## OUTPUT EXAMPLE
+
+```json id="anom_output"
+{
+  "entity": "Cow-12",
+  "metric": "milk_production",
+  "expected": 12.5,
+  "actual": 8.1,
+  "severity": "high"
+}
+```
+
+---
+
+# 🚨 6.5 ALERT ENGINE (CONSOLIDATION LAYER)
+
+This layer merges:
+
+* rules
+* anomalies
+* financial signals
+
+---
+
+## ALERT STRUCTURE
+
+```sql id="alert_001"
+id
+entity_type
+entity_id
+
+alert_type
+severity
+
+message
+
+status (open, acknowledged, resolved)
+
+created_at
+```
+
+---
+
+## ALERT TYPES
+
+* health_alert
+* production_alert
+* reproduction_alert
+* financial_alert
+* system_alert
+
+---
+
+## ALERT PRIORITY RULE
+
+```plaintext id="priority_001"
+critical → immediate action
+high → same day
+medium → monitor
+low → informational
+```
+
+---
+
+# 📲 6.6 NOTIFICATION SYSTEM (DELIVERY LAYER)
+
+This is how intelligence reaches humans.
+
+---
+
+## CHANNELS (MVP)
+
+* in-app notifications
+* WhatsApp API (high value)
+* SMS fallback (optional)
+
+---
+
+## NOTIFICATION FLOW
+
+```plaintext id="notif_001"
+Alert Created
+    ↓
+Priority Check
+    ↓
+Channel Selection
+    ↓
+Message Formatting
+    ↓
+Delivery
+```
+
+---
+
+## EXAMPLE MESSAGE
+
+> “ALERT: Cow-12 milk production dropped by 35% compared to 7-day average. Possible mastitis risk.”
+
+---
+
+# 🧠 6.7 OPTIMIZATION ENGINE (RECOMMENDATION LAYER)
+
+This is where system starts “thinking”.
+
+---
+
+## CORE FUNCTION
+
+It does NOT just warn — it suggests actions.
+
+---
+
+## EXAMPLES
+
+### 🐄 Dairy Optimization
+
+* isolate cow
+* check mastitis
+* adjust feed quality
+
+---
+
+### 🐓 Poultry Optimization
+
+* increase biosecurity
+* adjust stocking density
+* check water system
+
+---
+
+### 💰 Financial Optimization
+
+* reduce feed cost batch X
+* sell underperforming animals
+* prioritize high ROI batches
+
+---
+
+## OUTPUT FORMAT
+
+```json id="opt_001"
+{
+  "entity": "Batch-3",
+  "issue": "High FCR",
+  "recommendations": [
+    "Review feed quality",
+    "Check water system",
+    "Reduce density"
+  ]
+}
+```
+
+---
+
+# 📡 6.8 API DESIGN (M6)
+
+---
+
+## RULE ENGINE
+
+```http id="api_rule_001"
+POST /api/v1/rules
+GET  /api/v1/rules
+```
+
+---
+
+## ALERTS
+
+```http id="api_alert_001"
+GET  /api/v1/alerts
+PATCH /api/v1/alerts/{id}/resolve
+```
+
+---
+
+## INSIGHTS
+
+```http id="api_insight_001"
+GET /api/v1/insights/recommendations
+```
+
+---
+
+# 📱 6.9 MOBILE UI DESIGN (M6)
+
+---
+
+## 🚨 ALERT DASHBOARD
+
+Sections:
+
+* Critical alerts (top priority)
+* Active alerts
+* Resolved alerts
+
+---
+
+## 📊 INSIGHT PANEL
+
+Shows:
+
+* “What needs attention today”
+* “Top 3 risks in farm”
+* “Performance drops”
+
+---
+
+## 🧠 RECOMMENDATION SCREEN
+
+* problem detected
+* suggested actions
+* expected outcome
+
+---
+
+# 🔁 6.10 FULL DATA FLOW
+
+```plaintext id="flow_m6_final"
+M1–M5 Data Streams
+        ↓
+Rule Engine
+        ↓
+Anomaly Detection
+        ↓
+Alert Engine
+        ↓
+Notification System
+        ↓
+User Action
+        ↓
+System Feedback Loop
+```
+
+---
+
+# 🔄 6.11 FEEDBACK LOOP (IMPORTANT)
+
+After user action:
+
+* system logs response
+* evaluates effectiveness
+* improves future alerts
+
+This is the beginning of **adaptive intelligence**
+
+---
+
+# 📊 6.12 WHAT YOU CAN NOW DO AFTER M6
+
+Your system can now:
+
+## 🧠 DETECT
+
+* disease risk early
+* production drops
+* financial losses
+
+## 🚨 RESPOND
+
+* notify vet immediately
+* escalate critical issues
+
+## 💡 RECOMMEND
+
+* corrective feeding
+* isolation strategies
+* breeding adjustments
+
+## 📈 OPTIMIZE
+
+* improve FCR
+* increase milk yield
+* reduce mortality
+
+---
+
+# ⚠️ STRATEGIC INSIGHT
+
+Dr. Mufti, this is the key transformation:
+
+> “M5 tells you what happened. M6 prevents it from happening again.”
+
+This is where:
+
+* reactive farm management ends
+* predictive agriculture begins
+* decision automation starts
+
+---
+
+# 🧠 FINAL SYSTEM STATE AFTER M6
+
+You now have a:
+
+## 🧬 FULL FARM OPERATING SYSTEM
+
+With:
+
+* biological intelligence (M1)
+* production intelligence (M2)
+* reproductive forecasting (M3)
+* industrial batch economics (M4)
+* financial intelligence (M5)
+* real-time nervous system (M6)
+
+---
+
+

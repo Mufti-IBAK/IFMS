@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>IFMS - Batch Operational View</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap" rel="stylesheet"/>
+<style>
+        .material-symbols-outlined {
+            font-family: 'Material Symbols Outlined';
+            font-weight: normal;
+            font-style: normal;
+            font-size: 24px;
+            line-height: 1;
+            letter-spacing: normal;
+            text-transform: none;
+            display: inline-block;
+            white-space: nowrap;
+            word-wrap: normal;
+            direction: ltr;
+            -webkit-font-feature-settings: 'liga';
+            -webkit-font-smoothing: antialiased;
+        }
+    </style>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "inverse-on-surface": "#eff2e9",
+                        "surface": "#f7fbf1",
+                        "on-tertiary-container": "#ffaec6",
+                        "on-surface": "#191d17",
+                        "on-tertiary-fixed": "#3e001d",
+                        "surface-container-high": "#e6e9e0",
+                        "outline-variant": "#c0c9bb",
+                        "on-background": "#191d17",
+                        "error": "#ba1a1a",
+                        "on-primary-fixed-variant": "#0c5216",
+                        "on-primary": "#ffffff",
+                        "secondary-fixed-dim": "#88d982",
+                        "on-secondary-fixed": "#002204",
+                        "primary-container": "#1b5e20",
+                        "on-primary-container": "#90d689",
+                        "surface-container": "#ecefe6",
+                        "primary-fixed": "#acf4a4",
+                        "background": "#f7fbf1",
+                        "tertiary-container": "#883454",
+                        "surface-container-low": "#f2f5ec",
+                        "secondary": "#1b6d24",
+                        "surface-container-highest": "#e0e4db",
+                        "error-container": "#ffdad6",
+                        "surface-container-lowest": "#ffffff",
+                        "surface-dim": "#d8dbd2",
+                        "tertiary": "#6b1d3d",
+                        "inverse-primary": "#91d78a",
+                        "outline": "#717a6d",
+                        "secondary-fixed": "#a3f69c",
+                        "tertiary-fixed": "#ffd9e2",
+                        "on-error": "#ffffff",
+                        "tertiary-fixed-dim": "#ffb1c8",
+                        "on-secondary": "#ffffff",
+                        "inverse-surface": "#2d322c",
+                        "on-tertiary": "#ffffff",
+                        "secondary-container": "#a0f399",
+                        "on-surface-variant": "#41493e",
+                        "on-tertiary-fixed-variant": "#7a2949",
+                        "on-secondary-container": "#217128",
+                        "primary-fixed-dim": "#91d78a",
+                        "surface-variant": "#e0e4db",
+                        "primary": "#00450d",
+                        "surface-tint": "#2a6b2c",
+                        "on-error-container": "#93000a",
+                        "on-secondary-fixed-variant": "#005312",
+                        "surface-bright": "#f7fbf1",
+                        "on-primary-fixed": "#002203"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "margin_desktop": "24px",
+                        "stack_sm": "4px",
+                        "gutter": "16px",
+                        "stack_md": "8px",
+                        "base_unit": "8px",
+                        "margin_mobile": "16px",
+                        "stack_lg": "16px"
+                    },
+                    "fontFamily": {
+                        "body-md": ["Inter"],
+                        "data-mono": ["monospace"],
+                        "headline-lg-mobile": ["Inter"],
+                        "label-md": ["Inter"],
+                        "body-sm": ["Inter"],
+                        "title-md": ["Inter"],
+                        "display-lg": ["Inter"],
+                        "headline-lg": ["Inter"]
+                    },
+                    "fontSize": {
+                        "body-md": ["16px", { "lineHeight": "24px", "fontWeight": "400" }],
+                        "data-mono": ["14px", { "lineHeight": "20px", "fontWeight": "500" }],
+                        "headline-lg-mobile": ["24px", { "lineHeight": "32px", "fontWeight": "600" }],
+                        "label-md": ["12px", { "lineHeight": "16px", "letterSpacing": "0.5px", "fontWeight": "500" }],
+                        "body-sm": ["14px", { "lineHeight": "20px", "fontWeight": "400" }],
+                        "title-md": ["18px", { "lineHeight": "24px", "fontWeight": "600" }],
+                        "display-lg": ["48px", { "lineHeight": "56px", "letterSpacing": "-0.02em", "fontWeight": "700" }],
+                        "headline-lg": ["32px", { "lineHeight": "40px", "letterSpacing": "-0.01em", "fontWeight": "600" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background text-on-background font-body-md min-h-screen">
+<!-- TopAppBar from JSON -->
+<header class="bg-surface dark:bg-surface-dim fixed top-0 left-0 w-full z-50 flex justify-between items-center px-margin_mobile py-stack_md shadow-sm dark:shadow-none bg-surface-container dark:bg-surface-container-high transition-colors">
+<div class="flex items-center gap-stack_md">
+<!-- Leading Avatar -->
+<div class="w-8 h-8 rounded-full bg-primary-container text-on-primary-container flex items-center justify-center font-title-md text-title-md font-bold">
+                U
+            </div>
+<!-- Headline -->
+<h1 class="font-title-md text-title-md font-bold text-primary dark:text-primary-fixed">IFMS - Farm Brain Core</h1>
+</div>
+<!-- Trailing Icon -->
+<button class="text-primary dark:text-primary-fixed hover:bg-surface-container-highest dark:hover:bg-surface-container-high rounded-full p-1 transition-colors">
+<span class="material-symbols-outlined" data-icon="sync">sync</span>
+</button>
+</header>
+<!-- Main Content Canvas -->
+<main class="pt-[72px] pb-[88px] px-margin_mobile space-y-gutter">
+<!-- Batch Header & Status -->
+<section class="flex flex-col gap-stack_sm mt-stack_lg">
+<div class="flex justify-between items-center">
+<div class="flex items-center gap-stack_sm cursor-pointer hover:opacity-80 transition-opacity">
+<h2 class="font-headline-lg-mobile text-headline-lg-mobile text-on-surface">Batch #12 - House A</h2>
+<span class="material-symbols-outlined text-on-surface-variant">arrow_drop_down</span>
+</div>
+<div class="bg-primary-container text-on-primary-container px-3 py-1 rounded-full font-label-md text-label-md font-bold shadow-sm">
+                    Day 28
+                </div>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface-variant">Broiler • Cobb 500 • Est. Harvest: Day 42</p>
+</section>
+<!-- Metrics Bento Grid -->
+<section class="grid grid-cols-2 gap-stack_md">
+<!-- FCR Card -->
+<div class="bg-surface-container rounded-xl p-gutter shadow-sm border border-outline-variant flex flex-col justify-between">
+<div class="flex justify-between items-start mb-stack_md">
+<span class="font-label-md text-label-md text-on-surface-variant uppercase tracking-wider">Current FCR</span>
+<span class="material-symbols-outlined text-primary" style="font-variation-settings: 'FILL' 1;">trending_down</span>
+</div>
+<div>
+<div class="font-display-lg text-display-lg text-on-surface">1.42</div>
+<div class="font-body-sm text-body-sm text-on-surface-variant mt-1 flex items-center gap-1">
+                        Target: 1.45 <span class="text-primary font-bold text-xs">-0.03</span>
+</div>
+</div>
+</div>
+<!-- Mortality Card -->
+<div class="bg-error-container rounded-xl p-gutter shadow-sm flex flex-col justify-between">
+<div class="flex justify-between items-start mb-stack_md">
+<span class="font-label-md text-label-md text-on-error-container uppercase tracking-wider">Mortality Rate</span>
+<span class="material-symbols-outlined text-error" style="font-variation-settings: 'FILL' 1;">warning</span>
+</div>
+<div>
+<div class="font-display-lg text-display-lg text-error">2.1<span class="text-title-md font-title-md">%</span></div>
+<div class="font-body-sm text-body-sm text-on-error-container mt-1">
+                        Limit: 3.0%
+                    </div>
+</div>
+</div>
+</section>
+<!-- Quick Log Form -->
+<section class="bg-surface-container-low rounded-xl p-gutter border border-outline-variant space-y-stack_md">
+<h3 class="font-title-md text-title-md text-on-surface">Quick Entry</h3>
+<div class="grid grid-cols-3 gap-stack_md">
+<button class="flex flex-col items-center justify-center gap-2 bg-primary text-on-primary rounded-lg p-3 hover:opacity-90 transition-opacity shadow-sm">
+<span class="material-symbols-outlined">nutrition</span>
+<span class="font-label-md text-label-md text-center">+1 Feed Bag</span>
+</button>
+<button class="flex flex-col items-center justify-center gap-2 bg-error text-on-error rounded-lg p-3 hover:opacity-90 transition-opacity shadow-sm">
+<span class="material-symbols-outlined">heart_broken</span>
+<span class="font-label-md text-label-md text-center">+1 Mortality</span>
+</button>
+<button class="flex flex-col items-center justify-center gap-2 border border-outline text-on-surface rounded-lg p-3 hover:bg-surface-variant transition-colors bg-surface">
+<span class="material-symbols-outlined">scale</span>
+<span class="font-label-md text-label-md text-center">Log Weight</span>
+</button>
+</div>
+</section>
+<!-- Chart Section (Mockup) -->
+<section class="bg-surface-container rounded-xl p-gutter border border-outline-variant">
+<div class="flex justify-between items-center mb-stack_lg">
+<h3 class="font-title-md text-title-md text-on-surface">7-Day Mortality Trend</h3>
+<button class="text-primary text-label-md font-label-md">Details</button>
+</div>
+<!-- CSS Bar Chart Mockup -->
+<div class="flex items-end justify-between h-32 gap-1 pt-4 border-b border-outline-variant">
+<!-- Day -6 -->
+<div class="flex flex-col items-center gap-2 flex-1 group">
+<div class="w-full bg-primary-container rounded-t-sm h-[40%] group-hover:bg-primary transition-colors"></div>
+<span class="font-label-md text-label-md text-on-surface-variant text-[10px]">D22</span>
+</div>
+<!-- Day -5 -->
+<div class="flex flex-col items-center gap-2 flex-1 group">
+<div class="w-full bg-primary-container rounded-t-sm h-[35%] group-hover:bg-primary transition-colors"></div>
+<span class="font-label-md text-label-md text-on-surface-variant text-[10px]">D23</span>
+</div>
+<!-- Day -4 -->
+<div class="flex flex-col items-center gap-2 flex-1 group">
+<div class="w-full bg-primary-container rounded-t-sm h-[45%] group-hover:bg-primary transition-colors"></div>
+<span class="font-label-md text-label-md text-on-surface-variant text-[10px]">D24</span>
+</div>
+<!-- Day -3 -->
+<div class="flex flex-col items-center gap-2 flex-1 group">
+<div class="w-full bg-primary-container rounded-t-sm h-[50%] group-hover:bg-primary transition-colors"></div>
+<span class="font-label-md text-label-md text-on-surface-variant text-[10px]">D25</span>
+</div>
+<!-- Day -2 -->
+<div class="flex flex-col items-center gap-2 flex-1 group">
+<div class="w-full bg-error-container rounded-t-sm h-[80%] group-hover:bg-error transition-colors"></div>
+<span class="font-label-md text-label-md text-on-surface-variant text-[10px]">D26</span>
+</div>
+<!-- Day -1 -->
+<div class="flex flex-col items-center gap-2 flex-1 group">
+<div class="w-full bg-error-container rounded-t-sm h-[70%] group-hover:bg-error transition-colors"></div>
+<span class="font-label-md text-label-md text-on-surface-variant text-[10px]">D27</span>
+</div>
+<!-- Today -->
+<div class="flex flex-col items-center gap-2 flex-1 group">
+<div class="w-full bg-primary rounded-t-sm h-[30%]"></div>
+<span class="font-label-md text-label-md text-on-surface text-[10px] font-bold">D28</span>
+</div>
+</div>
+</section>
+</main>
+<!-- BottomNavBar from JSON (Active: Batches) -->
+<nav class="bg-surface dark:bg-surface-container-lowest fixed bottom-0 left-0 w-full z-50 flex justify-around items-center px-stack_md pb-4 pt-2 shadow-lg dark:shadow-none">
+<!-- Home (Inactive) -->
+<a class="flex flex-col items-center justify-center text-on-surface-variant dark:text-outline-variant px-4 py-1 hover:bg-surface-variant dark:hover:bg-surface-container-high rounded-full transition-colors" href="#">
+<span class="material-symbols-outlined" data-icon="home">home</span>
+<span class="font-label-md text-label-md mt-1">Home</span>
+</a>
+<!-- Batches (Active) -->
+<a class="flex flex-col items-center justify-center bg-secondary-container dark:bg-secondary-fixed-dim text-on-secondary-container dark:text-on-secondary-fixed rounded-full px-4 py-1 scale-95 transition-transform duration-100" href="#">
+<span class="material-symbols-outlined" data-icon="group_work" style="font-variation-settings: 'FILL' 1;">group_work</span>
+<span class="font-label-md text-label-md mt-1 font-bold">Batches</span>
+</a>
+<!-- Production (Inactive) -->
+<a class="flex flex-col items-center justify-center text-on-surface-variant dark:text-outline-variant px-4 py-1 hover:bg-surface-variant dark:hover:bg-surface-container-high rounded-full transition-colors" href="#">
+<span class="material-symbols-outlined" data-icon="precision_manufacturing">precision_manufacturing</span>
+<span class="font-label-md text-label-md mt-1">Production</span>
+</a>
+<!-- Finance (Inactive) -->
+<a class="flex flex-col items-center justify-center text-on-surface-variant dark:text-outline-variant px-4 py-1 hover:bg-surface-variant dark:hover:bg-surface-container-high rounded-full transition-colors" href="#">
+<span class="material-symbols-outlined" data-icon="payments">payments</span>
+<span class="font-label-md text-label-md mt-1">Finance</span>
+</a>
+<!-- Alerts (Inactive) -->
+<a class="flex flex-col items-center justify-center text-on-surface-variant dark:text-outline-variant px-4 py-1 hover:bg-surface-variant dark:hover:bg-surface-container-high rounded-full transition-colors" href="#">
+<span class="material-symbols-outlined" data-icon="notifications">notifications</span>
+<span class="font-label-md text-label-md mt-1">Alerts</span>
+</a>
+</nav>
+</body></html>

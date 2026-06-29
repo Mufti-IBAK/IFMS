@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "1067586335215",
+    "project_id": "ifms---farm-brain-core-7d116",
+    "storage_bucket": "ifms---farm-brain-core-7d116.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1067586335215:android:a8e904436b7c2b676b061a",
+        "android_client_info": {
+          "package_name": "com.example.ifms_mobile"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBYV68xO1KpY9nAhTgUEpKOO2B4X52Qdr4"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

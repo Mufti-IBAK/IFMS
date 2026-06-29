@@ -1,0 +1,462 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Dairy Production Dashboard - Farm Brain Core</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "inverse-on-surface": "#eff2e9",
+                        "surface": "#f7fbf1",
+                        "on-tertiary-container": "#ffaec6",
+                        "on-surface": "#191d17",
+                        "on-tertiary-fixed": "#3e001d",
+                        "surface-container-high": "#e6e9e0",
+                        "outline-variant": "#c0c9bb",
+                        "on-background": "#191d17",
+                        "error": "#ba1a1a",
+                        "on-primary-fixed-variant": "#0c5216",
+                        "on-primary": "#ffffff",
+                        "secondary-fixed-dim": "#88d982",
+                        "on-secondary-fixed": "#002204",
+                        "primary-container": "#1b5e20",
+                        "on-primary-container": "#90d689",
+                        "surface-container": "#ecefe6",
+                        "primary-fixed": "#acf4a4",
+                        "background": "#f7fbf1",
+                        "tertiary-container": "#883454",
+                        "surface-container-low": "#f2f5ec",
+                        "secondary": "#1b6d24",
+                        "surface-container-highest": "#e0e4db",
+                        "error-container": "#ffdad6",
+                        "surface-container-lowest": "#ffffff",
+                        "surface-dim": "#d8dbd2",
+                        "tertiary": "#6b1d3d",
+                        "inverse-primary": "#91d78a",
+                        "outline": "#717a6d",
+                        "secondary-fixed": "#a3f69c",
+                        "tertiary-fixed": "#ffd9e2",
+                        "on-error": "#ffffff",
+                        "tertiary-fixed-dim": "#ffb1c8",
+                        "on-secondary": "#ffffff",
+                        "inverse-surface": "#2d322c",
+                        "on-tertiary": "#ffffff",
+                        "secondary-container": "#a0f399",
+                        "on-surface-variant": "#41493e",
+                        "on-tertiary-fixed-variant": "#7a2949",
+                        "on-secondary-container": "#217128",
+                        "primary-fixed-dim": "#91d78a",
+                        "surface-variant": "#e0e4db",
+                        "primary": "#00450d",
+                        "surface-tint": "#2a6b2c",
+                        "on-error-container": "#93000a",
+                        "on-secondary-fixed-variant": "#005312",
+                        "surface-bright": "#f7fbf1",
+                        "on-primary-fixed": "#002203"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "margin_desktop": "24px",
+                        "stack_sm": "4px",
+                        "gutter": "16px",
+                        "stack_md": "8px",
+                        "base_unit": "8px",
+                        "margin_mobile": "16px",
+                        "stack_lg": "16px"
+                    },
+                    "fontFamily": {
+                        "body-md": ["Inter"],
+                        "data-mono": ["monospace"],
+                        "headline-lg-mobile": ["Inter"],
+                        "label-md": ["Inter"],
+                        "body-sm": ["Inter"],
+                        "title-md": ["Inter"],
+                        "display-lg": ["Inter"],
+                        "headline-lg": ["Inter"]
+                    },
+                    "fontSize": {
+                        "body-md": ["16px", { "lineHeight": "24px", "fontWeight": "400" }],
+                        "data-mono": ["14px", { "lineHeight": "20px", "fontWeight": "500" }],
+                        "headline-lg-mobile": ["24px", { "lineHeight": "32px", "fontWeight": "600" }],
+                        "label-md": ["12px", { "lineHeight": "16px", "letterSpacing": "0.5px", "fontWeight": "500" }],
+                        "body-sm": ["14px", { "lineHeight": "20px", "fontWeight": "400" }],
+                        "title-md": ["18px", { "lineHeight": "24px", "fontWeight": "600" }],
+                        "display-lg": ["48px", { "lineHeight": "56px", "letterSpacing": "-0.02em", "fontWeight": "700" }],
+                        "headline-lg": ["32px", { "lineHeight": "40px", "letterSpacing": "-0.01em", "fontWeight": "600" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .icon-fill {
+            font-variation-settings: 'FILL' 1;
+        }
+        
+        /* Modal transitions */
+        .modal-enter { opacity: 0; transform: scale(0.95); }
+        .modal-enter-active { opacity: 1; transform: scale(1); transition: opacity 300ms, transform 300ms; }
+        .modal-exit { opacity: 1; transform: scale(1); }
+        .modal-exit-active { opacity: 0; transform: scale(0.95); transition: opacity 200ms, transform 200ms; }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background text-on-surface font-body-md antialiased md:pb-0 pb-[80px] pt-[72px]">
+<!-- TopAppBar -->
+<header class="fixed top-0 left-0 w-full z-50 flex justify-between items-center px-margin_mobile py-stack_md bg-surface shadow-sm text-primary">
+<div class="flex items-center gap-stack_md">
+<div class="w-10 h-10 rounded-full overflow-hidden bg-surface-variant flex-shrink-0">
+<img class="w-full h-full object-cover" data-alt="A close-up portrait of an agricultural manager wearing practical outdoor gear. The setting is bright and professional, adhering to the modern corporate ag-tech aesthetic. Lighting is natural, emphasizing a trustworthy and experienced persona." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDsGuXAZVsXngFbs4TO11cBoaFXNeC24ES8zIpg7SxxfpsPN9CCvE3R43X_fYQfAVk0ZAxMQMO0Hw7it_zEF2loP2ilQ7-Y7aKpbfj6xYZB9zaOGn48w446maSafB_Gjdl9wW81D1idJsOh8qw1xNeJgxPla9inTmlzbbZiGfDo8RKArl-o0qyn5Wbi2ZFPTeue5wPEBY4BSK15nryyiBSLN_yTIrEofzMpY34J0JbMHn5HdBUGzP5aEoHgc9jLoqIA3ZevY0k3_M0"/>
+</div>
+<h1 class="font-title-md text-title-md font-bold">IFMS - Farm Brain Core</h1>
+</div>
+<div class="flex items-center gap-2">
+<span class="font-label-md text-label-md text-primary hidden sm:inline">Online</span>
+<span class="material-symbols-outlined text-primary" data-icon="sync">sync</span>
+</div>
+</header>
+<main class="max-w-[1200px] mx-auto px-margin_mobile md:px-margin_desktop py-stack_lg">
+<!-- Safety Banner -->
+<div class="mb-stack_lg bg-[#FFF3CD] border border-[#FFEeba] text-[#856404] p-4 rounded-lg flex items-start gap-3 shadow-sm">
+<span class="material-symbols-outlined icon-fill mt-0.5" data-icon="warning">warning</span>
+<div>
+<h3 class="font-title-md text-title-md font-bold mb-1">MILKING BLOCK: COW-092 until July 3rd</h3>
+<p class="font-body-sm text-body-sm">Antibiotic withdrawal period active. Milk must be discarded. Automatic gate routing enabled.</p>
+</div>
+</div>
+<!-- Dashboard Header -->
+<div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-stack_lg gap-4">
+<h2 class="font-headline-lg-mobile text-headline-lg-mobile md:font-headline-lg md:text-headline-lg">Dairy Production</h2>
+<div class="flex gap-2 w-full sm:w-auto overflow-x-auto pb-2 sm:pb-0 hide-scrollbar">
+<button class="bg-primary-container text-on-primary-container font-label-md text-label-md px-4 py-2 rounded-full whitespace-nowrap flex items-center gap-2 transition-colors hover:opacity-90">
+<span class="material-symbols-outlined text-[18px]">check</span>
+                    Today
+                </button>
+<button class="bg-surface-variant text-on-surface-variant font-label-md text-label-md px-4 py-2 rounded-full whitespace-nowrap transition-colors hover:bg-surface-container-high">
+                    This Week
+                </button>
+<button class="bg-surface-variant text-on-surface-variant font-label-md text-label-md px-4 py-2 rounded-full whitespace-nowrap transition-colors hover:bg-surface-container-high">
+                    This Month
+                </button>
+</div>
+</div>
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-stack_lg">
+<!-- Left Column: KPIs and Chart -->
+<div class="lg:col-span-8 flex flex-col gap-stack_lg">
+<!-- KPI Grid -->
+<div class="grid grid-cols-2 gap-stack_md sm:gap-gutter">
+<!-- Total Yield -->
+<div class="bg-surface-container-lowest border border-surface-variant rounded-xl p-4 shadow-sm hover:shadow-md transition-shadow relative overflow-hidden group">
+<div class="absolute right-0 top-0 w-24 h-24 bg-primary/5 rounded-bl-full -z-10 group-hover:scale-110 transition-transform"></div>
+<div class="flex justify-between items-start mb-2">
+<span class="font-body-sm text-body-sm text-on-surface-variant">Total Yield</span>
+<span class="material-symbols-outlined text-primary" data-icon="water_drop">water_drop</span>
+</div>
+<div class="font-headline-lg-mobile text-headline-lg-mobile md:font-headline-lg md:text-headline-lg text-primary mb-1">
+                            1,450 <span class="font-body-sm text-body-sm text-on-surface-variant">L</span>
+</div>
+<div class="flex items-center gap-1 text-primary-container">
+<span class="material-symbols-outlined text-[16px]">trending_up</span>
+<span class="font-label-md text-label-md">+4.2% vs yesterday</span>
+</div>
+</div>
+<!-- Avg Yield -->
+<div class="bg-surface-container-lowest border border-surface-variant rounded-xl p-4 shadow-sm hover:shadow-md transition-shadow relative overflow-hidden group">
+<div class="absolute right-0 top-0 w-24 h-24 bg-secondary/5 rounded-bl-full -z-10 group-hover:scale-110 transition-transform"></div>
+<div class="flex justify-between items-start mb-2">
+<span class="font-body-sm text-body-sm text-on-surface-variant">Avg Yield / Cow</span>
+<span class="material-symbols-outlined text-secondary" data-icon="analytics">analytics</span>
+</div>
+<div class="font-headline-lg-mobile text-headline-lg-mobile md:font-headline-lg md:text-headline-lg text-on-surface mb-1">
+                            28.5 <span class="font-body-sm text-body-sm text-on-surface-variant">L</span>
+</div>
+<div class="flex items-center gap-1 text-on-surface-variant">
+<span class="material-symbols-outlined text-[16px]">horizontal_rule</span>
+<span class="font-label-md text-label-md">On target</span>
+</div>
+</div>
+<!-- Active Cows -->
+<div class="bg-surface-container-lowest border border-surface-variant rounded-xl p-4 shadow-sm hover:shadow-md transition-shadow relative overflow-hidden group">
+<div class="absolute right-0 top-0 w-24 h-24 bg-tertiary/5 rounded-bl-full -z-10 group-hover:scale-110 transition-transform"></div>
+<div class="flex justify-between items-start mb-2">
+<span class="font-body-sm text-body-sm text-on-surface-variant">Active Cows</span>
+<span class="material-symbols-outlined text-tertiary" data-icon="pets">pets</span>
+</div>
+<div class="font-headline-lg-mobile text-headline-lg-mobile md:font-headline-lg md:text-headline-lg text-on-surface mb-1">
+                            51
+                        </div>
+<div class="flex items-center gap-1 text-error">
+<span class="material-symbols-outlined text-[16px]">trending_down</span>
+<span class="font-label-md text-label-md">-1 (COW-092 blocked)</span>
+</div>
+</div>
+<!-- Estimated Revenue -->
+<div class="bg-surface-container-lowest border border-surface-variant rounded-xl p-4 shadow-sm hover:shadow-md transition-shadow relative overflow-hidden group">
+<div class="absolute right-0 top-0 w-24 h-24 bg-primary/5 rounded-bl-full -z-10 group-hover:scale-110 transition-transform"></div>
+<div class="flex justify-between items-start mb-2">
+<span class="font-body-sm text-body-sm text-on-surface-variant">Est. Revenue</span>
+<span class="material-symbols-outlined text-primary" data-icon="payments">payments</span>
+</div>
+<div class="font-headline-lg-mobile text-headline-lg-mobile md:font-headline-lg md:text-headline-lg text-on-surface mb-1">
+                            $580.<span class="text-lg">00</span>
+</div>
+<div class="flex items-center gap-1 text-on-surface-variant">
+<span class="font-label-md text-label-md">Based on $0.40/L rate</span>
+</div>
+</div>
+</div>
+<!-- Abstract Chart Area -->
+<div class="bg-surface-container-lowest border border-surface-variant rounded-xl p-6 shadow-sm flex flex-col h-[300px]">
+<div class="flex justify-between items-center mb-4">
+<h3 class="font-title-md text-title-md">Production Trend</h3>
+<button class="material-symbols-outlined text-on-surface-variant hover:text-primary transition-colors" data-icon="more_vert">more_vert</button>
+</div>
+<div class="flex-grow relative bg-surface-container-lowest overflow-hidden rounded-lg border border-surface-variant/50">
+<!-- Simulated Chart Grid -->
+<div class="absolute inset-0 flex flex-col justify-between py-4 px-2 pointer-events-none opacity-20">
+<div class="w-full h-px bg-on-surface-variant"></div>
+<div class="w-full h-px bg-on-surface-variant"></div>
+<div class="w-full h-px bg-on-surface-variant"></div>
+<div class="w-full h-px bg-on-surface-variant"></div>
+</div>
+<!-- Abstract Visual Pattern representing data -->
+<div class="absolute inset-0 bg-[radial-gradient(ellipse_at_bottom_right,_var(--tw-gradient-stops))] from-primary/10 via-surface-container-lowest to-surface-container-lowest"></div>
+<div class="absolute bottom-0 w-full h-2/3 bg-gradient-to-t from-primary/20 to-transparent flex items-end justify-around px-4 pb-0">
+<!-- Bars -->
+<div class="w-[8%] h-[40%] bg-primary rounded-t-sm opacity-80 hover:opacity-100 transition-opacity cursor-pointer"></div>
+<div class="w-[8%] h-[60%] bg-primary rounded-t-sm opacity-80 hover:opacity-100 transition-opacity cursor-pointer"></div>
+<div class="w-[8%] h-[55%] bg-primary rounded-t-sm opacity-80 hover:opacity-100 transition-opacity cursor-pointer"></div>
+<div class="w-[8%] h-[80%] bg-primary rounded-t-sm opacity-80 hover:opacity-100 transition-opacity cursor-pointer"></div>
+<div class="w-[8%] h-[70%] bg-primary rounded-t-sm opacity-80 hover:opacity-100 transition-opacity cursor-pointer"></div>
+<div class="w-[8%] h-[95%] bg-primary rounded-t-sm opacity-100 shadow-[0_0_15px_rgba(0,69,13,0.3)] cursor-pointer"></div>
+<div class="w-[8%] h-[30%] bg-surface-variant rounded-t-sm border border-dashed border-outline cursor-not-allowed"></div>
+</div>
+</div>
+</div>
+</div>
+<!-- Right Column: Lactating Cow List -->
+<div class="lg:col-span-4 bg-surface-container-lowest border border-surface-variant rounded-xl shadow-sm flex flex-col h-[650px]">
+<div class="p-4 border-b border-surface-variant flex justify-between items-center bg-surface-container-low rounded-t-xl">
+<h3 class="font-title-md text-title-md">Lactating Cows</h3>
+<span class="bg-primary-container text-on-primary-container font-data-mono text-data-mono px-2 py-0.5 rounded-full">52 Total</span>
+</div>
+<div class="p-2 border-b border-surface-variant">
+<div class="relative">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant" data-icon="search">search</span>
+<input class="w-full pl-10 pr-4 py-2 bg-surface rounded-lg border-none focus:ring-2 focus:ring-primary font-body-sm text-body-sm" placeholder="Search by ID..." type="text"/>
+</div>
+</div>
+<div class="flex-grow overflow-y-auto hide-scrollbar p-2 flex flex-col gap-2">
+<!-- Blocked Cow -->
+<div class="flex items-center justify-between p-3 bg-error-container/20 rounded-lg border border-error/20 opacity-75 grayscale-[0.5]">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded-full bg-error-container text-on-error-container flex items-center justify-center font-data-mono font-bold">092</div>
+<div>
+<div class="font-title-md text-title-md flex items-center gap-1 text-on-surface">COW-092 <span class="material-symbols-outlined text-[16px] text-error icon-fill" data-icon="block">block</span></div>
+<div class="font-body-sm text-body-sm text-error">Blocked - Meds</div>
+</div>
+</div>
+<button class="material-symbols-outlined text-outline-variant" data-icon="add_circle" disabled="">add_circle</button>
+</div>
+<!-- List Item 1 -->
+<div class="flex items-center justify-between p-3 bg-surface hover:bg-surface-container-high rounded-lg transition-colors cursor-pointer group" onclick="openModal('COW-045')">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded-full bg-surface-variant text-on-surface-variant flex items-center justify-center font-data-mono font-bold">045</div>
+<div>
+<div class="font-title-md text-title-md text-on-surface">COW-045</div>
+<div class="font-body-sm text-body-sm text-on-surface-variant">Last: 14.2L (AM)</div>
+</div>
+</div>
+<button class="material-symbols-outlined text-primary opacity-0 group-hover:opacity-100 transition-opacity" data-icon="add_circle">add_circle</button>
+</div>
+<!-- List Item 2 -->
+<div class="flex items-center justify-between p-3 bg-surface hover:bg-surface-container-high rounded-lg transition-colors cursor-pointer group" onclick="openModal('COW-112')">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded-full bg-surface-variant text-on-surface-variant flex items-center justify-center font-data-mono font-bold">112</div>
+<div>
+<div class="font-title-md text-title-md text-on-surface">COW-112</div>
+<div class="font-body-sm text-body-sm text-on-surface-variant">Last: 15.1L (AM)</div>
+</div>
+</div>
+<button class="material-symbols-outlined text-primary opacity-0 group-hover:opacity-100 transition-opacity" data-icon="add_circle">add_circle</button>
+</div>
+<!-- List Item 3 -->
+<div class="flex items-center justify-between p-3 bg-surface hover:bg-surface-container-high rounded-lg transition-colors cursor-pointer group" onclick="openModal('COW-018')">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded-full bg-surface-variant text-on-surface-variant flex items-center justify-center font-data-mono font-bold">018</div>
+<div>
+<div class="font-title-md text-title-md text-on-surface">COW-018</div>
+<div class="font-body-sm text-body-sm text-on-surface-variant">Pending Entry</div>
+</div>
+</div>
+<button class="material-symbols-outlined text-primary" data-icon="add_circle">add_circle</button>
+</div>
+<!-- List Item 4 -->
+<div class="flex items-center justify-between p-3 bg-surface hover:bg-surface-container-high rounded-lg transition-colors cursor-pointer group" onclick="openModal('COW-077')">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded-full bg-surface-variant text-on-surface-variant flex items-center justify-center font-data-mono font-bold">077</div>
+<div>
+<div class="font-title-md text-title-md text-on-surface">COW-077</div>
+<div class="font-body-sm text-body-sm text-on-surface-variant">Last: 12.8L (AM)</div>
+</div>
+</div>
+<button class="material-symbols-outlined text-primary opacity-0 group-hover:opacity-100 transition-opacity" data-icon="add_circle">add_circle</button>
+</div>
+<!-- List Item 5 -->
+<div class="flex items-center justify-between p-3 bg-surface hover:bg-surface-container-high rounded-lg transition-colors cursor-pointer group" onclick="openModal('COW-089')">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded-full bg-surface-variant text-on-surface-variant flex items-center justify-center font-data-mono font-bold">089</div>
+<div>
+<div class="font-title-md text-title-md text-on-surface">COW-089</div>
+<div class="font-body-sm text-body-sm text-on-surface-variant">Last: 16.0L (AM)</div>
+</div>
+</div>
+<button class="material-symbols-outlined text-primary opacity-0 group-hover:opacity-100 transition-opacity" data-icon="add_circle">add_circle</button>
+</div>
+</div>
+</div>
+</div>
+</main>
+<!-- BottomNavBar -->
+<nav class="fixed bottom-0 left-0 w-full z-50 flex justify-around items-center px-stack_md pb-4 pt-2 bg-surface shadow-lg md:hidden">
+<a class="flex flex-col items-center justify-center text-on-surface-variant px-4 py-1" href="#">
+<span class="material-symbols-outlined" data-icon="home">home</span>
+<span class="font-label-md text-label-md mt-1">Home</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant px-4 py-1" href="#">
+<span class="material-symbols-outlined" data-icon="group_work">group_work</span>
+<span class="font-label-md text-label-md mt-1">Batches</span>
+</a>
+<a class="flex flex-col items-center justify-center bg-secondary-container text-on-secondary-container rounded-full px-4 py-1 scale-95 transition-transform duration-100" href="#">
+<span class="material-symbols-outlined icon-fill" data-icon="precision_manufacturing">precision_manufacturing</span>
+<span class="font-label-md text-label-md mt-1">Production</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant px-4 py-1" href="#">
+<span class="material-symbols-outlined" data-icon="payments">payments</span>
+<span class="font-label-md text-label-md mt-1">Finance</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant px-4 py-1" href="#">
+<span class="material-symbols-outlined" data-icon="notifications">notifications</span>
+<span class="font-label-md text-label-md mt-1">Alerts</span>
+</a>
+</nav>
+<!-- Modal Backdrop -->
+<div class="fixed inset-0 bg-inverse-surface/50 backdrop-blur-sm z-[60] hidden flex items-center justify-center p-4" id="modalBackdrop">
+<!-- Modal Content (Milk Entry) -->
+<div class="bg-surface-container-lowest rounded-xl shadow-xl w-full max-w-[400px] overflow-hidden modal-enter" id="entryModal">
+<!-- Modal Header -->
+<div class="bg-primary text-on-primary p-4 flex justify-between items-center">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined icon-fill" data-icon="water_drop">water_drop</span>
+<h3 class="font-title-md text-title-md font-bold" id="modalCowId">COW-000 Entry</h3>
+</div>
+<button class="material-symbols-outlined text-on-primary hover:bg-white/20 rounded-full p-1 transition-colors" data-icon="close" onclick="closeModal()">close</button>
+</div>
+<!-- Modal Body -->
+<div class="p-6">
+<!-- Shift Toggle -->
+<div class="flex bg-surface-variant p-1 rounded-lg mb-6">
+<button class="flex-1 py-2 font-label-md text-label-md font-bold bg-surface-container-lowest text-primary rounded-md shadow-sm">Morning (AM)</button>
+<button class="flex-1 py-2 font-label-md text-label-md text-on-surface-variant hover:bg-surface-container-high rounded-md transition-colors">Evening (PM)</button>
+</div>
+<!-- Input Area -->
+<div class="mb-6">
+<label class="block font-body-sm text-body-sm text-on-surface-variant mb-2">Yield Volume (Liters)</label>
+<div class="flex items-center border-b-2 border-primary pb-2">
+<input autofocus="" class="w-full text-center font-display-lg text-display-lg text-on-surface bg-transparent border-none focus:ring-0 p-0" step="0.1" type="number" value="14.5"/>
+<span class="font-title-md text-title-md text-on-surface-variant ml-2">L</span>
+</div>
+</div>
+<!-- Quality Checks (Pill Filters pattern) -->
+<div class="mb-6">
+<label class="block font-body-sm text-body-sm text-on-surface-variant mb-2">Visual Quality</label>
+<div class="flex gap-2 flex-wrap">
+<button class="px-3 py-1.5 rounded-full border border-primary bg-primary-container text-on-primary-container font-label-md text-label-md flex items-center gap-1">
+<span class="material-symbols-outlined text-[16px] icon-fill" data-icon="check_circle">check_circle</span> Normal
+                         </button>
+<button class="px-3 py-1.5 rounded-full border border-outline text-on-surface-variant hover:bg-surface-container font-label-md text-label-md">
+                             Blood Tint
+                         </button>
+<button class="px-3 py-1.5 rounded-full border border-outline text-on-surface-variant hover:bg-surface-container font-label-md text-label-md">
+                             Clots
+                         </button>
+</div>
+</div>
+<!-- Action Buttons -->
+<div class="flex justify-end gap-3 mt-8">
+<button class="px-4 py-2 font-label-md text-label-md text-primary hover:bg-primary/10 rounded-full transition-colors" onclick="closeModal()">Cancel</button>
+<button class="px-6 py-2 font-label-md text-label-md bg-primary text-on-primary rounded-full hover:opacity-90 transition-opacity flex items-center gap-2" onclick="saveEntry()">
+<span class="material-symbols-outlined text-[18px]" data-icon="save">save</span>
+                        Save Entry
+                    </button>
+</div>
+</div>
+</div>
+</div>
+<script>
+        const modalBackdrop = document.getElementById('modalBackdrop');
+        const entryModal = document.getElementById('entryModal');
+        const modalCowId = document.getElementById('modalCowId');
+
+        function openModal(cowId) {
+            modalCowId.textContent = cowId + ' Entry';
+            modalBackdrop.classList.remove('hidden');
+            
+            // Trigger animation frame for CSS transition
+            requestAnimationFrame(() => {
+                entryModal.classList.remove('modal-enter');
+                entryModal.classList.add('modal-enter-active');
+            });
+        }
+
+        function closeModal() {
+            entryModal.classList.remove('modal-enter-active');
+            entryModal.classList.add('modal-exit-active');
+            
+            setTimeout(() => {
+                modalBackdrop.classList.add('hidden');
+                entryModal.classList.remove('modal-exit-active');
+                entryModal.classList.add('modal-enter');
+            }, 200); // match transition duration
+        }
+
+        function saveEntry() {
+            const btn = event.currentTarget;
+            const originalContent = btn.innerHTML;
+            btn.innerHTML = '<span class="material-symbols-outlined text-[18px] animate-spin" data-icon="sync">sync</span> Saving...';
+            
+            // Simulate network request
+            setTimeout(() => {
+                btn.innerHTML = originalContent;
+                closeModal();
+            }, 600);
+        }
+
+        // Close on backdrop click
+        modalBackdrop.addEventListener('click', (e) => {
+            if(e.target === modalBackdrop) {
+                closeModal();
+            }
+        });
+    </script>
+</body></html>

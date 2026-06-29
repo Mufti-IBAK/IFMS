@@ -1,0 +1,47 @@
+name: ifms_mobile
+description: A new Flutter project for the Integrated Farm Management System.
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.0.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  cupertino_icons: ^1.0.5
+  flutter_bloc: ^8.1.3
+  dio: ^5.4.0
+  drift: ^2.14.0
+  sqlite3_flutter_libs: ^0.5.28
+  path_provider: ^2.1.1
+  path: ^1.8.3
+  uuid: ^4.3.3
+  intl: ^0.18.1
+  connectivity_plus: ^6.1.0
+  flutter_secure_storage: ^9.0.0
+  get_it: ^7.6.6
+  firebase_core: ^3.11.0
+  firebase_messaging: ^15.2.10
+  flutter_local_notifications: ^17.2.4
+  image_picker: ^1.1.2
+  pdf: ^3.13.0
+  printing: ^5.15.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^2.0.1
+  build_runner: ^2.4.8
+  drift_dev: ^2.14.0
+
+flutter:
+  uses-material-design: true
+
+# Tell the sqlite3 native assets hook to use the bundled sqlite3 from
+# sqlite3_flutter_libs (loaded at runtime via dlopen) instead of downloading
+# a precompiled binary from GitHub. This avoids network access during build.
+dart:
+  hooks:
+    user_defines:
+      sqlite3:
+        source: flutter_libs

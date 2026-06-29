@@ -1,0 +1,436 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Unified Herd Registry</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                      "inverse-on-surface": "#eff2e9",
+                      "surface": "#f7fbf1",
+                      "on-tertiary-container": "#ffaec6",
+                      "on-surface": "#191d17",
+                      "on-tertiary-fixed": "#3e001d",
+                      "surface-container-high": "#e6e9e0",
+                      "outline-variant": "#c0c9bb",
+                      "on-background": "#191d17",
+                      "error": "#ba1a1a",
+                      "on-primary-fixed-variant": "#0c5216",
+                      "on-primary": "#ffffff",
+                      "secondary-fixed-dim": "#88d982",
+                      "on-secondary-fixed": "#002204",
+                      "primary-container": "#1b5e20",
+                      "on-primary-container": "#90d689",
+                      "surface-container": "#ecefe6",
+                      "primary-fixed": "#acf4a4",
+                      "background": "#f7fbf1",
+                      "tertiary-container": "#883454",
+                      "surface-container-low": "#f2f5ec",
+                      "secondary": "#1b6d24",
+                      "surface-container-highest": "#e0e4db",
+                      "error-container": "#ffdad6",
+                      "surface-container-lowest": "#ffffff",
+                      "surface-dim": "#d8dbd2",
+                      "tertiary": "#6b1d3d",
+                      "inverse-primary": "#91d78a",
+                      "outline": "#717a6d",
+                      "secondary-fixed": "#a3f69c",
+                      "tertiary-fixed": "#ffd9e2",
+                      "on-error": "#ffffff",
+                      "tertiary-fixed-dim": "#ffb1c8",
+                      "on-secondary": "#ffffff",
+                      "inverse-surface": "#2d322c",
+                      "on-tertiary": "#ffffff",
+                      "secondary-container": "#a0f399",
+                      "on-surface-variant": "#41493e",
+                      "on-tertiary-fixed-variant": "#7a2949",
+                      "on-secondary-container": "#217128",
+                      "primary-fixed-dim": "#91d78a",
+                      "surface-variant": "#e0e4db",
+                      "primary": "#00450d",
+                      "surface-tint": "#2a6b2c",
+                      "on-error-container": "#93000a",
+                      "on-secondary-fixed-variant": "#005312",
+                      "surface-bright": "#f7fbf1",
+                      "on-primary-fixed": "#002203"
+              },
+              "borderRadius": {
+                      "DEFAULT": "0.25rem",
+                      "lg": "0.5rem",
+                      "xl": "0.75rem",
+                      "full": "9999px"
+              },
+              "spacing": {
+                      "margin_desktop": "24px",
+                      "stack_sm": "4px",
+                      "gutter": "16px",
+                      "stack_md": "8px",
+                      "base_unit": "8px",
+                      "margin_mobile": "16px",
+                      "stack_lg": "16px"
+              },
+              "fontFamily": {
+                      "body-md": [
+                              "Inter"
+                      ],
+                      "data-mono": [
+                              "monospace"
+                      ],
+                      "headline-lg-mobile": [
+                              "Inter"
+                      ],
+                      "label-md": [
+                              "Inter"
+                      ],
+                      "body-sm": [
+                              "Inter"
+                      ],
+                      "title-md": [
+                              "Inter"
+                      ],
+                      "display-lg": [
+                              "Inter"
+                      ],
+                      "headline-lg": [
+                              "Inter"
+                      ]
+              },
+              "fontSize": {
+                      "body-md": [
+                              "16px",
+                              {
+                                      "lineHeight": "24px",
+                                      "fontWeight": "400"
+                              }
+                      ],
+                      "data-mono": [
+                              "14px",
+                              {
+                                      "lineHeight": "20px",
+                                      "fontWeight": "500"
+                              }
+                      ],
+                      "headline-lg-mobile": [
+                              "24px",
+                              {
+                                      "lineHeight": "32px",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "label-md": [
+                              "12px",
+                              {
+                                      "lineHeight": "16px",
+                                      "letterSpacing": "0.5px",
+                                      "fontWeight": "500"
+                              }
+                      ],
+                      "body-sm": [
+                              "14px",
+                              {
+                                      "lineHeight": "20px",
+                                      "fontWeight": "400"
+                              }
+                      ],
+                      "title-md": [
+                              "18px",
+                              {
+                                      "lineHeight": "24px",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "display-lg": [
+                              "48px",
+                              {
+                                      "lineHeight": "56px",
+                                      "letterSpacing": "-0.02em",
+                                      "fontWeight": "700"
+                              }
+                      ],
+                      "headline-lg": [
+                              "32px",
+                              {
+                                      "lineHeight": "40px",
+                                      "letterSpacing": "-0.01em",
+                                      "fontWeight": "600"
+                              }
+                      ]
+              }
+      },
+          },
+        }
+      </script>
+<style>
+        /* Hide scrollbar for cleaner UI on filter chips */
+        .hide-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .hide-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background text-on-background font-body-md min-h-screen pt-20 pb-24 md:pb-8 flex flex-col md:flex-row md:pt-0">
+<!-- TopAppBar (Mobile & Desktop) -->
+<header class="fixed top-0 left-0 w-full z-50 flex justify-between items-center px-margin_mobile py-stack_md bg-surface shadow-sm md:hidden">
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 rounded-full bg-primary-container text-on-primary-container flex items-center justify-center font-title-md">
+<span class="material-symbols-outlined text-sm">person</span>
+</div>
+<h1 class="font-headline-lg-mobile text-headline-lg-mobile font-bold text-primary">IFMS - Farm Brain Core</h1>
+</div>
+<button class="text-primary p-2 hover:bg-surface-container-highest rounded-full transition-colors opacity-80 transition-opacity">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">sync</span>
+</button>
+</header>
+<!-- Desktop SideNav (Visible on md and up) -->
+<aside class="hidden md:flex flex-col w-64 h-screen fixed left-0 top-0 bg-surface shadow-lg z-40 p-4 border-r border-outline-variant/30">
+<div class="flex items-center gap-3 mb-8 pt-4">
+<div class="w-10 h-10 rounded-full bg-primary-container text-on-primary-container flex items-center justify-center font-title-md">
+<span class="material-symbols-outlined text-base">person</span>
+</div>
+<h1 class="font-title-md text-title-md font-bold text-primary">IFMS Core</h1>
+</div>
+<nav class="flex flex-col gap-2">
+<a class="flex items-center gap-3 p-3 rounded-lg text-on-surface-variant hover:bg-surface-variant transition-colors" href="#">
+<span class="material-symbols-outlined">home</span>
+<span class="font-label-md text-label-md">Home</span>
+</a>
+<a class="flex items-center gap-3 p-3 rounded-lg bg-secondary-container text-on-secondary-container transition-colors font-bold" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">group_work</span>
+<span class="font-label-md text-label-md">Batches</span>
+</a>
+<a class="flex items-center gap-3 p-3 rounded-lg text-on-surface-variant hover:bg-surface-variant transition-colors" href="#">
+<span class="material-symbols-outlined">precision_manufacturing</span>
+<span class="font-label-md text-label-md">Production</span>
+</a>
+<a class="flex items-center gap-3 p-3 rounded-lg text-on-surface-variant hover:bg-surface-variant transition-colors" href="#">
+<span class="material-symbols-outlined">payments</span>
+<span class="font-label-md text-label-md">Finance</span>
+</a>
+<a class="flex items-center gap-3 p-3 rounded-lg text-on-surface-variant hover:bg-surface-variant transition-colors" href="#">
+<span class="material-symbols-outlined">notifications</span>
+<span class="font-label-md text-label-md">Alerts</span>
+</a>
+</nav>
+</aside>
+<!-- Main Content Canvas -->
+<main class="flex-1 px-margin_mobile md:px-margin_desktop md:ml-64 max-w-5xl mx-auto w-full md:pt-margin_desktop">
+<!-- Header & Search Section -->
+<div class="mb-stack_lg flex flex-col gap-4">
+<div class="flex justify-between items-end">
+<div>
+<h2 class="font-headline-lg-mobile text-headline-lg-mobile md:font-headline-lg md:text-headline-lg font-bold text-on-surface">Unified Herd Registry</h2>
+<p class="font-body-sm text-body-sm text-on-surface-variant mt-1">Manage and track all livestock assets.</p>
+</div>
+</div>
+<!-- Search Bar -->
+<div class="relative w-full shadow-sm rounded-lg">
+<div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+<span class="material-symbols-outlined text-outline">search</span>
+</div>
+<input class="block w-full pl-10 pr-12 py-3 bg-surface-container-low border border-outline-variant rounded-lg font-body-md text-on-surface focus:ring-primary focus:border-primary placeholder:text-outline focus:outline-none transition-shadow hover:bg-surface-container" placeholder="Search by Tag ID, Breed, or Pen..." type="text"/>
+<div class="absolute inset-y-0 right-0 pr-2 flex items-center">
+<button class="p-2 text-primary hover:bg-surface-variant rounded-full transition-colors flex items-center justify-center">
+<span class="material-symbols-outlined">qr_code_scanner</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Filter Pills -->
+<div class="flex overflow-x-auto gap-2 pb-2 mb-stack_lg hide-scrollbar snap-x">
+<button class="snap-start flex-shrink-0 px-4 py-2 rounded-full bg-secondary-container text-on-secondary-container font-label-md text-label-md border border-transparent shadow-sm flex items-center gap-2 transition-transform active:scale-95">
+<span>All</span>
+<span class="bg-on-secondary-container text-secondary-container px-1.5 py-0.5 rounded-full text-[10px]">1,248</span>
+</button>
+<button class="snap-start flex-shrink-0 px-4 py-2 rounded-full bg-surface-container-low text-on-surface-variant border border-outline-variant font-label-md text-label-md flex items-center gap-2 hover:bg-surface-variant transition-colors active:scale-95">
+<span>Cattle</span>
+<span class="bg-surface-variant text-on-surface-variant px-1.5 py-0.5 rounded-full text-[10px]">850</span>
+</button>
+<button class="snap-start flex-shrink-0 px-4 py-2 rounded-full bg-surface-container-low text-on-surface-variant border border-outline-variant font-label-md text-label-md flex items-center gap-2 hover:bg-surface-variant transition-colors active:scale-95">
+<span>Goats</span>
+<span class="bg-surface-variant text-on-surface-variant px-1.5 py-0.5 rounded-full text-[10px]">312</span>
+</button>
+<button class="snap-start flex-shrink-0 px-4 py-2 rounded-full bg-surface-container-low text-on-surface-variant border border-outline-variant font-label-md text-label-md flex items-center gap-2 hover:bg-surface-variant transition-colors active:scale-95">
+<span>Sheep</span>
+<span class="bg-surface-variant text-on-surface-variant px-1.5 py-0.5 rounded-full text-[10px]">86</span>
+</button>
+</div>
+<!-- High-Density Animal List -->
+<div class="flex flex-col gap-2">
+<!-- Animal Card 1 -->
+<div class="flex items-center justify-between p-3 bg-surface-container-lowest rounded-lg border border-outline-variant shadow-[0_2px_4px_rgba(0,0,0,0.05)] hover:shadow-md transition-shadow cursor-pointer group">
+<!-- Left: Tag & Gender -->
+<div class="flex items-center gap-3 w-1/3">
+<div class="w-10 h-10 rounded-lg bg-primary-container/20 flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined text-primary">pets</span>
+</div>
+<div class="flex flex-col">
+<span class="font-data-mono text-data-mono font-bold text-on-surface">#COW-402</span>
+<div class="flex items-center gap-1 text-on-surface-variant mt-0.5">
+<span class="material-symbols-outlined text-[14px]">female</span>
+<span class="font-label-md text-[10px] uppercase tracking-wider">Female</span>
+</div>
+</div>
+</div>
+<!-- Center: Breed & Status -->
+<div class="flex flex-col w-1/3 px-2">
+<span class="font-body-sm text-body-sm text-on-surface font-medium truncate">Holstein</span>
+<div class="flex items-center gap-1 mt-0.5">
+<span class="w-2 h-2 rounded-full bg-secondary"></span>
+<span class="font-label-md text-[10px] text-on-surface-variant uppercase tracking-wider">Lactating</span>
+</div>
+</div>
+<!-- Right: Location & Action -->
+<div class="flex items-center justify-end gap-4 w-1/3">
+<div class="flex flex-col items-end hidden sm:flex">
+<span class="font-label-md text-[10px] text-outline uppercase tracking-wider">Location</span>
+<span class="font-body-sm text-body-sm text-on-surface">Pen A-12</span>
+</div>
+<button class="w-8 h-8 rounded-full bg-surface-container-high flex items-center justify-center text-primary hover:bg-primary hover:text-on-primary transition-colors focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 shrink-0">
+<span class="material-symbols-outlined text-[18px]">add</span>
+</button>
+</div>
+</div>
+<!-- Animal Card 2 -->
+<div class="flex items-center justify-between p-3 bg-surface-container-lowest rounded-lg border border-outline-variant shadow-[0_2px_4px_rgba(0,0,0,0.05)] hover:shadow-md transition-shadow cursor-pointer group">
+<!-- Left: Tag & Gender -->
+<div class="flex items-center gap-3 w-1/3">
+<div class="w-10 h-10 rounded-lg bg-surface-variant flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined text-on-surface-variant">pets</span>
+</div>
+<div class="flex flex-col">
+<span class="font-data-mono text-data-mono font-bold text-on-surface">#COW-891</span>
+<div class="flex items-center gap-1 text-on-surface-variant mt-0.5">
+<span class="material-symbols-outlined text-[14px]">male</span>
+<span class="font-label-md text-[10px] uppercase tracking-wider">Male</span>
+</div>
+</div>
+</div>
+<!-- Center: Breed & Status -->
+<div class="flex flex-col w-1/3 px-2">
+<span class="font-body-sm text-body-sm text-on-surface font-medium truncate">Angus</span>
+<div class="flex items-center gap-1 mt-0.5">
+<span class="w-2 h-2 rounded-full bg-tertiary"></span>
+<span class="font-label-md text-[10px] text-on-surface-variant uppercase tracking-wider">Quarantine</span>
+</div>
+</div>
+<!-- Right: Location & Action -->
+<div class="flex items-center justify-end gap-4 w-1/3">
+<div class="flex flex-col items-end hidden sm:flex">
+<span class="font-label-md text-[10px] text-outline uppercase tracking-wider">Location</span>
+<span class="font-body-sm text-body-sm text-on-surface">Med Bay 2</span>
+</div>
+<button class="w-8 h-8 rounded-full bg-surface-container-high flex items-center justify-center text-primary hover:bg-primary hover:text-on-primary transition-colors focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 shrink-0">
+<span class="material-symbols-outlined text-[18px]">add</span>
+</button>
+</div>
+</div>
+<!-- Animal Card 3 -->
+<div class="flex items-center justify-between p-3 bg-surface-container-lowest rounded-lg border border-outline-variant shadow-[0_2px_4px_rgba(0,0,0,0.05)] hover:shadow-md transition-shadow cursor-pointer group">
+<!-- Left: Tag & Gender -->
+<div class="flex items-center gap-3 w-1/3">
+<div class="w-10 h-10 rounded-lg bg-surface-variant flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined text-on-surface-variant">pets</span>
+</div>
+<div class="flex flex-col">
+<span class="font-data-mono text-data-mono font-bold text-on-surface">#GOA-104</span>
+<div class="flex items-center gap-1 text-on-surface-variant mt-0.5">
+<span class="material-symbols-outlined text-[14px]">female</span>
+<span class="font-label-md text-[10px] uppercase tracking-wider">Female</span>
+</div>
+</div>
+</div>
+<!-- Center: Breed & Status -->
+<div class="flex flex-col w-1/3 px-2">
+<span class="font-body-sm text-body-sm text-on-surface font-medium truncate">Boer</span>
+<div class="flex items-center gap-1 mt-0.5">
+<span class="w-2 h-2 rounded-full bg-outline"></span>
+<span class="font-label-md text-[10px] text-on-surface-variant uppercase tracking-wider">Dry</span>
+</div>
+</div>
+<!-- Right: Location & Action -->
+<div class="flex items-center justify-end gap-4 w-1/3">
+<div class="flex flex-col items-end hidden sm:flex">
+<span class="font-label-md text-[10px] text-outline uppercase tracking-wider">Location</span>
+<span class="font-body-sm text-body-sm text-on-surface">Pasture East</span>
+</div>
+<button class="w-8 h-8 rounded-full bg-surface-container-high flex items-center justify-center text-primary hover:bg-primary hover:text-on-primary transition-colors focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 shrink-0">
+<span class="material-symbols-outlined text-[18px]">add</span>
+</button>
+</div>
+</div>
+<!-- Animal Card 4 -->
+<div class="flex items-center justify-between p-3 bg-surface-container-lowest rounded-lg border border-outline-variant shadow-[0_2px_4px_rgba(0,0,0,0.05)] hover:shadow-md transition-shadow cursor-pointer group">
+<!-- Left: Tag & Gender -->
+<div class="flex items-center gap-3 w-1/3">
+<div class="w-10 h-10 rounded-lg bg-surface-variant flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined text-on-surface-variant">pets</span>
+</div>
+<div class="flex flex-col">
+<span class="font-data-mono text-data-mono font-bold text-on-surface">#SHP-992</span>
+<div class="flex items-center gap-1 text-on-surface-variant mt-0.5">
+<span class="material-symbols-outlined text-[14px]">male</span>
+<span class="font-label-md text-[10px] uppercase tracking-wider">Male</span>
+</div>
+</div>
+</div>
+<!-- Center: Breed & Status -->
+<div class="flex flex-col w-1/3 px-2">
+<span class="font-body-sm text-body-sm text-on-surface font-medium truncate">Merino</span>
+<div class="flex items-center gap-1 mt-0.5">
+<span class="w-2 h-2 rounded-full bg-secondary"></span>
+<span class="font-label-md text-[10px] text-on-surface-variant uppercase tracking-wider">Healthy</span>
+</div>
+</div>
+<!-- Right: Location & Action -->
+<div class="flex items-center justify-end gap-4 w-1/3">
+<div class="flex flex-col items-end hidden sm:flex">
+<span class="font-label-md text-[10px] text-outline uppercase tracking-wider">Location</span>
+<span class="font-body-sm text-body-sm text-on-surface">Shed 4</span>
+</div>
+<button class="w-8 h-8 rounded-full bg-surface-container-high flex items-center justify-center text-primary hover:bg-primary hover:text-on-primary transition-colors focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 shrink-0">
+<span class="material-symbols-outlined text-[18px]">add</span>
+</button>
+</div>
+</div>
+</div>
+</main>
+<!-- BottomNavBar (Mobile Only) -->
+<nav class="fixed bottom-0 left-0 w-full z-50 flex justify-around items-center px-stack_md pb-4 pt-2 bg-surface shadow-lg md:hidden border-t-0">
+<a class="flex flex-col items-center justify-center text-on-surface-variant px-4 py-1 hover:bg-surface-variant transition-colors rounded-lg" href="#">
+<span class="material-symbols-outlined">home</span>
+<span class="font-label-md text-label-md mt-1">Home</span>
+</a>
+<a class="flex flex-col items-center justify-center bg-secondary-container text-on-secondary-container rounded-full px-4 py-1 scale-95 transition-transform duration-100 shadow-sm" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">group_work</span>
+<span class="font-label-md text-label-md mt-1 font-bold">Batches</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant px-4 py-1 hover:bg-surface-variant transition-colors rounded-lg" href="#">
+<span class="material-symbols-outlined">precision_manufacturing</span>
+<span class="font-label-md text-label-md mt-1">Production</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant px-4 py-1 hover:bg-surface-variant transition-colors rounded-lg" href="#">
+<span class="material-symbols-outlined">payments</span>
+<span class="font-label-md text-label-md mt-1">Finance</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant px-4 py-1 hover:bg-surface-variant transition-colors rounded-lg" href="#">
+<span class="material-symbols-outlined">notifications</span>
+<span class="font-label-md text-label-md mt-1">Alerts</span>
+</a>
+</nav>
+</body></html>

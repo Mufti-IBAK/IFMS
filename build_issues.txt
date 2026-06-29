@@ -1,0 +1,41 @@
+ran into this 
+Launching lib\main.dart on itel A666L in debug mode...
+Running Gradle task 'assembleDebug'...
+
+FAILURE: Build failed with an exception.
+
+* Where:
+Build file 'C:\Users\USER\Desktop\farm_works\mobile\android\build.gradle.kts' line: 36
+
+* What went wrong:
+It is too late to set compileSdk
+It has already been read to configure this project.
+Consider either moving this call to be during evaluation,
+or using the variant API.
+
+* Try:
+> Run with --stacktrace option to get the stack trace.
+> Run with --info or --debug option to get more log output.
+> Run with --scan to generate a Build Scan (Powered by Develocity).
+> Get more help at https://help.gradle.org.
+
+BUILD FAILED in 3s
+
+carry out this Action Required: Final Run Protocol
+To launch the app on your itel p55, please run these specific commands in order:
+1.
+Sync Packages:
+Shell Script
+flutter pub get
+2.
+Regenerate Code (Crucial for image capture to work):
+Shell Script
+dart run build_runner build --delete-conflicting-outputs
+After this command finishes, you can uncomment the imagePath line in lib/features/animals/animals_repository.dart.
+3.
+Run on Device:
+Shell Script
+flutter run
+The project is now fully optimized and ready for testing!
+
+do the required action and fix the build issue - i think it is because the backend doesnt load with the app

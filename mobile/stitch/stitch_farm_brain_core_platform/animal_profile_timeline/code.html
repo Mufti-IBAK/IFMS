@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Biological Event Profile &amp; Timeline</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "inverse-on-surface": "#eff2e9",
+                    "surface": "#f7fbf1",
+                    "on-tertiary-container": "#ffaec6",
+                    "on-surface": "#191d17",
+                    "on-tertiary-fixed": "#3e001d",
+                    "surface-container-high": "#e6e9e0",
+                    "outline-variant": "#c0c9bb",
+                    "on-background": "#191d17",
+                    "error": "#ba1a1a",
+                    "on-primary-fixed-variant": "#0c5216",
+                    "on-primary": "#ffffff",
+                    "secondary-fixed-dim": "#88d982",
+                    "on-secondary-fixed": "#002204",
+                    "primary-container": "#1b5e20",
+                    "on-primary-container": "#90d689",
+                    "surface-container": "#ecefe6",
+                    "primary-fixed": "#acf4a4",
+                    "background": "#f7fbf1",
+                    "tertiary-container": "#883454",
+                    "surface-container-low": "#f2f5ec",
+                    "secondary": "#1b6d24",
+                    "surface-container-highest": "#e0e4db",
+                    "error-container": "#ffdad6",
+                    "surface-container-lowest": "#ffffff",
+                    "surface-dim": "#d8dbd2",
+                    "tertiary": "#6b1d3d",
+                    "inverse-primary": "#91d78a",
+                    "outline": "#717a6d",
+                    "secondary-fixed": "#a3f69c",
+                    "tertiary-fixed": "#ffd9e2",
+                    "on-error": "#ffffff",
+                    "tertiary-fixed-dim": "#ffb1c8",
+                    "on-secondary": "#ffffff",
+                    "inverse-surface": "#2d322c",
+                    "on-tertiary": "#ffffff",
+                    "secondary-container": "#a0f399",
+                    "on-surface-variant": "#41493e",
+                    "on-tertiary-fixed-variant": "#7a2949",
+                    "on-secondary-container": "#217128",
+                    "primary-fixed-dim": "#91d78a",
+                    "surface-variant": "#e0e4db",
+                    "primary": "#00450d",
+                    "surface-tint": "#2a6b2c",
+                    "on-error-container": "#93000a",
+                    "on-secondary-fixed-variant": "#005312",
+                    "surface-bright": "#f7fbf1",
+                    "on-primary-fixed": "#002203"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.25rem",
+                    "lg": "0.5rem",
+                    "xl": "0.75rem",
+                    "full": "9999px"
+            },
+            "spacing": {
+                    "margin_desktop": "24px",
+                    "stack_sm": "4px",
+                    "gutter": "16px",
+                    "stack_md": "8px",
+                    "base_unit": "8px",
+                    "margin_mobile": "16px",
+                    "stack_lg": "16px"
+            },
+            "fontFamily": {
+                    "body-md": ["Inter"],
+                    "data-mono": ["monospace"],
+                    "headline-lg-mobile": ["Inter"],
+                    "label-md": ["Inter"],
+                    "body-sm": ["Inter"],
+                    "title-md": ["Inter"],
+                    "display-lg": ["Inter"],
+                    "headline-lg": ["Inter"]
+            },
+            "fontSize": {
+                    "body-md": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+                    "data-mono": ["14px", {"lineHeight": "20px", "fontWeight": "500"}],
+                    "headline-lg-mobile": ["24px", {"lineHeight": "32px", "fontWeight": "600"}],
+                    "label-md": ["12px", {"lineHeight": "16px", "letterSpacing": "0.5px", "fontWeight": "500"}],
+                    "body-sm": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
+                    "title-md": ["18px", {"lineHeight": "24px", "fontWeight": "600"}],
+                    "display-lg": ["48px", {"lineHeight": "56px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                    "headline-lg": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.01em", "fontWeight": "600"}]
+            }
+          }
+        }
+      }
+    </script>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background text-on-background font-body-md min-h-screen pt-20 pb-24 md:pb-8">
+<!-- TopAppBar -->
+<header class="bg-surface dark:bg-surface-dim fixed top-0 left-0 w-full z-50 flex justify-between items-center px-margin_mobile py-stack_md bg-surface-container dark:bg-surface-container-high shadow-sm shadow-sm dark:shadow-none">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded-full overflow-hidden bg-surface-variant flex items-center justify-center">
+<img class="w-full h-full object-cover" data-alt="A close up portrait of an agricultural worker wearing a standard field cap, lit by natural morning light. The mood is professional and focused. Modern ag-tech setting. White and forest green aesthetic." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDruveqeO45szV6nGbxmRifGg5cfxXRcjreysc_mso32A6MzidrWUmeSV1ss8AzdEFD47OnDL2eL_c90Kknj5bHcSJdgHjEScq4AXqUpsPDsmTm38BCWkP3k56BuY6miqqW3xU0TmwuR5MfZVIroAnRcRyMOCSwV9ayz_TS3X_vt-IuMeoQ-ZxpcZzlb_vvMlmUMyqdu2JkP2THRfGAn6G5Y9Hs45cT_1nka7ExvqCIjTzMeSxFeNWJcxAS8XMsBGL7fNAkhN6TlYY"/>
+</div>
+<h1 class="font-headline-lg-mobile text-headline-lg-mobile font-title-md text-title-md font-bold text-primary dark:text-primary-fixed">IFMS - Farm Brain Core</h1>
+</div>
+<button class="w-10 h-10 flex items-center justify-center rounded-full hover:bg-surface-container-highest dark:hover:bg-surface-container-high transition-colors text-primary dark:text-primary-fixed">
+<span class="material-symbols-outlined" data-icon="sync">sync</span>
+</button>
+</header>
+<main class="px-margin_mobile md:px-margin_desktop max-w-4xl mx-auto space-y-stack_lg">
+<!-- Animal Summary Card -->
+<section class="bg-surface-container-lowest rounded-xl shadow-sm border border-outline-variant/30 overflow-hidden mt-stack_lg">
+<div class="p-gutter flex flex-col md:flex-row gap-gutter items-start md:items-center">
+<div class="w-24 h-24 rounded-lg overflow-hidden shrink-0 border-2 border-surface-variant relative">
+<img class="w-full h-full object-cover" data-alt="A detailed, high-resolution side profile photo of a healthy Holstein dairy cow standing in a bright, modern barn. Soft natural lighting emphasizes the animal's coat. Clean, clinical ag-tech environment." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAwsHhz4V0d3S5R9qV18fN2zrfrtgr8kwLRmklyiZi4XU_7Xb4ZpEvBSyz25UT5TrVktOhzwjj0nEr1ZSzaYbbFDKea27v4McGrimTBeHGESAPWi2hZMZmUjYV15H0mhx53MoRnR-Pz0kS2J3F7aoevUkftFdx8e-E7P5Dv-lyI3jTE8o9pBzOzxPPZZtV9txNf2mj6nLuis9zBdDOW9d3ez8tFjYq0SyoeHSvMnH_ppoVKXk86BKNVwROopihOyKsAuTPCHr0AmJ4"/>
+<div class="absolute inset-0 ring-1 ring-inset ring-black/10 rounded-lg"></div>
+</div>
+<div class="flex-grow space-y-stack_sm">
+<div class="flex justify-between items-start w-full">
+<div>
+<h2 class="font-headline-lg-mobile text-headline-lg-mobile text-on-surface">Cow #8492</h2>
+<p class="font-body-sm text-body-sm text-on-surface-variant">Holstein-Friesian • 3 Yrs 2 Mo</p>
+</div>
+<span class="bg-tertiary-container text-on-tertiary-container font-label-md text-label-md px-3 py-1 rounded-full uppercase tracking-wider font-semibold shadow-sm inline-flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px]" data-icon="favorite" data-weight="fill" style="font-variation-settings: 'FILL' 1;">favorite</span>
+                            PREGNANT
+                        </span>
+</div>
+<div class="grid grid-cols-2 md:grid-cols-4 gap-stack_md pt-stack_sm">
+<div class="bg-surface-container-low p-2 rounded-lg">
+<p class="font-label-md text-label-md text-on-surface-variant mb-1">Current Lactation</p>
+<p class="font-title-md text-title-md text-primary font-semibold">2</p>
+</div>
+<div class="bg-surface-container-low p-2 rounded-lg">
+<p class="font-label-md text-label-md text-on-surface-variant mb-1">Days in Milk</p>
+<p class="font-title-md text-title-md text-primary font-semibold">142</p>
+</div>
+<div class="bg-surface-container-low p-2 rounded-lg">
+<p class="font-label-md text-label-md text-on-surface-variant mb-1">Avg Yield (30d)</p>
+<p class="font-title-md text-title-md text-primary font-semibold">34L/d</p>
+</div>
+<div class="bg-surface-container-low p-2 rounded-lg">
+<p class="font-label-md text-label-md text-on-surface-variant mb-1">Body Condition</p>
+<p class="font-title-md text-title-md text-primary font-semibold">3.25</p>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- Timeline Section -->
+<section class="mt-stack_lg">
+<h3 class="font-title-md text-title-md text-on-surface mb-gutter px-stack_sm">Biological Timeline</h3>
+<div class="relative pl-6 space-y-0 before:absolute before:inset-y-0 before:left-6 before:w-0.5 before:bg-surface-variant ml-2">
+<!-- Event Node: Red (Medical) -->
+<div class="relative pl-8 py-4 group">
+<!-- Node Indicator -->
+<div class="absolute left-[-5px] top-5 w-3 h-3 rounded-full bg-error border-4 border-surface shadow-sm z-10 group-hover:scale-125 transition-transform duration-200"></div>
+<div class="bg-surface-container-lowest rounded-xl border border-error/20 shadow-sm overflow-hidden hover:shadow-md transition-shadow cursor-pointer" onclick="this.classList.toggle('expanded')">
+<div class="p-4 flex gap-3 items-start">
+<div class="w-10 h-10 rounded-full bg-error-container text-on-error-container flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined" data-icon="medical_services">medical_services</span>
+</div>
+<div class="flex-grow">
+<div class="flex justify-between items-center mb-1">
+<h4 class="font-title-md text-title-md text-on-surface">Mastitis Diagnosis</h4>
+<span class="font-data-mono text-data-mono text-on-surface-variant text-sm">Oct 12, 2023</span>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface-variant line-clamp-1 group-[.expanded]:line-clamp-none transition-all">
+                                    Mild clinical mastitis in Right Hind quarter. Swelling observed during morning milking. Milk sample collected for culture.
+                                </p>
+<!-- Expandable Content -->
+<div class="hidden group-[.expanded]:block mt-3 pt-3 border-t border-outline-variant/30">
+<div class="bg-error-container/30 p-3 rounded-lg">
+<p class="font-label-md text-label-md text-on-error-container font-semibold mb-1">Vet Notes - Dr. Sarah Jenkins</p>
+<p class="font-body-sm text-body-sm text-on-surface">Initiated standard intramammary antibiotic protocol. Discard milk for 72 hours post-treatment. Re-evaluate in 3 days.</p>
+<div class="mt-2 flex gap-2">
+<span class="inline-flex items-center px-2 py-1 rounded bg-surface text-on-surface font-data-mono text-data-mono text-xs border border-outline-variant/50">Tx: Cefapirin</span>
+<span class="inline-flex items-center px-2 py-1 rounded bg-surface text-on-surface font-data-mono text-data-mono text-xs border border-outline-variant/50">Dose: 10ml</span>
+</div>
+</div>
+</div>
+</div>
+<button class="text-on-surface-variant group-[.expanded]:rotate-180 transition-transform">
+<span class="material-symbols-outlined" data-icon="expand_more">expand_more</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Event Node: Blue (Breeding) -->
+<div class="relative pl-8 py-4 group">
+<div class="absolute left-[-5px] top-5 w-3 h-3 rounded-full bg-blue-600 border-4 border-surface shadow-sm z-10 group-hover:scale-125 transition-transform duration-200"></div>
+<div class="bg-surface-container-lowest rounded-xl border border-blue-200 shadow-sm overflow-hidden hover:shadow-md transition-shadow cursor-pointer" onclick="this.classList.toggle('expanded')">
+<div class="p-4 flex gap-3 items-start">
+<div class="w-10 h-10 rounded-full bg-blue-100 text-blue-800 flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined" data-icon="insemination">animation</span>
+</div>
+<div class="flex-grow">
+<div class="flex justify-between items-center mb-1">
+<h4 class="font-title-md text-title-md text-on-surface">AI Insemination</h4>
+<span class="font-data-mono text-data-mono text-on-surface-variant text-sm">Sep 05, 2023</span>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface-variant line-clamp-1 group-[.expanded]:line-clamp-none transition-all">
+                                    Artificial Insemination performed. Sire: HOUSA000074261651 (SUPERSIRE).
+                                </p>
+<div class="hidden group-[.expanded]:block mt-3 pt-3 border-t border-outline-variant/30">
+<div class="bg-blue-50 p-3 rounded-lg">
+<p class="font-label-md text-label-md text-blue-800 font-semibold mb-1">Breeding Details</p>
+<p class="font-body-sm text-body-sm text-on-surface">Standing heat observed via automated activity monitor (collar data spike at 04:00 AM). Insemination performed at 14:00.</p>
+<div class="mt-2 flex gap-2">
+<span class="inline-flex items-center px-2 py-1 rounded bg-surface text-on-surface font-data-mono text-data-mono text-xs border border-outline-variant/50">Tech: J. Miller</span>
+<span class="inline-flex items-center px-2 py-1 rounded bg-surface text-on-surface font-data-mono text-data-mono text-xs border border-outline-variant/50">Status: Confirmed Preg (Day 35)</span>
+</div>
+</div>
+</div>
+</div>
+<button class="text-on-surface-variant group-[.expanded]:rotate-180 transition-transform">
+<span class="material-symbols-outlined" data-icon="expand_more">expand_more</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Event Node: Green (Management) -->
+<div class="relative pl-8 py-4 group">
+<div class="absolute left-[-5px] top-5 w-3 h-3 rounded-full bg-primary border-4 border-surface shadow-sm z-10 group-hover:scale-125 transition-transform duration-200"></div>
+<div class="bg-surface-container-lowest rounded-xl border border-primary/20 shadow-sm overflow-hidden hover:shadow-md transition-shadow cursor-pointer" onclick="this.classList.toggle('expanded')">
+<div class="p-4 flex gap-3 items-start">
+<div class="w-10 h-10 rounded-full bg-primary-container text-on-primary-container flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined" data-icon="monitor_weight">monitor_weight</span>
+</div>
+<div class="flex-grow">
+<div class="flex justify-between items-center mb-1">
+<h4 class="font-title-md text-title-md text-on-surface">Weight Check</h4>
+<span class="font-data-mono text-data-mono text-on-surface-variant text-sm">Aug 15, 2023</span>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface-variant line-clamp-1 group-[.expanded]:line-clamp-none transition-all">
+                                    Routine herd weigh-in. Body weight: 685 kg. BCS: 3.25.
+                                </p>
+<div class="hidden group-[.expanded]:block mt-3 pt-3 border-t border-outline-variant/30">
+<div class="bg-surface-container p-3 rounded-lg">
+<p class="font-label-md text-label-md text-on-surface font-semibold mb-1">Performance Metrics</p>
+<p class="font-body-sm text-body-sm text-on-surface">Weight is tracking along the upper 75th percentile for parity 2. Condition score is ideal for current lactation stage.</p>
+<div class="mt-2 w-full bg-surface-variant h-2 rounded-full overflow-hidden">
+<div class="bg-primary h-full rounded-full" style="width: 75%"></div>
+</div>
+</div>
+</div>
+</div>
+<button class="text-on-surface-variant group-[.expanded]:rotate-180 transition-transform">
+<span class="material-symbols-outlined" data-icon="expand_more">expand_more</span>
+</button>
+</div>
+</div>
+</div>
+</div>
+</section>
+</main>
+<!-- BottomNavBar (Mobile Only) -->
+<nav class="md:hidden bg-surface dark:bg-surface-container-lowest fixed bottom-0 left-0 w-full z-50 flex justify-around items-center px-stack_md pb-4 pt-2 shadow-lg dark:shadow-none">
+<button class="flex flex-col items-center justify-center text-on-surface-variant dark:text-outline-variant px-4 py-1 hover:bg-surface-variant dark:hover:bg-surface-container-high transition-colors">
+<span class="material-symbols-outlined mb-1" data-icon="home">home</span>
+<span class="font-label-md text-label-md">Home</span>
+</button>
+<!-- Active Item (Batches -> Closest semantic match for animal groups/profiles) -->
+<button class="flex flex-col items-center justify-center bg-secondary-container dark:bg-secondary-fixed-dim text-on-secondary-container dark:text-on-secondary-fixed rounded-full px-4 py-1 hover:bg-surface-variant dark:hover:bg-surface-container-high transition-colors scale-95 transition-transform duration-100">
+<span class="material-symbols-outlined mb-1" data-icon="group_work">group_work</span>
+<span class="font-label-md text-label-md">Batches</span>
+</button>
+<button class="flex flex-col items-center justify-center text-on-surface-variant dark:text-outline-variant px-4 py-1 hover:bg-surface-variant dark:hover:bg-surface-container-high transition-colors">
+<span class="material-symbols-outlined mb-1" data-icon="precision_manufacturing">precision_manufacturing</span>
+<span class="font-label-md text-label-md">Production</span>
+</button>
+<button class="flex flex-col items-center justify-center text-on-surface-variant dark:text-outline-variant px-4 py-1 hover:bg-surface-variant dark:hover:bg-surface-container-high transition-colors">
+<span class="material-symbols-outlined mb-1" data-icon="payments">payments</span>
+<span class="font-label-md text-label-md">Finance</span>
+</button>
+<button class="flex flex-col items-center justify-center text-on-surface-variant dark:text-outline-variant px-4 py-1 hover:bg-surface-variant dark:hover:bg-surface-container-high transition-colors">
+<span class="material-symbols-outlined mb-1" data-icon="notifications">notifications</span>
+<span class="font-label-md text-label-md">Alerts</span>
+</button>
+</nav>
+<style>
+        /* Optional: Add smooth transition for expandable sections if Tailwind classes aren't enough */
+        .group-\[\.expanded\]\:block {
+            animation: fadeIn 0.2s ease-in-out;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-4px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</body></html>

@@ -1,0 +1,180 @@
+📱 Milestone UI Blueprint & Interface Architecture
+This blueprint acts as the direct functional mapping for your Stitch designs. Every screen below corresponds to your precise engineering milestones.
+
+🔑 Milestone 0 — Infrastructure & Foundation
+Screen 1: Secure Authentication & Role Landing Space
+Purpose: Secure gateway defining data scopes and access-control modifiers based on user identity.
+
+Visual Structure:
+
+Clean, minimalist card layout over an organic background pattern.
+
+Fields: Phone Number text box with country prefix selector; Password input with a toggle visibility icon.
+
+Role Switcher Component: Horizontal carousel of cards showing accessible system layers (Owner, Veterinarian, Farm Manager, Field Worker) that highlights matching permissions.
+
+Indicator: An offline-ready pill badge at the bottom stating: "Ready to work offline. Actions will queue automatically."
+
+🧬 Milestone 1 — Animal Brain
+Screen 2: Unified Herd Registry (Animal List)
+Purpose: The central visual directory for every distinct biological twin on the farm.
+
+Visual Structure:
+
+Header Filter Component: Horizontal scrolling pill selectors (All, Cattle, Goats, Sheep) with active count indicators next to them (e.g., Cattle (142)).
+
+Search Bar: Integrated text field featuring scanner triggers (RFID / QR code scan icon on the trailing edge).
+
+Data Grid: High-density, multi-line list cards displaying:
+
+Left: Ear Tag ID (#COW-402) in bold text with a gender-colored icon badge.
+
+Center: Breed + Reproductive Status (Holstein Friesian • Lactating).
+
+Right: Current Pen Location and a quick-action button to append an event.
+
+Plaintext
++---------------------------------------------------------+
+| [=] IFMS HERD REGISTRY                       (Sync: OK) |
++---------------------------------------------------------+
+|  ( All )  (( Cattle 142 ))  ( Goats 84 )  ( Sheep 60 )  |
++---------------------------------------------------------+
+| [ Search Tag or Scan RFID...                     [|||] ]|
++---------------------------------------------------------+
+| [#COW-402] ♀ Holstein Friesian   | Location: Dairy Barn |
+| Status: [ LACTATING ]            | Yield: 24L / Day     |
++---------------------------------------------------------+
+| [#GAT-089] ♂ Boer Goat           | Location: Goat Pen B |
+| Status: [ ACTIVE BREEDER ]       | Weight: 45.2 kg      |
++---------------------------------------------------------+
+Screen 3: Biological Event Profile & Timeline
+Purpose: The core timeline display displaying an animal's full history through chronological events.
+
+Visual Structure:
+
+Top Profile Section: Image thumbnail, Tag ID, age calculator (e.g., 2 Years, 4 Months), and an current state badge (PREGNANT).
+
+Timeline Element: A vertical line connector with color-coded nodes mapping out events over time:
+
+Red Node: Medical Event (Mastitis Diagnosis • Vet note attached).
+
+Blue Node: Breeding Action (AI Insemination • Sire ID listed).
+
+Green Node: Management Action (Weight Check • 410kg).
+
+🥛 Milestone 2 — Dairy Intelligence
+Screen 4: Dairy Production Dashboard & Entry Sheet
+Purpose: Converting milk volumes into clear financial and operational metrics.
+
+Visual Structure:
+
+KPI Scorecard Grid: 2x2 grid featuring high-contrast data blocks:
+
+Total Daily Yield (1,420 Liters)
+
+Average Yield/Cow (18.5 Liters)
+
+Active Milking Cows (77)
+
+Estimated Revenue (₦ Gross Total)
+
+Production Log Component: A dense tabular sheet listing cows currently in lactation. Tapping a row reveals a modal with split inputs for Morning and Evening yields alongside a toggle to flag abnormal milk quality.
+
+Safety Warning: A persistent amber banner if a cow is under antibiotic withdrawal: “⚠️ MILKING BLOCK: COW-092 in withdrawal until July 3rd. Do not mix!”
+
+📆 Milestone 3 — Breeding & Genetics
+Screen 5: Predictive Breeding Calendar & Pipeline
+Purpose: Tracking reproductive cycles and identifying calving/kidding timelines ahead of time.
+
+Visual Structure:
+
+Pipeline Progress View: Horizontal step indicator showing the distribution of the herd across reproductive phases (In Heat → Serviced → Pregnancy Check Pending → Confirmed Pregnant).
+
+Actionable Calendar Cards: Organized by urgency using proximity-based dates:
+
+30 Days Post-Service Card: Lists cows due for a manual veterinary ultrasound check.
+
+Expected Calving Warning Card: Lists cows within 7 days of their target 283-day gestation mark, showing links to historical maternal traits.
+
+🐓 Milestone 4 — Poultry + Hatchery Industrial Engine
+Screen 6: Poultry Batch Lifecycle & FCR Tracker
+Purpose: Managing broiler flocks using industrial metrics where performance is tracked by batch.
+
+Visual Structure:
+
+Active Batch Selection: Dropdown list to select a house (e.g., Broiler Batch #12 - House A).
+
+Performance Metrics Header: Dual large data readouts showing:
+
+Feed Conversion Ratio (FCR: 1.62 - color-coded green if within threshold).
+
+Accumulated Mortality Rate (1.4% - flashes red if daily trend curves upward).
+
+Daily Log Form Panel: Simple quick-entry buttons for field workers to register daily feed bag counts and mortalities.
+
+Plaintext
++---------------------------------------------------------+
+| [←] BROILER BATCH #12 (HOUSE A)               [Active]  |
++---------------------------------------------------------+
+|  Current Count: 4,930 Birds   |  Age: Day 28            |
++---------------------------------------------------------+
+|    FCR: 1.62 [ NORMAL ]       |  Mortality: 1.4% [SAFE] |
++---------------------------------------------------------+
+| Quick Logs:                                             |
+|  [ +1 Feed Bag ]   [ +1 Mortality ]   [ Log Weight ]    |
++---------------------------------------------------------+
+Screen 7: Hatchery Incubation Tracker
+Purpose: Tracking incubation stages, candling evaluations, and overall hatch rates.
+
+Visual Structure:
+
+Incubation Matrix: Visual representation of setter trays showing egg count, set date, and an active countdown timer to day 21.
+
+Candling Assessment Form: Multi-variable card inputs to log: Total Eggs Set → Infertile Eggs Pulled (Day 7/14) → Calculated Fertility %.
+
+Hatch Outcome Card: Summary details shown when a batch finishes incubation, displaying the final Hatchability Rate % next to a breakdown of internal farm chicks versus external commercial service receipts.
+
+💰 Milestone 5 — Financial Intelligence Engine
+Screen 8: Enterprise Profit & Transaction Hub
+Purpose: A unified financial ledger that links transaction records directly to specific biological entities.
+
+Visual Structure:
+
+Enterprise Margin Chart: A clean bar chart visual displaying net profit distributions across sections (Dairy, Poultry, Hatchery, Small Ruminants).
+
+Consolidated Ledger List: Chronological stream of financial records:
+
+Each item shows the specific category tag, payment type indicator (Income / Expense), and associated object link (e.g., “Purchased Broiler Feed — Linked to Batch #12”).
+
+🚨 Milestone 6 — Real-Time Alert & Optimization Engine
+Screen 9: Unified Emergency Hub & Recommendation Space
+Purpose: System brain interface featuring automated anomaly detection and proactive corrective actions.
+
+Visual Structure:
+
+Urgency Matrix: Tabbed priorities (Critical, Action Required, Insights).
+
+Actionable Recommendation Cards: Expandable cards designed around a structured pattern:
+
+The Anomaly: "Batch #12 mortality spiked by 2.1% in the last 24 hours."
+
+The Financial Risk: "Potential revenue exposure: ₦450,000 if unchecked."
+
+The Directed Solution: Button prompts to: [ Notify Attending Vet ], [ Trigger Water Medication Log ], or [ Isolate Pen Segment ].
+
+Plaintext
++---------------------------------------------------------+
+| 🚨 FARM BRAIN ALERTS                                (3) |
++---------------------------------------------------------+
+| [ CRITICAL ]  ( Action Required )  ( System Insights )  |
++---------------------------------------------------------+
+| ⚠️ POULTRY MORTALITY SPIKE                              |
+| Loc: House A | Batch #12 | Impact: ₦450,000 at risk     |
+| Action: Mortality exceeded 2% limit in 24hrs.           |
+|                                                         |
+| [ Request Vet Inspection ]    [ Log Water Medication ]  |
++---------------------------------------------------------+
+| ⚠️ ANOMALOUS MILK DROP                                   |
+| Entity: #COW-402 | Deviation: -35% vs 7-Day Avg         |
+| Action: Flagged for Mastitis screening check.           |
++---------------------------------------------------------+
