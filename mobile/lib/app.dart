@@ -155,53 +155,95 @@ class HomeScreen extends StatelessWidget {
               mainAxisSpacing: 16,
               childAspectRatio: 1.1,
               children: [
-                _buildMenuCard(
-                  context,
-                  title: 'Herd Registry',
-                  subtitle: '142 Cattle Active',
-                  icon: Icons.pets,
-                  color: AppColors.primary,
-                  route: '/animals',
+                BlocBuilder<AnimalsBloc, AnimalsState>(
+                  builder: (context, state) {
+                    final count = state is AnimalsLoaded ? state.animals.length : 0;
+                    return _buildMenuCard(
+                      context,
+                      title: 'Herd Registry',
+                      subtitle: '$count Animals Active',
+                      icon: Icons.pets,
+                      color: AppColors.primary,
+                      route: '/animals',
+                    );
+                  },
                 ),
-                _buildMenuCard(
-                  context,
-                  title: 'Dairy Intel',
-                  subtitle: '1,420L Today',
-                  icon: Icons.water_drop,
-                  color: Colors.blue,
-                  route: '/dairy',
+                BlocBuilder<DairyBloc, DairyState>(
+                  builder: (context, state) {
+                    final yieldVal = state is DairyLoaded ? state.totalYield : 0.0;
+                    return _buildMenuCard(
+                      context,
+                      title: 'Dairy Intel',
+                      subtitle: '${yieldVal.toStringAsFixed(1)}L Total',
+                      icon: Icons.water_drop,
+                      color: Colors.blue,
+                      route: '/dairy',
+                    );
+                  },
                 ),
-                _buildMenuCard(
-                  context,
-                  title: 'Poultry Batch',
-                  subtitle: 'FCR 1.62 Normal',
-                  icon: Icons.egg,
-                  color: Colors.brown,
-                  route: '/poultry',
+                BlocBuilder<PoultryBloc, PoultryState>(
+                  builder: (context, state) {
+                    return _buildMenuCard(
+                      context,
+                      title: 'Poultry Batch',
+                      subtitle: 'FCR 1.62 Normal',
+                      icon: Icons.egg,
+                      color: Colors.brown,
+                      route: '/poultry',
+                    );
+                  },
                 ),
-                _buildMenuCard(
-                  context,
-                  title: 'Work Orders',
-                  subtitle: '5 Pending Tasks',
-                  icon: Icons.assignment,
-                  color: Colors.orange,
-                  route: '/tasks',
+                BlocBuilder<TasksBloc, TasksState>(
+                  builder: (context, state) {
+                    final count = state is TasksLoaded
+                        ? state.tasks.where((t) {
+                            final status = (t is Map ? t['status'] : t.status).toString().toLowerCase();
+                            return status != 'completed' && status != 'cancelled';
+                          }).length
+                        : 0;
+                    return _buildMenuCard(
+                      context,
+                      title: 'Work Orders',
+                      subtitle: '$count Pending Tasks',
+                      icon: Icons.assignment,
+                      color: Colors.orange,
+                      route: '/tasks',
+                    );
+                  },
                 ),
-                _buildMenuCard(
-                  context,
-                  title: 'Alert Hub',
-                  subtitle: '3 Critical Alerts',
-                  icon: Icons.notifications_active,
-                  color: AppColors.error,
-                  route: '/alerts',
+                BlocBuilder<AlertBloc, AlertState>(
+                  builder: (context, state) {
+                    final count = state is AlertLoaded ? state.alerts.where((a) => a.status == 'open').length : 0;
+                    return _buildMenuCard(
+                      context,
+                      title: 'Alert Hub',
+                      subtitle: '$count Active Alerts',
+                      icon: Icons.notifications_active,
+                      color: AppColors.error,
+                      route: '/alerts',
+                    );
+                  },
                 ),
-                _buildMenuCard(
-                  context,
-                  title: 'Financials',
-                  subtitle: '₦ 2.4M Margin',
-                  icon: Icons.account_balance_wallet,
-                  color: Colors.teal,
-                  route: '/finance',
+                BlocBuilder<FinanceBloc, FinanceState>(
+                  builder: (context, state) {
+                    double totalMargin = 0.0;
+                    if (state is FinanceLoaded) {
+                      for (var tx in state.transactions) {
+                        totalMargin += tx.transactionType == 'income' ? tx.amount : -tx.amount;
+                      }
+                    }
+                    final marginStr = totalMargin >= 0
+                        ? '₦ ${totalMargin.toStringAsFixed(0)} Margin'
+                        : '-₦ ${totalMargin.abs().toStringAsFixed(0)} Deficit';
+                    return _buildMenuCard(
+                      context,
+                      title: 'Financials',
+                      subtitle: state is FinanceLoaded ? marginStr : 'Margin Insights',
+                      icon: Icons.account_balance_wallet,
+                      color: Colors.teal,
+                      route: '/finance',
+                    );
+                  },
                 ),
               ],
             ),
@@ -250,29 +292,41 @@ class HomeScreen extends StatelessWidget {
   }
 
   Widget _buildFinancialOverview(BuildContext context) {
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+    return BlocBuilder<FinanceBloc, FinanceState>(
+      builder: (context, state) {
+        double totalRevenue = 0.0;
+        if (state is FinanceLoaded) {
+          for (var tx in state.transactions) {
+            if (tx.transactionType == 'income') {
+              totalRevenue += tx.amount;
+            }
+          }
+        }
+        return Card(
+          child: Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('ESTIMATED REVENUE', style: Theme.of(context).textTheme.labelLarge),
-                const Icon(Icons.trending_up, color: AppColors.secondary, size: 16),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text('ESTIMATED REVENUE', style: Theme.of(context).textTheme.labelLarge),
+                    const Icon(Icons.trending_up, color: AppColors.secondary, size: 16),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  '₦ ${totalRevenue.toStringAsFixed(2)}',
+                  style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: AppColors.primary),
+                ),
+                const SizedBox(height: 4),
+                Text('Across all active enterprise layers', style: Theme.of(context).textTheme.bodySmall),
               ],
             ),
-            const SizedBox(height: 8),
-            const Text(
-              '₦ 2,450,000.00',
-              style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: AppColors.primary),
-            ),
-            const SizedBox(height: 4),
-            Text('Across all active enterprise layers', style: Theme.of(context).textTheme.bodySmall),
-          ],
-        ),
-      ),
+          ),
+        );
+      },
     );
   }
 

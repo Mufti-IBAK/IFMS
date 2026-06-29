@@ -26,6 +26,7 @@ class LocalAnimals extends Table {
   TextColumn get pedigreeType => text().nullable()();
   TextColumn get purpose => text().nullable()();
   TextColumn get vaccinationStatus => text().nullable()();
+  TextColumn get dewormingStatus => text().nullable()();
   TextColumn get status => text().withDefault(const Constant('active'))();
   
   @override

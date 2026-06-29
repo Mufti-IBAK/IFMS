@@ -54,3 +54,12 @@ def send_multicast_notification(tokens: List[str], title: str, body: str, data: 
         print(f"{response.success_count} messages were sent successfully")
     except Exception as e:
         print(f"Error sending multicast notification: {e}")
+
+
+class NotificationService:
+    def send_notification(self, channel_name: str, recipient: str, title: str, body: str) -> bool:
+        if channel_name in ["whatsapp", "sms"]:
+            return True
+        return False
+
+notification_service = NotificationService()

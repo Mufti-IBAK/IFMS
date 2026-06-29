@@ -25,6 +25,7 @@ class AnimalBase(BaseModel):
     pedigree_type: Optional[str] = None
     purpose: Optional[str] = None
     vaccination_status: Optional[str] = None
+    deworming_status: Optional[str] = None
 
 class AnimalCreate(AnimalBase):
     pass
@@ -48,6 +49,7 @@ class AnimalUpdate(BaseModel):
     pedigree_type: Optional[str] = None
     purpose: Optional[str] = None
     vaccination_status: Optional[str] = None
+    deworming_status: Optional[str] = None
 
 class AnimalResponse(AnimalBase):
     id: UUID

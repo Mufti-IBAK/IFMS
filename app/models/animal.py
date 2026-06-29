@@ -64,3 +64,4 @@ class Animal(BaseModel):
     pedigree_type = Column(String(50), nullable=True)  # "pure" or "cross"
     purpose = Column(String(50), nullable=True)  # "breeding", "meat", or "milk"
     vaccination_status = Column(String(255), nullable=True)
+    deworming_status = Column(String(255), nullable=True)

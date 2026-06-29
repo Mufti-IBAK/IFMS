@@ -17,6 +17,8 @@ class AnimalsScreen extends StatefulWidget {
 class _AnimalsScreenState extends State<AnimalsScreen> {
   String _selectedFilter = 'all';
   String _searchQuery = '';
+  String _sortBy = 'tag_id';
+  bool _sortAscending = true;
   final TextEditingController _searchController = TextEditingController();
 
   @override
@@ -70,7 +72,7 @@ class _AnimalsScreenState extends State<AnimalsScreen> {
               if (state is AnimalsLoaded) {
                 return IconButton(
                   onPressed: () => ReportService.generateHerdReport(
-                    state.animals.whereType<LocalAnimal>().toList(),
+                    state.animals,
                   ),
                   icon: const Icon(Icons.picture_as_pdf),
                 );
@@ -88,9 +90,36 @@ class _AnimalsScreenState extends State<AnimalsScreen> {
           } else if (state is AnimalsLoaded) {
             // Apply search query
             final filtered = state.animals.where((animal) {
-              final tagId = (animal is Map ? animal['tag_id'] : animal.tagId).toString().toLowerCase();
-              final breed = ((animal is Map ? animal['breed'] : animal.breed) ?? '').toString().toLowerCase();
-              return tagId.contains(_searchQuery) || breed.contains(_searchQuery);
+              if (_searchQuery.isEmpty) return true;
+              final isMap = animal is Map;
+              
+              final tagId = (isMap ? animal['tag_id'] : animal.tagId).toString().toLowerCase();
+              final breed = ((isMap ? animal['breed'] : animal.breed) ?? '').toString().toLowerCase();
+              final species = (isMap ? animal['species'] : animal.species).toString().toLowerCase();
+              final sex = (isMap ? animal['sex'] : animal.sex).toString().toLowerCase();
+              final color = ((isMap ? animal['color'] : animal.color) ?? '').toString().toLowerCase();
+              final marks = ((isMap ? animal['unique_marks'] : animal.uniqueMarks) ?? '').toString().toLowerCase();
+              final purpose = ((isMap ? animal['purpose'] : animal.purpose) ?? '').toString().toLowerCase();
+              final pedigree = ((isMap ? animal['pedigree_type'] : animal.pedigreeType) ?? '').toString().toLowerCase();
+              final status = ((isMap ? animal['status'] : animal.status) ?? '').toString().toLowerCase();
+              final repro = ((isMap ? animal['current_reproductive_status'] : animal.currentReproductiveStatus) ?? '').toString().toLowerCase();
+              final vac = ((isMap ? animal['vaccination_status'] : animal.vaccinationStatus) ?? '').toString().toLowerCase();
+              final dew = ((isMap ? animal['deworming_status'] : animal.dewormingStatus) ?? '').toString().toLowerCase();
+              final weight = (isMap ? animal['weight'] : animal.weight)?.toString().toLowerCase() ?? '';
+              
+              return tagId.contains(_searchQuery) ||
+                  breed.contains(_searchQuery) ||
+                  species.contains(_searchQuery) ||
+                  sex.contains(_searchQuery) ||
+                  color.contains(_searchQuery) ||
+                  marks.contains(_searchQuery) ||
+                  purpose.contains(_searchQuery) ||
+                  pedigree.contains(_searchQuery) ||
+                  status.contains(_searchQuery) ||
+                  repro.contains(_searchQuery) ||
+                  vac.contains(_searchQuery) ||
+                  dew.contains(_searchQuery) ||
+                  weight.contains(_searchQuery);
             }).toList();
 
             // Apply species filter
@@ -103,6 +132,96 @@ class _AnimalsScreenState extends State<AnimalsScreen> {
               if (sp == 'sheep') norm = 'ovine';
               return norm == _selectedFilter;
             }).toList();
+
+            // Apply sorting
+            speciesFiltered.sort((a, b) {
+              final isMapA = a is Map;
+              final isMapB = b is Map;
+              
+              dynamic valA;
+              dynamic valB;
+              
+              switch (_sortBy) {
+                case 'tag_id':
+                  valA = (isMapA ? a['tag_id'] : a.tagId)?.toString() ?? '';
+                  valB = (isMapB ? b['tag_id'] : b.tagId)?.toString() ?? '';
+                  break;
+                case 'sex':
+                  valA = (isMapA ? a['sex'] : a.sex)?.toString() ?? '';
+                  valB = (isMapB ? b['sex'] : b.sex)?.toString() ?? '';
+                  break;
+                case 'weight':
+                  valA = (isMapA ? a['weight'] : a.weight) ?? 0.0;
+                  valB = (isMapB ? b['weight'] : b.weight) ?? 0.0;
+                  break;
+                case 'species':
+                  valA = (isMapA ? a['species'] : a.species)?.toString() ?? '';
+                  valB = (isMapB ? b['species'] : b.species)?.toString() ?? '';
+                  break;
+                case 'breed':
+                  valA = (isMapA ? a['breed'] : a.breed)?.toString() ?? '';
+                  valB = (isMapB ? b['breed'] : b.breed)?.toString() ?? '';
+                  break;
+                case 'color':
+                  valA = (isMapA ? a['color'] : a.color)?.toString() ?? '';
+                  valB = (isMapB ? b['color'] : b.color)?.toString() ?? '';
+                  break;
+                case 'unique_marks':
+                  valA = (isMapA ? a['unique_marks'] : a.uniqueMarks)?.toString() ?? '';
+                  valB = (isMapB ? b['unique_marks'] : b.uniqueMarks)?.toString() ?? '';
+                  break;
+                case 'date_of_birth':
+                  final rawA = isMapA ? a['date_of_birth'] : a.dateOfBirth;
+                  final rawB = isMapB ? b['date_of_birth'] : b.dateOfBirth;
+                  valA = rawA is DateTime ? rawA : (rawA != null ? DateTime.tryParse(rawA.toString()) : null);
+                  valB = rawB is DateTime ? rawB : (rawB != null ? DateTime.tryParse(rawB.toString()) : null);
+                  break;
+                case 'status':
+                  valA = (isMapA ? a['status'] : a.status)?.toString() ?? '';
+                  valB = (isMapB ? b['status'] : b.status)?.toString() ?? '';
+                  break;
+                case 'current_reproductive_status':
+                  valA = (isMapA ? a['current_reproductive_status'] : a.currentReproductiveStatus)?.toString() ?? '';
+                  valB = (isMapB ? b['current_reproductive_status'] : b.currentReproductiveStatus)?.toString() ?? '';
+                  break;
+                case 'purpose':
+                  valA = (isMapA ? a['purpose'] : a.purpose)?.toString() ?? '';
+                  valB = (isMapB ? b['purpose'] : b.purpose)?.toString() ?? '';
+                  break;
+                case 'pedigree_type':
+                  valA = (isMapA ? a['pedigree_type'] : a.pedigreeType)?.toString() ?? '';
+                  valB = (isMapB ? b['pedigree_type'] : b.pedigreeType)?.toString() ?? '';
+                  break;
+                case 'vaccination_status':
+                  valA = (isMapA ? a['vaccination_status'] : a.vaccinationStatus)?.toString() ?? '';
+                  valB = (isMapB ? b['vaccination_status'] : b.vaccinationStatus)?.toString() ?? '';
+                  break;
+                case 'deworming_status':
+                  valA = (isMapA ? a['deworming_status'] : a.dewormingStatus)?.toString() ?? '';
+                  valB = (isMapB ? b['deworming_status'] : b.dewormingStatus)?.toString() ?? '';
+                  break;
+                default:
+                  valA = '';
+                  valB = '';
+              }
+              
+              int comparison;
+              if (valA is Comparable && valB is Comparable) {
+                comparison = valA.compareTo(valB);
+              } else if (valA is num && valB is num) {
+                comparison = valA.compareTo(valB);
+              } else if (valA is DateTime && valB is DateTime) {
+                comparison = valA.compareTo(valB);
+              } else if (valA == null && valB != null) {
+                comparison = -1;
+              } else if (valA != null && valB == null) {
+                comparison = 1;
+              } else {
+                comparison = 0;
+              }
+              
+              return _sortAscending ? comparison : -comparison;
+            });
 
             // Group by species
             final Map<String, List<dynamic>> grouped = {};
@@ -126,6 +245,8 @@ class _AnimalsScreenState extends State<AnimalsScreen> {
               children: [
                 _buildFilterChips(state.animals),
                 _buildSearchBar(),
+                _buildSortOptionsBar(),
+                const SizedBox(height: 8),
                 if (state.isOffline)
                   Container(
                     color: AppColors.warning.withValues(alpha: 0.1),
@@ -420,6 +541,63 @@ class _AnimalsScreenState extends State<AnimalsScreen> {
     );
   }
 
+  Widget _buildSortOptionsBar() {
+    final Map<String, String> sortFields = {
+      'tag_id': 'Tag Number',
+      'sex': 'Sex',
+      'weight': 'Weight',
+      'species': 'Species',
+      'breed': 'Breed',
+      'color': 'Color',
+      'unique_marks': 'Unique Marks',
+      'date_of_birth': 'Age / DOB',
+      'status': 'Status',
+      'current_reproductive_status': 'Repro Status',
+      'purpose': 'Purpose',
+      'pedigree_type': 'Pedigree',
+      'vaccination_status': 'Vaccination Notes',
+      'deworming_status': 'Deworming Notes',
+    };
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 0),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Row(
+            children: [
+              const Icon(Icons.sort, size: 18, color: AppColors.outline),
+              const SizedBox(width: 8),
+              const Text('Sort by: ', style: TextStyle(fontSize: 12, color: AppColors.outline)),
+              PopupMenuButton<String>(
+                initialValue: _sortBy,
+                onSelected: (val) => setState(() => _sortBy = val),
+                child: Text(
+                  sortFields[_sortBy] ?? 'Tag Number',
+                  style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: AppColors.primary),
+                ),
+                itemBuilder: (context) => sortFields.entries.map((e) => PopupMenuItem(
+                  value: e.key,
+                  child: Text(e.value, style: const TextStyle(fontSize: 13)),
+                )).toList(),
+              ),
+            ],
+          ),
+          IconButton(
+            constraints: const BoxConstraints(),
+            padding: EdgeInsets.zero,
+            icon: Icon(
+              _sortAscending ? Icons.arrow_upward : Icons.arrow_downward,
+              size: 18,
+              color: AppColors.primary,
+            ),
+            onPressed: () => setState(() => _sortAscending = !_sortAscending),
+          ),
+        ],
+      ),
+    );
+  }
+
   void _showAddAnimalDialog(BuildContext context) {
     final tagController = TextEditingController();
     final breedController = TextEditingController();
@@ -427,6 +605,7 @@ class _AnimalsScreenState extends State<AnimalsScreen> {
     final colorController = TextEditingController();
     final marksController = TextEditingController();
     final vaccinationController = TextEditingController();
+    final dewormingController = TextEditingController();
     
     DateTime? selectedDob;
     String selectedSpecies = 'bovine';
@@ -852,8 +1031,18 @@ class _AnimalsScreenState extends State<AnimalsScreen> {
                                     child: TextField(
                                       controller: vaccinationController,
                                       decoration: const InputDecoration(
-                                        hintText: 'e.g. Dewormed 2 weeks ago',
+                                        hintText: 'e.g. FMD Vaccine given',
                                         prefixIcon: Icon(Icons.vaccines, size: 20),
+                                      ),
+                                    ),
+                                  ),
+                                  buildInputField(
+                                    label: 'Deworming Notes',
+                                    child: TextField(
+                                      controller: dewormingController,
+                                      decoration: const InputDecoration(
+                                        hintText: 'e.g. Albendazole given',
+                                        prefixIcon: Icon(Icons.bug_report, size: 20),
                                       ),
                                     ),
                                   ),
@@ -901,6 +1090,7 @@ class _AnimalsScreenState extends State<AnimalsScreen> {
                                 'purpose': selectedPurpose,
                                 'current_reproductive_status': isFemale ? selectedReproductive : 'open',
                                 'vaccination_status': vaccinationController.text.trim().isNotEmpty ? vaccinationController.text.trim() : null,
+                                'deworming_status': dewormingController.text.trim().isNotEmpty ? dewormingController.text.trim() : null,
                                 'image_path': selectedImagePath,
                               }));
                               Navigator.pop(bottomSheetContext);
@@ -940,6 +1130,7 @@ class _AnimalsScreenState extends State<AnimalsScreen> {
     final colorController = TextEditingController(text: (isMap ? animal['color'] : animal.color) ?? '');
     final marksController = TextEditingController(text: (isMap ? animal['unique_marks'] : animal.uniqueMarks) ?? '');
     final vaccinationController = TextEditingController(text: (isMap ? animal['vaccination_status'] : animal.vaccinationStatus) ?? '');
+    final dewormingController = TextEditingController(text: (isMap ? animal['deworming_status'] : animal.dewormingStatus) ?? '');
     
     DateTime? selectedDob;
     final dobRaw = isMap ? animal['date_of_birth'] : animal.dateOfBirth;
@@ -1050,6 +1241,45 @@ class _AnimalsScreenState extends State<AnimalsScreen> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
+                          Center(
+                            child: GestureDetector(
+                              onTap: () async {
+                                final picker = ImagePicker();
+                                final image = await picker.pickImage(source: ImageSource.camera);
+                                if (image != null) {
+                                  setState(() => selectedImagePath = image.path);
+                                }
+                              },
+                              child: Container(
+                                height: 110,
+                                width: 110,
+                                decoration: BoxDecoration(
+                                  color: AppColors.surfaceContainerHigh,
+                                  shape: BoxShape.circle,
+                                  image: selectedImagePath != null
+                                      ? DecorationImage(
+                                          image: selectedImagePath!.startsWith('http')
+                                              ? NetworkImage(selectedImagePath!) as ImageProvider
+                                              : FileImage(File(selectedImagePath!)),
+                                          fit: BoxFit.cover,
+                                        )
+                                      : null,
+                                  border: Border.all(color: AppColors.outlineVariant, width: 2),
+                                ),
+                                child: selectedImagePath == null
+                                    ? const Column(
+                                        mainAxisAlignment: MainAxisAlignment.center,
+                                        children: [
+                                          Icon(Icons.add_a_photo, color: AppColors.primary, size: 28),
+                                          SizedBox(height: 4),
+                                          Text('Add Photo', style: TextStyle(fontSize: 9, fontWeight: FontWeight.bold)),
+                                        ],
+                                      )
+                                    : null,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 16),
                           Card(
                             elevation: 0,
                             color: AppColors.surfaceContainerLow,
@@ -1314,8 +1544,18 @@ class _AnimalsScreenState extends State<AnimalsScreen> {
                                     child: TextField(
                                       controller: vaccinationController,
                                       decoration: const InputDecoration(
-                                        hintText: 'e.g. Dewormed',
+                                        hintText: 'e.g. FMD Vaccine given',
                                         prefixIcon: Icon(Icons.vaccines, size: 20),
+                                      ),
+                                    ),
+                                  ),
+                                  buildInputField(
+                                    label: 'Deworming Notes',
+                                    child: TextField(
+                                      controller: dewormingController,
+                                      decoration: const InputDecoration(
+                                        hintText: 'e.g. Albendazole given',
+                                        prefixIcon: Icon(Icons.bug_report, size: 20),
                                       ),
                                     ),
                                   ),
@@ -1360,6 +1600,8 @@ class _AnimalsScreenState extends State<AnimalsScreen> {
                                 'purpose': selectedPurpose,
                                 'current_reproductive_status': isFemale ? selectedReproductive : 'open',
                                 'vaccination_status': vaccinationController.text.trim().isNotEmpty ? vaccinationController.text.trim() : null,
+                                'deworming_status': dewormingController.text.trim().isNotEmpty ? dewormingController.text.trim() : null,
+                                'image_path': selectedImagePath,
                               }));
                               Navigator.pop(bottomSheetContext);
                             }

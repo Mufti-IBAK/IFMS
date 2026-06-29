@@ -37,7 +37,14 @@ def create_animal(db: Session, animal_in: AnimalCreate) -> Animal:
         dam_id=animal_in.dam_id,
         genetic_line=animal_in.genetic_line,
         acquisition_cost=animal_in.acquisition_cost,
-        salvage_value=animal_in.salvage_value
+        salvage_value=animal_in.salvage_value,
+        weight=animal_in.weight,
+        color=animal_in.color,
+        unique_marks=animal_in.unique_marks,
+        pedigree_type=animal_in.pedigree_type,
+        purpose=animal_in.purpose,
+        vaccination_status=animal_in.vaccination_status,
+        deworming_status=animal_in.deworming_status,
     )
     db.add(db_animal)
     db.commit()

@@ -57,6 +57,7 @@ class AnimalsRepository {
         pedigreeType: Value(animalData['pedigree_type']),
         purpose: Value(animalData['purpose']),
         vaccinationStatus: Value(animalData['vaccination_status']),
+        dewormingStatus: Value(animalData['deworming_status']),
       ));
 
       await db.into(db.syncQueue).insert(SyncQueueCompanion.insert(
@@ -85,13 +86,25 @@ class AnimalsRepository {
         pedigreeType: Value(animal['pedigree_type']),
         purpose: Value(animal['purpose']),
         vaccinationStatus: Value(animal['vaccination_status']),
+        dewormingStatus: Value(animal['deworming_status']),
       ));
     }
   }
 
   Future<void> updateAnimal(String id, Map<String, dynamic> updateData) async {
+    final imagePath = updateData['image_path'] as String?;
+    updateData.remove('image_path');
+
     try {
       await apiClient.dio.patch('/animals/$id', data: updateData);
+      
+      // If image exists, upload it
+      if (imagePath != null) {
+        final formData = FormData.fromMap({
+          'file': await MultipartFile.fromFile(imagePath, filename: 'animal_photo.jpg'),
+        });
+        await apiClient.dio.post('/animals/$id/image', data: formData);
+      }
     } catch (e) {
       // Local Drift DB Update
       final companion = LocalAnimalsCompanion(
@@ -107,6 +120,8 @@ class AnimalsRepository {
         pedigreeType: updateData['pedigree_type'] != null ? Value(updateData['pedigree_type']) : const Value.absent(),
         purpose: updateData['purpose'] != null ? Value(updateData['purpose']) : const Value.absent(),
         vaccinationStatus: updateData.containsKey('vaccination_status') ? Value(updateData['vaccination_status']) : const Value.absent(),
+        dewormingStatus: updateData.containsKey('deworming_status') ? Value(updateData['deworming_status']) : const Value.absent(),
+        imagePath: imagePath != null ? Value(imagePath) : const Value.absent(),
       );
       await (db.update(db.localAnimals)..where((t) => t.id.equals(id))).write(companion);
 
