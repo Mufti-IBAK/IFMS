@@ -108,8 +108,8 @@ def count_active_production_units(db: Session, target_date: date) -> int:
     return animals_count + poultry_count + hatchery_count
 
 def get_animal_depreciation(animal: Animal, check_date: date) -> Dict[str, Any]:
-    useful_life = 8.0 if animal.species == AnimalSpecies.COW else 5.0
-    salvage_val = animal.salvage_value or (50000.0 if animal.species == AnimalSpecies.COW else 15000.0)
+    useful_life = 8.0 if animal.species in [AnimalSpecies.COW, AnimalSpecies.BOVINE] else 5.0
+    salvage_val = animal.salvage_value or (50000.0 if animal.species in [AnimalSpecies.COW, AnimalSpecies.BOVINE] else 15000.0)
     
     age_days = (check_date - animal.date_of_birth).days
     age_years = age_days / 365.25

@@ -92,11 +92,11 @@ def create_milk_record(db: Session, record_in: MilkRecordCreate, user_id: UUID) 
             detail="Animal not found."
         )
         
-    # Verify it is a female cow
-    if animal.species != AnimalSpecies.COW or animal.sex != "female":
+    # Verify it is a female bovine/cow
+    if animal.species not in [AnimalSpecies.COW, AnimalSpecies.BOVINE] or animal.sex != "female":
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Only female cows produce milk records."
+            detail="Only female bovine/cows produce milk records."
         )
         
     # Check for active drug withdrawal
@@ -274,7 +274,7 @@ def get_dairy_profitability_by_animal(
         
     # Get all active cows
     cows = db.query(Animal).filter(
-        Animal.species == AnimalSpecies.COW,
+        Animal.species.in_([AnimalSpecies.COW, AnimalSpecies.BOVINE]),
         Animal.sex == "female"
     ).all()
     

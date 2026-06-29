@@ -6,6 +6,12 @@ class AnimalSpecies(str, enum.Enum):
     COW = "cow"
     GOAT = "goat"
     SHEEP = "sheep"
+    AVIAN = "avian"
+    CAPRINE = "caprine"
+    OVINE = "ovine"
+    BOVINE = "bovine"
+    PORCINE = "porcine"
+    OTHERS = "others"
 
 class AnimalStatus(str, enum.Enum):
     ACTIVE = "active"
