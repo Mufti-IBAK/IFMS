@@ -15,6 +15,8 @@ from app.models.alert import Alert
 from app.models.device import DeviceToken
 from app.models.milk_record import MilkRecord
 from app.models.transaction import Transaction
+from app.models.staff import Staff
+from app.models.staff_query import StaffQuery
 from app.core.roles import UserRole
 from app.core.security import get_password_hash
 
@@ -134,6 +136,29 @@ def seed():
                 ),
             ]
             db.add_all(alerts)
+
+        # 6. Create Staff
+        if db.query(Staff).count() == 0:
+            print("Seeding staff...")
+            staff_members = [
+                Staff(
+                    id=uuid4(),
+                    name="John Doe",
+                    role="Senior Herder",
+                    phone="08099887766",
+                    base_salary=45000.0,
+                    performance_rating=4.5
+                ),
+                Staff(
+                    id=uuid4(),
+                    name="Jane Smith",
+                    role="Poultry Manager",
+                    phone="08011223344",
+                    base_salary=65000.0,
+                    performance_rating=5.0
+                ),
+            ]
+            db.add_all(staff_members)
 
         db.commit()
         print("Seeding completed successfully!")

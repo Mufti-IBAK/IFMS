@@ -50,3 +50,11 @@ def get_hatchery_profit_summary_endpoint(
     current_user: User = Depends(get_current_active_user)
 ):
     return hatchery_service.get_hatchery_profitability_summary(db)
+
+@router.get("/batches", response_model=List[HatcheryBatchResponse])
+def get_hatchery_batches_endpoint(
+    status: Optional[str] = None,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_active_user)
+):
+    return hatchery_service.get_hatchery_batches(db, status)

@@ -42,6 +42,8 @@ class Animal(BaseModel):
     date_of_birth = Column(Date, nullable=False)
     date_of_acquisition = Column(Date, nullable=True)
     status = Column(SQLEnum(AnimalStatus, native_enum=False), nullable=False, default=AnimalStatus.ACTIVE)
+    sire_id = Column(String(50), nullable=True)
+    dam_id = Column(String(50), nullable=True)
     
     current_location_id = Column(String(50), nullable=True)
     current_reproductive_status = Column(

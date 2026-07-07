@@ -2,7 +2,7 @@ from reportlab.lib.pagesizes import A4
 from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
 from reportlab.lib.styles import getSampleStyleSheet
 from reportlab.lib import colors
-import pandas as pd
+from openpyxl import Workbook
 from io import BytesIO
 from typing import List
 from app.models.animal import Animal
@@ -42,19 +42,24 @@ def generate_herd_pdf(animals: List[Animal]) -> BytesIO:
 
 def generate_dairy_excel(records: List[MilkRecord]) -> BytesIO:
     buffer = BytesIO()
-    data = []
+    wb = Workbook()
+    ws = wb.active
+    ws.title = 'Milk Production'
+
+    # Write headers
+    headers = ["Date", "Animal ID", "Session", "Quantity (L)", "Withdrawn"]
+    ws.append(headers)
+
+    # Write records
     for r in records:
-        data.append({
-            "Date": r.record_date,
-            "Animal ID": r.animal_id,
-            "Session": r.milking_session,
-            "Quantity (L)": r.quantity_liters,
-            "Withdrawn": "Yes" if r.is_withdrawn else "No"
-        })
+        ws.append([
+            r.record_date.isoformat() if hasattr(r.record_date, 'isoformat') else str(r.record_date),
+            str(r.animal_id),
+            r.milking_session,
+            r.quantity_liters,
+            "Yes" if r.is_withdrawn else "No"
+        ])
 
-    df = pd.DataFrame(data)
-    with pd.ExcelWriter(buffer, engine='openpyxl') as writer:
-        df.to_excel(writer, index=False, sheet_name='Milk Production')
-
+    wb.save(buffer)
     buffer.seek(0)
     return buffer

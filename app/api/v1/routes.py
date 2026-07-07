@@ -1,5 +1,5 @@
 from fastapi import APIRouter
-from app.api.v1 import auth, health, animals, dairy, breeding, poultry, hatchery, finance, alerts, inventory, tasks, imports
+from app.api.v1 import auth, health, animals, dairy, breeding, poultry, hatchery, finance, alerts, inventory, tasks, imports, staff, system
 
 api_router = APIRouter()
 
@@ -15,3 +15,5 @@ api_router.include_router(alerts.router, prefix="/alerts", tags=["alerts"])
 api_router.include_router(inventory.router, prefix="/inventory", tags=["inventory"])
 api_router.include_router(tasks.router, prefix="/tasks", tags=["tasks"])
 api_router.include_router(imports.router, prefix="/import", tags=["import"])
+api_router.include_router(staff.router, prefix="/staff", tags=["staff"])
+api_router.include_router(system.router, prefix="/system", tags=["system"])

@@ -8,6 +8,12 @@ class AddAnimal extends AnimalsEvent {
   final Map<String, dynamic> animalData;
   AddAnimal(this.animalData);
 }
+class AddAnimalEvent extends AnimalsEvent {
+  final String animalId;
+  final String eventType;
+  final Map<String, dynamic> payload;
+  AddAnimalEvent(this.animalId, this.eventType, this.payload);
+}
 class UpdateAnimal extends AnimalsEvent {
   final String id;
   final Map<String, dynamic> updateData;
@@ -52,6 +58,15 @@ class AnimalsBloc extends Bloc<AnimalsEvent, AnimalsState> {
         add(LoadAnimals());
       } catch (e) {
         emit(AnimalsError('Failed to add animal: ${e.toString()}'));
+      }
+    });
+
+    on<AddAnimalEvent>((event, emit) async {
+      try {
+        await repository.logAnimalEvent(event.animalId, event.eventType, event.payload);
+        add(LoadAnimals());
+      } catch (e) {
+        emit(AnimalsError('Failed to log event: ${e.toString()}'));
       }
     });
 

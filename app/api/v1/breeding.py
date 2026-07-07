@@ -1,52 +1,46 @@
-from fastapi import APIRouter, Depends, HTTPException, status, Query
+from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
-from uuid import UUID
-from datetime import date
-from typing import List, Optional, Dict, Any
+from typing import List
 
 from app.core.database import get_db
-from app.services.auth_service import get_current_active_user
-from app.models.user import User
-from app.schemas.breeding import BreedingEventCreate, BreedingEventResponse
-from app.services import breeding_service
+from app.models.breeding_event import BreedingEvent
+from app.schemas.breeding_event import BreedingEventCreate, BreedingEventResponse
+# If auth is required:
+# from app.services.auth_service import get_current_active_user
+# from app.models.user import User
 
 router = APIRouter()
 
-@router.post("/event", response_model=BreedingEventResponse, status_code=status.HTTP_201_CREATED)
-def create_breeding_event_endpoint(
+@router.post("", response_model=BreedingEventResponse, status_code=status.HTTP_201_CREATED)
+def create_breeding_event(
     event_in: BreedingEventCreate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_active_user)
+    # current_user: User = Depends(get_current_active_user)
 ):
-    return breeding_service.create_breeding_event(db, event_in, current_user.id)
+    db_event = BreedingEvent(
+        id=event_in.id,
+        animal_id=event_in.animal_id,
+        event_type=event_in.event_type,
+        event_date=event_in.event_date,
+        sire_id=event_in.sire_id,
+        semen_batch_id=event_in.semen_batch_id,
+        technician=event_in.technician,
+        result=event_in.result,
+        notes=event_in.notes,
+        # created_by=current_user.id
+    )
+    db.add(db_event)
+    db.commit()
+    db.refresh(db_event)
+    return db_event
 
-@router.get("/calendar")
-def get_breeding_calendar_endpoint(
-    reference_date: Optional[date] = None,
+@router.get("", response_model=List[BreedingEventResponse])
+def get_breeding_events(
+    animal_id: str = None,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_active_user)
+    # current_user: User = Depends(get_current_active_user)
 ):
-    return breeding_service.get_breeding_calendar(db, reference_date)
-
-@router.get("/kpi/herd")
-def get_herd_kpi_endpoint(
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_active_user)
-):
-    return breeding_service.get_breeding_kpi_herd(db)
-
-@router.get("/kpi/animal/{id}")
-def get_animal_kpi_endpoint(
-    id: UUID,
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_active_user)
-):
-    return breeding_service.get_breeding_kpi_animal(db, id)
-
-@router.get("/{animal_id}", response_model=List[BreedingEventResponse])
-def get_animal_breeding_timeline_endpoint(
-    animal_id: UUID,
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_active_user)
-):
-    return breeding_service.get_animal_breeding_timeline(db, animal_id)
+    query = db.query(BreedingEvent)
+    if animal_id:
+        query = query.filter(BreedingEvent.animal_id == animal_id)
+    return query.all()

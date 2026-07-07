@@ -9,6 +9,12 @@ import '../../features/dairy/dairy_repository.dart';
 import '../../features/poultry/poultry_repository.dart';
 import '../../features/finance/finance_repository.dart';
 import '../../features/alerts/alert_repository.dart';
+import '../../features/inventory/inventory_repository.dart';
+import '../../features/hatchery/hatchery_repository.dart';
+import '../../features/pharmacy/pharmacy_repository.dart';
+import '../../features/staff/staff_repository.dart';
+import '../../features/breeding/breeding_repository.dart';
+import '../../features/settings/settings_controller.dart';
 
 final sl = GetIt.instance;
 
@@ -16,6 +22,10 @@ Future<void> setupLocator() async {
   // Core
   final database = LocalDatabase();
   sl.registerSingleton<LocalDatabase>(database);
+  
+  final settingsController = SettingsController();
+  await settingsController.loadSettings();
+  sl.registerSingleton<SettingsController>(settingsController);
   
   final apiClient = ApiClient();
   sl.registerSingleton<ApiClient>(apiClient);
@@ -31,4 +41,9 @@ Future<void> setupLocator() async {
   sl.registerLazySingleton<PoultryRepository>(() => PoultryRepository(sl(), sl()));
   sl.registerLazySingleton<FinanceRepository>(() => FinanceRepository(sl(), sl()));
   sl.registerLazySingleton<AlertRepository>(() => AlertRepository(sl(), sl()));
+  sl.registerLazySingleton<InventoryRepository>(() => InventoryRepository(sl(), sl()));
+  sl.registerLazySingleton<HatcheryRepository>(() => HatcheryRepository(sl(), sl()));
+  sl.registerLazySingleton<PharmacyRepository>(() => PharmacyRepository(sl()));
+  sl.registerLazySingleton<StaffRepository>(() => StaffRepository(sl(), sl()));
+  sl.registerLazySingleton<BreedingRepository>(() => BreedingRepository(sl(), sl()));
 }

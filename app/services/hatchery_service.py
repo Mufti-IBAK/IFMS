@@ -160,3 +160,9 @@ def get_hatchery_profitability_summary(db: Session) -> Dict[str, Any]:
         "total_chicks_hatched": total_chicks,
         "average_cost_per_chick": round(avg_cost_per_chick, 2)
     }
+
+def get_hatchery_batches(db: Session, status: Optional[str] = None) -> List[HatcheryBatch]:
+    query = db.query(HatcheryBatch)
+    if status:
+        query = query.filter(HatcheryBatch.status == status)
+    return query.order_by(HatcheryBatch.created_at.desc()).all()

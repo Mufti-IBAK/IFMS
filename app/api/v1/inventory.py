@@ -81,3 +81,13 @@ def get_consumption_summary_endpoint(
     current_user: User = Depends(get_current_active_user)
 ):
     return inventory_service.get_consumption_summary(db, days)
+
+@router.delete("/items/{id}", status_code=204)
+def delete_feed_item_endpoint(
+    id: UUID,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_active_user)
+):
+    from app.schemas.inventory import FeedItemUpdate
+    inventory_service.update_feed_item(db, id, FeedItemUpdate(is_active=False))
+    return None

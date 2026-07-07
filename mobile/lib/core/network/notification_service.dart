@@ -1,6 +1,8 @@
 import 'package:flutter/foundation.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:timezone/data/latest_all.dart' as tz;
+import 'package:timezone/timezone.dart' as tz;
 import '../di/service_locator.dart';
 import 'api_client.dart';
 
@@ -9,6 +11,8 @@ class NotificationService {
   final FlutterLocalNotificationsPlugin _localNotifications = FlutterLocalNotificationsPlugin();
 
   Future<void> initialize() async {
+    tz.initializeTimeZones();
+
     // Request permissions
     await _fcm.requestPermission(
       alert: true,
@@ -55,6 +59,98 @@ class NotificationService {
       await apiClient.dio.post('/auth/fcm-token', data: {'token': token});
     } catch (e) {
       debugPrint('Failed to send FCM token to backend: $e');
+    }
+  }
+
+  Future<void> showLocalNotification(String title, String body, {String? payload}) async {
+    const android = AndroidNotificationDetails(
+      'local_channel',
+      'Local Notifications',
+      importance: Importance.max,
+      priority: Priority.high,
+    );
+    await _localNotifications.show(
+      DateTime.now().millisecond,
+      title,
+      body,
+      const NotificationDetails(android: android),
+      payload: payload,
+    );
+  }
+
+  Future<void> scheduleDailyTaskSummaries(List<dynamic> localTasks) async {
+    // 1. Cancel previous daily summaries to prevent duplicates (ids 100-113 reserved for this)
+    for (int i = 100; i < 114; i++) {
+      await _localNotifications.cancel(i);
+    }
+    
+    if (localTasks.isEmpty) return;
+
+    // 2. Group tasks by date
+    final Map<String, int> tasksByDate = {};
+    for (var task in localTasks) {
+      final status = task is Map ? task['status'] : task.status;
+      if (status == 'completed') continue;
+      
+      final dueDateRaw = task is Map ? task['due_date'] : task.dueDate;
+      if (dueDateRaw == null) continue;
+      
+      String dateStr = '';
+      if (dueDateRaw is DateTime) {
+        dateStr = dueDateRaw.toIso8601String().split('T')[0];
+      } else {
+        dateStr = dueDateRaw.toString().split('T')[0];
+        if (dateStr.length > 10) dateStr = dateStr.substring(0, 10);
+      }
+      tasksByDate[dateStr] = (tasksByDate[dateStr] ?? 0) + 1;
+    }
+
+    if (tasksByDate.isEmpty) return;
+
+    // 3. Schedule for the next 7 days
+    final now = DateTime.now();
+    for (int i = 0; i < 7; i++) {
+      final targetDate = now.add(Duration(days: i));
+      final dateStr = targetDate.toIso8601String().split('T')[0];
+      final taskCount = tasksByDate[dateStr] ?? 0;
+
+      if (taskCount > 0) {
+        // Morning Notification (7:00 AM)
+        var morningTime = tz.TZDateTime(tz.local, targetDate.year, targetDate.month, targetDate.day, 7, 0);
+        if (morningTime.isAfter(tz.TZDateTime.now(tz.local))) {
+          await _localNotifications.zonedSchedule(
+            100 + i, // unique ID
+            'Morning Task Summary',
+            'Good morning! You have $taskCount pending task(s) scheduled for today.',
+            morningTime,
+            const NotificationDetails(
+              android: AndroidNotificationDetails('daily_summary', 'Daily Summaries', importance: Importance.high),
+            ),
+            uiLocalNotificationDateInterpretation: UILocalNotificationDateInterpretation.absoluteTime,
+            androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
+            matchDateTimeComponents: DateTimeComponents.time,
+            payload: '/tasks',
+          );
+        }
+
+        // Evening Notification (4:30 PM = 16:30)
+        var eveningTime = tz.TZDateTime(tz.local, targetDate.year, targetDate.month, targetDate.day, 16, 30);
+        if (eveningTime.isAfter(tz.TZDateTime.now(tz.local))) {
+          await _localNotifications.zonedSchedule(
+            107 + i, // unique ID offset by 7
+            'Evening Task Wrap-up',
+            'Reminder: You still have $taskCount task(s) for today. Please complete them!',
+            eveningTime,
+            const NotificationDetails(
+              android: AndroidNotificationDetails('daily_summary', 'Daily Summaries', importance: Importance.high),
+            ),
+            uiLocalNotificationDateInterpretation: UILocalNotificationDateInterpretation.absoluteTime,
+            androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
+            matchDateTimeComponents: DateTimeComponents.time,
+            payload: '/tasks',
+          );
+        }
+      }
     }
   }
 }

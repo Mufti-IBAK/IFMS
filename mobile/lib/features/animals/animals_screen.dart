@@ -2,9 +2,16 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
+import 'package:intl/intl.dart';
 import '../../core/utils/report_service.dart';
 import '../../core/theme/app_colors.dart';
+import '../../core/network/api_client.dart';
+import '../../core/di/service_locator.dart';
+import '../../core/sync/sync_manager.dart';
 import '../../core/database/local_db.dart';
+import 'package:ifms_mobile/features/pharmacy/pharmacy_repository.dart';
+import 'package:ifms_mobile/core/widgets/animal_silhouette.dart';
+import 'animal_profile_screen.dart';
 import 'animals_bloc.dart';
 
 class AnimalsScreen extends StatefulWidget {
@@ -51,21 +58,12 @@ class _AnimalsScreenState extends State<AnimalsScreen> {
     }
   }
 
-  IconData _getSpeciesIcon(String sp, String sex) {
-    final lowerSp = sp.toLowerCase();
-    
-    if (lowerSp == 'bovine' || lowerSp == 'cow') return Icons.pets;
-    if (lowerSp == 'feline') return Icons.pets_sharp;
-    if (lowerSp == 'canine') return Icons.pets;
-    if (lowerSp == 'leprine') return Icons.cruelty_free;
-    return Icons.agriculture;
-  }
-
   @override
+
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('IFMS HERD REGISTRY'),
+        title: const Text('IFMS FARM REGISTRY'),
         actions: [
           BlocBuilder<AnimalsBloc, AnimalsState>(
             builder: (context, state) {
@@ -80,7 +78,29 @@ class _AnimalsScreenState extends State<AnimalsScreen> {
               return const SizedBox();
             },
           ),
-          IconButton(onPressed: () {}, icon: const Icon(Icons.sync, color: AppColors.info)),
+          IconButton(
+            onPressed: () async {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('Synchronizing records with Namanzo Farms cloud...'),
+                  duration: Duration(seconds: 1),
+                ),
+              );
+              // Trigger local-to-remote queue sync
+              await sl<SyncManager>().triggerSync();
+              // Reload page data
+              if (context.mounted) {
+                BlocProvider.of<AnimalsBloc>(context).add(LoadAnimals());
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Synchronization complete!'),
+                    duration: Duration(seconds: 1),
+                  ),
+                );
+              }
+            },
+            icon: const Icon(Icons.sync, color: AppColors.info),
+          ),
         ],
       ),
       body: BlocBuilder<AnimalsBloc, AnimalsState>(
@@ -270,7 +290,11 @@ class _AnimalsScreenState extends State<AnimalsScreen> {
                             // Section Header UI
                             if (item is String) {
                               final displayName = _getSpeciesDisplayName(item).toUpperCase();
-                              final count = grouped[item]?.length ?? 0;
+                              final count = grouped[item]?.where((a) {
+                                final isMap = a is Map;
+                                final status = ((isMap ? a['status'] : a.status) ?? 'active').toString().toLowerCase();
+                                return status != 'dead';
+                              }).length ?? 0;
                               return Padding(
                                 padding: const EdgeInsets.symmetric(vertical: 12.0, horizontal: 4),
                                 child: Row(
@@ -278,9 +302,9 @@ class _AnimalsScreenState extends State<AnimalsScreen> {
                                     Container(
                                       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                                       decoration: BoxDecoration(
-                                        color: AppColors.primary.withOpacity(0.08),
+                                        color: AppColors.primary.withValues(alpha: 0.08),
                                         borderRadius: BorderRadius.circular(20),
-                                        border: Border.all(color: AppColors.primary.withOpacity(0.2), width: 0.5),
+                                        border: Border.all(color: AppColors.primary.withValues(alpha: 0.2), width: 0.5),
                                       ),
                                       child: Text(
                                         '$displayName ($count)',
@@ -310,44 +334,65 @@ class _AnimalsScreenState extends State<AnimalsScreen> {
                             final status = (isMap ? animal['current_reproductive_status'] : animal.currentReproductiveStatus) ?? 'Open';
                             final liveStatus = (isMap ? animal['status'] : animal.status) ?? 'active';
                             final isDead = liveStatus.toString().toLowerCase() == 'dead';
+                            final imagePath = (isMap ? animal['image_path'] : animal.imagePath) as String?;
 
                             return Opacity(
                               opacity: isDead ? 0.65 : 1.0,
-                              child: Card(
-                                margin: const EdgeInsets.only(bottom: 12),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                  side: BorderSide(
-                                    color: isDead ? Colors.grey.shade300 : AppColors.outlineVariant,
-                                    width: 0.5,
+                              child: GestureDetector(
+                                onTap: () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) => AnimalProfileScreen(animal: animal),
+                                    ),
+                                  ).then((_) {
+                                    if (context.mounted) {
+                                      BlocProvider.of<AnimalsBloc>(context).add(LoadAnimals());
+                                    }
+                                  });
+                                },
+                                child: Card(
+                                  margin: const EdgeInsets.only(bottom: 12),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                    side: BorderSide(
+                                      color: isDead ? Colors.grey.shade300 : AppColors.outlineVariant,
+                                      width: 0.5,
+                                    ),
                                   ),
-                                ),
-                                child: Padding(
-                                  padding: const EdgeInsets.all(12),
-                                  child: Row(
-                                    children: [
-                                      Container(
-                                        width: 48,
-                                        height: 48,
-                                        decoration: BoxDecoration(
-                                          color: isDead 
-                                              ? Colors.grey.shade100
-                                              : (sex.toString().toLowerCase() == 'female' 
-                                                  ? Colors.pink.shade50 
-                                                  : Colors.blue.shade50),
-                                          borderRadius: BorderRadius.circular(8),
-                                        ),
-                                        child: Icon(
-                                          isDead 
-                                              ? Icons.sentiment_very_dissatisfied
-                                              : _getSpeciesIcon(species.toString(), sex.toString()),
-                                          color: isDead 
-                                              ? Colors.grey
-                                              : (sex.toString().toLowerCase() == 'female' 
-                                                  ? Colors.pink 
-                                                  : Colors.blue),
-                                        ),
-                                      ),
+                                  child: Padding(
+                                    padding: const EdgeInsets.all(12),
+                                    child: Row(
+                                      children: [
+                                      imagePath == null
+                                          ? AnimalSilhouette(
+                                              species: species.toString(),
+                                              sex: sex.toString(),
+                                              size: 48,
+                                              backgroundColor: isDead ? Colors.grey.shade100 : null,
+                                              color: isDead ? Colors.grey : null,
+                                            )
+                                          : Container(
+                                              width: 48,
+                                              height: 48,
+                                              decoration: BoxDecoration(
+                                                color: isDead 
+                                                    ? Colors.grey.shade100
+                                                    : (sex.toString().toLowerCase() == 'female' 
+                                                        ? Colors.pink.shade50 
+                                                        : Colors.blue.shade50),
+                                                borderRadius: BorderRadius.circular(12),
+                                                image: DecorationImage(
+                                                  image: imagePath.startsWith('http')
+                                                      ? NetworkImage(imagePath) as ImageProvider
+                                                      : imagePath.startsWith('/uploads')
+                                                          ? NetworkImage('${ApiClient.baseUrl.replaceAll('/api/v1', '')}$imagePath')
+                                                          : FileImage(File(imagePath)) as ImageProvider,
+                                                  fit: BoxFit.cover,
+                                                ),
+                                              ),
+                                            ),
+
                                       const SizedBox(width: 12),
                                       Expanded(
                                         child: Column(
@@ -358,6 +403,35 @@ class _AnimalsScreenState extends State<AnimalsScreen> {
                                                 Text(
                                                   '#$tagId',
                                                   style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                                                ),
+                                                FutureBuilder<List<LocalAnimalMedicalRecord>>(
+                                                  future: sl<PharmacyRepository>().getMedicalRecords(animalId: id),
+                                                  builder: (context, snapshot) {
+                                                    if (!snapshot.hasData) return const SizedBox();
+                                                    final records = snapshot.data!;
+                                                    final hasActiveWithdrawal = records.any((r) => r.withdrawalEndDate != null && r.withdrawalEndDate!.isAfter(DateTime.now()));
+                                                    if (!hasActiveWithdrawal) return const SizedBox();
+                                                    return Container(
+                                                      margin: const EdgeInsets.only(left: 8),
+                                                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                                      decoration: BoxDecoration(
+                                                        color: Colors.orange.withValues(alpha: 0.1),
+                                                        borderRadius: BorderRadius.circular(4),
+                                                        border: Border.all(color: Colors.orange.withValues(alpha: 0.3)),
+                                                      ),
+                                                      child: const Row(
+                                                        mainAxisSize: MainAxisSize.min,
+                                                        children: [
+                                                          Icon(Icons.warning, color: Colors.orange, size: 10),
+                                                          SizedBox(width: 4),
+                                                          Text(
+                                                            'WITHDRAWAL',
+                                                            style: TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: Colors.orange),
+                                                          ),
+                                                        ],
+                                                      ),
+                                                    );
+                                                  },
                                                 ),
                                                 if (isDead) ...[
                                                   const SizedBox(width: 8),
@@ -385,15 +459,76 @@ class _AnimalsScreenState extends State<AnimalsScreen> {
                                           ],
                                         ),
                                       ),
-                                      if (!isDead && (species.toString().toLowerCase() == 'bovine' || species.toString().toLowerCase() == 'cow'))
-                                        const Column(
-                                          crossAxisAlignment: CrossAxisAlignment.end,
-                                          mainAxisAlignment: MainAxisAlignment.center,
-                                          children: [
-                                            Text('Dairy Barn', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w500)),
-                                            Text('Yield: 24L', style: TextStyle(fontSize: 11, color: AppColors.primary, fontWeight: FontWeight.bold)),
-                                          ],
+                                      if (!isDead) ...[
+                                        Builder(
+                                          builder: (context) {
+                                            final lowerSpecies = species.toString().toLowerCase();
+                                            final lowerSex = sex.toString().toLowerCase();
+                                            final lowerRepro = status.toString().toLowerCase();
+                                            final lowerPurpose = (isMap ? animal['purpose'] : animal.purpose)?.toString().toLowerCase() ?? '';
+
+                                            String line1 = '';
+                                            String line2 = '';
+                                            Color color2 = AppColors.primary;
+
+                                            if (lowerSpecies == 'bovine' || lowerSpecies == 'cow') {
+                                              if (lowerSex == 'female') {
+                                                if (lowerRepro == 'lactating') {
+                                                  line1 = 'Dairy Barn';
+                                                  line2 = 'Lactating';
+                                                } else if (lowerRepro == 'pregnant') {
+                                                  line1 = 'Breeding Barn';
+                                                  line2 = 'Pregnant';
+                                                  color2 = Colors.pink;
+                                                } else {
+                                                  line1 = 'Dairy Barn';
+                                                  line2 = 'Dry / Open';
+                                                  color2 = Colors.orange;
+                                                }
+                                              } else {
+                                                line1 = 'Bull Barn';
+                                                line2 = 'Stud / Sire';
+                                                color2 = Colors.blue;
+                                              }
+                                            } else if (lowerSpecies == 'avian' || lowerSpecies == 'poultry') {
+                                              line1 = 'Poultry';
+                                              if (lowerPurpose == 'eggs') {
+                                                line1 = 'Layers';
+                                                line2 = 'Egg Prod';
+                                              } else if (lowerPurpose == 'meat') {
+                                                line1 = 'Broilers';
+                                                line2 = 'Meat Prod';
+                                              } else {
+                                                line2 = 'Active';
+                                              }
+                                            } else {
+                                              // Fallback for other species
+                                              if (lowerPurpose == 'meat') {
+                                                line1 = 'Meat Barn';
+                                                line2 = 'Growth: OK';
+                                              } else if (lowerPurpose == 'breeding') {
+                                                line1 = 'Breeding';
+                                                line2 = lowerRepro == 'pregnant' ? 'Pregnant' : 'Active';
+                                                if (lowerRepro == 'pregnant') color2 = Colors.pink;
+                                              } else {
+                                                line1 = lowerPurpose.isNotEmpty ? (lowerPurpose[0].toUpperCase() + lowerPurpose.substring(1)) : 'General';
+                                                line2 = lowerRepro.isNotEmpty ? (lowerRepro[0].toUpperCase() + lowerRepro.substring(1)) : 'Active';
+                                              }
+                                            }
+
+                                            if (line1.isEmpty) return const SizedBox();
+
+                                            return Column(
+                                              crossAxisAlignment: CrossAxisAlignment.end,
+                                              mainAxisAlignment: MainAxisAlignment.center,
+                                              children: [
+                                                Text(line1, style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w500)),
+                                                Text(line2, style: TextStyle(fontSize: 11, color: color2, fontWeight: FontWeight.bold)),
+                                              ],
+                                            );
+                                          },
                                         ),
+                                      ],
                                       PopupMenuButton<String>(
                                         icon: const Icon(Icons.more_vert, size: 20),
                                         onSelected: (action) {
@@ -406,16 +541,17 @@ class _AnimalsScreenState extends State<AnimalsScreen> {
                                           }
                                         },
                                         itemBuilder: (context) => [
-                                          const PopupMenuItem(
-                                            value: 'edit',
-                                            child: Row(
-                                              children: [
-                                                Icon(Icons.edit, size: 18),
-                                                SizedBox(width: 8),
-                                                Text('Edit Info'),
-                                              ],
+                                          if (!isDead)
+                                            const PopupMenuItem(
+                                              value: 'edit',
+                                              child: Row(
+                                                children: [
+                                                  Icon(Icons.edit, size: 18),
+                                                  SizedBox(width: 8),
+                                                  Text('Edit Info'),
+                                                ],
+                                              ),
                                             ),
-                                          ),
                                           if (!isDead)
                                             const PopupMenuItem(
                                               value: 'dead',
@@ -443,7 +579,8 @@ class _AnimalsScreenState extends State<AnimalsScreen> {
                                   ),
                                 ),
                               ),
-                            );
+                            ),
+                          );
                           },
                         ),
                 ),
@@ -464,8 +601,14 @@ class _AnimalsScreenState extends State<AnimalsScreen> {
   }
 
   Widget _buildFilterChips(List<dynamic> animals) {
+    final activeAnimals = animals.where((a) {
+      final isMap = a is Map;
+      final status = ((isMap ? a['status'] : a.status) ?? 'active').toString().toLowerCase();
+      return status != 'dead';
+    }).toList();
+
     final Map<String, int> speciesCounts = {};
-    for (var a in animals) {
+    for (var a in activeAnimals) {
       final sp = (a is Map ? a['species'] : a.species).toString().toLowerCase();
       String norm = sp;
       if (sp == 'cow') norm = 'bovine';
@@ -480,7 +623,7 @@ class _AnimalsScreenState extends State<AnimalsScreen> {
       child: Row(
         children: [
           _filterChip(
-            label: 'All (${animals.length})',
+            label: 'All (${activeAnimals.length})',
             isSelected: _selectedFilter == 'all',
             onTap: () => setState(() => _selectedFilter = 'all'),
           ),
@@ -519,8 +662,7 @@ class _AnimalsScreenState extends State<AnimalsScreen> {
   Widget _buildSearchBar() {
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-      child: TextField(
-        controller: _searchController,
+      child: TextField(textCapitalization: TextCapitalization.sentences, controller: _searchController,
         decoration: InputDecoration(
           hintText: 'Search Tag or Breed...',
           prefixIcon: const Icon(Icons.search),
@@ -604,9 +746,7 @@ class _AnimalsScreenState extends State<AnimalsScreen> {
     final weightController = TextEditingController();
     final colorController = TextEditingController();
     final marksController = TextEditingController();
-    final vaccinationController = TextEditingController();
-    final dewormingController = TextEditingController();
-    
+
     DateTime? selectedDob;
     String selectedSpecies = 'bovine';
     String selectedSex = 'female';
@@ -670,7 +810,7 @@ class _AnimalsScreenState extends State<AnimalsScreen> {
               borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.1),
+                  color: Colors.black.withValues(alpha: 0.1),
                   blurRadius: 20,
                   offset: const Offset(0, -5),
                 ),
@@ -735,7 +875,14 @@ class _AnimalsScreenState extends State<AnimalsScreen> {
                                   color: AppColors.surfaceContainerHigh,
                                   shape: BoxShape.circle,
                                   image: selectedImagePath != null
-                                      ? DecorationImage(image: FileImage(File(selectedImagePath!)), fit: BoxFit.cover)
+                                      ? DecorationImage(
+                                          image: selectedImagePath!.startsWith('http')
+                                              ? NetworkImage(selectedImagePath!) as ImageProvider
+                                              : selectedImagePath!.startsWith('/uploads')
+                                                  ? NetworkImage('${ApiClient.baseUrl.replaceAll('/api/v1', '')}$selectedImagePath')
+                                                  : FileImage(File(selectedImagePath!)) as ImageProvider,
+                                          fit: BoxFit.cover,
+                                        )
                                       : null,
                                   border: Border.all(color: AppColors.outlineVariant, width: 2),
                                 ),
@@ -772,8 +919,7 @@ class _AnimalsScreenState extends State<AnimalsScreen> {
                                   
                                   buildInputField(
                                     label: 'Ear Tag / Identifier *',
-                                    child: TextField(
-                                      controller: tagController,
+                                    child: TextField(textCapitalization: TextCapitalization.sentences, controller: tagController,
                                       decoration: const InputDecoration(
                                         hintText: 'e.g. COW-204',
                                         prefixIcon: Icon(Icons.tag, size: 20),
@@ -785,7 +931,7 @@ class _AnimalsScreenState extends State<AnimalsScreen> {
                                     buildInputField(
                                       label: 'Species *',
                                       child: DropdownButtonFormField<String>(
-                                        value: selectedSpecies,
+                                        initialValue: selectedSpecies,
                                         items: const [
                                           DropdownMenuItem(value: 'bovine', child: Text('Bovine (Cattle)')),
                                           DropdownMenuItem(value: 'avian', child: Text('Avian (Poultry)')),
@@ -824,11 +970,10 @@ class _AnimalsScreenState extends State<AnimalsScreen> {
                                   ),
                                   buildInputField(
                                     label: 'Breed',
-                                    child: TextField(
-                                      controller: breedController,
+                                    child: TextField(textCapitalization: TextCapitalization.sentences, controller: breedController,
                                       decoration: const InputDecoration(
                                         hintText: 'e.g. Holstein Friesian / Cobb 500',
-                                        prefixIcon: Icon(Icons.pets, size: 20),
+                                        prefixIcon: Icon(Icons.category, size: 20),
                                       ),
                                     ),
                                   ),
@@ -891,12 +1036,32 @@ class _AnimalsScreenState extends State<AnimalsScreen> {
                                       ),
                                     ),
                                   ),
+                                  const SizedBox(height: 8),
+                                  Row(
+                                    children: [
+                                      SizedBox(
+                                        height: 24,
+                                        width: 24,
+                                        child: Checkbox(
+                                          value: selectedDob == null,
+                                          onChanged: (val) {
+                                            if (val == true) {
+                                              setState(() => selectedDob = null);
+                                            } else {
+                                              setState(() => selectedDob = DateTime.now().subtract(const Duration(days: 365)));
+                                            }
+                                          },
+                                        ),
+                                      ),
+                                      const SizedBox(width: 8),
+                                      const Text('Date of birth unknown / unrecorded', style: TextStyle(fontSize: 13, color: AppColors.onSurfaceVariant)),
+                                    ],
+                                  ),
                                   
                                   buildRowIfResponsive(
                                     buildInputField(
                                       label: 'Weight (kg)',
-                                      child: TextField(
-                                        controller: weightController,
+                                      child: TextField(textCapitalization: TextCapitalization.sentences, controller: weightController,
                                         keyboardType: const TextInputType.numberWithOptions(decimal: true),
                                         decoration: const InputDecoration(
                                           hintText: 'e.g. 350.2',
@@ -906,8 +1071,7 @@ class _AnimalsScreenState extends State<AnimalsScreen> {
                                     ),
                                     buildInputField(
                                       label: 'Color / Pattern',
-                                      child: TextField(
-                                        controller: colorController,
+                                      child: TextField(textCapitalization: TextCapitalization.sentences, controller: colorController,
                                         decoration: const InputDecoration(
                                           hintText: 'e.g. Brown with white spot',
                                           prefixIcon: Icon(Icons.palette, size: 20),
@@ -918,8 +1082,7 @@ class _AnimalsScreenState extends State<AnimalsScreen> {
                                   
                                   buildInputField(
                                     label: 'Unique Distinguishing Marks',
-                                    child: TextField(
-                                      controller: marksController,
+                                    child: TextField(textCapitalization: TextCapitalization.sentences, controller: marksController,
                                       decoration: const InputDecoration(
                                         hintText: 'e.g. Slit on right ear / Branding #40',
                                         prefixIcon: Icon(Icons.visibility, size: 20),
@@ -974,7 +1137,7 @@ class _AnimalsScreenState extends State<AnimalsScreen> {
                                     buildInputField(
                                       label: 'Operational Purpose',
                                       child: DropdownButtonFormField<String>(
-                                        value: selectedPurpose,
+                                        initialValue: selectedPurpose,
                                         items: const [
                                           DropdownMenuItem(value: 'breeding', child: Text('Breeding')),
                                           DropdownMenuItem(value: 'milk', child: Text('Dairy (Milk)')),
@@ -1025,27 +1188,7 @@ class _AnimalsScreenState extends State<AnimalsScreen> {
                                         ],
                                       ),
                                     ),
-                                  
-                                  buildInputField(
-                                    label: 'Current Vaccination Notes',
-                                    child: TextField(
-                                      controller: vaccinationController,
-                                      decoration: const InputDecoration(
-                                        hintText: 'e.g. FMD Vaccine given',
-                                        prefixIcon: Icon(Icons.vaccines, size: 20),
-                                      ),
-                                    ),
-                                  ),
-                                  buildInputField(
-                                    label: 'Deworming Notes',
-                                    child: TextField(
-                                      controller: dewormingController,
-                                      decoration: const InputDecoration(
-                                        hintText: 'e.g. Albendazole given',
-                                        prefixIcon: Icon(Icons.bug_report, size: 20),
-                                      ),
-                                    ),
-                                  ),
+                                  // Removed Vaccination and Deworming UI as it is now in the Schedules tab
                                 ],
                               ),
                             ),
@@ -1074,10 +1217,12 @@ class _AnimalsScreenState extends State<AnimalsScreen> {
                       Expanded(
                         child: ElevatedButton(
                           onPressed: () {
-                            if (tagController.text.isNotEmpty && selectedDob != null) {
-                              final dobStr = selectedDob!.toIso8601String().split('T')[0];
+                            if (tagController.text.isNotEmpty) {
+                              final dobStr = selectedDob?.toIso8601String().split('T')[0];
+                              final newId = 'anim_${DateTime.now().millisecondsSinceEpoch}';
                               
                               BlocProvider.of<AnimalsBloc>(context).add(AddAnimal({
+                                'id': newId,
                                 'tag_id': tagController.text.trim(),
                                 'species': selectedSpecies,
                                 'sex': selectedSex,
@@ -1089,14 +1234,14 @@ class _AnimalsScreenState extends State<AnimalsScreen> {
                                 'pedigree_type': selectedPedigree,
                                 'purpose': selectedPurpose,
                                 'current_reproductive_status': isFemale ? selectedReproductive : 'open',
-                                'vaccination_status': vaccinationController.text.trim().isNotEmpty ? vaccinationController.text.trim() : null,
-                                'deworming_status': dewormingController.text.trim().isNotEmpty ? dewormingController.text.trim() : null,
+                                'vaccination_status': '{}',
+                                'deworming_status': '{}',
                                 'image_path': selectedImagePath,
                               }));
                               Navigator.pop(bottomSheetContext);
                             } else {
                               ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(content: Text('Tag ID and Date of Birth are required!')),
+                                const SnackBar(content: Text('Tag ID is required!')),
                               );
                             }
                           },
@@ -1129,8 +1274,7 @@ class _AnimalsScreenState extends State<AnimalsScreen> {
     final weightController = TextEditingController(text: (isMap ? animal['weight'] : animal.weight)?.toString() ?? '');
     final colorController = TextEditingController(text: (isMap ? animal['color'] : animal.color) ?? '');
     final marksController = TextEditingController(text: (isMap ? animal['unique_marks'] : animal.uniqueMarks) ?? '');
-    final vaccinationController = TextEditingController(text: (isMap ? animal['vaccination_status'] : animal.vaccinationStatus) ?? '');
-    final dewormingController = TextEditingController(text: (isMap ? animal['deworming_status'] : animal.dewormingStatus) ?? '');
+
     
     DateTime? selectedDob;
     final dobRaw = isMap ? animal['date_of_birth'] : animal.dateOfBirth;
@@ -1198,7 +1342,7 @@ class _AnimalsScreenState extends State<AnimalsScreen> {
               borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.1),
+                  color: Colors.black.withValues(alpha: 0.1),
                   blurRadius: 20,
                   offset: const Offset(0, -5),
                 ),
@@ -1260,7 +1404,9 @@ class _AnimalsScreenState extends State<AnimalsScreen> {
                                       ? DecorationImage(
                                           image: selectedImagePath!.startsWith('http')
                                               ? NetworkImage(selectedImagePath!) as ImageProvider
-                                              : FileImage(File(selectedImagePath!)),
+                                              : selectedImagePath!.startsWith('/uploads')
+                                                  ? NetworkImage('${ApiClient.baseUrl.replaceAll('/api/v1', '')}$selectedImagePath')
+                                                  : FileImage(File(selectedImagePath!)) as ImageProvider,
                                           fit: BoxFit.cover,
                                         )
                                       : null,
@@ -1296,8 +1442,7 @@ class _AnimalsScreenState extends State<AnimalsScreen> {
                                   const SizedBox(height: 12),
                                   buildInputField(
                                     label: 'Ear Tag / Identifier *',
-                                    child: TextField(
-                                      controller: tagController,
+                                    child: TextField(textCapitalization: TextCapitalization.sentences, controller: tagController,
                                       decoration: const InputDecoration(
                                         hintText: 'e.g. COW-204',
                                         prefixIcon: Icon(Icons.tag, size: 20),
@@ -1308,7 +1453,7 @@ class _AnimalsScreenState extends State<AnimalsScreen> {
                                     buildInputField(
                                       label: 'Species *',
                                       child: DropdownButtonFormField<String>(
-                                        value: selectedSpecies,
+                                        initialValue: selectedSpecies,
                                         items: const [
                                           DropdownMenuItem(value: 'bovine', child: Text('Bovine (Cattle)')),
                                           DropdownMenuItem(value: 'avian', child: Text('Avian (Poultry)')),
@@ -1347,11 +1492,10 @@ class _AnimalsScreenState extends State<AnimalsScreen> {
                                   ),
                                   buildInputField(
                                     label: 'Breed',
-                                    child: TextField(
-                                      controller: breedController,
+                                    child: TextField(textCapitalization: TextCapitalization.sentences, controller: breedController,
                                       decoration: const InputDecoration(
                                         hintText: 'e.g. Holstein Friesian',
-                                        prefixIcon: Icon(Icons.pets, size: 20),
+                                        prefixIcon: Icon(Icons.category, size: 20),
                                       ),
                                     ),
                                   ),
@@ -1414,8 +1558,7 @@ class _AnimalsScreenState extends State<AnimalsScreen> {
                                   buildRowIfResponsive(
                                     buildInputField(
                                       label: 'Weight (kg)',
-                                      child: TextField(
-                                        controller: weightController,
+                                      child: TextField(textCapitalization: TextCapitalization.sentences, controller: weightController,
                                         keyboardType: const TextInputType.numberWithOptions(decimal: true),
                                         decoration: const InputDecoration(
                                           hintText: 'e.g. 350.2',
@@ -1425,8 +1568,7 @@ class _AnimalsScreenState extends State<AnimalsScreen> {
                                     ),
                                     buildInputField(
                                       label: 'Color / Pattern',
-                                      child: TextField(
-                                        controller: colorController,
+                                      child: TextField(textCapitalization: TextCapitalization.sentences, controller: colorController,
                                         decoration: const InputDecoration(
                                           hintText: 'e.g. Brown with spots',
                                           prefixIcon: Icon(Icons.palette, size: 20),
@@ -1436,8 +1578,7 @@ class _AnimalsScreenState extends State<AnimalsScreen> {
                                   ),
                                   buildInputField(
                                     label: 'Unique Distinguishing Marks',
-                                    child: TextField(
-                                      controller: marksController,
+                                    child: TextField(textCapitalization: TextCapitalization.sentences, controller: marksController,
                                       decoration: const InputDecoration(
                                         hintText: 'e.g. Notch on left ear',
                                         prefixIcon: Icon(Icons.visibility, size: 20),
@@ -1489,7 +1630,7 @@ class _AnimalsScreenState extends State<AnimalsScreen> {
                                     buildInputField(
                                       label: 'Operational Purpose',
                                       child: DropdownButtonFormField<String>(
-                                        value: selectedPurpose,
+                                        initialValue: selectedPurpose,
                                         items: const [
                                           DropdownMenuItem(value: 'breeding', child: Text('Breeding')),
                                           DropdownMenuItem(value: 'milk', child: Text('Dairy (Milk)')),
@@ -1533,35 +1674,118 @@ class _AnimalsScreenState extends State<AnimalsScreen> {
                                             label: const Text('Dry'),
                                             selected: selectedReproductive == 'dry',
                                             onSelected: (selected) {
-                                              if (selected) setState(() => selectedReproductive == 'dry');
+                                              if (selected) setState(() => selectedReproductive = 'dry');
                                             },
                                           ),
                                         ],
                                       ),
                                     ),
-                                  buildInputField(
-                                    label: 'Current Vaccination Notes',
-                                    child: TextField(
-                                      controller: vaccinationController,
-                                      decoration: const InputDecoration(
-                                        hintText: 'e.g. FMD Vaccine given',
-                                        prefixIcon: Icon(Icons.vaccines, size: 20),
-                                      ),
-                                    ),
-                                  ),
-                                  buildInputField(
-                                    label: 'Deworming Notes',
-                                    child: TextField(
-                                      controller: dewormingController,
-                                      decoration: const InputDecoration(
-                                        hintText: 'e.g. Albendazole given',
-                                        prefixIcon: Icon(Icons.bug_report, size: 20),
-                                      ),
-                                    ),
-                                  ),
+                                  // Removed Vaccination and Deworming UI as it is now in the Schedules tab
                                 ],
                               ),
                             ),
+                          ),
+                          const SizedBox(height: 12),
+                          FutureBuilder<List<dynamic>>(
+                            future: Future.wait([
+                              sl<PharmacyRepository>().getMedicalRecords(animalId: id),
+                              sl<PharmacyRepository>().getMedications(),
+                            ]),
+                            builder: (ctx, snap) {
+                              if (!snap.hasData) {
+                                return const SizedBox();
+                              }
+                              final records = snap.data![0] as List<LocalAnimalMedicalRecord>;
+                              final meds = snap.data![1] as List<LocalMedication>;
+
+                              if (records.isEmpty) {
+                                return const SizedBox();
+                              }
+
+                              final totalMedCost = records.fold<double>(0.0, (s, r) => s + r.cost);
+
+                              return Card(
+                                elevation: 0,
+                                color: AppColors.surfaceContainerLow,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(16),
+                                  side: const BorderSide(color: AppColors.outlineVariant, width: 0.5),
+                                ),
+                                child: Padding(
+                                  padding: const EdgeInsets.all(16),
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Row(
+                                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                        children: [
+                                          const Text('Medical & Treatment History', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                                          Text(
+                                            'Total Cost: ₦ ${totalMedCost.toStringAsFixed(0)}',
+                                            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: AppColors.primary),
+                                          ),
+                                        ],
+                                      ),
+                                      const Divider(height: 20),
+                                      ListView.separated(
+                                        shrinkWrap: true,
+                                        physics: const NeverScrollableScrollPhysics(),
+                                        itemCount: records.length,
+                                        separatorBuilder: (_, __) => const Divider(height: 12, thickness: 0.5),
+                                        itemBuilder: (context, idx) {
+                                          final rec = records[idx];
+                                          final med = meds.firstWhere((m) => m.id == rec.medicationId,
+                                              orElse: () => LocalMedication(
+                                                    id: rec.medicationId,
+                                                    name: 'Medication',
+                                                    category: 'other',
+                                                    unit: 'units',
+                                                    currentStock: 0,
+                                                    reorderThreshold: 0,
+                                                    costPerUnit: 0,
+                                                    isActive: true,
+                                                    milkWithdrawalDays: 0,
+                                                    meatWithdrawalDays: 0,
+                                                  ));
+                                          final hasWithdrawal = rec.withdrawalEndDate != null && rec.withdrawalEndDate!.isAfter(DateTime.now());
+
+                                          return Column(
+                                            crossAxisAlignment: CrossAxisAlignment.start,
+                                            children: [
+                                              Row(
+                                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                                children: [
+                                                  Text(rec.diagnosedCondition, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                                                  Text('₦ ${rec.cost.toStringAsFixed(0)}', style: const TextStyle(fontSize: 12)),
+                                                ],
+                                              ),
+                                              const SizedBox(height: 2),
+                                              Text(
+                                                '${rec.administeredDose} ${med.unit} of ${med.name} on ${DateFormat('yyyy-MM-dd').format(rec.treatmentDate)}',
+                                                style: const TextStyle(fontSize: 11, color: Colors.grey),
+                                              ),
+                                              if (hasWithdrawal) ...[
+                                                const SizedBox(height: 4),
+                                                Row(
+                                                  children: [
+                                                    const Icon(Icons.warning, color: Colors.orange, size: 12),
+                                                    const SizedBox(width: 4),
+                                                    Text(
+                                                      'Active Withdrawal: ends ${DateFormat('yyyy-MM-dd').format(rec.withdrawalEndDate!)}',
+                                                      style: const TextStyle(color: Colors.orange, fontSize: 10, fontWeight: FontWeight.bold),
+                                                    ),
+                                                  ],
+                                                ),
+                                              ],
+                                            ],
+                                          );
+                                        },
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              );
+                            },
                           ),
                           const SizedBox(height: 20),
                         ],
@@ -1584,8 +1808,8 @@ class _AnimalsScreenState extends State<AnimalsScreen> {
                       Expanded(
                         child: ElevatedButton(
                           onPressed: () {
-                            if (tagController.text.isNotEmpty && selectedDob != null) {
-                              final dobStr = selectedDob!.toIso8601String().split('T')[0];
+                            if (tagController.text.isNotEmpty) {
+                              final dobStr = selectedDob?.toIso8601String().split('T')[0];
                               
                               BlocProvider.of<AnimalsBloc>(context).add(UpdateAnimal(id, {
                                 'tag_id': tagController.text.trim(),
@@ -1599,8 +1823,6 @@ class _AnimalsScreenState extends State<AnimalsScreen> {
                                 'pedigree_type': selectedPedigree,
                                 'purpose': selectedPurpose,
                                 'current_reproductive_status': isFemale ? selectedReproductive : 'open',
-                                'vaccination_status': vaccinationController.text.trim().isNotEmpty ? vaccinationController.text.trim() : null,
-                                'deworming_status': dewormingController.text.trim().isNotEmpty ? dewormingController.text.trim() : null,
                                 'image_path': selectedImagePath,
                               }));
                               Navigator.pop(bottomSheetContext);
@@ -1625,6 +1847,7 @@ class _AnimalsScreenState extends State<AnimalsScreen> {
       ),
     );
   }
+
 
   void _confirmMarkDead(BuildContext context, String id, String tagId) {
     showDialog(

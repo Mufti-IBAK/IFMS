@@ -16,7 +16,9 @@ class TasksRepository {
       _updateLocalCache(list);
       return list;
     } catch (e) {
-      return await db.select(db.localTasks).get();
+      return await (db.select(db.localTasks)
+            ..orderBy([(t) => OrderingTerm(expression: t.dueDate, mode: OrderingMode.asc)]))
+          .get();
     }
   }
 
@@ -40,15 +42,22 @@ class TasksRepository {
   }
 
   Future<void> _updateLocalCache(List<dynamic> tasks) async {
-    await db.delete(db.localTasks).go();
-    for (var task in tasks) {
-      await db.into(db.localTasks).insertOnConflictUpdate(LocalTasksCompanion.insert(
-        id: task['id'],
-        title: task['title'],
-        priority: task['priority'],
-        status: task['status'],
-        description: Value(task['description']),
-      ));
-    }
+    await db.transaction(() async {
+      await db.delete(db.localTasks).go();
+      await db.batch((batch) {
+        batch.insertAll(
+          db.localTasks,
+          tasks.map((task) => LocalTasksCompanion.insert(
+            id: task['id'],
+            title: task['title'],
+            priority: task['priority'],
+            status: task['status'],
+            description: Value(task['description']),
+            dueDate: task['due_date'] != null ? Value(DateTime.parse(task['due_date'])) : const Value.absent(),
+          )).toList(),
+          mode: InsertMode.insertOrReplace,
+        );
+      });
+    });
   }
 }

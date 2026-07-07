@@ -7,7 +7,7 @@ from sqlalchemy import func
 
 from app.models.poultry_batch import PoultryBatch
 from app.models.poultry_event import PoultryEvent
-from app.schemas.poultry import PoultryBatchCreate, PoultryEventCreate
+from app.schemas.poultry import PoultryBatchCreate, PoultryEventCreate, PoultryDailyLogCreate
 
 def create_poultry_batch(db: Session, batch_in: PoultryBatchCreate, user_id: UUID) -> PoultryBatch:
     db_batch = PoultryBatch(
@@ -62,6 +62,10 @@ def create_poultry_event(db: Session, batch_id: UUID, event_in: PoultryEventCrea
             batch.status = "closed"
             batch.end_date = event_in.event_date
             
+    elif event_in.event_type == "close":
+        batch.status = "closed"
+        batch.end_date = event_in.event_date
+        
     db_event = PoultryEvent(
         batch_id=batch_id,
         event_type=event_in.event_type,
@@ -226,4 +230,47 @@ def get_poultry_profitability_summary(db: Session) -> Dict[str, Any]:
         "total_revenue": round(total_revenue, 2),
         "total_cost": round(total_cost, 2),
         "net_profit": round(total_profit, 2)
+    }
+
+def process_poultry_daily_log(db: Session, batch_id: UUID, log_in: PoultryDailyLogCreate, user_id: UUID) -> Dict[str, Any]:
+    batch = get_poultry_batch(db, batch_id)
+    log_date = log_in.log_date or date.today()
+    
+    events_created = []
+    
+    # 1. Mortality event
+    if log_in.mortality > 0:
+        mort_event = create_poultry_event(db, batch_id, PoultryEventCreate(
+            event_type="mortality",
+            event_date=log_date,
+            quantity=float(log_in.mortality)
+        ), user_id)
+        events_created.append(str(mort_event.id))
+        
+    # 2. Feed event
+    if log_in.feed_bags > 0:
+        # Standard poultry feed bag is 25 kg
+        feed_kg = log_in.feed_bags * 25.0
+        feed_event = create_poultry_event(db, batch_id, PoultryEventCreate(
+            event_type="feed",
+            event_date=log_date,
+            quantity=feed_kg,
+            value_json={"price_per_kg": 200.0} # Default/estimated price
+        ), user_id)
+        events_created.append(str(feed_event.id))
+        
+    # 3. Average weight event
+    if log_in.average_weight is not None and log_in.average_weight > 0.0:
+        weight_event = create_poultry_event(db, batch_id, PoultryEventCreate(
+            event_type="weight_sample",
+            event_date=log_date,
+            quantity=1.0,
+            value_json={"avg_weight_kg": log_in.average_weight}
+        ), user_id)
+        events_created.append(str(weight_event.id))
+        
+    return {
+        "success": True,
+        "batch_id": str(batch_id),
+        "events_created": events_created
     }

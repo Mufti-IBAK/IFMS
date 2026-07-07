@@ -30,6 +30,8 @@ from app.models.feed_item import FeedItem
 from app.models.inventory_log import InventoryLog
 from app.models.task import Task
 from app.models.device import DeviceToken
+from app.models.staff import Staff
+from app.models.staff_query import StaffQuery
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.

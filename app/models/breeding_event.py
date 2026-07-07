@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Date, String, ForeignKey, Index
+from sqlalchemy import Column, DateTime, String, ForeignKey, Index
 from app.models.base import BaseModel, GUID
 from app.core.database import Base
 
@@ -9,8 +9,12 @@ class BreedingEvent(BaseModel):
     )
     
     animal_id = Column(GUID(), ForeignKey("animals.id", ondelete="CASCADE"), nullable=False, index=True)
-    event_type = Column(String(50), nullable=False, index=True) # "heat", "mating", "ai_insemination", "pregnancy_check", "confirmed_pregnant", "abortion", "calving"
-    event_date = Column(Date, nullable=False, index=True)
-    result = Column(String(50), nullable=True) # e.g. "pregnant", "open", "normal", "dystocia"
+    event_type = Column(String(50), nullable=False, index=True) 
+    event_date = Column(DateTime, nullable=False, index=True)
+    sire_id = Column(String(50), nullable=True)
+    semen_batch_id = Column(String(100), nullable=True)
+    technician = Column(String(100), nullable=True)
+    result = Column(String(50), nullable=True) 
     notes = Column(String(255), nullable=True)
-    created_by = Column(GUID(), ForeignKey("users.id"), nullable=False)
+    created_by = Column(GUID(), ForeignKey("users.id"), nullable=True) # Make nullable=True for offline sync if user isn't passed
+

@@ -7,7 +7,8 @@ from typing import List, Optional
 from app.core.database import get_db
 from app.services.auth_service import get_current_active_user
 from app.models.user import User
-from app.schemas.poultry import PoultryBatchCreate, PoultryBatchResponse, PoultryEventCreate, PoultryEventResponse
+from app.models.poultry_batch import PoultryBatch
+from app.schemas.poultry import PoultryBatchCreate, PoultryBatchResponse, PoultryEventCreate, PoultryEventResponse, PoultryDailyLogCreate
 from app.services import poultry_service
 
 router = APIRouter()
@@ -52,3 +53,23 @@ def get_poultry_profit_summary_endpoint(
     current_user: User = Depends(get_current_active_user)
 ):
     return poultry_service.get_poultry_profitability_summary(db)
+
+@router.get("/batches", response_model=List[PoultryBatchResponse])
+def get_poultry_batches_endpoint(
+    status: Optional[str] = None,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_active_user)
+):
+    query = db.query(PoultryBatch)
+    if status:
+        query = query.filter(PoultryBatch.status == status)
+    return query.order_by(PoultryBatch.start_date.desc()).all()
+
+@router.post("/batch/{id}/logs")
+def create_poultry_daily_log_endpoint(
+    id: UUID,
+    log_in: PoultryDailyLogCreate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_active_user)
+):
+    return poultry_service.process_poultry_daily_log(db, id, log_in, current_user.id)

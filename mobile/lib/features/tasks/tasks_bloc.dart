@@ -1,5 +1,7 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'tasks_repository.dart';
+import '../../core/di/service_locator.dart';
+import '../../core/network/notification_service.dart';
 
 // EVENTS
 abstract class TasksEvent {}
@@ -32,6 +34,10 @@ class TasksBloc extends Bloc<TasksEvent, TasksState> {
       emit(TasksLoading());
       try {
         final tasks = await repository.getTasks();
+        
+        // Re-schedule daily notifications based on the latest local task list
+        sl<NotificationService>().scheduleDailyTaskSummaries(tasks);
+        
         emit(TasksLoaded(tasks));
       } catch (e) {
         emit(TasksError('Failed to load tasks: ${e.toString()}'));

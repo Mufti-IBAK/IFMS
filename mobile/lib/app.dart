@@ -21,7 +21,31 @@ import 'features/finance/finance_screen.dart';
 import 'features/alerts/alert_bloc.dart';
 import 'features/alerts/alert_repository.dart';
 import 'features/alerts/alert_screen.dart';
+import 'features/inventory/inventory_bloc.dart';
+import 'features/inventory/inventory_repository.dart';
+import 'features/inventory/inventory_screen.dart';
+import 'features/hatchery/hatchery_bloc.dart';
+import 'features/hatchery/hatchery_repository.dart';
+import 'features/hatchery/hatchery_screen.dart';
+import 'package:ifms_mobile/features/pharmacy/pharmacy_bloc.dart';
+import 'package:ifms_mobile/features/pharmacy/pharmacy_repository.dart';
+import 'package:ifms_mobile/features/pharmacy/pharmacy_screen.dart';
+import 'features/staff/staff_bloc.dart';
+import 'features/staff/staff_repository.dart';
+import 'features/staff/staff_screen.dart';
+import 'features/breeding/breeding_bloc.dart';
+import 'features/breeding/breeding_repository.dart';
+import 'features/breeding/breeding_screen.dart';
 import 'core/network/notification_service.dart';
+import 'core/sync/sync_manager.dart';
+import 'core/updater/app_updater.dart';
+import 'core/database/local_db.dart';
+import 'features/settings/settings_controller.dart';
+import 'features/settings/settings_screen.dart';
+import 'features/settings/auth_screen.dart';
+
+
+final GlobalKey<NavigatorState> appNavigatorKey = GlobalKey<NavigatorState>();
 
 class IFMSApp extends StatefulWidget {
   const IFMSApp({super.key});
@@ -31,15 +55,36 @@ class IFMSApp extends StatefulWidget {
 }
 
 class _IFMSAppState extends State<IFMSApp> {
+  late final Future<bool> _isInitializedFuture;
+
   @override
   void initState() {
     super.initState();
-    // Initialize Notifications
+    _isInitializedFuture = _checkIfDatabaseInitialized();
+
+    // Notifications and sync
     sl<NotificationService>().initialize();
+    sl<SyncManager>().triggerSync();
+    // Check for OTA updates silently after first frame
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) AppUpdater.checkForUpdates(context);
+    });
+  }
+
+  Future<bool> _checkIfDatabaseInitialized() async {
+    try {
+      final db = sl<LocalDatabase>();
+      final animals = await (db.select(db.localAnimals)..limit(1)).get();
+      return animals.isNotEmpty;
+    } catch (_) {
+      return false;
+    }
   }
 
   @override
   Widget build(BuildContext context) {
+    final settingsController = sl<SettingsController>();
+
     return MultiBlocProvider(
       providers: [
         BlocProvider<AnimalsBloc>(
@@ -49,7 +94,7 @@ class _IFMSAppState extends State<IFMSApp> {
           create: (context) => TasksBloc(sl<TasksRepository>())..add(LoadTasks()),
         ),
         BlocProvider<DairyBloc>(
-          create: (context) => DairyBloc(sl<DairyRepository>())..add(LoadDairyData()),
+          create: (context) => DairyBloc(sl<DairyRepository>(), sl<AnimalsRepository>())..add(LoadDairyData()),
         ),
         BlocProvider<PoultryBloc>(
           create: (context) => PoultryBloc(sl<PoultryRepository>())..add(LoadPoultryData()),
@@ -60,18 +105,87 @@ class _IFMSAppState extends State<IFMSApp> {
         BlocProvider<AlertBloc>(
           create: (context) => AlertBloc(sl<AlertRepository>())..add(LoadAlerts()),
         ),
+         BlocProvider<InventoryBloc>(
+          create: (context) => InventoryBloc(sl<InventoryRepository>())..add(LoadInventoryItems()),
+        ),
+        BlocProvider<HatcheryBloc>(
+          create: (context) => HatcheryBloc(sl<HatcheryRepository>())..add(LoadHatcheryBatches()),
+        ),
+        BlocProvider<PharmacyBloc>(
+          create: (context) => PharmacyBloc(sl<PharmacyRepository>())..add(LoadPharmacy()),
+        ),
+        BlocProvider<StaffBloc>(
+          create: (context) => StaffBloc(sl<StaffRepository>())..add(LoadStaffData()),
+        ),
+        BlocProvider<BreedingBloc>(
+          create: (context) => BreedingBloc(sl<BreedingRepository>()),
+        ),
       ],
-      child: MaterialApp(
-        title: 'IFMS Mobile',
-        theme: AppTheme.lightTheme,
-        home: const MainNavigationWrapper(),
-        routes: {
-          '/animals': (context) => const AnimalsScreen(),
-          '/tasks': (context) => const TasksScreen(),
-          '/dairy': (context) => const DairyScreen(),
-          '/poultry': (context) => const PoultryScreen(),
-          '/finance': (context) => const FinanceScreen(),
-          '/alerts': (context) => const AlertScreen(),
+      child: AnimatedBuilder(
+        animation: settingsController,
+        builder: (context, child) {
+          return MaterialApp(
+            navigatorKey: appNavigatorKey,
+            title: 'IFMS Mobile',
+            theme: AppTheme.lightTheme,
+            darkTheme: ThemeData.dark().copyWith(
+              useMaterial3: true,
+              scaffoldBackgroundColor: const Color(0xFF11140E),
+              colorScheme: const ColorScheme.dark(
+                primary: AppColors.primary,
+                onPrimary: Colors.white,
+                surface: Color(0xFF11140E),
+                onSurface: Color(0xFFE0E4DB),
+              ),
+            ),
+            themeMode: settingsController.themeMode,
+            builder: (context, child) {
+              final scale = settingsController.fontScale;
+              return MediaQuery(
+                data: MediaQuery.of(context).copyWith(
+                  textScaleFactor: scale,
+                ),
+                child: GestureDetector(
+                  onTap: () => FocusManager.instance.primaryFocus?.unfocus(),
+                  child: child,
+                ),
+              );
+            },
+            home: FutureBuilder<bool>(
+              future: _isInitializedFuture,
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const Scaffold(
+                    body: Center(
+                      child: CircularProgressIndicator(),
+                    ),
+                  );
+                }
+                if (snapshot.data == true) {
+                  return const MainNavigationWrapper();
+                } else {
+                  // Route to AuthScreen for first login/signup setup
+                  return AuthScreen(controller: settingsController);
+                }
+              },
+            ),
+            routes: {
+              '/home': (context) => const MainNavigationWrapper(),
+              '/animals': (context) => const AnimalsScreen(),
+              '/tasks': (context) => const TasksScreen(),
+              '/dairy': (context) => const DairyScreen(),
+              '/poultry': (context) => const PoultryScreen(),
+              '/finance': (context) => const FinanceScreen(),
+              '/alerts': (context) => const AlertScreen(),
+              '/inventory': (context) => const InventoryScreen(),
+              '/hatchery': (context) => const HatcheryScreen(),
+              '/pharmacy': (context) => const PharmacyScreen(),
+              '/staff': (context) => const StaffScreen(),
+              '/breeding': (context) => const BreedingScreen(),
+              '/settings': (context) => SettingsScreen(controller: settingsController),
+              '/auth': (context) => AuthScreen(controller: settingsController),
+            },
+          );
         },
       ),
     );
@@ -125,8 +239,37 @@ class HomeScreen extends StatelessWidget {
       appBar: AppBar(
         title: const Text('IFMS OPERATIONS'),
         actions: [
+          // Update button — shows red badge dot when a new version is available
+          ValueListenableBuilder<bool>(
+            valueListenable: updateAvailableNotifier,
+            builder: (context, hasUpdate, _) => Stack(
+              alignment: Alignment.center,
+              children: [
+                IconButton(
+                  onPressed: () => AppUpdater.showUpdateDialog(context),
+                  icon: const Icon(Icons.system_update_alt_outlined),
+                  tooltip: 'Check for Updates',
+                ),
+                if (hasUpdate)
+                  Positioned(
+                    right: 8,
+                    top: 8,
+                    child: Container(
+                      width: 9,
+                      height: 9,
+                      decoration: const BoxDecoration(
+                        color: Colors.redAccent,
+                        shape: BoxShape.circle,
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+          ),
           IconButton(
-            onPressed: () {},
+            onPressed: () {
+              Navigator.of(context).pushNamed('/settings');
+            },
             icon: const Icon(Icons.account_circle_outlined),
           ),
         ],
@@ -157,20 +300,34 @@ class HomeScreen extends StatelessWidget {
               children: [
                 BlocBuilder<AnimalsBloc, AnimalsState>(
                   builder: (context, state) {
-                    final count = state is AnimalsLoaded ? state.animals.length : 0;
+                    final count = state is AnimalsLoaded 
+                        ? state.animals.where((a) {
+                            final isMap = a is Map;
+                            final status = ((isMap ? a['status'] : a.status) ?? 'active').toString().toLowerCase();
+                            return status != 'dead';
+                          }).length
+                        : 0;
                     return _buildMenuCard(
                       context,
-                      title: 'Herd Registry',
+                      title: 'Farm Registry',
                       subtitle: '$count Animals Active',
-                      icon: Icons.pets,
+                      icon: Icons.agriculture,
                       color: AppColors.primary,
                       route: '/animals',
                     );
                   },
                 ),
+                _buildMenuCard(
+                  context,
+                  title: 'Breeding & Genetics',
+                  subtitle: 'Manage Lifecycles',
+                  icon: Icons.favorite,
+                  color: Colors.pink,
+                  route: '/breeding',
+                ),
                 BlocBuilder<DairyBloc, DairyState>(
                   builder: (context, state) {
-                    final yieldVal = state is DairyLoaded ? state.totalYield : 0.0;
+                    final yieldVal = state is DairyLoaded ? state.totalMilkToday : 0.0;
                     return _buildMenuCard(
                       context,
                       title: 'Dairy Intel',
@@ -213,7 +370,7 @@ class HomeScreen extends StatelessWidget {
                 ),
                 BlocBuilder<AlertBloc, AlertState>(
                   builder: (context, state) {
-                    final count = state is AlertLoaded ? state.alerts.where((a) => a.status == 'open').length : 0;
+                    final count = state is AlertLoaded ? state.alerts.where((a) => !a.isResolved).length : 0;
                     return _buildMenuCard(
                       context,
                       title: 'Alert Hub',
@@ -242,6 +399,86 @@ class HomeScreen extends StatelessWidget {
                       icon: Icons.account_balance_wallet,
                       color: Colors.teal,
                       route: '/finance',
+                    );
+                  },
+                ),
+                BlocBuilder<InventoryBloc, InventoryState>(
+                  builder: (context, state) {
+                    int lowCount = 0;
+                    if (state is InventoryLoaded) {
+                      lowCount = state.items.where((i) {
+                        final stock = double.tryParse(i['current_stock'].toString()) ?? 0.0;
+                        final threshold = double.tryParse(i['reorder_threshold'].toString()) ?? 0.0;
+                        return stock <= threshold;
+                      }).length;
+                    }
+                    final subtitle = state is InventoryLoaded
+                        ? '$lowCount Items Low'
+                        : 'Stock Levels';
+                    return _buildMenuCard(
+                      context,
+                      title: 'Farm Inventory',
+                      subtitle: subtitle,
+                      icon: Icons.storage,
+                      color: Colors.blueGrey,
+                      route: '/inventory',
+                    );
+                  },
+                ),
+                BlocBuilder<HatcheryBloc, HatcheryState>(
+                  builder: (context, state) {
+                    int incubating = 0;
+                    if (state is HatcheryLoaded) {
+                      incubating = state.batches.where((b) => b['status'] == 'incubating').length;
+                    }
+                    final subtitle = state is HatcheryLoaded
+                        ? '$incubating Incubating'
+                        : 'Cohorts';
+                    return _buildMenuCard(
+                      context,
+                      title: 'Hatchery Hub',
+                      subtitle: subtitle,
+                      icon: Icons.bubble_chart,
+                      color: Colors.deepPurple,
+                      route: '/hatchery',
+                    );
+                  },
+                ),
+                BlocBuilder<PharmacyBloc, PharmacyState>(
+                  builder: (context, state) {
+                    int lowCount = 0;
+                    if (state is PharmacyLoaded) {
+                      lowCount = state.medications.where((m) => m.currentStock <= m.reorderThreshold).length;
+                    }
+                    final subtitle = state is PharmacyLoaded
+                        ? '$lowCount Low Stock'
+                        : 'Vet Pharmacy';
+                    return _buildMenuCard(
+                      context,
+                      title: 'Pharmacy',
+                      subtitle: subtitle,
+                      icon: Icons.local_pharmacy,
+                      color: Colors.pink,
+                      route: '/pharmacy',
+                    );
+                  },
+                ),
+                BlocBuilder<StaffBloc, StaffState>(
+                  builder: (context, state) {
+                    int staffCount = 0;
+                    if (state is StaffLoaded) {
+                      staffCount = state.staff.length;
+                    }
+                    final subtitle = state is StaffLoaded
+                        ? '$staffCount Workers'
+                        : 'HR & Payroll';
+                    return _buildMenuCard(
+                      context,
+                      title: 'Staffing',
+                      subtitle: subtitle,
+                      icon: Icons.groups,
+                      color: Colors.indigo,
+                      route: '/staff',
                     );
                   },
                 ),

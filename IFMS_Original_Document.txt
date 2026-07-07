@@ -1,5 +1,3 @@
-
-
 # 📄 PRODUCT REQUIREMENTS DOCUMENT (PRD)
 
 # Integrated Farm Management System (IFMS)

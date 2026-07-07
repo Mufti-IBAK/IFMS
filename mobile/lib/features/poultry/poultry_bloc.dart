@@ -3,11 +3,30 @@ import '../../core/database/local_db.dart';
 import 'poultry_repository.dart';
 
 abstract class PoultryEvent {}
+
 class LoadPoultryData extends PoultryEvent {}
+
+class CreateBatch extends PoultryEvent {
+  final Map<String, dynamic> data;
+  CreateBatch(this.data);
+}
+
 class AddPoultryLog extends PoultryEvent {
   final String batchId;
   final Map<String, dynamic> data;
   AddPoultryLog(this.batchId, this.data);
+}
+
+class LogBatchEvent extends PoultryEvent {
+  final String batchId;
+  final Map<String, dynamic> data;
+  LogBatchEvent(this.batchId, this.data);
+}
+
+class LogBatchSale extends PoultryEvent {
+  final String batchId;
+  final Map<String, dynamic> saleData;
+  LogBatchSale(this.batchId, this.saleData);
 }
 
 abstract class PoultryState {}
@@ -35,10 +54,43 @@ class PoultryBloc extends Bloc<PoultryEvent, PoultryState> {
       }
     });
 
+    on<CreateBatch>((event, emit) async {
+      emit(PoultryLoading());
+      try {
+        await repository.createBatch(event.data);
+        final batches = await repository.getBatches();
+        emit(PoultryLoaded(batches));
+      } catch (e) {
+        emit(PoultryError(e.toString()));
+      }
+    });
+
     on<AddPoultryLog>((event, emit) async {
       try {
         await repository.addDailyLog(event.batchId, event.data);
-        add(LoadPoultryData());
+        final batches = await repository.getBatches();
+        emit(PoultryLoaded(batches));
+      } catch (e) {
+        emit(PoultryError(e.toString()));
+      }
+    });
+
+    on<LogBatchEvent>((event, emit) async {
+      try {
+        await repository.logBatchEvent(event.batchId, event.data);
+        final batches = await repository.getBatches();
+        emit(PoultryLoaded(batches));
+      } catch (e) {
+        emit(PoultryError(e.toString()));
+      }
+    });
+
+    on<LogBatchSale>((event, emit) async {
+      emit(PoultryLoading());
+      try {
+        await repository.logBatchSale(event.batchId, event.saleData);
+        final batches = await repository.getBatches();
+        emit(PoultryLoaded(batches));
       } catch (e) {
         emit(PoultryError(e.toString()));
       }

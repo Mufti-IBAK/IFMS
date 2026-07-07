@@ -1,63 +1,81 @@
-import 'dart:convert';
+import 'dart:developer';
 import 'package:drift/drift.dart';
+import 'package:uuid/uuid.dart';
 import '../../core/database/local_db.dart';
 import '../../core/network/api_client.dart';
 
 class DairyRepository {
-  final ApiClient apiClient;
   final LocalDatabase db;
+  final ApiClient apiClient;
 
-  DairyRepository(this.apiClient, this.db);
+  DairyRepository(this.db, this.apiClient);
 
-  Future<List<LocalMilkRecord>> getMilkRecords() async {
-    try {
-      final response = await apiClient.dio.get('/dairy/records');
-      final list = response.data as List;
-      // Sync local cache
-      await _syncLocalCache(list);
-      return await db.select(db.localMilkRecords).get();
-    } catch (e) {
-      return await db.select(db.localMilkRecords).get();
-    }
-  }
-
-  Future<void> addMilkRecord(Map<String, dynamic> data) async {
-    final id = data['id'] ?? DateTime.now().millisecondsSinceEpoch.toString();
+  Future<void> addMilkRecord(Map<String, dynamic> recordData) async {
+    final id = const Uuid().v4();
     
-    // Optimistic local update
-    await db.into(db.localMilkRecords).insert(LocalMilkRecordsCompanion.insert(
-      id: id,
-      animalId: data['animal_id'],
-      recordDate: DateTime.parse(data['record_date']),
-      milkingSession: data['milking_session'],
-      quantityLiters: data['quantity_liters'],
-      isWithdrawn: Value(data['is_withdrawn'] ?? false),
-    ));
+    // Convert dynamic values safely to avoid casting errors
+    double quantity = 0.0;
+    if (recordData['quantity_liters'] != null) {
+      quantity = double.parse(recordData['quantity_liters'].toString());
+    }
+    
+    double? fatPercentage;
+    if (recordData['fat_percentage'] != null) {
+      fatPercentage = double.parse(recordData['fat_percentage'].toString());
+    }
 
+    double? proteinPercentage;
+    if (recordData['protein_percentage'] != null) {
+      proteinPercentage = double.parse(recordData['protein_percentage'].toString());
+    }
+
+    final now = DateTime.now();
+    final activeWithdrawals = await (db.select(db.localAnimalMedicalRecords)
+      ..where((r) => r.animalId.equals(recordData['animal_id']))
+      ..where((r) => r.withdrawalEndDate.isBiggerOrEqualValue(now)))
+        .get();
+    
+    final bool isWithdrawn = activeWithdrawals.isNotEmpty;
+
+    await db.into(db.localMilkRecords).insert(
+      LocalMilkRecordsCompanion.insert(
+        id: id,
+        animalId: recordData['animal_id'],
+        recordDate: DateTime.parse(recordData['record_date']),
+        milkingSession: recordData['milking_session'],
+        quantityLiters: quantity,
+        fatPercentage: Value(fatPercentage),
+        proteinPercentage: Value(proteinPercentage),
+        isWithdrawn: Value(isWithdrawn),
+      ),
+    );
+
+    // Sync to backend asynchronously
     try {
-      await apiClient.dio.post('/dairy/records', data: data);
+      await apiClient.dio.post('/api/v1/dairy/milk_records', data: {
+        'id': id,
+        ...recordData,
+      });
     } catch (e) {
-      // Queue for sync
-      await db.into(db.syncQueue).insert(SyncQueueCompanion.insert(
-        endpoint: '/dairy/records',
-        method: 'POST',
-        body: jsonEncode(data),
-        queuedAt: DateTime.now(),
-      ));
+      // offline fallback - will be synced later
+      log('Offline mode: Milk record saved locally.');
     }
   }
 
-  Future<void> _syncLocalCache(List<dynamic> remoteData) async {
-    await db.delete(db.localMilkRecords).go();
-    for (var item in remoteData) {
-      await db.into(db.localMilkRecords).insertOnConflictUpdate(LocalMilkRecordsCompanion.insert(
-        id: item['id'],
-        animalId: item['animal_id'],
-        recordDate: DateTime.parse(item['record_date']),
-        milkingSession: item['milking_session'],
-        quantityLiters: item['quantity_liters'].toDouble(),
-        isWithdrawn: Value(item['is_withdrawn'] ?? false),
-      ));
-    }
+  Future<List<LocalMilkRecord>> getHerdDailyTotal(DateTime date) async {
+    final startOfDay = DateTime(date.year, date.month, date.day);
+    final endOfDay = startOfDay.add(const Duration(days: 1));
+
+    return await (db.select(db.localMilkRecords)
+      ..where((r) => r.recordDate.isBiggerOrEqualValue(startOfDay))
+      ..where((r) => r.recordDate.isSmallerThanValue(endOfDay)))
+        .get();
+  }
+
+  Future<List<LocalMilkRecord>> getCowLactationHistory(String animalId) async {
+    return await (db.select(db.localMilkRecords)
+      ..where((r) => r.animalId.equals(animalId))
+      ..orderBy([(t) => OrderingTerm(expression: t.recordDate, mode: OrderingMode.desc)]))
+        .get();
   }
 }

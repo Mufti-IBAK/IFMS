@@ -4,7 +4,7 @@ from typing import Optional, Dict, Any
 from pydantic import BaseModel, Field
 
 class PoultryBatchCreate(BaseModel):
-    batch_type: str = Field("broiler", pattern="^(broiler)$")
+    batch_type: str = Field("broiler", pattern="^(broiler|layer|cockerel|noiler|turkey|duck)$")
     breed: Optional[str] = None
     start_date: date
     initial_count: int = Field(..., gt=0)
@@ -42,3 +42,9 @@ class PoultryEventResponse(PoultryEventCreate):
 
     class Config:
         from_attributes = True
+
+class PoultryDailyLogCreate(BaseModel):
+    feed_bags: int = Field(0, ge=0)
+    mortality: int = Field(0, ge=0)
+    average_weight: Optional[float] = Field(None, ge=0.0)
+    log_date: Optional[date] = None
