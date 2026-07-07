@@ -49,6 +49,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v3
+    - name: Set Build Number
+      run: |
+        echo "BUILD_NUMBER=$((3000 + ${{ github.run_number }}))" >> $GITHUB_ENV
     - name: Set up Java
       uses: actions/setup-java@v3
       with:
@@ -67,31 +70,32 @@ jobs:
         cd mobile
         flutter build appbundle --release \
           --build-name=2.5.0 \
-          --build-number=${{ github.run_number }}
+          --build-number=${{ env.BUILD_NUMBER }}
     - name: Build APK for OTA Updater
       run: |
         cd mobile
         flutter build apk --release \
           --build-name=2.5.0 \
-          --build-number=${{ github.run_number }}
+          --build-number=${{ env.BUILD_NUMBER }}
     - name: Upload OTA APK
       env:
         SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
         SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
       run: |
-        # 1. Upload APK to storage (overwrite existing latest)
+        # 1. Upload APK to storage, with x-upsert: true to allow overwriting the existing file
         curl -X POST \
           -H "Authorization: Bearer $SUPABASE_SERVICE_ROLE_KEY" \
           -H "apikey: $SUPABASE_SERVICE_ROLE_KEY" \
+          -H "x-upsert: true" \
           -F "file=@mobile/build/app/outputs/flutter-apk/app-release.apk" \
           -F "cacheControl=3600" \
-          "$SUPABASE_URL/storage/v1/object/updates/Namanzo_IFMS_latest.apk" || true
+          "$SUPABASE_URL/storage/v1/object/updates/Namanzo_IFMS_latest.apk"
           
         # 2. Register update details in the database system_updates table
         curl -X POST \
           -H "Authorization: Bearer $SUPABASE_SERVICE_ROLE_KEY" \
           -H "apikey: $SUPABASE_SERVICE_ROLE_KEY" \
           -H "Content-Type: application/json" \
-          -d "{\"version_number\": \"2.5.0+${{ github.run_number }}\", \"download_url\": \"$SUPABASE_URL/storage/v1/object/public/updates/Namanzo_IFMS_latest.apk\", \"release_notes\": \"NFarms Build #${{ github.run_number }}: Integrated Settings screen, custom font scale slider (10% to 200%, default 50%), dark mode support, and profile demographics form.\"}" \
+          -d "{\"version_number\": \"2.5.0+${{ env.BUILD_NUMBER }}\", \"download_url\": \"$SUPABASE_URL/storage/v1/object/public/updates/Namanzo_IFMS_latest.apk\", \"release_notes\": \"NFarms Build #${{ env.BUILD_NUMBER }}: Integrated Settings screen, custom font scale slider (10% to 200%, default 50%), dark mode support, and profile demographics form.\"}" \
           "$SUPABASE_URL/rest/v1/system_updates"
 
