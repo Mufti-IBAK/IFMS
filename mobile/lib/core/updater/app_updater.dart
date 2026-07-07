@@ -5,12 +5,23 @@ import 'package:path_provider/path_provider.dart';
 import 'package:open_file/open_file.dart';
 import '../network/api_client.dart';
 import '../di/service_locator.dart';
+import 'package:flutter/services.dart';
 
 /// Tracks whether an update is available — consumed by the AppBar badge.
 final ValueNotifier<bool> updateAvailableNotifier = ValueNotifier(false);
 Map<String, dynamic>? _pendingUpdateData;
 
 class AppUpdater {
+  static const _platform = MethodChannel('com.namanzo.ifms/permissions');
+
+  static Future<void> _openBrowser(String url) async {
+    try {
+      await _platform.invokeMethod('openBrowser', {'url': url});
+    } catch (e) {
+      debugPrint('Failed to open browser: $e');
+    }
+  }
+
   /// Call on startup (non-blocking). Checks Supabase for a newer version
   /// and sets [updateAvailableNotifier] to true if one is found.
   static void checkForUpdates(BuildContext context, {bool showNoUpdateMessage = false}) {
@@ -157,13 +168,22 @@ class AppUpdater {
             onPressed: () => Navigator.pop(ctx),
             child: const Text('LATER'),
           ),
+          TextButton.icon(
+            onPressed: () {
+              Navigator.pop(ctx);
+              _openBrowser(downloadUrl);
+            },
+            icon: const Icon(Icons.open_in_browser, size: 18),
+            label: const Text('DIRECT DOWNLOAD'),
+            style: TextButton.styleFrom(foregroundColor: Colors.blue),
+          ),
           ElevatedButton.icon(
             onPressed: () {
               Navigator.pop(ctx);
               _downloadAndInstall(context, downloadUrl);
             },
             icon: const Icon(Icons.download, size: 16),
-            label: const Text('UPDATE NOW'),
+            label: const Text('UPDATE VIA OTA'),
             style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF4CAF50), foregroundColor: Colors.white),
           ),
         ],

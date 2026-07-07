@@ -33,6 +33,20 @@ class MainActivity : FlutterActivity() {
                     ) == PackageManager.PERMISSION_GRANTED
                     result.success(granted)
                 }
+            } else if (call.method == "openBrowser") {
+                val url = call.argument<String>("url")
+                if (url != null) {
+                    try {
+                        val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url))
+                        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                        startActivity(intent)
+                        result.success(true)
+                    } catch (e: Exception) {
+                        result.error("UNABLE_TO_OPEN", e.message, null)
+                    }
+                } else {
+                    result.error("BAD_ARGS", "URL is null", null)
+                }
             } else {
                 result.notImplemented()
             }
