@@ -55,7 +55,7 @@ class AppUpdater {
 
       if (response.data == null || (response.data as List).isEmpty) {
         if (showNoUpdateMessage && context.mounted) {
-          _showSnack(context, '✓ App is up to date (v${packageInfo.version})', Colors.green);
+          _showSnack(context, '✓ App is up to date (v${packageInfo.version}+${packageInfo.buildNumber}, server returned empty)', Colors.green);
         }
         return;
       }
@@ -79,7 +79,7 @@ class AppUpdater {
       } else {
         updateAvailableNotifier.value = false;
         if (showNoUpdateMessage && context.mounted) {
-          _showSnack(context, '✓ App is up to date (v${packageInfo.version})', Colors.green);
+          _showSnack(context, '✓ App is up to date (v${packageInfo.version}+${packageInfo.buildNumber}, server: $latestVersion)', Colors.green);
         }
       }
     } catch (e) {
