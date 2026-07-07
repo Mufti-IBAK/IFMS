@@ -45,10 +45,14 @@ class SettingsScreen extends StatelessWidget {
                             CircleAvatar(
                               radius: 36,
                               backgroundColor: AppColors.surfaceContainerHigh,
-                              backgroundImage: profile?.profilePicPath != null
-                                  ? FileImage(File(profile!.profilePicPath!))
+                              backgroundImage: profile?.profilePicPath != null &&
+                                      profile!.profilePicPath!.isNotEmpty &&
+                                      File(profile.profilePicPath!).existsSync()
+                                  ? FileImage(File(profile.profilePicPath!))
                                   : null,
-                              child: profile?.profilePicPath == null
+                              child: profile?.profilePicPath == null ||
+                                      profile!.profilePicPath!.isEmpty ||
+                                      !File(profile.profilePicPath!).existsSync()
                                   ? const Icon(Icons.person, size: 36, color: AppColors.outline)
                                   : null,
                             ),

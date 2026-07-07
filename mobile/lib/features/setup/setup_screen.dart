@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import '../../core/di/service_locator.dart';
 import '../../core/sync/sync_manager.dart';
 import '../../core/theme/app_colors.dart';
+import '../../core/network/api_client.dart';
 import 'dart:io';
 
 class SetupScreen extends StatefulWidget {
@@ -55,21 +56,36 @@ class _SetupScreenState extends State<SetupScreen> {
       _statusMessage = 'Checking internet connection...';
     });
     bool hasConnection = false;
+    String diagInfo = '';
+    
     try {
       final connectivity = await Connectivity().checkConnectivity();
       if (!connectivity.contains(ConnectivityResult.none)) {
         hasConnection = true;
       }
-    } catch (_) {}
+    } catch (e) {
+      diagInfo += 'Connectivity plugin error: $e. ';
+    }
 
     if (!hasConnection) {
       try {
-        final lookup = await InternetAddress.lookup('google.com').timeout(const Duration(seconds: 4));
+        final response = await sl<ApiClient>().dio.get('').timeout(const Duration(seconds: 4));
+        if (response.statusCode != null) {
+          hasConnection = true;
+        }
+      } catch (e) {
+        diagInfo += 'API check failed: $e. ';
+      }
+    }
+
+    if (!hasConnection) {
+      try {
+        final lookup = await InternetAddress.lookup('supabase.co').timeout(const Duration(seconds: 4));
         if (lookup.isNotEmpty && lookup.first.rawAddress.isNotEmpty) {
           hasConnection = true;
         }
-      } catch (_) {
-        hasConnection = false;
+      } catch (e) {
+        diagInfo += 'DNS lookup failed: $e.';
       }
     }
 
@@ -78,7 +94,7 @@ class _SetupScreenState extends State<SetupScreen> {
     if (!_hasInternet) {
       setState(() {
         _checkingPermissions = false;
-        _statusMessage = 'Internet connection is required for the initial setup to download farm records.';
+        _statusMessage = 'No internet connection detected.\nDetails: $diagInfo\n\nPlease check your connection or tap proceed offline below.';
       });
       return;
     }
@@ -182,7 +198,7 @@ class _SetupScreenState extends State<SetupScreen> {
                       foregroundColor: AppColors.onPrimary,
                     ),
                   )
-                else if (!_hasInternet)
+                else if (!_hasInternet) ...[
                   ElevatedButton.icon(
                     onPressed: _runDiagnostics,
                     icon: const Icon(Icons.wifi),
@@ -192,7 +208,21 @@ class _SetupScreenState extends State<SetupScreen> {
                       backgroundColor: AppColors.primary,
                       foregroundColor: AppColors.onPrimary,
                     ),
-                  )
+                  ),
+                  const SizedBox(height: 12),
+                  OutlinedButton.icon(
+                    onPressed: () {
+                      Navigator.pushReplacementNamed(context, '/home');
+                    },
+                    icon: const Icon(Icons.offline_pin_outlined),
+                    label: const Text('PROCEED ANYWAY (OFFLINE MODE)'),
+                    style: OutlinedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      side: const BorderSide(color: AppColors.outline),
+                      foregroundColor: AppColors.outline,
+                    ),
+                  ),
+                ]
                 else
                   ElevatedButton.icon(
                     onPressed: _startRestoration,

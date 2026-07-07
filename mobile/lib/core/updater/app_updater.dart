@@ -6,6 +6,7 @@ import 'package:open_file/open_file.dart';
 import '../network/api_client.dart';
 import '../di/service_locator.dart';
 import 'package:flutter/services.dart';
+import '../../app.dart';
 
 /// Tracks whether an update is available — consumed by the AppBar badge.
 final ValueNotifier<bool> updateAvailableNotifier = ValueNotifier(false);
@@ -114,13 +115,15 @@ class AppUpdater {
   }
 
   static void _showUpdateSnack(BuildContext context, Map<String, dynamic> data) {
-    ScaffoldMessenger.of(context).showSnackBar(
+    scaffoldMessengerKey.currentState?.showSnackBar(
       SnackBar(
         content: const Row(
           children: [
             Icon(Icons.system_update_alt, color: Colors.white, size: 18),
             SizedBox(width: 8),
-            Text('New update available! Tap the ⬆ button to install.'),
+            Expanded(
+              child: Text('New update available! Tap the ⬆ button to install.'),
+            ),
           ],
         ),
         backgroundColor: Colors.green.shade700,
@@ -253,7 +256,7 @@ class AppUpdater {
   }
 
   static void _showSnack(BuildContext context, String message, Color color) {
-    ScaffoldMessenger.of(context).showSnackBar(
+    scaffoldMessengerKey.currentState?.showSnackBar(
       SnackBar(content: Text(message), backgroundColor: color, duration: const Duration(seconds: 4)),
     );
   }

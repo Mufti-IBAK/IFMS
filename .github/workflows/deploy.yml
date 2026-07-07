@@ -83,7 +83,7 @@ jobs:
         SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
       run: |
         # 1. Upload APK to storage, with x-upsert: true to allow overwriting the existing file
-        curl -X POST \
+        curl --fail-with-body -sS -X POST \
           -H "Authorization: Bearer $SUPABASE_SERVICE_ROLE_KEY" \
           -H "apikey: $SUPABASE_SERVICE_ROLE_KEY" \
           -H "x-upsert: true" \
@@ -92,7 +92,7 @@ jobs:
           "$SUPABASE_URL/storage/v1/object/updates/Namanzo_IFMS_latest.apk"
           
         # 2. Register update details in the database system_updates table
-        curl -X POST \
+        curl --fail-with-body -sS -X POST \
           -H "Authorization: Bearer $SUPABASE_SERVICE_ROLE_KEY" \
           -H "apikey: $SUPABASE_SERVICE_ROLE_KEY" \
           -H "Content-Type: application/json" \

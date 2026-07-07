@@ -48,6 +48,7 @@ import 'dart:async';
 
 
 final GlobalKey<NavigatorState> appNavigatorKey = GlobalKey<NavigatorState>();
+final GlobalKey<ScaffoldMessengerState> scaffoldMessengerKey = GlobalKey<ScaffoldMessengerState>();
 
 class IFMSApp extends StatefulWidget {
   const IFMSApp({super.key});
@@ -147,6 +148,7 @@ class _IFMSAppState extends State<IFMSApp> {
         builder: (context, child) {
           return MaterialApp(
             navigatorKey: appNavigatorKey,
+            scaffoldMessengerKey: scaffoldMessengerKey,
             title: 'IFMS Mobile',
             theme: AppTheme.lightTheme,
             darkTheme: ThemeData.dark().copyWith(
@@ -301,10 +303,14 @@ class HomeScreen extends StatelessWidget {
                   child: CircleAvatar(
                     radius: 18,
                     backgroundColor: AppColors.surfaceContainerHigh,
-                    backgroundImage: profile?.profilePicPath != null
-                        ? FileImage(File(profile!.profilePicPath!))
+                    backgroundImage: profile?.profilePicPath != null &&
+                            profile!.profilePicPath!.isNotEmpty &&
+                            File(profile.profilePicPath!).existsSync()
+                        ? FileImage(File(profile.profilePicPath!))
                         : null,
-                    child: profile?.profilePicPath == null
+                    child: profile?.profilePicPath == null ||
+                            profile!.profilePicPath!.isEmpty ||
+                            !File(profile.profilePicPath!).existsSync()
                         ? const Icon(Icons.person, size: 20, color: AppColors.outline)
                         : null,
                   ),
