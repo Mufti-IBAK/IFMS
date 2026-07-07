@@ -43,6 +43,7 @@ import 'core/database/local_db.dart';
 import 'features/settings/settings_controller.dart';
 import 'features/settings/settings_screen.dart';
 import 'features/settings/auth_screen.dart';
+import 'dart:io';
 
 
 final GlobalKey<NavigatorState> appNavigatorKey = GlobalKey<NavigatorState>();
@@ -235,6 +236,7 @@ class HomeScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final settingsController = sl<SettingsController>();
     return Scaffold(
       appBar: AppBar(
         title: const Text('IFMS OPERATIONS'),
@@ -266,11 +268,29 @@ class HomeScreen extends StatelessWidget {
               ],
             ),
           ),
-          IconButton(
-            onPressed: () {
-              Navigator.of(context).pushNamed('/settings');
+          AnimatedBuilder(
+            animation: settingsController,
+            builder: (context, _) {
+              final profile = settingsController.profile;
+              return GestureDetector(
+                onTap: () {
+                  Navigator.of(context).pushNamed('/settings');
+                },
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 8.0),
+                  child: CircleAvatar(
+                    radius: 18,
+                    backgroundColor: AppColors.surfaceContainerHigh,
+                    backgroundImage: profile?.profilePicPath != null
+                        ? FileImage(File(profile!.profilePicPath!))
+                        : null,
+                    child: profile?.profilePicPath == null
+                        ? const Icon(Icons.person, size: 20, color: AppColors.outline)
+                        : null,
+                  ),
+                ),
+              );
             },
-            icon: const Icon(Icons.account_circle_outlined),
           ),
         ],
       ),
