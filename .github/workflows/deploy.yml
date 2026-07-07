@@ -84,7 +84,19 @@ jobs:
         SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
         SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
       run: |
+        # 1. Upload APK to storage (overwrite existing latest)
         curl -X POST \
           -H "Authorization: Bearer $SUPABASE_SERVICE_ROLE_KEY" \
+          -H "apikey: $SUPABASE_SERVICE_ROLE_KEY" \
           -F "file=@mobile/build/app/outputs/flutter-apk/app-release.apk" \
-          "$SUPABASE_URL/storage/v1/object/updates/Namanzo_IFMS_latest.apk"
+          -F "cacheControl=3600" \
+          "$SUPABASE_URL/storage/v1/object/updates/Namanzo_IFMS_latest.apk" || true
+          
+        # 2. Register update details in the database system_updates table
+        curl -X POST \
+          -H "Authorization: Bearer $SUPABASE_SERVICE_ROLE_KEY" \
+          -H "apikey: $SUPABASE_SERVICE_ROLE_KEY" \
+          -H "Content-Type: application/json" \
+          -d "{\"version_number\": \"2.5.0+${{ github.run_number }}\", \"download_url\": \"$SUPABASE_URL/storage/v1/object/public/updates/Namanzo_IFMS_latest.apk\", \"release_notes\": \"NFarms Build #${{ github.run_number }}: Integrated Settings screen, custom font scale slider (10% to 200%, default 50%), dark mode support, and profile demographics form.\"}" \
+          "$SUPABASE_URL/rest/v1/system_updates"
+
