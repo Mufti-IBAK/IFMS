@@ -19,36 +19,30 @@ jobs:
         pip install -r requirements.txt pytest
         python -m pytest tests/
 
-
-  # Job 2: Build & Push Backend Docker Image
+  # Job 2: Build Backend Docker Image (no AWS validation)
   backend-deploy:
     needs: backend-test
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v3
-    - name: Configure AWS Credentials
-      uses: aws-actions/configure-aws-credentials@v1
-      with:
-        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-        aws-region: eu-west-1
-    - name: Login to Amazon ECR
-      id: login-ecr
-      uses: aws-actions/amazon-ecr-login@v1
-    - name: Build, tag, and push image to Amazon ECR
-      env:
-        ECR_REGISTRY: ${{ secrets.ECR_REGISTRY || '123456789012.dkr.ecr.eu-west-1.amazonaws.com' }}
-        ECR_REPOSITORY: ifms-backend
-        IMAGE_TAG: ${{ github.sha }}
-      run: |
-        docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
-        docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:latest .
-        docker push $ECR_REGISTRY/$ECR_REPOSITORY --all-tags
-    - name: Deploy to Kubernetes
-      run: |
-        aws eks update-kubeconfig --name ifms-prod-cluster --region eu-west-1
-        kubectl set image deployment/ifms-backend backend=$ECR_REGISTRY/$ECR_REPOSITORY:${{ github.sha }} -n ifms-prod
-        kubectl rollout status deployment/ifms-backend -n ifms-prod
+      - uses: actions/checkout@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+
+      - name: Build Docker image
+        run: |
+          docker build -t ifms-backend:${{ github.sha }} .
+          docker tag ifms-backend:${{ github.sha }} ifms-backend:latest
+
+      - name: Save Docker image to tar
+        run: |
+          docker save ifms-backend:${{ github.sha }} -o ifms-backend_${{ github.sha }}.tar
+
+      - name: Upload Docker image artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-image
+          path: ifms-backend_${{ github.sha }}.tar
 
   # Job 3: Build & Release Flutter Android APK / App Bundle
   mobile-build:
