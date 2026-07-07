@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import '../../core/di/service_locator.dart';
 import '../../core/sync/sync_manager.dart';
 import '../../core/theme/app_colors.dart';
+import 'dart:io';
 
 class SetupScreen extends StatefulWidget {
   const SetupScreen({super.key});
@@ -53,8 +54,26 @@ class _SetupScreenState extends State<SetupScreen> {
     setState(() {
       _statusMessage = 'Checking internet connection...';
     });
-    final connectivity = await Connectivity().checkConnectivity();
-    _hasInternet = !connectivity.contains(ConnectivityResult.none);
+    bool hasConnection = false;
+    try {
+      final connectivity = await Connectivity().checkConnectivity();
+      if (!connectivity.contains(ConnectivityResult.none)) {
+        hasConnection = true;
+      }
+    } catch (_) {}
+
+    if (!hasConnection) {
+      try {
+        final lookup = await InternetAddress.lookup('google.com').timeout(const Duration(seconds: 4));
+        if (lookup.isNotEmpty && lookup.first.rawAddress.isNotEmpty) {
+          hasConnection = true;
+        }
+      } catch (_) {
+        hasConnection = false;
+      }
+    }
+
+    _hasInternet = hasConnection;
 
     if (!_hasInternet) {
       setState(() {
