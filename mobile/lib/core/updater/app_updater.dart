@@ -84,10 +84,6 @@ class AppUpdater {
       if (isNew) {
         _pendingUpdateData = latest;
         updateAvailableNotifier.value = true;
-
-        if (context.mounted) {
-          _showUpdateSnack(context, latest);
-        }
       } else {
         updateAvailableNotifier.value = false;
         if (showNoUpdateMessage && context.mounted) {
@@ -114,28 +110,7 @@ class AppUpdater {
     }
   }
 
-  static void _showUpdateSnack(BuildContext context, Map<String, dynamic> data) {
-    scaffoldMessengerKey.currentState?.showSnackBar(
-      SnackBar(
-        content: const Row(
-          children: [
-            Icon(Icons.system_update_alt, color: Colors.white, size: 18),
-            SizedBox(width: 8),
-            Expanded(
-              child: Text('New update available! Tap the ⬆ button to install.'),
-            ),
-          ],
-        ),
-        backgroundColor: Colors.green.shade700,
-        duration: const Duration(seconds: 5),
-        action: SnackBarAction(
-          label: 'UPDATE',
-          textColor: Colors.white,
-          onPressed: () => _showUpdateDialog(context, data),
-        ),
-      ),
-    );
-  }
+
 
   static void _showUpdateDialog(BuildContext context, Map<String, dynamic> data) {
     final version = data['version_number'] ?? 'New Version';
