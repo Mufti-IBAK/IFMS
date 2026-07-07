@@ -44,6 +44,7 @@ import 'features/settings/settings_controller.dart';
 import 'features/settings/settings_screen.dart';
 import 'features/settings/auth_screen.dart';
 import 'dart:io';
+import 'dart:async';
 
 
 final GlobalKey<NavigatorState> appNavigatorKey = GlobalKey<NavigatorState>();
@@ -57,6 +58,7 @@ class IFMSApp extends StatefulWidget {
 
 class _IFMSAppState extends State<IFMSApp> {
   late final Future<bool> _isInitializedFuture;
+  Timer? _updateTimer;
 
   @override
   void initState() {
@@ -68,8 +70,26 @@ class _IFMSAppState extends State<IFMSApp> {
     sl<SyncManager>().triggerSync();
     // Check for OTA updates silently after first frame
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) AppUpdater.checkForUpdates(context);
+      if (mounted) {
+        AppUpdater.checkForUpdates(context);
+        _startUpdatePolling();
+      }
     });
+  }
+
+  void _startUpdatePolling() {
+    // Poll for updates every 3 minutes
+    _updateTimer = Timer.periodic(const Duration(minutes: 3), (timer) {
+      if (mounted) {
+        AppUpdater.checkForUpdates(context);
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _updateTimer?.cancel();
+    super.dispose();
   }
 
   Future<bool> _checkIfDatabaseInitialized() async {
@@ -241,7 +261,7 @@ class HomeScreen extends StatelessWidget {
       appBar: AppBar(
         title: const Text('IFMS OPERATIONS'),
         actions: [
-          // Update button — shows red badge dot when a new version is available
+          // Update button — shows green badge dot when a new version is available
           ValueListenableBuilder<bool>(
             valueListenable: updateAvailableNotifier,
             builder: (context, hasUpdate, _) => Stack(
@@ -260,7 +280,7 @@ class HomeScreen extends StatelessWidget {
                       width: 9,
                       height: 9,
                       decoration: const BoxDecoration(
-                        color: Colors.redAccent,
+                        color: Colors.green,
                         shape: BoxShape.circle,
                       ),
                     ),
