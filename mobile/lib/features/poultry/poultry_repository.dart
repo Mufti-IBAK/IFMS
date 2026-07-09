@@ -263,7 +263,27 @@ class PoultryRepository {
 
   Future<void> _syncBatches(List<dynamic> remoteData) async {
     await db.transaction(() async {
-      await db.delete(db.localPoultryBatches).go();
+      final syncItems = await (db.select(db.syncQueue)
+            ..where((t) => t.endpoint.equals('/poultry/batch') & t.method.equals('POST')))
+          .get();
+      final pendingIds = syncItems.map((item) {
+        try {
+          final data = jsonDecode(item.body);
+          return data['id'] as String?;
+        } catch (_) {
+          return null;
+        }
+      }).whereType<String>().toList();
+
+      final serverIds = remoteData.map((item) => item['id'].toString()).toList();
+      final excludeIds = [...serverIds, ...pendingIds];
+
+      if (excludeIds.isNotEmpty) {
+        await (db.delete(db.localPoultryBatches)..where((t) => t.id.isNotIn(excludeIds))).go();
+      } else {
+        await db.delete(db.localPoultryBatches).go();
+      }
+
       await db.batch((batch) {
         batch.insertAll(
           db.localPoultryBatches,

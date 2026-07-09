@@ -35,7 +35,27 @@ class HatcheryRepository {
 
   Future<void> _updateBatchesCache(List<dynamic> batches) async {
     await db.transaction(() async {
-      await db.delete(db.localHatcheryBatches).go();
+      final syncItems = await (db.select(db.syncQueue)
+            ..where((t) => t.endpoint.equals('/hatchery/batch') & t.method.equals('POST')))
+          .get();
+      final pendingIds = syncItems.map((item) {
+        try {
+          final data = jsonDecode(item.body);
+          return data['id'] as String?;
+        } catch (_) {
+          return null;
+        }
+      }).whereType<String>().toList();
+
+      final serverIds = batches.map((b) => b['id'] as String).toList();
+      final excludeIds = [...serverIds, ...pendingIds];
+
+      if (excludeIds.isNotEmpty) {
+        await (db.delete(db.localHatcheryBatches)..where((t) => t.id.isNotIn(excludeIds))).go();
+      } else {
+        await db.delete(db.localHatcheryBatches).go();
+      }
+
       await db.batch((batch) {
         batch.insertAll(
           db.localHatcheryBatches,
@@ -49,7 +69,7 @@ class HatcheryRepository {
             fertileEggs: Value(b['fertile_eggs']),
             hatchedChicks: Value(b['hatched_chicks']),
             failedEggs: Value(b['failed_eggs']),
-            initialEggCost: Value(double.parse(b['initial_egg_cost'].toString())),
+            initialEggCost: Value(double.parse((b['initial_egg_cost'] ?? 0.0).toString())),
             status: Value(b['status'] ?? 'incubating'),
           )).toList(),
           mode: InsertMode.insertOrReplace,

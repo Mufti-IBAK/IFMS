@@ -77,7 +77,27 @@ class AnimalsRepository {
 
   Future<void> _updateLocalCache(List<dynamic> animals) async {
     await db.transaction(() async {
-      await db.delete(db.localAnimals).go();
+      final syncItems = await (db.select(db.syncQueue)
+            ..where((t) => t.endpoint.equals('/animals') & t.method.equals('POST')))
+          .get();
+      final pendingIds = syncItems.map((item) {
+        try {
+          final data = jsonDecode(item.body);
+          return data['id'] as String?;
+        } catch (_) {
+          return null;
+        }
+      }).whereType<String>().toList();
+
+      final serverIds = animals.map((a) => a['id'] as String).toList();
+      final excludeIds = [...serverIds, ...pendingIds];
+
+      if (excludeIds.isNotEmpty) {
+        await (db.delete(db.localAnimals)..where((t) => t.id.isNotIn(excludeIds))).go();
+      } else {
+        await db.delete(db.localAnimals).go();
+      }
+
       await db.batch((batch) {
         batch.insertAll(
           db.localAnimals,

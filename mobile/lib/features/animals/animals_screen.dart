@@ -1217,33 +1217,39 @@ class _AnimalsScreenState extends State<AnimalsScreen> {
                       Expanded(
                         child: ElevatedButton(
                           onPressed: () {
-                            if (tagController.text.isNotEmpty) {
-                              final dobStr = selectedDob?.toIso8601String().split('T')[0];
-                              final newId = 'anim_${DateTime.now().millisecondsSinceEpoch}';
-                              
-                              BlocProvider.of<AnimalsBloc>(context).add(AddAnimal({
-                                'id': newId,
-                                'tag_id': tagController.text.trim(),
-                                'species': selectedSpecies,
-                                'sex': selectedSex,
-                                'breed': breedController.text.trim().isNotEmpty ? breedController.text.trim() : null,
-                                'date_of_birth': dobStr,
-                                'weight': weightController.text.isNotEmpty ? double.tryParse(weightController.text) : null,
-                                'color': colorController.text.trim().isNotEmpty ? colorController.text.trim() : null,
-                                'unique_marks': marksController.text.trim().isNotEmpty ? marksController.text.trim() : null,
-                                'pedigree_type': selectedPedigree,
-                                'purpose': selectedPurpose,
-                                'current_reproductive_status': isFemale ? selectedReproductive : 'open',
-                                'vaccination_status': '{}',
-                                'deworming_status': '{}',
-                                'image_path': selectedImagePath,
-                              }));
-                              Navigator.pop(bottomSheetContext);
-                            } else {
+                            if (tagController.text.trim().isEmpty) {
                               ScaffoldMessenger.of(context).showSnackBar(
                                 const SnackBar(content: Text('Tag ID is required!')),
                               );
+                              return;
                             }
+                            if (selectedDob == null) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(content: Text('Date of birth is required!')),
+                              );
+                              return;
+                            }
+                            final dobStr = selectedDob!.toIso8601String().split('T')[0];
+                            final newId = 'anim_${DateTime.now().millisecondsSinceEpoch}';
+                            
+                            BlocProvider.of<AnimalsBloc>(context).add(AddAnimal({
+                              'id': newId,
+                              'tag_id': tagController.text.trim(),
+                              'species': selectedSpecies,
+                              'sex': selectedSex,
+                              'breed': breedController.text.trim().isNotEmpty ? breedController.text.trim() : null,
+                              'date_of_birth': dobStr,
+                              'weight': weightController.text.isNotEmpty ? double.tryParse(weightController.text) : null,
+                              'color': colorController.text.trim().isNotEmpty ? colorController.text.trim() : null,
+                              'unique_marks': marksController.text.trim().isNotEmpty ? marksController.text.trim() : null,
+                              'pedigree_type': selectedPedigree,
+                              'purpose': selectedPurpose,
+                              'current_reproductive_status': isFemale ? selectedReproductive : 'open',
+                              'vaccination_status': '{}',
+                              'deworming_status': '{}',
+                              'image_path': selectedImagePath,
+                            }));
+                            Navigator.pop(bottomSheetContext);
                           },
                           style: ElevatedButton.styleFrom(
                             padding: const EdgeInsets.symmetric(vertical: 16),

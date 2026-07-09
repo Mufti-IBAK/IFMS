@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:developer';
 import 'package:dio/dio.dart';
 import 'package:uuid/uuid.dart';
@@ -24,7 +25,27 @@ class StaffRepository {
 
   Future<void> _syncStaffToLocal(List<dynamic> remoteList) async {
     await db.transaction(() async {
-      await db.delete(db.localStaff).go();
+      final syncItems = await (db.select(db.syncQueue)
+            ..where((t) => t.endpoint.equals('/staff') & t.method.equals('POST')))
+          .get();
+      final pendingIds = syncItems.map((item) {
+        try {
+          final data = jsonDecode(item.body);
+          return data['id'] as String?;
+        } catch (_) {
+          return null;
+        }
+      }).whereType<String>().toList();
+
+      final serverIds = remoteList.map((s) => s['id'] as String).toList();
+      final excludeIds = [...serverIds, ...pendingIds];
+
+      if (excludeIds.isNotEmpty) {
+        await (db.delete(db.localStaff)..where((t) => t.id.isNotIn(excludeIds))).go();
+      } else {
+        await db.delete(db.localStaff).go();
+      }
+
       await db.batch((batch) {
         batch.insertAll(
           db.localStaff,
@@ -51,10 +72,11 @@ class StaffRepository {
 
 
   Future<void> addStaff(Map<String, dynamic> data) async {
-    final newId = const Uuid().v4();
+    final newId = data['id'] ?? const Uuid().v4();
+    data['id'] = newId;
     
     // Save locally first for offline support and immediate UI feedback
-    await db.into(db.localStaff).insert(LocalStaffCompanion.insert(
+    await db.into(db.localStaff).insertOnConflictUpdate(LocalStaffCompanion.insert(
       id: newId,
       name: data['name'],
       role: data['role'],
@@ -84,8 +106,13 @@ class StaffRepository {
         await apiClient.dio.post('/staff', data: data);
       }
     } catch (e) {
-      // Kept in local db, will sync later
       log('Offline: Staff saved locally.');
+      await db.into(db.syncQueue).insert(SyncQueueCompanion.insert(
+        endpoint: '/staff',
+        method: 'POST',
+        body: jsonEncode(data),
+        queuedAt: DateTime.now(),
+      ));
     }
   }
 
