@@ -204,7 +204,7 @@ class AppUpdater {
       await plainDio.download(
         url,
         savePath,
-        options: Options(responseType: ResponseType.bytes, followRedirects: true),
+        options: Options(followRedirects: true),
         onReceiveProgress: (received, total) {
           if (total > 0) progressNotifier.value = received / total;
         },
