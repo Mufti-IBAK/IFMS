@@ -92,11 +92,19 @@ jobs:
           -F "cacheControl=3600" \
           "$SUPABASE_URL/storage/v1/object/updates/Namanzo_IFMS_latest.apk"
           
-        # 2. Register update details in the database system_updates table
+        # 2. Construct JSON payload dynamically using jq to avoid escaping problems
+        COMMIT_MSG=$(git log -1 --pretty=%B | tr '\n' ' ')
+        JSON_PAYLOAD=$(jq -n \
+          --arg vn "2.5.0+${{ env.BUILD_NUMBER }}" \
+          --arg dl "$SUPABASE_URL/storage/v1/object/public/updates/Namanzo_IFMS_latest.apk" \
+          --arg rn "NFarms Build #${{ env.BUILD_NUMBER }}: $COMMIT_MSG" \
+          '{version_number: $vn, download_url: $dl, release_notes: $rn}')
+          
+        # 3. Register update details in the database system_updates table
         curl --fail-with-body -sS -X POST \
           -H "Authorization: Bearer $SUPABASE_SERVICE_ROLE_KEY" \
           -H "apikey: $SUPABASE_SERVICE_ROLE_KEY" \
           -H "Content-Type: application/json" \
-          -d "{\"version_number\": \"2.5.0+${{ env.BUILD_NUMBER }}\", \"download_url\": \"$SUPABASE_URL/storage/v1/object/public/updates/Namanzo_IFMS_latest.apk\", \"release_notes\": \"NFarms Build #${{ env.BUILD_NUMBER }}: Integrated Settings screen, custom font scale slider (10% to 200%, default 50%), dark mode support, and profile demographics form.\"}" \
+          -d "$JSON_PAYLOAD" \
           "$SUPABASE_URL/rest/v1/system_updates"
 
