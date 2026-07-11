@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:drift/drift.dart';
+import 'package:uuid/uuid.dart';
 import '../../core/database/local_db.dart';
 import '../../core/network/api_client.dart';
 
@@ -19,7 +20,8 @@ class FinanceRepository {
   }
 
   Future<void> addTransaction(Map<String, dynamic> data) async {
-    final uuid = DateTime.now().millisecondsSinceEpoch.toString();
+    final uuid = const Uuid().v4();
+    data['id'] = uuid;
     final type = data['transaction_type'].toString();
     final category = data['category'].toString();
     final amount = double.parse(data['amount'].toString());
@@ -173,7 +175,7 @@ class FinanceRepository {
     } catch (e) {
       final localOrig = await (db.select(db.localTransactions)..where((t) => t.id.equals(id))).getSingle();
       final reversedType = localOrig.transactionType == 'income' ? 'expense' : 'income';
-      final newId = DateTime.now().millisecondsSinceEpoch.toString();
+      final newId = const Uuid().v4();
       await db.into(db.localTransactions).insert(LocalTransactionsCompanion.insert(
         id: newId,
         transactionType: reversedType,

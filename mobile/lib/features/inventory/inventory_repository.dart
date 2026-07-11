@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:drift/drift.dart';
+import 'package:uuid/uuid.dart';
 import '../../core/database/local_db.dart';
 import '../../core/network/api_client.dart';
 
@@ -92,7 +93,7 @@ class InventoryRepository {
   }
 
   Future<void> addFeedItem(Map<String, dynamic> itemData) async {
-    final uuid = DateTime.now().millisecondsSinceEpoch.toString();
+    final uuid = const Uuid().v4();
     itemData['id'] = uuid;
     itemData['category'] = 'feed'; // Always feed on this screen
 
@@ -245,7 +246,7 @@ class InventoryRepository {
   }
 
   Future<void> logInventoryChange(Map<String, dynamic> logData) async {
-    final uuid = DateTime.now().millisecondsSinceEpoch.toString();
+    final uuid = const Uuid().v4();
     logData['id'] = uuid;
 
     final itemId = logData['item_id'];
@@ -321,7 +322,7 @@ class InventoryRepository {
   }
 
   Future<void> addFormula(Map<String, dynamic> data) async {
-    final uuid = DateTime.now().millisecondsSinceEpoch.toString();
+    final uuid = const Uuid().v4();
     await db.into(db.localFeedFormulas).insertOnConflictUpdate(LocalFeedFormulasCompanion.insert(
       id: uuid,
       name: data['name'],
@@ -347,7 +348,7 @@ class InventoryRepository {
   }
 
   Future<void> addFormulaIngredient(String formulaId, Map<String, dynamic> data) async {
-    final uuid = DateTime.now().millisecondsSinceEpoch.toString();
+    final uuid = const Uuid().v4();
     // Get the formula to calculate quantityKg
     final formula = await (db.select(db.localFeedFormulas)..where((t) => t.id.equals(formulaId))).getSingleOrNull();
     final batchSize = formula?.batchSize ?? 1000.0;
@@ -416,7 +417,7 @@ class InventoryRepository {
   }
 
   Future<void> logConsumption(Map<String, dynamic> data) async {
-    final uuid = DateTime.now().millisecondsSinceEpoch.toString();
+    final uuid = const Uuid().v4();
     final formulaId = data['formula_id'];
     final qtyKg = double.parse(data['quantity_kg'].toString());
 
@@ -446,7 +447,7 @@ class InventoryRepository {
 
     // Log the prepared feed stock deduction in inventory logs
     await db.into(db.localInventoryLogs).insertOnConflictUpdate(LocalInventoryLogsCompanion.insert(
-      id: '${uuid}_inv_$formulaId',
+      id: const Uuid().v4(),
       itemId: formulaId,
       changeType: 'consumption',
       quantityChange: -qtyKg,
@@ -498,9 +499,8 @@ class InventoryRepository {
           ));
 
       // Log movement
-      final uuid = DateTime.now().millisecondsSinceEpoch.toString();
       await db.into(db.localInventoryLogs).insertOnConflictUpdate(LocalInventoryLogsCompanion.insert(
-        id: '${uuid}_prep_${ingredient.feedItemId}',
+        id: const Uuid().v4(),
         itemId: ingredient.feedItemId,
         changeType: 'consumption',
         quantityChange: -qtyIngKg,
@@ -519,9 +519,8 @@ class InventoryRepository {
         ));
 
     // Log the preparation in inventory logs
-    final uuid = DateTime.now().millisecondsSinceEpoch.toString();
     await db.into(db.localInventoryLogs).insertOnConflictUpdate(LocalInventoryLogsCompanion.insert(
-      id: '${uuid}_formula_${formula.id}',
+      id: const Uuid().v4(),
       itemId: formula.id,
       changeType: 'purchase',
       quantityChange: quantityKg,

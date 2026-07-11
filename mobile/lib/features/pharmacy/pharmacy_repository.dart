@@ -1,4 +1,5 @@
 import 'package:drift/drift.dart';
+import 'package:uuid/uuid.dart';
 import '../../core/database/local_db.dart';
 import '../../core/di/service_locator.dart';
 import '../../core/network/notification_service.dart';
@@ -19,7 +20,7 @@ class PharmacyRepository {
   }
 
   Future<void> addMedication(Map<String, dynamic> data) async {
-    final uuid = DateTime.now().millisecondsSinceEpoch.toString();
+    final uuid = const Uuid().v4();
     await db.into(db.localMedications).insertOnConflictUpdate(LocalMedicationsCompanion.insert(
       id: uuid,
       name: data['name'],
@@ -85,7 +86,7 @@ class PharmacyRepository {
   }
 
   Future<void> logMedicationChange(Map<String, dynamic> data) async {
-    final uuid = DateTime.now().millisecondsSinceEpoch.toString();
+    final uuid = const Uuid().v4();
     final medicationId = data['medication_id'];
     final changeType = data['change_type']; // "purchase", "discard", "adjustment"
     final quantityChange = double.parse(data['quantity_change'].toString());
@@ -145,7 +146,7 @@ class PharmacyRepository {
   }
 
   Future<void> logAnimalTreatment(Map<String, dynamic> data) async {
-    final uuid = DateTime.now().millisecondsSinceEpoch.toString();
+    final uuid = const Uuid().v4();
     final animalId = data['animal_id'];
     final medicationId = data['medication_id'];
     final dose = double.parse(data['administered_dose'].toString());

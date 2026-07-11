@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:drift/drift.dart';
+import 'package:uuid/uuid.dart';
 import '../../core/database/local_db.dart';
 import '../../core/network/api_client.dart';
 
@@ -79,7 +80,7 @@ class HatcheryRepository {
   }
 
   Future<void> createBatch(Map<String, dynamic> batchData) async {
-    final uuid = DateTime.now().millisecondsSinceEpoch.toString();
+    final uuid = const Uuid().v4();
     batchData['id'] = uuid;
 
     final setDt = DateTime.parse(batchData['set_date']);
@@ -126,7 +127,7 @@ class HatcheryRepository {
   }
 
   Future<void> addEvent(String batchId, Map<String, dynamic> eventData) async {
-    final uuid = DateTime.now().millisecondsSinceEpoch.toString();
+    final uuid = const Uuid().v4();
     eventData['id'] = uuid;
 
     // Apply change locally first (optimistic UI)

@@ -22,6 +22,39 @@ class ApiClient {
         // Rewrite paths for Supabase
         String path = options.path;
         
+        // Strip /api/v1 prefix if present
+        if (path.startsWith('/api/v1')) {
+          path = path.replaceFirst('/api/v1', '');
+        }
+
+        // Custom path parameter extracts for POST requests before generic matches
+        if (options.method == 'POST' && options.data is Map<String, dynamic>) {
+          final data = options.data as Map<String, dynamic>;
+          
+          if (path.startsWith('/animals/')) {
+            final segments = path.split('/');
+            if (segments.length > 3 && segments[3] == 'events') {
+              final animalId = segments[2];
+              path = '/animal_events';
+              data['animal_id'] = animalId;
+            }
+          } else if (path.startsWith('/poultry/batch/')) {
+            final segments = path.split('/');
+            if (segments.length > 3 && (segments[3] == 'event' || segments[3] == 'logs')) {
+              final batchId = segments[2];
+              path = '/poultry_events';
+              data['batch_id'] = batchId;
+            }
+          } else if (path.startsWith('/hatchery/batch/')) {
+            final segments = path.split('/');
+            if (segments.length > 3 && segments[3] == 'event') {
+              final batchId = segments[2];
+              path = '/hatchery_events';
+              data['batch_id'] = batchId;
+            }
+          }
+        }
+
         if (options.method == 'PATCH' || options.method == 'DELETE') {
           final segments = path.split('/');
           if (segments.length > 2) {
@@ -35,7 +68,7 @@ class ApiClient {
            path = path.replaceAll('/animals', '/animals'); // no change
         } else if (path.startsWith('/breeding')) {
            path = '/breeding_events';
-        } else if (path.startsWith('/dairy/milk-record')) {
+        } else if (path.startsWith('/dairy/milk-record') || path.startsWith('/dairy/milk_records')) {
            path = '/milk_records';
         } else if (path.startsWith('/finance/transaction')) {
            path = '/transactions';
@@ -44,7 +77,7 @@ class ApiClient {
         } else if (path.startsWith('/inventory/log')) {
            path = '/inventory_logs';
         } else if (path.startsWith('/poultry/batch')) {
-           if (path.contains('event')) {
+           if (path.contains('event') || path.contains('logs')) {
              path = '/poultry_events';
            } else {
              path = '/poultry_batches';
@@ -62,7 +95,29 @@ class ApiClient {
         } else if (path.startsWith('/alerts')) {
            path = '/alerts';
         }
-        
+
+        // Inject default user ID metadata for POST requests
+        if (options.method == 'POST' && options.data is Map<String, dynamic>) {
+          final data = options.data as Map<String, dynamic>;
+          const defaultUserId = 'f5751d41-9c30-48f3-b11a-c6f9831689de';
+          
+          if (path.startsWith('/breeding_events') ||
+              path.startsWith('/milk_records') ||
+              path.startsWith('/transactions') ||
+              path.startsWith('/hatchery_batches') ||
+              path.startsWith('/poultry_batches') ||
+              path.startsWith('/hatchery_events') ||
+              path.startsWith('/poultry_events') ||
+              path.startsWith('/feed_items') ||
+              path.startsWith('/animal_events')) {
+            data['created_by'] ??= defaultUserId;
+          } else if (path.startsWith('/tasks')) {
+            data['assigned_by'] ??= defaultUserId;
+          } else if (path.startsWith('/inventory_logs')) {
+            data['logged_by'] ??= defaultUserId;
+          }
+        }
+
         // Remove duplicate /rest/v1 if it already exists
         if (!path.startsWith('/rest/v1')) {
           if (path.startsWith('/')) {

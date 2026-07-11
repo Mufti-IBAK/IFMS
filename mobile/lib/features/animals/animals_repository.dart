@@ -29,7 +29,8 @@ class AnimalsRepository {
     final imagePath = animalData['image_path'] as String?;
     animalData.remove('image_path');
 
-    final uuid = animalData['id'] ?? DateTime.now().millisecondsSinceEpoch.toString();
+    final uuid = animalData['id'] ?? const Uuid().v4();
+    animalData['id'] = uuid;
     
     // Always insert/update locally first
     await db.into(db.localAnimals).insertOnConflictUpdate(LocalAnimalsCompanion.insert(

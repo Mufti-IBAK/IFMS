@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
 import 'package:intl/intl.dart';
+import 'package:uuid/uuid.dart';
 import '../../core/utils/report_service.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/network/api_client.dart';
@@ -1230,7 +1231,7 @@ class _AnimalsScreenState extends State<AnimalsScreen> {
                               return;
                             }
                             final dobStr = selectedDob!.toIso8601String().split('T')[0];
-                            final newId = 'anim_${DateTime.now().millisecondsSinceEpoch}';
+                            final newId = const Uuid().v4();
                             
                             BlocProvider.of<AnimalsBloc>(context).add(AddAnimal({
                               'id': newId,

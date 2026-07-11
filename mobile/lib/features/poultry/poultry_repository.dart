@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:drift/drift.dart';
+import 'package:uuid/uuid.dart';
 import '../../core/database/local_db.dart';
 import '../../core/network/api_client.dart';
 
@@ -19,7 +20,7 @@ class PoultryRepository {
   }
 
   Future<void> createBatch(Map<String, dynamic> data) async {
-    final uuid = DateTime.now().millisecondsSinceEpoch.toString();
+    final uuid = const Uuid().v4();
     final batchNumber = data['batch_number'].toString();
     final houseName = data['house_name'].toString();
     final initialCount = int.parse(data['initial_count'].toString());
@@ -40,6 +41,7 @@ class PoultryRepository {
 
     // Remote Sync
     final remoteData = {
+      'id': uuid,
       'batch_type': data['batch_type'] ?? 'broiler',
       'breed': breed,
       'start_date': data['start_date'],
@@ -139,6 +141,7 @@ class PoultryRepository {
 
     // Remote sync
     final remoteData = {
+      'id': const Uuid().v4(),
       'event_type': changeType,
       'event_date': DateTime.now().toIso8601String().substring(0, 10),
       'quantity': qty,
@@ -180,23 +183,26 @@ class PoultryRepository {
       );
     }
 
-    // Remote Sync
-    final remoteData = {
-      'feed_bags': feedBags,
-      'mortality': mortality,
-      'average_weight': avgWeight,
-      'log_date': DateTime.now().toIso8601String().substring(0, 10),
-    };
-
-    try {
-      await apiClient.dio.post('/poultry/batch/$batchId/logs', data: remoteData);
-    } catch (e) {
-      await db.into(db.syncQueue).insert(SyncQueueCompanion.insert(
-        endpoint: '/poultry/batch/$batchId/logs',
-        method: 'POST',
-        body: jsonEncode(remoteData),
-        queuedAt: DateTime.now(),
-      ));
+    // Remote Sync - decompose into individual events
+    if (mortality > 0) {
+      await logBatchEvent(batchId, {
+        'event_type': 'mortality',
+        'quantity': mortality.toDouble(),
+      });
+    }
+    if (feedBags > 0) {
+      await logBatchEvent(batchId, {
+        'event_type': 'feed',
+        'quantity': feedBags * 25.0, // Standard 25kg bag
+        'value_json': {'price_per_kg': 200.0},
+      });
+    }
+    if (avgWeight != null && avgWeight > 0.0) {
+      await logBatchEvent(batchId, {
+        'event_type': 'weight_sample',
+        'quantity': 1.0,
+        'value_json': {'avg_weight_kg': avgWeight},
+      });
     }
   }
 

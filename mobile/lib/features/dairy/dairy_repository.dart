@@ -52,7 +52,7 @@ class DairyRepository {
 
     // Sync to backend asynchronously
     try {
-      await apiClient.dio.post('/api/v1/dairy/milk_records', data: {
+      await apiClient.dio.post('/dairy/milk-record', data: {
         'id': id,
         ...recordData,
       });
