@@ -5,7 +5,7 @@ import 'package:intl/intl.dart';
 import '../database/local_db.dart';
 
 class ReportService {
-  static Future<void> generateHerdReport(List<dynamic> animals) async {
+  static Future<void> generateHerdReport(List<LocalAnimal> animals) async {
     final pdf = pw.Document();
     
     // Summary counts
@@ -20,12 +20,11 @@ class ReportService {
     final reproCounts = <String, int>{};
 
     for (var a in animals) {
-      final isMap = a is Map;
-      final status = ((isMap ? a['status'] : a.status) ?? 'active').toString().toLowerCase();
-      final sex = ((isMap ? a['sex'] : a.sex) ?? 'female').toString().toLowerCase();
-      final sp = ((isMap ? a['species'] : a.species) ?? 'other').toString().toLowerCase();
-      final repro = ((isMap ? a['current_reproductive_status'] : a.currentReproductiveStatus) ?? 'open').toString().toLowerCase();
-      final weightRaw = isMap ? a['weight'] : a.weight;
+      final status = a.status.toLowerCase();
+      final sex = (a.sex).toString().toLowerCase();
+      final sp = (a.species).toString().toLowerCase();
+      final repro = (a.currentReproductiveStatus).toString().toLowerCase();
+      final weightRaw = a.weight;
 
       if (status == 'dead') {
         dead++;
@@ -324,29 +323,23 @@ class ReportService {
               context: context,
               headers: ['Tag ID', 'Species', 'Breed', 'Sex', 'DOB', 'Weight', 'Repro Status', 'Purpose', 'Vaccination Notes', 'Deworming Notes', 'Status'],
               data: animals.map((a) {
-                final isMap = a is Map;
-                final tagId = (isMap ? a['tag_id'] : a.tagId) ?? '';
-                final species = (isMap ? a['species'] : a.species) ?? '';
-                final breed = (isMap ? a['breed'] : a.breed) ?? 'N/A';
-                final sex = (isMap ? a['sex'] : a.sex) ?? '';
+                final tagId = a.tagId;
+                final species = a.species;
+                final breed = a.breed ?? 'N/A';
+                final sex = a.sex;
                 
-                final dobRaw = isMap ? a['date_of_birth'] : a.dateOfBirth;
+                final dobDt = a.dateOfBirth;
                 String dobStr = '';
-                if (dobRaw != null) {
-                  final dobDt = dobRaw is DateTime ? dobRaw : DateTime.tryParse(dobRaw.toString());
-                  if (dobDt != null) {
-                    dobStr = DateFormat('yyyy-MM-dd').format(dobDt);
-                  } else {
-                    dobStr = dobRaw.toString().split('T')[0];
-                  }
+                if (dobDt != null) {
+                  dobStr = DateFormat('yyyy-MM-dd').format(dobDt);
                 }
                 
-                final weight = (isMap ? a['weight'] : a.weight)?.toString() ?? 'N/A';
-                final repro = (isMap ? a['current_reproductive_status'] : a.currentReproductiveStatus) ?? 'open';
-                final purpose = (isMap ? a['purpose'] : a.purpose) ?? 'N/A';
-                final vac = (isMap ? a['vaccination_status'] : a.vaccinationStatus) ?? 'None';
-                final dew = (isMap ? a['deworming_status'] : a.dewormingStatus) ?? 'None';
-                final status = (isMap ? a['status'] : a.status) ?? 'active';
+                final weight = a.weight?.toString() ?? 'N/A';
+                final repro = a.currentReproductiveStatus;
+                final purpose = a.purpose ?? 'N/A';
+                final vac = a.vaccinationStatus ?? 'None';
+                final dew = a.dewormingStatus ?? 'None';
+                final status = a.status;
                 
                 return [
                   '#$tagId',
@@ -477,29 +470,27 @@ class ReportService {
   }
 
   static Future<void> generateAnimalProfileReport({
-    required dynamic animal,
+    required LocalAnimal animal,
     required List<LocalMilkRecord> milkRecords,
     required List<Map<String, dynamic>> feedLogs,
     required List<Map<String, dynamic>> medRecords,
     required List<dynamic> breedingEvents,
   }) async {
     final pdf = pw.Document();
-    final isMap = animal is Map;
 
-    final tagId = (isMap ? animal['tag_id'] : animal.tagId).toString();
-    final species = (isMap ? animal['species'] : animal.species).toString().toUpperCase();
-    final sex = (isMap ? animal['sex'] : animal.sex).toString().toUpperCase();
-    final breed = ((isMap ? animal['breed'] : animal.breed) ?? 'Crossbreed').toString();
+    final tagId = animal.tagId.toString();
+    final species = animal.species.toString().toUpperCase();
+    final sex = animal.sex.toString().toUpperCase();
+    final breed = (animal.breed ?? 'Crossbreed').toString();
     
-    final rawDob = isMap ? animal['date_of_birth'] : animal.dateOfBirth;
-    final dob = rawDob is DateTime ? rawDob : DateTime.parse(rawDob.toString());
-    final dobStr = DateFormat('yyyy-MM-dd').format(dob);
+    final dob = animal.dateOfBirth;
+    final dobStr = dob != null ? DateFormat('yyyy-MM-dd').format(dob) : 'Unknown';
 
-    final weight = (isMap ? animal['weight'] : animal.weight)?.toString() ?? 'N/A';
-    final purpose = ((isMap ? animal['purpose'] : animal.purpose) ?? 'General').toString().toUpperCase();
-    final marks = ((isMap ? animal['unique_marks'] : animal.uniqueMarks) ?? 'None').toString();
-    final pedigree = ((isMap ? animal['pedigree_type'] : animal.pedigreeType) ?? 'Commercial').toString().toUpperCase();
-    final status = ((isMap ? animal['current_reproductive_status'] : animal.currentReproductiveStatus) ?? 'Open').toString().toUpperCase();
+    final weight = animal.weight?.toString() ?? 'N/A';
+    final purpose = (animal.purpose ?? 'General').toString().toUpperCase();
+    final marks = (animal.uniqueMarks ?? 'None').toString();
+    final pedigree = (animal.pedigreeType ?? 'Commercial').toString().toUpperCase();
+    final status = (animal.currentReproductiveStatus).toString().toUpperCase();
 
     final dateStr = DateFormat('yyyy-MM-dd HH:mm').format(DateTime.now());
 

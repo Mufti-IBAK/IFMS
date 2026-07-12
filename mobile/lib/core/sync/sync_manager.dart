@@ -40,11 +40,26 @@ class SyncManager {
             await (db.delete(db.syncQueue)..where((t) => t.id.equals(item.id))).go();
             successCount++;
           } else {
-            await _incrementAttempts(item, 'Network or Server Error');
-            break;
+            await _incrementAttempts(item, 'Server Error (Non-2xx Status)');
           }
         } catch (e) {
-          await _incrementAttempts(item, e.toString());
+          String errMsg = e.toString();
+          if (e is DioException) {
+            errMsg = e.response?.data?.toString() ?? e.message ?? e.toString();
+          }
+          await _incrementAttempts(item, errMsg);
+          
+          if (e is DioException) {
+            final isNetworkError = e.type == DioExceptionType.connectionTimeout ||
+                e.type == DioExceptionType.sendTimeout ||
+                e.type == DioExceptionType.receiveTimeout ||
+                e.type == DioExceptionType.connectionError ||
+                e.response == null;
+            if (isNetworkError) {
+              // Stop processing queue if we have no network connection
+              break;
+            }
+          }
         }
       }
 
@@ -73,26 +88,16 @@ class SyncManager {
   Future<bool> _processQueueItem(SyncQueueData item) async {
     final data = jsonDecode(item.body);
     Response response;
-    try {
-      if (item.method == 'POST') {
-        response = await apiClient.dio.post(item.endpoint, data: data);
-      } else if (item.method == 'PATCH') {
-        response = await apiClient.dio.patch(item.endpoint, data: data);
-      } else if (item.method == 'DELETE') {
-        response = await apiClient.dio.delete(item.endpoint, data: data);
-      } else {
-        return false;
-      }
-      return response.statusCode == 200 || response.statusCode == 201;
-    } on DioException catch (e) {
-      if (e.response?.statusCode != null &&
-          e.response!.statusCode! >= 400 &&
-          e.response!.statusCode! < 500) {
-        // Discard client errors (validation etc.) to prevent queue block
-        return true;
-      }
+    if (item.method == 'POST') {
+      response = await apiClient.dio.post(item.endpoint, data: data);
+    } else if (item.method == 'PATCH') {
+      response = await apiClient.dio.patch(item.endpoint, data: data);
+    } else if (item.method == 'DELETE') {
+      response = await apiClient.dio.delete(item.endpoint, data: data);
+    } else {
       return false;
     }
+    return response.statusCode == 200 || response.statusCode == 201;
   }
 
   // ─── Inbound Restore (Supabase → local) ───────────────────────────────────

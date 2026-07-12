@@ -45,10 +45,9 @@ class _InventoryScreenState extends State<InventoryScreen> with SingleTickerProv
       final list = await repo.getAnimals();
       final map = <String, String>{};
       for (var a in list) {
-        final isMap = a is Map;
-        final id = ((isMap ? a['id'] : a.id)?.toString() ?? '').toLowerCase();
-        final tag = (isMap ? a['tag_id'] : a.tagId)?.toString() ?? '';
-        final species = ((isMap ? a['species'] : a.species) ?? '').toString().toUpperCase();
+        final id = a.id.toLowerCase();
+        final tag = a.tagId;
+        final species = a.species.toUpperCase();
         if (id.isNotEmpty) {
           map[id] = '$tag ($species)';
         }

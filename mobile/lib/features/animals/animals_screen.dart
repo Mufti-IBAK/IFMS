@@ -71,7 +71,7 @@ class _AnimalsScreenState extends State<AnimalsScreen> {
               if (state is AnimalsLoaded) {
                 return IconButton(
                   onPressed: () => ReportService.generateHerdReport(
-                    state.animals,
+                    state.animals.cast<LocalAnimal>(),
                   ),
                   icon: const Icon(Icons.picture_as_pdf),
                 );
@@ -112,21 +112,20 @@ class _AnimalsScreenState extends State<AnimalsScreen> {
             // Apply search query
             final filtered = state.animals.where((animal) {
               if (_searchQuery.isEmpty) return true;
-              final isMap = animal is Map;
               
-              final tagId = (isMap ? animal['tag_id'] : animal.tagId).toString().toLowerCase();
-              final breed = ((isMap ? animal['breed'] : animal.breed) ?? '').toString().toLowerCase();
-              final species = (isMap ? animal['species'] : animal.species).toString().toLowerCase();
-              final sex = (isMap ? animal['sex'] : animal.sex).toString().toLowerCase();
-              final color = ((isMap ? animal['color'] : animal.color) ?? '').toString().toLowerCase();
-              final marks = ((isMap ? animal['unique_marks'] : animal.uniqueMarks) ?? '').toString().toLowerCase();
-              final purpose = ((isMap ? animal['purpose'] : animal.purpose) ?? '').toString().toLowerCase();
-              final pedigree = ((isMap ? animal['pedigree_type'] : animal.pedigreeType) ?? '').toString().toLowerCase();
-              final status = ((isMap ? animal['status'] : animal.status) ?? '').toString().toLowerCase();
-              final repro = ((isMap ? animal['current_reproductive_status'] : animal.currentReproductiveStatus) ?? '').toString().toLowerCase();
-              final vac = ((isMap ? animal['vaccination_status'] : animal.vaccinationStatus) ?? '').toString().toLowerCase();
-              final dew = ((isMap ? animal['deworming_status'] : animal.dewormingStatus) ?? '').toString().toLowerCase();
-              final weight = (isMap ? animal['weight'] : animal.weight)?.toString().toLowerCase() ?? '';
+              final tagId = animal.tagId.toString().toLowerCase();
+              final breed = (animal.breed ?? '').toString().toLowerCase();
+              final species = animal.species.toString().toLowerCase();
+              final sex = animal.sex.toString().toLowerCase();
+              final color = (animal.color ?? '').toString().toLowerCase();
+              final marks = (animal.uniqueMarks ?? '').toString().toLowerCase();
+              final purpose = (animal.purpose ?? '').toString().toLowerCase();
+              final pedigree = (animal.pedigreeType ?? '').toString().toLowerCase();
+              final status = (animal.status ?? '').toString().toLowerCase();
+              final repro = (animal.currentReproductiveStatus ?? '').toString().toLowerCase();
+              final vac = (animal.vaccinationStatus ?? '').toString().toLowerCase();
+              final dew = (animal.dewormingStatus ?? '').toString().toLowerCase();
+              final weight = animal.weight?.toString().toLowerCase() ?? '';
               
               return tagId.contains(_searchQuery) ||
                   breed.contains(_searchQuery) ||
@@ -146,7 +145,7 @@ class _AnimalsScreenState extends State<AnimalsScreen> {
             // Apply species filter
             final speciesFiltered = filtered.where((animal) {
               if (_selectedFilter == 'all') return true;
-              final sp = (animal is Map ? animal['species'] : animal.species).toString().toLowerCase();
+              final sp = animal.species.toString().toLowerCase();
               String norm = sp;
               if (sp == 'cow') norm = 'bovine';
               if (sp == 'goat') norm = 'caprine';
@@ -156,70 +155,65 @@ class _AnimalsScreenState extends State<AnimalsScreen> {
 
             // Apply sorting
             speciesFiltered.sort((a, b) {
-              final isMapA = a is Map;
-              final isMapB = b is Map;
-              
               dynamic valA;
               dynamic valB;
               
               switch (_sortBy) {
                 case 'tag_id':
-                  valA = (isMapA ? a['tag_id'] : a.tagId)?.toString() ?? '';
-                  valB = (isMapB ? b['tag_id'] : b.tagId)?.toString() ?? '';
+                  valA = a.tagId.toString();
+                  valB = b.tagId.toString();
                   break;
                 case 'sex':
-                  valA = (isMapA ? a['sex'] : a.sex)?.toString() ?? '';
-                  valB = (isMapB ? b['sex'] : b.sex)?.toString() ?? '';
+                  valA = a.sex.toString();
+                  valB = b.sex.toString();
                   break;
                 case 'weight':
-                  valA = (isMapA ? a['weight'] : a.weight) ?? 0.0;
-                  valB = (isMapB ? b['weight'] : b.weight) ?? 0.0;
+                  valA = a.weight ?? 0.0;
+                  valB = b.weight ?? 0.0;
                   break;
                 case 'species':
-                  valA = (isMapA ? a['species'] : a.species)?.toString() ?? '';
-                  valB = (isMapB ? b['species'] : b.species)?.toString() ?? '';
+                  valA = a.species.toString();
+                  valB = b.species.toString();
                   break;
                 case 'breed':
-                  valA = (isMapA ? a['breed'] : a.breed)?.toString() ?? '';
-                  valB = (isMapB ? b['breed'] : b.breed)?.toString() ?? '';
+                  valA = a.breed?.toString() ?? '';
+                  valB = b.breed?.toString() ?? '';
                   break;
                 case 'color':
-                  valA = (isMapA ? a['color'] : a.color)?.toString() ?? '';
-                  valB = (isMapB ? b['color'] : b.color)?.toString() ?? '';
+                  valA = a.color?.toString() ?? '';
+                  valB = b.color?.toString() ?? '';
                   break;
                 case 'unique_marks':
-                  valA = (isMapA ? a['unique_marks'] : a.uniqueMarks)?.toString() ?? '';
-                  valB = (isMapB ? b['unique_marks'] : b.uniqueMarks)?.toString() ?? '';
+                  valA = a.uniqueMarks?.toString() ?? '';
+                  valB = b.uniqueMarks?.toString() ?? '';
                   break;
                 case 'date_of_birth':
-                  final rawA = isMapA ? a['date_of_birth'] : a.dateOfBirth;
-                  final rawB = isMapB ? b['date_of_birth'] : b.dateOfBirth;
-                  valA = rawA is DateTime ? rawA : (rawA != null ? DateTime.tryParse(rawA.toString()) : null);
-                  valB = rawB is DateTime ? rawB : (rawB != null ? DateTime.tryParse(rawB.toString()) : null);
+                  valA = a.dateOfBirth;
+                  valB = b.dateOfBirth;
                   break;
                 case 'status':
-                  valA = (isMapA ? a['status'] : a.status)?.toString() ?? '';
-                  valB = (isMapB ? b['status'] : b.status)?.toString() ?? '';
+                  valA = a.status.toString();
+                  valB = b.status.toString();
                   break;
                 case 'current_reproductive_status':
-                  valA = (isMapA ? a['current_reproductive_status'] : a.currentReproductiveStatus)?.toString() ?? '';
-                  valB = (isMapB ? b['current_reproductive_status'] : b.currentReproductiveStatus)?.toString() ?? '';
+                  valA = a.currentReproductiveStatus.toString();
+                  valB = b.currentReproductiveStatus.toString();
                   break;
                 case 'purpose':
-                  valA = (isMapA ? a['purpose'] : a.purpose)?.toString() ?? '';
-                  valB = (isMapB ? b['purpose'] : b.purpose)?.toString() ?? '';
+                  valA = a.purpose?.toString() ?? '';
+                  valB = b.purpose?.toString() ?? '';
                   break;
                 case 'pedigree_type':
-                  valA = (isMapA ? a['pedigree_type'] : a.pedigreeType)?.toString() ?? '';
-                  valB = (isMapB ? b['pedigree_type'] : b.pedigreeType)?.toString() ?? '';
+                  valA = a.pedigreeType?.toString() ?? '';
+                  valB = b.pedigreeType?.toString() ?? '';
                   break;
                 case 'vaccination_status':
-                  valA = (isMapA ? a['vaccination_status'] : a.vaccinationStatus)?.toString() ?? '';
-                  valB = (isMapB ? b['vaccination_status'] : b.vaccinationStatus)?.toString() ?? '';
+                  valA = a.vaccinationStatus?.toString() ?? '';
+                  valB = b.vaccinationStatus?.toString() ?? '';
                   break;
                 case 'deworming_status':
-                  valA = (isMapA ? a['deworming_status'] : a.dewormingStatus)?.toString() ?? '';
-                  valB = (isMapB ? b['deworming_status'] : b.dewormingStatus)?.toString() ?? '';
+                  valA = a.dewormingStatus?.toString() ?? '';
+                  valB = b.dewormingStatus?.toString() ?? '';
                   break;
                 default:
                   valA = '';
@@ -292,8 +286,7 @@ class _AnimalsScreenState extends State<AnimalsScreen> {
                             if (item is String) {
                               final displayName = _getSpeciesDisplayName(item).toUpperCase();
                               final count = grouped[item]?.where((a) {
-                                final isMap = a is Map;
-                                final status = ((isMap ? a['status'] : a.status) ?? 'active').toString().toLowerCase();
+                                final status = (a.status ?? 'active').toString().toLowerCase();
                                 return status != 'dead';
                               }).length ?? 0;
                               return Padding(
@@ -325,17 +318,16 @@ class _AnimalsScreenState extends State<AnimalsScreen> {
                             }
 
                             // Animal Card UI
-                            final animal = item;
-                            final isMap = animal is Map;
-                            final id = isMap ? animal['id'] : animal.id;
-                            final tagId = isMap ? animal['tag_id'] : animal.tagId;
-                            final species = isMap ? animal['species'] : animal.species;
-                            final sex = isMap ? animal['sex'] : animal.sex;
-                            final breed = (isMap ? animal['breed'] : animal.breed) ?? 'Unknown';
-                            final status = (isMap ? animal['current_reproductive_status'] : animal.currentReproductiveStatus) ?? 'Open';
-                            final liveStatus = (isMap ? animal['status'] : animal.status) ?? 'active';
+                            final animal = item as LocalAnimal;
+                            final id = animal.id;
+                            final tagId = animal.tagId;
+                            final species = animal.species;
+                            final sex = animal.sex;
+                            final breed = animal.breed ?? 'Unknown';
+                            final status = animal.currentReproductiveStatus;
+                            final liveStatus = animal.status;
                             final isDead = liveStatus.toString().toLowerCase() == 'dead';
-                            final imagePath = (isMap ? animal['image_path'] : animal.imagePath) as String?;
+                            final imagePath = animal.imagePath;
 
                             return Opacity(
                               opacity: isDead ? 0.65 : 1.0,
@@ -466,7 +458,7 @@ class _AnimalsScreenState extends State<AnimalsScreen> {
                                             final lowerSpecies = species.toString().toLowerCase();
                                             final lowerSex = sex.toString().toLowerCase();
                                             final lowerRepro = status.toString().toLowerCase();
-                                            final lowerPurpose = (isMap ? animal['purpose'] : animal.purpose)?.toString().toLowerCase() ?? '';
+                                            final lowerPurpose = animal.purpose?.toString().toLowerCase() ?? '';
 
                                             String line1 = '';
                                             String line2 = '';
@@ -601,16 +593,16 @@ class _AnimalsScreenState extends State<AnimalsScreen> {
     );
   }
 
-  Widget _buildFilterChips(List<dynamic> animals) {
+  Widget _buildFilterChips(List<dynamic> animalsList) {
+    final List<LocalAnimal> animals = animalsList.cast<LocalAnimal>();
     final activeAnimals = animals.where((a) {
-      final isMap = a is Map;
-      final status = ((isMap ? a['status'] : a.status) ?? 'active').toString().toLowerCase();
+      final status = a.status.toLowerCase();
       return status != 'dead';
     }).toList();
 
     final Map<String, int> speciesCounts = {};
     for (var a in activeAnimals) {
-      final sp = (a is Map ? a['species'] : a.species).toString().toLowerCase();
+      final sp = a.species.toString().toLowerCase();
       String norm = sp;
       if (sp == 'cow') norm = 'bovine';
       if (sp == 'goat') norm = 'caprine';
@@ -749,6 +741,7 @@ class _AnimalsScreenState extends State<AnimalsScreen> {
     final marksController = TextEditingController();
 
     DateTime? selectedDob;
+    bool dobUnknown = false;
     String selectedSpecies = 'bovine';
     String selectedSex = 'female';
     String selectedPedigree = 'pure';
@@ -1001,7 +994,7 @@ class _AnimalsScreenState extends State<AnimalsScreen> {
                                   const SizedBox(height: 12),
                                   
                                   buildInputField(
-                                    label: 'Date of Birth *',
+                                                                    label: 'Date of Birth *',
                                     child: InkWell(
                                       onTap: () async {
                                         final picked = await showDatePicker(
@@ -1011,7 +1004,10 @@ class _AnimalsScreenState extends State<AnimalsScreen> {
                                           lastDate: DateTime.now(),
                                         );
                                         if (picked != null) {
-                                          setState(() => selectedDob = picked);
+                                          setState(() {
+                                            selectedDob = picked;
+                                            dobUnknown = false;
+                                          });
                                         }
                                       },
                                       child: Container(
@@ -1024,11 +1020,13 @@ class _AnimalsScreenState extends State<AnimalsScreen> {
                                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                           children: [
                                             Text(
-                                              selectedDob == null
-                                                  ? 'Choose Date'
-                                                  : selectedDob!.toLocal().toString().split(' ')[0],
+                                              dobUnknown
+                                                  ? 'Not Known'
+                                                  : (selectedDob == null
+                                                      ? 'Choose Date'
+                                                      : selectedDob!.toLocal().toString().split(' ')[0]),
                                               style: TextStyle(
-                                                color: selectedDob == null ? AppColors.outline : AppColors.onSurface,
+                                                color: (selectedDob == null && !dobUnknown) ? AppColors.outline : AppColors.onSurface,
                                               ),
                                             ),
                                             const Icon(Icons.calendar_today, size: 18, color: AppColors.primary),
@@ -1044,13 +1042,16 @@ class _AnimalsScreenState extends State<AnimalsScreen> {
                                         height: 24,
                                         width: 24,
                                         child: Checkbox(
-                                          value: selectedDob == null,
+                                          value: dobUnknown,
                                           onChanged: (val) {
-                                            if (val == true) {
-                                              setState(() => selectedDob = null);
-                                            } else {
-                                              setState(() => selectedDob = DateTime.now().subtract(const Duration(days: 365)));
-                                            }
+                                            setState(() {
+                                              dobUnknown = val ?? false;
+                                              if (dobUnknown) {
+                                                selectedDob = null;
+                                              } else {
+                                                selectedDob = DateTime.now().subtract(const Duration(days: 365));
+                                              }
+                                            });
                                           },
                                         ),
                                       ),
@@ -1224,13 +1225,13 @@ class _AnimalsScreenState extends State<AnimalsScreen> {
                               );
                               return;
                             }
-                            if (selectedDob == null) {
+                            if (selectedDob == null && !dobUnknown) {
                               ScaffoldMessenger.of(context).showSnackBar(
                                 const SnackBar(content: Text('Date of birth is required!')),
                               );
                               return;
                             }
-                            final dobStr = selectedDob!.toIso8601String().split('T')[0];
+                            final dobStr = selectedDob != null ? selectedDob!.toIso8601String().split('T')[0] : null;
                             final newId = const Uuid().v4();
                             
                             BlocProvider.of<AnimalsBloc>(context).add(AddAnimal({
@@ -1272,29 +1273,24 @@ class _AnimalsScreenState extends State<AnimalsScreen> {
     );
   }
 
-  void _showEditAnimalSheet(BuildContext context, dynamic animal) {
-    final isMap = animal is Map;
-    final id = isMap ? animal['id'] : animal.id;
+  void _showEditAnimalSheet(BuildContext context, dynamic animalData) {
+    final animal = animalData as LocalAnimal;
+    final id = animal.id;
     
-    final tagController = TextEditingController(text: (isMap ? animal['tag_id'] : animal.tagId) ?? '');
-    final breedController = TextEditingController(text: (isMap ? animal['breed'] : animal.breed) ?? '');
-    final weightController = TextEditingController(text: (isMap ? animal['weight'] : animal.weight)?.toString() ?? '');
-    final colorController = TextEditingController(text: (isMap ? animal['color'] : animal.color) ?? '');
-    final marksController = TextEditingController(text: (isMap ? animal['unique_marks'] : animal.uniqueMarks) ?? '');
+    final tagController = TextEditingController(text: animal.tagId);
+    final breedController = TextEditingController(text: animal.breed ?? '');
+    final weightController = TextEditingController(text: animal.weight?.toString() ?? '');
+    final colorController = TextEditingController(text: animal.color ?? '');
+    final marksController = TextEditingController(text: animal.uniqueMarks ?? '');
 
-    
-    DateTime? selectedDob;
-    final dobRaw = isMap ? animal['date_of_birth'] : animal.dateOfBirth;
-    if (dobRaw != null) {
-      selectedDob = dobRaw is DateTime ? dobRaw : DateTime.tryParse(dobRaw.toString());
-    }
+    DateTime? selectedDob = animal.dateOfBirth;
 
-    String selectedSpecies = (isMap ? animal['species'] : animal.species) ?? 'bovine';
-    String selectedSex = (isMap ? animal['sex'] : animal.sex) ?? 'female';
-    String selectedPedigree = (isMap ? animal['pedigree_type'] : animal.pedigreeType) ?? 'pure';
-    String selectedPurpose = (isMap ? animal['purpose'] : animal.purpose) ?? 'milk';
-    String selectedReproductive = (isMap ? animal['current_reproductive_status'] : animal.currentReproductiveStatus) ?? 'open';
-    String? selectedImagePath = isMap ? animal['image_path'] : animal.imagePath;
+    String selectedSpecies = animal.species;
+    String selectedSex = animal.sex;
+    String selectedPedigree = animal.pedigreeType ?? 'pure';
+    String selectedPurpose = animal.purpose ?? 'milk';
+    String selectedReproductive = animal.currentReproductiveStatus;
+    String? selectedImagePath = animal.imagePath;
 
     showModalBottomSheet(
       context: context,

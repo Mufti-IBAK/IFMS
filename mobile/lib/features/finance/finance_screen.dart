@@ -54,10 +54,9 @@ class _FinanceScreenState extends State<FinanceScreen> with SingleTickerProvider
       if (mounted) {
         setState(() {
           _animalsList = animals.map((a) {
-            final isMap = a is Map;
-            final id = (isMap ? a['id'] : a.id)?.toString() ?? '';
-            final tag = (isMap ? a['tag_id'] : a.tagId)?.toString() ?? 'Unknown';
-            final species = (isMap ? a['species'] : a.species)?.toString() ?? 'Cow';
+            final id = a.id;
+            final tag = a.tagId;
+            final species = a.species;
             return _InventoryCachedItem(id, '$tag ($species)');
           }).toList();
 

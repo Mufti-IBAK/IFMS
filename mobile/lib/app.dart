@@ -347,9 +347,8 @@ class HomeScreen extends StatelessWidget {
                 BlocBuilder<AnimalsBloc, AnimalsState>(
                   builder: (context, state) {
                     final count = state is AnimalsLoaded 
-                        ? state.animals.where((a) {
-                            final isMap = a is Map;
-                            final status = ((isMap ? a['status'] : a.status) ?? 'active').toString().toLowerCase();
+                        ? state.animals.cast<LocalAnimal>().where((a) {
+                            final status = a.status.toLowerCase();
                             return status != 'dead';
                           }).length
                         : 0;

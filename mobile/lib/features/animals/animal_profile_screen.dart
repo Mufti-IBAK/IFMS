@@ -64,26 +64,25 @@ class _AnimalProfileScreenState extends State<AnimalProfileScreen> with SingleTi
   void initState() {
     super.initState();
     // Resolve dynamic properties
-    final isMap = widget.animal is Map;
-    _id = (isMap ? widget.animal['id'] : widget.animal.id).toString();
-    _tagId = (isMap ? widget.animal['tag_id'] : widget.animal.tagId).toString();
-    _species = (isMap ? widget.animal['species'] : widget.animal.species).toString();
-    _sex = (isMap ? widget.animal['sex'] : widget.animal.sex).toString();
+    final animal = widget.animal as LocalAnimal;
+    _id = animal.id.toString();
+    _tagId = animal.tagId.toString();
+    _species = animal.species.toString();
+    _sex = animal.sex.toString();
     
-    final rawDob = isMap ? widget.animal['date_of_birth'] : widget.animal.dateOfBirth;
-    _dateOfBirth = rawDob == null ? null : (rawDob is DateTime ? rawDob : DateTime.parse(rawDob.toString()));
+    _dateOfBirth = animal.dateOfBirth;
     
-    _breed = ((isMap ? widget.animal['breed'] : widget.animal.breed) ?? 'Unknown').toString();
-    _status = ((isMap ? widget.animal['current_reproductive_status'] : widget.animal.currentReproductiveStatus) ?? 'Open').toString();
-    _liveStatus = ((isMap ? widget.animal['status'] : widget.animal.status) ?? 'active').toString();
-    _imagePath = (isMap ? widget.animal['image_path'] : widget.animal.imagePath) as String?;
-    _color = (isMap ? widget.animal['color'] : widget.animal.color) as String?;
-    _uniqueMarks = (isMap ? widget.animal['unique_marks'] : widget.animal.uniqueMarks) as String?;
-    _purpose = (isMap ? widget.animal['purpose'] : widget.animal.purpose) as String?;
-    _pedigreeType = (isMap ? widget.animal['pedigree_type'] : widget.animal.pedigreeType) as String?;
-    _vaccinationStatus = (isMap ? widget.animal['vaccination_status'] : widget.animal.vaccinationStatus) as String?;
-    _dewormingStatus = (isMap ? widget.animal['deworming_status'] : widget.animal.dewormingStatus) as String?;
-    _weight = isMap ? widget.animal['weight'] : widget.animal.weight;
+    _breed = (animal.breed ?? 'Unknown').toString();
+    _status = (animal.currentReproductiveStatus).toString();
+    _liveStatus = animal.status.toString();
+    _imagePath = animal.imagePath;
+    _color = animal.color;
+    _uniqueMarks = animal.uniqueMarks;
+    _purpose = animal.purpose;
+    _pedigreeType = animal.pedigreeType;
+    _vaccinationStatus = animal.vaccinationStatus;
+    _dewormingStatus = animal.dewormingStatus;
+    _weight = animal.weight;
 
     final isCow = _species.toLowerCase() == 'cow' || _species.toLowerCase() == 'bovine';
     final showProduction = isCow && _sex.toLowerCase() == 'female';

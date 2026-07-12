@@ -12,15 +12,13 @@ class StaffRepository {
 
   StaffRepository(this.apiClient, this.db);
 
-  Future<List<dynamic>> getStaff() async {
+  Future<List<LocalStaffData>> getStaff() async {
     try {
       final response = await apiClient.dio.get('/staff');
       final list = response.data as List;
       await _syncStaffToLocal(list);
-      return list;
-    } catch (e) {
-      return await db.select(db.localStaff).get();
-    }
+    } catch (_) {}
+    return await db.select(db.localStaff).get();
   }
 
   Future<void> _syncStaffToLocal(List<dynamic> remoteList) async {

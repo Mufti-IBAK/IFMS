@@ -2,6 +2,7 @@ import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
 import 'package:intl/intl.dart';
+import '../database/local_db.dart';
 
 class PayrollPdfService {
   static Future<void> generatePayrollPdf({
@@ -108,13 +109,13 @@ class PayrollPdfService {
       },
       headers: ['Name', 'Role', 'Rating', 'Base Salary', 'Deductions', 'Net Pay'],
       data: staff.map((s) {
-        final isMap = s is Map;
-        final name = isMap ? s['name'] : s.name;
-        final role = isMap ? s['role'] : s.role;
-        final rating = isMap ? s['performance_rating'] : s.performanceRating;
-        final base = isMap ? s['base_salary'] : s.baseSalary;
-        final net = isMap ? (s['final_payout'] ?? base) : base;
-        final deductions = base - net;
+        final member = s as LocalStaffData;
+        final name = member.name;
+        final role = member.role;
+        final rating = member.performanceRating;
+        final base = member.baseSalary;
+        final net = base;
+        const deductions = 0.0;
         return [
           name.toString(),
           role.toString(),

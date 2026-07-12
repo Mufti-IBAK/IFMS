@@ -11,18 +11,13 @@ class AnimalsRepository {
 
   AnimalsRepository(this.apiClient, this.db);
 
-  Future<List<dynamic>> getAnimals() async {
+  Future<List<LocalAnimal>> getAnimals() async {
     try {
       final response = await apiClient.dio.get('/animals');
       final list = response.data as List;
-      
-      // Update local cache in background
-      _updateLocalCache(list);
-      
-      return list;
-    } catch (e) {
-      return await db.select(db.localAnimals).get();
-    }
+      await _updateLocalCache(list);
+    } catch (_) {}
+    return await db.select(db.localAnimals).get();
   }
 
   Future<void> addAnimal(Map<String, dynamic> animalData) async {

@@ -5,33 +5,18 @@ import '../../core/database/local_db.dart';
 import '../../core/network/api_client.dart';
 
 class HatcheryRepository {
-  final LocalDatabase db;
   final ApiClient apiClient;
+  final LocalDatabase db;
 
-  HatcheryRepository(this.db, this.apiClient);
+  HatcheryRepository(this.apiClient, this.db);
 
-  Future<List<dynamic>> getBatches() async {
+  Future<List<LocalHatcheryBatche>> getBatches() async {
     try {
       final response = await apiClient.dio.get('/hatchery/batches');
       final list = response.data as List;
       await _updateBatchesCache(list);
-      return list;
-    } catch (e) {
-      final cached = await db.select(db.localHatcheryBatches).get();
-      return cached.map((c) => {
-        'id': c.id,
-        'egg_source': c.eggSource,
-        'egg_count': c.eggCount,
-        'breed': c.breed,
-        'set_date': c.setDate.toIso8601String().split('T')[0],
-        'expected_hatch_date': c.expectedHatchDate.toIso8601String().split('T')[0],
-        'fertile_eggs': c.fertileEggs,
-        'hatched_chicks': c.hatchedChicks,
-        'failed_eggs': c.failedEggs,
-        'initial_egg_cost': c.initialEggCost,
-        'status': c.status,
-      }).toList();
-    }
+    } catch (_) {}
+    return await db.select(db.localHatcheryBatches).get();
   }
 
   Future<void> _updateBatchesCache(List<dynamic> batches) async {

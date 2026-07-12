@@ -55,12 +55,34 @@ class ApiClient {
           }
         }
 
+        bool isUuid(String s) {
+          return s.length == 36 && s.contains('-');
+        }
+
         if (options.method == 'PATCH' || options.method == 'DELETE') {
           final segments = path.split('/');
           if (segments.length > 2) {
-             final id = segments.last;
-             options.queryParameters['id'] = 'eq.$id';
-             path = segments.sublist(0, segments.length - 1).join('/');
+            String id;
+            String? action;
+            if (segments.length > 3 && !isUuid(segments.last) && isUuid(segments[segments.length - 2])) {
+              id = segments[segments.length - 2];
+              action = segments.last;
+              path = segments.sublist(0, segments.length - 2).join('/');
+            } else {
+              id = segments.last;
+              path = segments.sublist(0, segments.length - 1).join('/');
+            }
+            options.queryParameters['id'] = 'eq.$id';
+
+            if (action == 'reconcile') {
+              options.data = {'is_reconciled': true};
+            } else if (action == 'resolve') {
+              options.data ??= {};
+              if (options.data is Map<String, dynamic>) {
+                (options.data as Map<String, dynamic>)['is_resolved'] = true;
+                (options.data as Map<String, dynamic>)['resolved_at'] = DateTime.now().toIso8601String();
+              }
+            }
           }
         }
         
@@ -88,6 +110,8 @@ class ApiClient {
            } else {
              path = '/hatchery_batches';
            }
+        } else if (path.startsWith('/staff/queries')) {
+           path = '/staff_queries';
         } else if (path.startsWith('/staff')) {
            path = '/staff';
         } else if (path.startsWith('/tasks')) {
@@ -109,6 +133,8 @@ class ApiClient {
               path.startsWith('/hatchery_events') ||
               path.startsWith('/poultry_events') ||
               path.startsWith('/feed_items') ||
+              path.startsWith('/animals') ||
+              path.startsWith('/staff') ||
               path.startsWith('/animal_events')) {
             data['created_by'] ??= defaultUserId;
           } else if (path.startsWith('/tasks')) {
