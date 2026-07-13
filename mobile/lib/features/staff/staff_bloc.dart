@@ -63,7 +63,10 @@ class StaffBloc extends Bloc<StaffEvent, StaffState> {
 
   StaffBloc(this.repository) : super(StaffLoading()) {
     on<LoadStaffData>((event, emit) async {
-      emit(StaffLoading());
+      final currentState = state;
+      if (currentState is! StaffLoaded) {
+        emit(StaffLoading());
+      }
       try {
         final results = await Future.wait([
           repository.getStaff(),
@@ -76,7 +79,9 @@ class StaffBloc extends Bloc<StaffEvent, StaffState> {
           results[2] as Map<String, dynamic>,
         ));
       } catch (e) {
-        emit(StaffError(e.toString()));
+        if (currentState is! StaffLoaded) {
+          emit(StaffError(e.toString()));
+        }
       }
     });
 
@@ -126,7 +131,6 @@ class StaffBloc extends Bloc<StaffEvent, StaffState> {
     });
 
     on<ProcessPayroll>((event, emit) async {
-      emit(StaffLoading());
       try {
         await repository.processPayroll(event.month);
         add(LoadStaffData());

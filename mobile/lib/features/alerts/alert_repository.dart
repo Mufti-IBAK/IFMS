@@ -101,7 +101,6 @@ class AlertRepository {
 
   Future<void> _syncAlerts(List<dynamic> remoteData) async {
     await db.transaction(() async {
-      await db.delete(db.localAlerts).go();
       await db.batch((batch) {
         batch.insertAll(
           db.localAlerts,

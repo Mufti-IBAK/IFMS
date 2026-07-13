@@ -21,12 +21,17 @@ class AlertBloc extends Bloc<AlertEvent, AlertState> {
 
   AlertBloc(this.repository) : super(AlertLoading()) {
     on<LoadAlerts>((event, emit) async {
-      emit(AlertLoading());
+      final currentState = state;
+      if (currentState is! AlertLoaded) {
+        emit(AlertLoading());
+      }
       try {
         final alerts = await repository.getAlerts();
         emit(AlertLoaded(alerts));
       } catch (e) {
-        emit(AlertError(e.toString()));
+        if (currentState is! AlertLoaded) {
+          emit(AlertError(e.toString()));
+        }
       }
     });
   }

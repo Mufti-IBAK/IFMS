@@ -11,6 +11,11 @@ class UpdateTaskStatus extends TasksEvent {
   final String status;
   UpdateTaskStatus(this.taskId, this.status);
 }
+class CreateTask extends TasksEvent {
+  final Map<String, dynamic> taskData;
+  final bool isPublic;
+  CreateTask(this.taskData, {required this.isPublic});
+}
 
 // STATES
 abstract class TasksState {}
@@ -31,7 +36,10 @@ class TasksBloc extends Bloc<TasksEvent, TasksState> {
 
   TasksBloc(this.repository) : super(TasksLoading()) {
     on<LoadTasks>((event, emit) async {
-      emit(TasksLoading());
+      final currentState = state;
+      if (currentState is! TasksLoaded) {
+        emit(TasksLoading());
+      }
       try {
         final tasks = await repository.getTasks();
         
@@ -40,7 +48,9 @@ class TasksBloc extends Bloc<TasksEvent, TasksState> {
         
         emit(TasksLoaded(tasks));
       } catch (e) {
-        emit(TasksError('Failed to load tasks: ${e.toString()}'));
+        if (currentState is! TasksLoaded) {
+          emit(TasksError('Failed to load tasks: ${e.toString()}'));
+        }
       }
     });
 
@@ -50,6 +60,19 @@ class TasksBloc extends Bloc<TasksEvent, TasksState> {
         add(LoadTasks());
       } catch (e) {
         emit(TasksError('Failed to update task: ${e.toString()}'));
+      }
+    });
+
+    on<CreateTask>((event, emit) async {
+      try {
+        await repository.createTask(event.taskData, isPublic: event.isPublic);
+        sl<NotificationService>().showLocalNotification(
+          'New Farm Task',
+          'Task "${event.taskData['title']}" successfully added.',
+        );
+        add(LoadTasks());
+      } catch (e) {
+        emit(TasksError('Failed to create task: ${e.toString()}'));
       }
     });
   }

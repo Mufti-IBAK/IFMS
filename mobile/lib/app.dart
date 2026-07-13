@@ -325,8 +325,7 @@ class HomeScreen extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _buildSyncStatusBanner(),
-            const SizedBox(height: 24),
+            const SizedBox(height: 12),
             Text(
               'MANAGEMENT LAYERS',
               style: Theme.of(context).textTheme.labelLarge?.copyWith(
@@ -537,41 +536,7 @@ class HomeScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildSyncStatusBanner() {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      decoration: BoxDecoration(
-        color: AppColors.secondaryContainer.withValues(alpha: 0.3),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.secondaryContainer),
-      ),
-      child: const Row(
-        children: [
-          Icon(Icons.check_circle, color: AppColors.secondary, size: 20),
-          SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'System Synchronized',
-                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
-                ),
-                Text(
-                  'Ready to work offline. Actions will queue.',
-                  style: TextStyle(fontSize: 12),
-                ),
-              ],
-            ),
-          ),
-          Text(
-            'OK',
-            style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.secondary),
-          ),
-        ],
-      ),
-    );
-  }
+
 
   Widget _buildFinancialOverview(BuildContext context) {
     return BlocBuilder<FinanceBloc, FinanceState>(

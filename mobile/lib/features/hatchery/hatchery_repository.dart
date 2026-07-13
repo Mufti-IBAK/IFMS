@@ -21,27 +21,6 @@ class HatcheryRepository {
 
   Future<void> _updateBatchesCache(List<dynamic> batches) async {
     await db.transaction(() async {
-      final syncItems = await (db.select(db.syncQueue)
-            ..where((t) => t.endpoint.equals('/hatchery/batch') & t.method.equals('POST')))
-          .get();
-      final pendingIds = syncItems.map((item) {
-        try {
-          final data = jsonDecode(item.body);
-          return data['id'] as String?;
-        } catch (_) {
-          return null;
-        }
-      }).whereType<String>().toList();
-
-      final serverIds = batches.map((b) => b['id'] as String).toList();
-      final excludeIds = [...serverIds, ...pendingIds];
-
-      if (excludeIds.isNotEmpty) {
-        await (db.delete(db.localHatcheryBatches)..where((t) => t.id.isNotIn(excludeIds))).go();
-      } else {
-        await db.delete(db.localHatcheryBatches).go();
-      }
-
       await db.batch((batch) {
         batch.insertAll(
           db.localHatcheryBatches,
@@ -69,7 +48,9 @@ class HatcheryRepository {
     batchData['id'] = uuid;
 
     final setDt = DateTime.parse(batchData['set_date']);
-    final expectedDt = setDt.add(const Duration(days: 21));
+    final expectedDt = batchData['expected_hatch_date'] != null
+        ? DateTime.parse(batchData['expected_hatch_date'])
+        : setDt.add(const Duration(days: 21));
 
     // Update local cache optimistically
     await db.into(db.localHatcheryBatches).insertOnConflictUpdate(LocalHatcheryBatchesCompanion.insert(

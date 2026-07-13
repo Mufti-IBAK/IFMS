@@ -23,27 +23,6 @@ class StaffRepository {
 
   Future<void> _syncStaffToLocal(List<dynamic> remoteList) async {
     await db.transaction(() async {
-      final syncItems = await (db.select(db.syncQueue)
-            ..where((t) => t.endpoint.equals('/staff') & t.method.equals('POST')))
-          .get();
-      final pendingIds = syncItems.map((item) {
-        try {
-          final data = jsonDecode(item.body);
-          return data['id'] as String?;
-        } catch (_) {
-          return null;
-        }
-      }).whereType<String>().toList();
-
-      final serverIds = remoteList.map((s) => s['id'] as String).toList();
-      final excludeIds = [...serverIds, ...pendingIds];
-
-      if (excludeIds.isNotEmpty) {
-        await (db.delete(db.localStaff)..where((t) => t.id.isNotIn(excludeIds))).go();
-      } else {
-        await db.delete(db.localStaff).go();
-      }
-
       await db.batch((batch) {
         batch.insertAll(
           db.localStaff,

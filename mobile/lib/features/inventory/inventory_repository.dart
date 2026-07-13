@@ -43,27 +43,6 @@ class InventoryRepository {
 
   Future<void> _updateItemsCache(List<dynamic> items) async {
     await db.transaction(() async {
-      final syncItems = await (db.select(db.syncQueue)
-            ..where((t) => t.endpoint.equals('/inventory/items') & t.method.equals('POST')))
-          .get();
-      final pendingIds = syncItems.map((item) {
-        try {
-          final data = jsonDecode(item.body);
-          return data['id'] as String?;
-        } catch (_) {
-          return null;
-        }
-      }).whereType<String>().toList();
-
-      final serverIds = items.map((item) => item['id'] as String).toList();
-      final excludeIds = [...serverIds, ...pendingIds];
-
-      if (excludeIds.isNotEmpty) {
-        await (db.delete(db.localFeedItems)..where((t) => t.id.isNotIn(excludeIds))).go();
-      } else {
-        await db.delete(db.localFeedItems).go();
-      }
-
       await db.batch((batch) {
         batch.insertAll(
           db.localFeedItems,

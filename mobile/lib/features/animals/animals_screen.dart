@@ -742,6 +742,8 @@ class _AnimalsScreenState extends State<AnimalsScreen> {
 
     DateTime? selectedDob;
     bool dobUnknown = false;
+    final estimatedAgeController = TextEditingController(text: '1');
+    String estimatedAgeUnit = 'Years';
     String selectedSpecies = 'bovine';
     String selectedSex = 'female';
     String selectedPedigree = 'pure';
@@ -794,7 +796,11 @@ class _AnimalsScreenState extends State<AnimalsScreen> {
             }
             return Column(
               crossAxisAlignment: CrossAxisAlignment.start,
-              children: [w1, w2],
+              children: [
+                w1,
+                const SizedBox(height: 12),
+                w2,
+              ],
             );
           }
 
@@ -1059,6 +1065,50 @@ class _AnimalsScreenState extends State<AnimalsScreen> {
                                       const Text('Date of birth unknown / unrecorded', style: TextStyle(fontSize: 13, color: AppColors.onSurfaceVariant)),
                                     ],
                                   ),
+                                  if (dobUnknown) ...[
+                                    const SizedBox(height: 12),
+                                    Row(
+                                      children: [
+                                        Expanded(
+                                          flex: 2,
+                                          child: buildInputField(
+                                            label: 'Estimated Age *',
+                                            child: TextField(
+                                              controller: estimatedAgeController,
+                                              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                                              decoration: const InputDecoration(
+                                                hintText: 'e.g. 2',
+                                                contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                                              ),
+                                            ),
+                                          ),
+                                        ),
+                                        const SizedBox(width: 12),
+                                        Expanded(
+                                          flex: 2,
+                                          child: buildInputField(
+                                            label: 'Age Unit *',
+                                            child: DropdownButtonFormField<String>(
+                                              value: estimatedAgeUnit,
+                                              items: const [
+                                                DropdownMenuItem(value: 'Years', child: Text('Years')),
+                                                DropdownMenuItem(value: 'Months', child: Text('Months')),
+                                                DropdownMenuItem(value: 'Weeks', child: Text('Weeks')),
+                                                DropdownMenuItem(value: 'Days', child: Text('Days')),
+                                              ],
+                                              onChanged: (val) {
+                                                if (val != null) {
+                                                  setState(() {
+                                                    estimatedAgeUnit = val;
+                                                  });
+                                                }
+                                              },
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ],
                                   
                                   buildRowIfResponsive(
                                     buildInputField(
@@ -1225,13 +1275,28 @@ class _AnimalsScreenState extends State<AnimalsScreen> {
                               );
                               return;
                             }
-                            if (selectedDob == null && !dobUnknown) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(content: Text('Date of birth is required!')),
-                              );
-                              return;
+                            DateTime finalDob;
+                            if (dobUnknown) {
+                              final val = double.tryParse(estimatedAgeController.text) ?? 1.0;
+                              if (estimatedAgeUnit == 'Years') {
+                                finalDob = DateTime.now().subtract(Duration(days: (val * 365.25).round()));
+                              } else if (estimatedAgeUnit == 'Months') {
+                                finalDob = DateTime.now().subtract(Duration(days: (val * 30.4).round()));
+                              } else if (estimatedAgeUnit == 'Weeks') {
+                                finalDob = DateTime.now().subtract(Duration(days: (val * 7).round()));
+                              } else {
+                                finalDob = DateTime.now().subtract(Duration(days: val.round()));
+                              }
+                            } else {
+                              if (selectedDob == null) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(content: Text('Date of birth is required!')),
+                                );
+                                return;
+                              }
+                              finalDob = selectedDob!;
                             }
-                            final dobStr = selectedDob != null ? selectedDob!.toIso8601String().split('T')[0] : null;
+                            final dobStr = finalDob.toIso8601String().split('T')[0];
                             final newId = const Uuid().v4();
                             
                             BlocProvider.of<AnimalsBloc>(context).add(AddAnimal({
@@ -1284,6 +1349,9 @@ class _AnimalsScreenState extends State<AnimalsScreen> {
     final marksController = TextEditingController(text: animal.uniqueMarks ?? '');
 
     DateTime? selectedDob = animal.dateOfBirth;
+    bool dobUnknown = false;
+    final estimatedAgeController = TextEditingController(text: '1');
+    String estimatedAgeUnit = 'Years';
 
     String selectedSpecies = animal.species;
     String selectedSex = animal.sex;
@@ -1335,7 +1403,11 @@ class _AnimalsScreenState extends State<AnimalsScreen> {
             }
             return Column(
               crossAxisAlignment: CrossAxisAlignment.start,
-              children: [w1, w2],
+              children: [
+                w1,
+                const SizedBox(height: 12),
+                w2,
+              ],
             );
           }
 
@@ -1545,11 +1617,13 @@ class _AnimalsScreenState extends State<AnimalsScreen> {
                                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                           children: [
                                             Text(
-                                              selectedDob == null
-                                                  ? 'Choose Date'
-                                                  : selectedDob!.toLocal().toString().split(' ')[0],
+                                              dobUnknown
+                                                  ? 'Not Known'
+                                                  : (selectedDob == null
+                                                      ? 'Choose Date'
+                                                      : selectedDob!.toLocal().toString().split(' ')[0]),
                                               style: TextStyle(
-                                                color: selectedDob == null ? AppColors.outline : AppColors.onSurface,
+                                                color: (selectedDob == null && !dobUnknown) ? AppColors.outline : AppColors.onSurface,
                                               ),
                                             ),
                                             const Icon(Icons.calendar_today, size: 18, color: AppColors.primary),
@@ -1558,6 +1632,74 @@ class _AnimalsScreenState extends State<AnimalsScreen> {
                                       ),
                                     ),
                                   ),
+                                  const SizedBox(height: 8),
+                                  Row(
+                                    children: [
+                                      SizedBox(
+                                        height: 24,
+                                        width: 24,
+                                        child: Checkbox(
+                                          value: dobUnknown,
+                                          onChanged: (val) {
+                                            setState(() {
+                                              dobUnknown = val ?? false;
+                                              if (dobUnknown) {
+                                                selectedDob = null;
+                                              } else {
+                                                selectedDob = DateTime.now().subtract(const Duration(days: 365));
+                                              }
+                                            });
+                                          },
+                                        ),
+                                      ),
+                                      const SizedBox(width: 8),
+                                      const Text('Date of birth unknown / unrecorded', style: TextStyle(fontSize: 13, color: AppColors.onSurfaceVariant)),
+                                    ],
+                                  ),
+                                  if (dobUnknown) ...[
+                                    const SizedBox(height: 12),
+                                    Row(
+                                      children: [
+                                        Expanded(
+                                          flex: 2,
+                                          child: buildInputField(
+                                            label: 'Estimated Age *',
+                                            child: TextField(
+                                              controller: estimatedAgeController,
+                                              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                                              decoration: const InputDecoration(
+                                                hintText: 'e.g. 2',
+                                                contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                                              ),
+                                            ),
+                                          ),
+                                        ),
+                                        const SizedBox(width: 12),
+                                        Expanded(
+                                          flex: 2,
+                                          child: buildInputField(
+                                            label: 'Age Unit *',
+                                            child: DropdownButtonFormField<String>(
+                                              value: estimatedAgeUnit,
+                                              items: const [
+                                                DropdownMenuItem(value: 'Years', child: Text('Years')),
+                                                DropdownMenuItem(value: 'Months', child: Text('Months')),
+                                                DropdownMenuItem(value: 'Weeks', child: Text('Weeks')),
+                                                DropdownMenuItem(value: 'Days', child: Text('Days')),
+                                              ],
+                                              onChanged: (val) {
+                                                if (val != null) {
+                                                  setState(() {
+                                                    estimatedAgeUnit = val;
+                                                  });
+                                                }
+                                              },
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ],
                                   buildRowIfResponsive(
                                     buildInputField(
                                       label: 'Weight (kg)',
@@ -1812,7 +1954,28 @@ class _AnimalsScreenState extends State<AnimalsScreen> {
                         child: ElevatedButton(
                           onPressed: () {
                             if (tagController.text.isNotEmpty) {
-                              final dobStr = selectedDob?.toIso8601String().split('T')[0];
+                              DateTime finalDob;
+                              if (dobUnknown) {
+                                final val = double.tryParse(estimatedAgeController.text) ?? 1.0;
+                                if (estimatedAgeUnit == 'Years') {
+                                  finalDob = DateTime.now().subtract(Duration(days: (val * 365.25).round()));
+                                } else if (estimatedAgeUnit == 'Months') {
+                                  finalDob = DateTime.now().subtract(Duration(days: (val * 30.4).round()));
+                                } else if (estimatedAgeUnit == 'Weeks') {
+                                  finalDob = DateTime.now().subtract(Duration(days: (val * 7).round()));
+                                } else {
+                                  finalDob = DateTime.now().subtract(Duration(days: val.round()));
+                                }
+                              } else {
+                                if (selectedDob == null) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(content: Text('Date of birth is required!')),
+                                  );
+                                  return;
+                                }
+                                finalDob = selectedDob!;
+                              }
+                              final dobStr = finalDob.toIso8601String().split('T')[0];
                               
                               BlocProvider.of<AnimalsBloc>(context).add(UpdateAnimal(id, {
                                 'tag_id': tagController.text.trim(),

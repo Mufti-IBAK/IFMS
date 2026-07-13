@@ -67,7 +67,10 @@ class FinanceBloc extends Bloc<FinanceEvent, FinanceState> {
   }
 
   Future<void> _onLoad(LoadFinanceData event, Emitter<FinanceState> emit) async {
-    emit(FinanceLoading());
+    final currentState = state;
+    if (currentState is! FinanceLoaded) {
+      emit(FinanceLoading());
+    }
     try {
       final transactions = await repository.getTransactions();
       final overallProfit = await repository.getOverallFarmProfit();
@@ -101,7 +104,9 @@ class FinanceBloc extends Bloc<FinanceEvent, FinanceState> {
         cullingRecommendations: culling,
       ));
     } catch (e) {
-      emit(FinanceError('Failed to load financials: ${e.toString()}'));
+      if (currentState is! FinanceLoaded) {
+        emit(FinanceError('Failed to load financials: ${e.toString()}'));
+      }
     }
   }
 

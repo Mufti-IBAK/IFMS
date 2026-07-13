@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'dart:convert';
 import '../../core/theme/app_colors.dart';
 import '../../core/di/service_locator.dart';
 import '../../core/sync/sync_manager.dart';
@@ -115,7 +116,11 @@ class _HatcheryScreenState extends State<HatcheryScreen> {
                   itemCount: batches.length,
                   itemBuilder: (context, index) {
                     final batch = batches[index];
-                    final breed = batch['breed'] ?? 'Unknown Breed';
+                    final metadata = _parseBreedMetadata(batch['breed']);
+                    final breed = metadata['breed'] ?? 'Unknown Breed';
+                    final species = metadata['species'] ?? 'Chicken';
+                    final incubationDays = speciesIncubationDays[species] ?? 21;
+
                     final eggSource = batch['egg_source'] ?? 'General';
                     final eggCount = int.tryParse(batch['egg_count'].toString()) ?? 0;
                     final setDate = batch['set_date'] ?? '';
@@ -126,15 +131,15 @@ class _HatcheryScreenState extends State<HatcheryScreen> {
 
                     final isIncubating = status == 'incubating';
 
-                    // Compute progress (21 days incubation duration)
+                    // Compute progress based on selected species incubation duration
                     double progress = 0.0;
-                    int daysRemaining = 21;
+                    int daysRemaining = incubationDays;
                     if (setDate.isNotEmpty) {
                       final setDt = DateTime.tryParse(setDate);
                       if (setDt != null) {
                         final diff = DateTime.now().difference(setDt).inDays;
-                        progress = (diff / 21).clamp(0.0, 1.0);
-                        daysRemaining = (21 - diff).clamp(0, 21);
+                        progress = (diff / incubationDays).clamp(0.0, 1.0);
+                        daysRemaining = (incubationDays - diff).clamp(0, incubationDays);
                       }
                     }
 
@@ -163,7 +168,7 @@ class _HatcheryScreenState extends State<HatcheryScreen> {
                                         style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
                                       ),
                                       Text(
-                                        'Source: $eggSource',
+                                        'Source: $eggSource  •  Species: $species',
                                         style: TextStyle(fontSize: 10, color: Colors.grey.shade600),
                                       ),
                                     ],
@@ -175,7 +180,7 @@ class _HatcheryScreenState extends State<HatcheryScreen> {
                                       borderRadius: BorderRadius.circular(6),
                                     ),
                                     child: Text(
-                                      isIncubating ? 'Day ${21 - daysRemaining} / 21' : 'Completed',
+                                      isIncubating ? 'Day ${incubationDays - daysRemaining} / $incubationDays' : 'Completed',
                                       style: TextStyle(
                                         color: isIncubating ? Colors.orange : Colors.green,
                                         fontSize: 10,
@@ -257,58 +262,183 @@ class _HatcheryScreenState extends State<HatcheryScreen> {
     String eggSource = '';
     int eggCount = 0;
     String breed = '';
-    double initialCost = 0.0;
+    String species = 'Chicken';
+    DateTime collectionDate = DateTime.now();
+    DateTime placementDate = DateTime.now();
 
     showDialog(
       context: context,
       builder: (dialogContext) {
-        return AlertDialog(
-          title: const Text('Start Incubation Batch'),
-          content: Form(
-            key: formKey,
-            child: SingleChildScrollView(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
+        return StatefulBuilder(
+          builder: (context, setState) {
+            final incubationDays = speciesIncubationDays[species] ?? 21;
+            final expectedHatchDate = placementDate.add(Duration(days: incubationDays));
+            final switchDate = expectedHatchDate.subtract(const Duration(days: 3));
+            final collectionProposedDate = expectedHatchDate;
+
+            String formatDate(DateTime dt) => dt.toIso8601String().split('T')[0];
+
+            return AlertDialog(
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+              title: const Row(
                 children: [
-                  TextFormField(textCapitalization: TextCapitalization.sentences, decoration: const InputDecoration(labelText: 'Egg Source / Pen Name'),
-                    validator: (v) => v == null || v.isEmpty ? 'Enter source' : null,
-                    onSaved: (v) => eggSource = v!,
-                  ),
-                  TextFormField(textCapitalization: TextCapitalization.sentences, decoration: const InputDecoration(labelText: 'Egg Count'),
-                    keyboardType: TextInputType.number,
-                    validator: (v) => v == null || v.isEmpty || int.tryParse(v) == null ? 'Enter number' : null,
-                    onSaved: (v) => eggCount = int.parse(v!),
-                  ),
-                  TextFormField(textCapitalization: TextCapitalization.sentences, decoration: const InputDecoration(labelText: 'Breed / Variety (e.g. Noiler)'),
-                    onSaved: (v) => breed = v ?? 'General',
-                  ),
-                  TextFormField(textCapitalization: TextCapitalization.sentences, decoration: const InputDecoration(labelText: 'Initial Egg Cost (₦)'),
-                    keyboardType: TextInputType.number,
-                    onSaved: (v) => initialCost = double.tryParse(v!) ?? 0.0,
-                  ),
+                  Icon(Icons.egg, color: AppColors.primary),
+                  SizedBox(width: 8),
+                  Text('Start Incubation Batch'),
                 ],
               ),
-            ),
-          ),
-          actions: [
-            TextButton(onPressed: () => Navigator.pop(dialogContext), child: const Text('Cancel')),
-            ElevatedButton(
-              onPressed: () {
-                if (formKey.currentState!.validate()) {
-                  formKey.currentState!.save();
-                  BlocProvider.of<HatcheryBloc>(context).add(CreateHatcheryBatch({
-                    'egg_source': eggSource,
-                    'egg_count': eggCount,
-                    'breed': breed,
-                    'initial_egg_cost': initialCost,
-                    'set_date': DateTime.now().toIso8601String().split('T')[0],
-                  }));
-                  Navigator.pop(dialogContext);
-                }
-              },
-              child: const Text('Start Batch'),
-            ),
-          ],
+              content: Form(
+                key: formKey,
+                child: SingleChildScrollView(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      DropdownButtonFormField<String>(
+                        value: species,
+                        decoration: const InputDecoration(labelText: 'Species of Bird Egg *'),
+                        items: speciesIncubationDays.keys.map((String val) {
+                          return DropdownMenuItem<String>(
+                            value: val,
+                            child: Text(val),
+                          );
+                        }).toList(),
+                        onChanged: (val) {
+                          if (val != null) {
+                            setState(() {
+                              species = val;
+                            });
+                          }
+                        },
+                      ),
+                      const SizedBox(height: 12),
+                      TextFormField(
+                        textCapitalization: TextCapitalization.sentences,
+                        decoration: const InputDecoration(labelText: 'Egg Source / Pen Name *'),
+                        validator: (v) => v == null || v.isEmpty ? 'Enter source' : null,
+                        onSaved: (v) => eggSource = v!,
+                      ),
+                      const SizedBox(height: 12),
+                      TextFormField(
+                        textCapitalization: TextCapitalization.sentences,
+                        decoration: const InputDecoration(labelText: 'Egg Count *'),
+                        keyboardType: TextInputType.number,
+                        validator: (v) => v == null || v.isEmpty || int.tryParse(v) == null ? 'Enter number' : null,
+                        onSaved: (v) => eggCount = int.parse(v!),
+                      ),
+                      const SizedBox(height: 12),
+                      TextFormField(
+                        textCapitalization: TextCapitalization.sentences,
+                        decoration: const InputDecoration(labelText: 'Breed / Variety (e.g. Noiler)'),
+                        onSaved: (v) => breed = v?.isNotEmpty == true ? v! : 'General',
+                      ),
+                      const SizedBox(height: 16),
+                      Card(
+                        color: Colors.grey.shade50,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                          side: BorderSide(color: Colors.grey.shade200),
+                        ),
+                        child: Padding(
+                          padding: const EdgeInsets.all(8.0),
+                          child: Column(
+                            children: [
+                              ListTile(
+                                dense: true,
+                                title: Text('Date of Collection: ${formatDate(collectionDate)}'),
+                                trailing: const Icon(Icons.calendar_today, size: 16),
+                                onTap: () async {
+                                  final picked = await showDatePicker(
+                                    context: context,
+                                    initialDate: collectionDate,
+                                    firstDate: DateTime(2020),
+                                    lastDate: DateTime.now(),
+                                  );
+                                  if (picked != null) {
+                                    setState(() {
+                                      collectionDate = picked;
+                                    });
+                                  }
+                                },
+                              ),
+                              const Divider(height: 1),
+                              ListTile(
+                                dense: true,
+                                title: Text('Date of Placement: ${formatDate(placementDate)}'),
+                                trailing: const Icon(Icons.calendar_today, size: 16),
+                                onTap: () async {
+                                  final picked = await showDatePicker(
+                                    context: context,
+                                    initialDate: placementDate,
+                                    firstDate: DateTime(2020),
+                                    lastDate: DateTime.now().add(const Duration(days: 30)),
+                                  );
+                                  if (picked != null) {
+                                    setState(() {
+                                      placementDate = picked;
+                                    });
+                                  }
+                                },
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      Card(
+                        color: Colors.green.shade50,
+                        child: Padding(
+                          padding: const EdgeInsets.all(12),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text('ESTIMATED TIMELINE', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 11, color: Colors.green)),
+                              const SizedBox(height: 6),
+                              _buildDateRow('Expected Hatching', formatDate(expectedHatchDate)),
+                              _buildDateRow('Transfer to Hatchery', formatDate(switchDate)),
+                              _buildDateRow('Chick Collection', formatDate(collectionProposedDate)),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              actions: [
+                TextButton(onPressed: () => Navigator.pop(dialogContext), child: const Text('Cancel')),
+                ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.primary,
+                    foregroundColor: Colors.white,
+                  ),
+                  onPressed: () {
+                    if (formKey.currentState!.validate()) {
+                      formKey.currentState!.save();
+
+                      final breedMetadata = jsonEncode({
+                        'breed': breed,
+                        'species': species,
+                        'collection_date': formatDate(collectionDate),
+                        'switch_date': formatDate(switchDate),
+                        'chick_collection_date': formatDate(collectionProposedDate),
+                      });
+
+                      BlocProvider.of<HatcheryBloc>(context).add(CreateHatcheryBatch({
+                        'egg_source': eggSource,
+                        'egg_count': eggCount,
+                        'breed': breedMetadata,
+                        'initial_egg_cost': 0.0,
+                        'set_date': formatDate(placementDate),
+                        'expected_hatch_date': formatDate(expectedHatchDate),
+                      }));
+                      Navigator.pop(dialogContext);
+                    }
+                  },
+                  child: const Text('Start Batch'),
+                ),
+              ],
+            );
+          },
         );
       },
     );
@@ -338,6 +468,13 @@ class _HatcheryScreenState extends State<HatcheryScreen> {
               builder: (context, setSheetState) {
                 final status = kpis['status'] ?? batch['status'];
                 final isIncubating = status == 'incubating';
+                final metadata = _parseBreedMetadata(batch['breed']);
+                final breedName = metadata['breed'] ?? 'Unknown Breed';
+                final species = metadata['species'] ?? 'Chicken';
+                final collectionDate = metadata['collection_date'] ?? 'N/A';
+                final switchDate = metadata['switch_date'] ?? 'N/A';
+                final chickCollectionDate = metadata['chick_collection_date'] ?? 'N/A';
+                final expectedHatch = batch['expected_hatch_date'] ?? 'N/A';
 
                 return Padding(
                   padding: const EdgeInsets.all(16),
@@ -351,9 +488,10 @@ class _HatcheryScreenState extends State<HatcheryScreen> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                batch['breed'] ?? 'Incubation Cohort',
+                                breedName,
                                 style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
                               ),
+                              Text('Species: $species', style: TextStyle(color: AppColors.primary, fontSize: 13, fontWeight: FontWeight.w500)),
                               Text('Set Date: ${batch['set_date']}', style: TextStyle(color: Colors.grey.shade600, fontSize: 12)),
                             ],
                           ),
@@ -377,6 +515,30 @@ class _HatcheryScreenState extends State<HatcheryScreen> {
                       const SizedBox(height: 16),
                       const Divider(),
                       const SizedBox(height: 8),
+                      const SizedBox(height: 16),
+                      Card(
+                        color: Colors.grey.shade50,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          side: BorderSide(color: Colors.grey.shade200, width: 1),
+                        ),
+                        child: Padding(
+                          padding: const EdgeInsets.all(12),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text('INCUBATION KEY DATES', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: AppColors.primary)),
+                              const SizedBox(height: 8),
+                              _buildDateRow('Egg Collection Date', collectionDate),
+                              _buildDateRow('Placement in Incubator', batch['set_date'] ?? 'N/A'),
+                              _buildDateRow('Switch to Hatchery', switchDate),
+                              _buildDateRow('Expected Hatching Date', expectedHatch),
+                              _buildDateRow('Proposed Chick Collection', chickCollectionDate),
+                            ],
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 16),
                       const Text('KPIs & METRICS', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: AppColors.primary)),
                       const SizedBox(height: 12),
                       Row(
@@ -644,6 +806,44 @@ class _HatcheryScreenState extends State<HatcheryScreen> {
           },
         );
       },
+    );
+  static const Map<String, int> speciesIncubationDays = {
+    'Chicken': 21,
+    'Duck': 28,
+    'Turkey': 28,
+    'Guinea Fowl': 28,
+    'Quail': 17,
+    'Geese': 30,
+    'Other': 21,
+  };
+
+  Map<String, dynamic> _parseBreedMetadata(String? breedField) {
+    if (breedField == null) return {'breed': 'General', 'species': 'Chicken', 'collection_date': '', 'switch_date': '', 'chick_collection_date': ''};
+    if (breedField.startsWith('{')) {
+      try {
+        final Map<String, dynamic> data = jsonDecode(breedField);
+        return data;
+      } catch (_) {}
+    }
+    return {
+      'breed': breedField,
+      'species': 'Chicken',
+      'collection_date': '',
+      'switch_date': '',
+      'chick_collection_date': '',
+    };
+  }
+
+  Widget _buildDateRow(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(label, style: TextStyle(fontSize: 12, color: Colors.grey.shade600)),
+          Text(value, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+        ],
+      ),
     );
   }
 }

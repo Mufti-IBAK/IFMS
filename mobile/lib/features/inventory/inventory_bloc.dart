@@ -1,6 +1,8 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../core/database/local_db.dart';
 import 'inventory_repository.dart';
+import '../../core/di/service_locator.dart';
+import '../../core/network/notification_service.dart';
 
 // ──────────────────────────────────────────────
 // EVENTS
@@ -117,7 +119,10 @@ class InventoryBloc extends Bloc<InventoryEvent, InventoryState> {
   }
 
   Future<void> _onLoad(LoadInventoryItems event, Emitter<InventoryState> emit) async {
-    emit(InventoryLoading());
+    final currentState = state;
+    if (currentState is! InventoryLoaded) {
+      emit(InventoryLoading());
+    }
     try {
       final items = await repository.getFeedItems();
       final logs = await repository.getInventoryLogs();
@@ -125,13 +130,19 @@ class InventoryBloc extends Bloc<InventoryEvent, InventoryState> {
       final consumption = await repository.getConsumptionLogs();
       emit(InventoryLoaded(items, logs, formulas, consumption));
     } catch (e) {
-      emit(InventoryError('Failed to load inventory: ${e.toString()}'));
+      if (currentState is! InventoryLoaded) {
+        emit(InventoryError('Failed to load inventory: ${e.toString()}'));
+      }
     }
   }
 
   Future<void> _onAddFeedItem(AddFeedItem event, Emitter<InventoryState> emit) async {
     try {
       await repository.addFeedItem(event.itemData);
+      sl<NotificationService>().showLocalNotification(
+        'Inventory Item Registered',
+        'New item "${event.itemData['name']}" successfully registered.',
+      );
       add(LoadInventoryItems());
     } catch (e) {
       emit(InventoryError('Failed to add feed item: ${e.toString()}'));
@@ -159,6 +170,10 @@ class InventoryBloc extends Bloc<InventoryEvent, InventoryState> {
   Future<void> _onAddInventoryLog(AddInventoryLog event, Emitter<InventoryState> emit) async {
     try {
       await repository.logInventoryChange(event.logData);
+      sl<NotificationService>().showLocalNotification(
+        'Inventory Logged',
+        'Stock change of ${event.logData['quantity']} registered.',
+      );
       add(LoadInventoryItems());
     } catch (e) {
       emit(InventoryError('Failed to log inventory change: ${e.toString()}'));

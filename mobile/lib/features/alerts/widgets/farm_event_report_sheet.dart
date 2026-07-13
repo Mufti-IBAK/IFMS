@@ -83,7 +83,7 @@ class _FarmEventReportSheetState extends State<FarmEventReportSheet> {
 
   Future<void> _submitReport() async {
     if (!_formKey.currentState!.validate()) return;
-    if (_selectedAnimalTags.isEmpty) {
+    if (_eventType != 'morning_report' && _selectedAnimalTags.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Please select at least one involved animal.')),
       );
@@ -162,6 +162,7 @@ class _FarmEventReportSheetState extends State<FarmEventReportSheet> {
                 decoration: const InputDecoration(labelText: 'Event Type', border: OutlineInputBorder()),
                 initialValue: _eventType,
                 items: const [
+                  DropdownMenuItem(value: 'morning_report', child: Text('Morning Report')),
                   DropdownMenuItem(value: 'mortality', child: Text('Mortality (Death)')),
                   DropdownMenuItem(value: 'birth', child: Text('Birth')),
                   DropdownMenuItem(value: 'disease_outbreak', child: Text('Disease Outbreak')),
@@ -172,31 +173,33 @@ class _FarmEventReportSheetState extends State<FarmEventReportSheet> {
               ),
               const SizedBox(height: 16),
               
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                decoration: BoxDecoration(
-                  border: Border.all(color: Colors.grey),
-                  borderRadius: BorderRadius.circular(4),
-                ),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: Text(
-                        _selectedAnimalTags.isEmpty
-                            ? 'Select Involved Animals'
-                            : _selectedAnimalTags.join(', '),
-                        style: TextStyle(color: _selectedAnimalTags.isEmpty ? Colors.grey[600] : Colors.black),
+              if (_eventType != 'morning_report') ...[
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  decoration: BoxDecoration(
+                    border: Border.all(color: Colors.grey),
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          _selectedAnimalTags.isEmpty
+                              ? 'Select Involved Animals'
+                              : _selectedAnimalTags.join(', '),
+                          style: TextStyle(color: _selectedAnimalTags.isEmpty ? Colors.grey[600] : Colors.black),
+                        ),
                       ),
-                    ),
-                    TextButton(
-                      onPressed: _showAnimalSelectionDialog,
-                      child: const Text('SELECT'),
-                    ),
-                  ],
+                      TextButton(
+                        onPressed: _showAnimalSelectionDialog,
+                        child: const Text('SELECT'),
+                      ),
+                    ],
+                  ),
                 ),
-              ),
-              const SizedBox(height: 16),
+                const SizedBox(height: 16),
+              ],
               
               TextFormField(
                 controller: _descriptionCtrl,

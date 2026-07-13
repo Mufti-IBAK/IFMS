@@ -57,27 +57,6 @@ class FinanceRepository {
 
   Future<void> _syncTransactions(List<dynamic> remoteData) async {
     await db.transaction(() async {
-      final syncItems = await (db.select(db.syncQueue)
-            ..where((t) => t.endpoint.equals('/finance/transaction') & t.method.equals('POST')))
-          .get();
-      final pendingIds = syncItems.map((item) {
-        try {
-          final data = jsonDecode(item.body);
-          return data['id'] as String?;
-        } catch (_) {
-          return null;
-        }
-      }).whereType<String>().toList();
-
-      final serverIds = remoteData.map((item) => item['id'] as String).toList();
-      final excludeIds = [...serverIds, ...pendingIds];
-
-      if (excludeIds.isNotEmpty) {
-        await (db.delete(db.localTransactions)..where((t) => t.id.isNotIn(excludeIds))).go();
-      } else {
-        await db.delete(db.localTransactions).go();
-      }
-
       await db.batch((batch) {
         batch.insertAll(
           db.localTransactions,
@@ -127,8 +106,57 @@ class FinanceRepository {
   }
 
   Future<Map<String, dynamic>> getAnimalFinancialSummary(String animalId) async {
-    final response = await apiClient.dio.get('/finance/profit/animal/$animalId');
-    return Map<String, dynamic>.from(response.data);
+    try {
+      final response = await apiClient.dio.get('/finance/profit/animal/$animalId');
+      return Map<String, dynamic>.from(response.data);
+    } catch (e) {
+      // Offline fallback: calculate from local transactions
+      final txs = await (db.select(db.localTransactions)
+            ..where((t) => t.relatedEntityId.equals(animalId)))
+          .get();
+      
+      double directRev = 0.0;
+      double feedCost = 0.0;
+      double healthCost = 0.0;
+      double laborCost = 0.0;
+      double overhead = 0.0;
+      
+      for (var t in txs) {
+        final amount = t.amount;
+        if (t.transactionType == 'income') {
+          directRev += amount;
+        } else {
+          final cat = t.category.toLowerCase();
+          if (cat.contains('feed')) {
+            feedCost += amount;
+          } else if (cat.contains('medical') || cat.contains('medicine') || cat.contains('vaccine') || cat.contains('health')) {
+            healthCost += amount;
+          } else if (cat.contains('labor') || cat.contains('salary') || cat.contains('staff') || cat.contains('payroll')) {
+            laborCost += amount;
+          } else {
+            overhead += amount;
+          }
+        }
+      }
+      
+      final totalCosts = feedCost + healthCost + laborCost + overhead;
+      final netProfit = directRev - totalCosts;
+      
+      return {
+        'direct_revenue': directRev,
+        'feed_cost': feedCost,
+        'health_cost': healthCost,
+        'labor_cost': laborCost,
+        'allocated_overhead': overhead,
+        'total_costs': totalCosts,
+        'net_profit': netProfit,
+        'depreciation': {
+          'current_book_value': 0.0,
+          'salvage_value': 0.0,
+          'cumulative_depreciation': 0.0,
+        }
+      };
+    }
   }
 
   Future<List<dynamic>> getCullingRecommendations() async {

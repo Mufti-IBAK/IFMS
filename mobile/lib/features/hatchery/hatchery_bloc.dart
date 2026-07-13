@@ -1,5 +1,7 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'hatchery_repository.dart';
+import '../../core/di/service_locator.dart';
+import '../../core/network/notification_service.dart';
 
 abstract class HatcheryEvent {}
 
@@ -37,18 +39,27 @@ class HatcheryBloc extends Bloc<HatcheryEvent, HatcheryState> {
 
   HatcheryBloc(this.repository) : super(HatcheryInitial()) {
     on<LoadHatcheryBatches>((event, emit) async {
-      emit(HatcheryLoading());
+      final currentState = state;
+      if (currentState is! HatcheryLoaded) {
+        emit(HatcheryLoading());
+      }
       try {
         final batches = await repository.getBatches();
         emit(HatcheryLoaded(batches));
       } catch (e) {
-        emit(HatcheryError('Failed to load hatchery batches: ${e.toString()}'));
+        if (currentState is! HatcheryLoaded) {
+          emit(HatcheryError('Failed to load hatchery batches: ${e.toString()}'));
+        }
       }
     });
 
     on<CreateHatcheryBatch>((event, emit) async {
       try {
         await repository.createBatch(event.batchData);
+        sl<NotificationService>().showLocalNotification(
+          'Hatchery Batch Started',
+          'Batch #${event.batchData['batch_number']} successfully initialized.',
+        );
         add(LoadHatcheryBatches());
       } catch (e) {
         emit(HatcheryError('Failed to create hatchery batch: ${e.toString()}'));

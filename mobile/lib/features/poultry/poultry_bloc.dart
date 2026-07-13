@@ -45,17 +45,22 @@ class PoultryBloc extends Bloc<PoultryEvent, PoultryState> {
 
   PoultryBloc(this.repository) : super(PoultryLoading()) {
     on<LoadPoultryData>((event, emit) async {
-      emit(PoultryLoading());
+      final currentState = state;
+      if (currentState is! PoultryLoaded) {
+        emit(PoultryLoading());
+      }
       try {
         final batches = await repository.getBatches();
         emit(PoultryLoaded(batches));
       } catch (e) {
-        emit(PoultryError(e.toString()));
+        if (currentState is! PoultryLoaded) {
+          emit(PoultryError(e.toString()));
+        }
       }
     });
 
     on<CreateBatch>((event, emit) async {
-      emit(PoultryLoading());
+      final currentState = state;
       try {
         await repository.createBatch(event.data);
         final batches = await repository.getBatches();
@@ -86,7 +91,6 @@ class PoultryBloc extends Bloc<PoultryEvent, PoultryState> {
     });
 
     on<LogBatchSale>((event, emit) async {
-      emit(PoultryLoading());
       try {
         await repository.logBatchSale(event.batchId, event.saleData);
         final batches = await repository.getBatches();
