@@ -76,27 +76,28 @@ jobs:
         cd mobile
         flutter build apk --release \
           --build-name=2.5.0 \
-          --build-number=${{ env.BUILD_NUMBER }}
+          --build-number=${{ env.BUILD_NUMBER }} \
+          --split-per-abi
     - name: Upload OTA APK
       env:
         SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
         SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
       run: |
-        # 1. Upload APK to storage, with x-upsert: true to allow overwriting/inserting unique file
+        # 1. Upload APK to storage, using a unique filename to bypass CDN cache and stay under 50MB limit
         curl --fail-with-body -sS -X POST \
           -H "Authorization: Bearer $SUPABASE_SERVICE_ROLE_KEY" \
           -H "apikey: $SUPABASE_SERVICE_ROLE_KEY" \
           -H "x-upsert: true" \
-          -F "file=@mobile/build/app/outputs/flutter-apk/app-release.apk" \
+          -F "file=@mobile/build/app/outputs/flutter-apk/app-arm64-v8a-release.apk" \
           -F "cacheControl=3600" \
-          "$SUPABASE_URL/storage/v1/object/updates/Namanzo_IFMS_${{ env.BUILD_NUMBER }}.apk"
+          "$SUPABASE_URL/storage/v1/object/updates/Namanzo_IFMS_arm64_$BUILD_NUMBER.apk"
           
         # 2. Construct JSON payload dynamically using jq to avoid escaping problems
         COMMIT_MSG=$(git log -1 --pretty=%B | tr '\n' ' ')
         JSON_PAYLOAD=$(jq -n \
-          --arg vn "2.5.0+${{ env.BUILD_NUMBER }}" \
-          --arg dl "$SUPABASE_URL/storage/v1/object/public/updates/Namanzo_IFMS_${{ env.BUILD_NUMBER }}.apk" \
-          --arg rn "NFarms Build #${{ env.BUILD_NUMBER }}: $COMMIT_MSG" \
+          --arg vn "2.5.0+$BUILD_NUMBER" \
+          --arg dl "$SUPABASE_URL/storage/v1/object/public/updates/Namanzo_IFMS_arm64_$BUILD_NUMBER.apk" \
+          --arg rn "NFarms Build #$BUILD_NUMBER: $COMMIT_MSG" \
           '{version_number: $vn, download_url: $dl, release_notes: $rn}')
           
         # 3. Register update details in the database system_updates table
