@@ -126,6 +126,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   Future<void> _selectDate() async {
+    FocusScope.of(context).unfocus();
     final DateTime? picked = await showDatePicker(
       context: context,
       initialDate: DateTime.now().subtract(const Duration(days: 365 * 25)),

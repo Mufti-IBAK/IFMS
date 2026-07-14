@@ -119,7 +119,7 @@ class _HatcheryScreenState extends State<HatcheryScreen> {
                     final metadata = _parseBreedMetadata(batch['breed']);
                     final breed = metadata['breed'] ?? 'Unknown Breed';
                     final species = metadata['species'] ?? 'Chicken';
-                    final incubationDays = speciesIncubationDays[species] ?? 21;
+                    final incubationDays = metadata['incubation_days'] ?? (speciesIncubationDays[species] ?? 21);
 
                     final eggSource = batch['egg_source'] ?? 'General';
                     final eggCount = int.tryParse(batch['egg_count'].toString()) ?? 0;
@@ -263,6 +263,7 @@ class _HatcheryScreenState extends State<HatcheryScreen> {
     int eggCount = 0;
     String breed = '';
     String species = 'Chicken';
+    int incubationDays = 21;
     DateTime collectionDate = DateTime.now();
     DateTime placementDate = DateTime.now();
 
@@ -271,10 +272,9 @@ class _HatcheryScreenState extends State<HatcheryScreen> {
       builder: (dialogContext) {
         return StatefulBuilder(
           builder: (context, setState) {
-            final incubationDays = speciesIncubationDays[species] ?? 21;
-            final expectedHatchDate = placementDate.add(Duration(days: incubationDays));
-            final switchDate = expectedHatchDate.subtract(const Duration(days: 3));
-            final collectionProposedDate = expectedHatchDate;
+            final expectedHatchDate = placementDate.add(Duration(days: incubationDays + 2));
+            final switchDate = placementDate.add(Duration(days: incubationDays - 5));
+            final collectionProposedDate = placementDate.add(Duration(days: incubationDays + 7));
 
             String formatDate(DateTime dt) => dt.toIso8601String().split('T')[0];
 
@@ -306,6 +306,23 @@ class _HatcheryScreenState extends State<HatcheryScreen> {
                           if (val != null) {
                             setState(() {
                               species = val;
+                              incubationDays = speciesIncubationDays[val] ?? 21;
+                            });
+                          }
+                        },
+                      ),
+                      const SizedBox(height: 12),
+                      TextFormField(
+                        key: ValueKey(incubationDays),
+                        initialValue: incubationDays.toString(),
+                        decoration: const InputDecoration(labelText: 'Incubation Time (Days) *'),
+                        keyboardType: TextInputType.number,
+                        validator: (v) => v == null || v.isEmpty || int.tryParse(v) == null ? 'Enter valid days' : null,
+                        onChanged: (v) {
+                          final parsed = int.tryParse(v);
+                          if (parsed != null) {
+                            setState(() {
+                              incubationDays = parsed;
                             });
                           }
                         },
@@ -394,7 +411,7 @@ class _HatcheryScreenState extends State<HatcheryScreen> {
                               const Text('ESTIMATED TIMELINE', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 11, color: Colors.green)),
                               const SizedBox(height: 6),
                               _buildDateRow('Expected Hatching', formatDate(expectedHatchDate)),
-                              _buildDateRow('Transfer to Hatchery', formatDate(switchDate)),
+                              _buildDateRow('Transfer to Hatcher', formatDate(switchDate)),
                               _buildDateRow('Chick Collection', formatDate(collectionProposedDate)),
                             ],
                           ),
@@ -418,6 +435,7 @@ class _HatcheryScreenState extends State<HatcheryScreen> {
                       final breedMetadata = jsonEncode({
                         'breed': breed,
                         'species': species,
+                        'incubation_days': incubationDays,
                         'collection_date': formatDate(collectionDate),
                         'switch_date': formatDate(switchDate),
                         'chick_collection_date': formatDate(collectionProposedDate),

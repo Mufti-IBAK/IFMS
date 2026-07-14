@@ -148,6 +148,7 @@ class _LogBreedingSheetState extends State<LogBreedingSheet> {
                     Expanded(
                       child: InkWell(
                         onTap: () async {
+                          FocusScope.of(context).unfocus();
                           final date = await showDatePicker(
                             context: context,
                             initialDate: _birthDate,

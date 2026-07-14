@@ -51,59 +51,27 @@ class _AddMilkEntrySheetState extends State<AddMilkEntrySheet> {
                     return sex == 'female' && species == 'cattle' && status == 'active';
                   }).toList();
                   
-                  return Autocomplete<Object>(
-                    displayStringForOption: (option) => option is Map ? option['tag_id'] ?? option['id'] : (option as dynamic).tagId,
-                    optionsBuilder: (TextEditingValue textEditingValue) {
-                      if (textEditingValue.text.isEmpty) return cows.cast<Object>();
-                      return cows.where((c) {
-                        final tag = (c is Map ? c['tag_id'] ?? c['id'] : (c as dynamic).tagId).toString().toLowerCase();
-                        return tag.contains(textEditingValue.text.toLowerCase());
-                      }).cast<Object>();
-                    },
+                  return DropdownMenu<String>(
+                    width: MediaQuery.of(context).size.width - 48,
+                    enableSearch: true,
+                    enableFilter: true,
+                    requestFocusOnTap: true,
+                    leadingIcon: const Icon(Icons.search),
+                    label: const Text('Search Cow by Tag ID'),
+                    inputDecorationTheme: const InputDecorationTheme(
+                      border: OutlineInputBorder(),
+                    ),
+                    dropdownMenuEntries: cows.map((c) {
+                      final isMap = c is Map;
+                      final id = isMap ? c['id'] : (c as dynamic).id;
+                      final tag = isMap ? c['tag_id'] ?? c['id'] : (c as dynamic).tagId;
+                      return DropdownMenuEntry<String>(
+                        value: id.toString(),
+                        label: tag.toString(),
+                      );
+                    }).toList(),
                     onSelected: (selection) {
-                      setState(() => selectedAnimalId = selection is Map ? selection['id'] : (selection as dynamic).id);
-                    },
-                    optionsViewBuilder: (context, onSelected, options) {
-                      return Align(
-                        alignment: Alignment.topLeft,
-                        child: Material(
-                          elevation: 4,
-                          child: SizedBox(
-                            width: MediaQuery.of(context).size.width - 48, // Match padding
-                            height: 200,
-                            child: ListView.builder(
-                              padding: EdgeInsets.zero,
-                              shrinkWrap: true,
-                              itemCount: options.length,
-                              itemBuilder: (context, index) {
-                                final option = options.elementAt(index);
-                                final isMap = option is Map;
-                                final tag = isMap ? option['tag_id'] ?? option['id'] : (option as dynamic).tagId;
-                                final imagePath = isMap ? option['image_path'] : (option as dynamic).imagePath;
-                                
-                                return ListTile(
-                                  leading: CircleAvatar(
-                                    backgroundImage: imagePath != null && imagePath.isNotEmpty ? FileImage(File(imagePath)) : null,
-                                    child: imagePath == null || imagePath.isEmpty ? const Icon(Icons.pets, size: 16) : null,
-                                  ),
-                                  title: Text(tag.toString()),
-                                  onTap: () => onSelected(option),
-                                );
-                              },
-                            ),
-                          ),
-                        ),
-                      );
-                    },
-                    fieldViewBuilder: (context, textEditingController, focusNode, onFieldSubmitted) {
-                      return TextField(textCapitalization: TextCapitalization.sentences, controller: textEditingController,
-                        focusNode: focusNode,
-                        decoration: const InputDecoration(
-                          labelText: 'Search Cow by Tag ID',
-                          prefixIcon: Icon(Icons.search),
-                          border: OutlineInputBorder(),
-                        ),
-                      );
+                      setState(() => selectedAnimalId = selection);
                     },
                   );
                 }
@@ -131,6 +99,7 @@ class _AddMilkEntrySheetState extends State<AddMilkEntrySheet> {
                 Expanded(
                   child: GestureDetector(
                     onTap: () async {
+                      FocusScope.of(context).unfocus();
                       final date = await showDatePicker(
                         context: context,
                         initialDate: selectedDate,

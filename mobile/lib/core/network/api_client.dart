@@ -13,7 +13,12 @@ class ApiClient {
     dio.interceptors.add(InterceptorsWrapper(
       onRequest: (options, handler) async {
         options.headers['apikey'] = anonKey;
-        options.headers['Authorization'] = 'Bearer $anonKey';
+        final token = await _storage.read(key: 'access_token');
+        if (token != null && token.isNotEmpty) {
+          options.headers['Authorization'] = 'Bearer $token';
+        } else {
+          options.headers['Authorization'] = 'Bearer $anonKey';
+        }
         if (options.method == 'POST' || options.method == 'PATCH') {
            options.headers['Prefer'] = 'return=representation';
            options.headers['Accept'] = 'application/vnd.pgrst.object+json';
@@ -120,29 +125,7 @@ class ApiClient {
            path = '/alerts';
         }
 
-        // Inject default user ID metadata for POST requests
-        if (options.method == 'POST' && options.data is Map<String, dynamic>) {
-          final data = options.data as Map<String, dynamic>;
-          const defaultUserId = 'f5751d41-9c30-48f3-b11a-c6f9831689de';
-          
-          if (path.startsWith('/breeding_events') ||
-              path.startsWith('/milk_records') ||
-              path.startsWith('/transactions') ||
-              path.startsWith('/hatchery_batches') ||
-              path.startsWith('/poultry_batches') ||
-              path.startsWith('/hatchery_events') ||
-              path.startsWith('/poultry_events') ||
-              path.startsWith('/feed_items') ||
-              path.startsWith('/animals') ||
-              path.startsWith('/staff') ||
-              path.startsWith('/animal_events')) {
-            data['created_by'] ??= defaultUserId;
-          } else if (path.startsWith('/tasks')) {
-            data['assigned_by'] ??= defaultUserId;
-          } else if (path.startsWith('/inventory_logs')) {
-            data['logged_by'] ??= defaultUserId;
-          }
-        }
+        // Let Supabase handle created_by/logged_by via DEFAULT auth.uid()
 
         // Remove duplicate /rest/v1 if it already exists
         if (!path.startsWith('/rest/v1')) {

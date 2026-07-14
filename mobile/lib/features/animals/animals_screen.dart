@@ -1003,6 +1003,7 @@ class _AnimalsScreenState extends State<AnimalsScreen> {
                                                                     label: 'Date of Birth *',
                                     child: InkWell(
                                       onTap: () async {
+                                        FocusScope.of(context).unfocus();
                                         final picked = await showDatePicker(
                                           context: context,
                                           initialDate: DateTime.now().subtract(const Duration(days: 365)),

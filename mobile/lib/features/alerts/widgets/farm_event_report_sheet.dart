@@ -3,6 +3,7 @@ import '../../../core/theme/app_colors.dart';
 import '../../../core/di/service_locator.dart';
 import '../../../core/database/local_db.dart';
 import 'package:drift/drift.dart' as drift;
+import 'package:intl/intl.dart';
 
 class FarmEventReportSheet extends StatefulWidget {
   const FarmEventReportSheet({super.key});
@@ -156,6 +157,18 @@ class _FarmEventReportSheetState extends State<FarmEventReportSheet> {
             mainAxisSize: MainAxisSize.min,
             children: [
               const Text('Report Farm Event', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: AppColors.primary)),
+              const SizedBox(height: 16),
+              
+              TextFormField(
+                initialValue: DateFormat('yyyy-MM-dd HH:mm').format(DateTime.now()),
+                decoration: const InputDecoration(
+                  labelText: 'Date/Time (Auto-captured)',
+                  border: OutlineInputBorder(),
+                  prefixIcon: Icon(Icons.access_time),
+                ),
+                readOnly: true,
+                style: const TextStyle(color: Colors.grey),
+              ),
               const SizedBox(height: 16),
               
               DropdownButtonFormField<String>(
