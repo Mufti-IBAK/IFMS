@@ -79,8 +79,8 @@ class _IFMSAppState extends State<IFMSApp> {
   }
 
   void _startUpdatePolling() {
-    // Poll for updates every 3 minutes
-    _updateTimer = Timer.periodic(const Duration(minutes: 3), (timer) {
+    // Poll for updates every 30 minutes
+    _updateTimer = Timer.periodic(const Duration(minutes: 30), (timer) {
       if (mounted) {
         AppUpdater.checkForUpdates(context);
       }

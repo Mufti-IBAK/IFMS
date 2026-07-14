@@ -108,3 +108,9 @@ jobs:
           -d "$JSON_PAYLOAD" \
           "$SUPABASE_URL/rest/v1/system_updates"
 
+        # 4. Clean up old entries pointing to overwritten generic filenames
+        curl -sS -X DELETE \
+          -H "Authorization: Bearer $SUPABASE_SERVICE_ROLE_KEY" \
+          -H "apikey: $SUPABASE_SERVICE_ROLE_KEY" \
+          "$SUPABASE_URL/rest/v1/system_updates?download_url=like.*Namanzo_IFMS_latest*"
+

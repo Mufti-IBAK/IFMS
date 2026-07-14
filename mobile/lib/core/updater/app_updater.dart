@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:dio/dio.dart';
 import 'package:package_info_plus/package_info_plus.dart';
@@ -58,9 +59,15 @@ class AppUpdater {
     try {
       final packageInfo = await PackageInfo.fromPlatform();
 
-      final apiClient = sl<ApiClient>();
-      // Notice: relative path 'system_updates' to prevent Dio overriding baseUrl path
-      final response = await apiClient.dio.get(
+      final updateDio = Dio(BaseOptions(
+        baseUrl: ApiClient.baseUrl,
+        connectTimeout: const Duration(seconds: 10),
+        headers: {
+          'apikey': ApiClient.anonKey,
+          'Authorization': 'Bearer ${ApiClient.anonKey}',
+        },
+      ));
+      final response = await updateDio.get(
         'system_updates',
         queryParameters: {'order': 'id.desc', 'limit': '1'},
       );
@@ -80,6 +87,8 @@ class AppUpdater {
         packageInfo.buildNumber,
         latestVersion,
       );
+
+      debugPrint('[OTA] Local: v${packageInfo.version}+${packageInfo.buildNumber}, Server: $latestVersion, Update: $isNew');
 
       if (isNew) {
         _pendingUpdateData = latest;
@@ -210,17 +219,29 @@ class AppUpdater {
         },
       );
 
-      progressNotifier.dispose();
       if (context.mounted) Navigator.pop(context);
+      progressNotifier.dispose();
+
+      // Verify the downloaded file is at least 5 MB (a valid APK)
+      final downloadedFile = File(savePath);
+      final fileSize = await downloadedFile.length();
+      if (fileSize < 5 * 1024 * 1024) {
+        if (context.mounted) {
+          _showSnack(context, 'Download appears corrupt (${(fileSize / 1024).round()} KB). Please try again.', Colors.red.shade700);
+        }
+        return;
+      }
 
       final result = await OpenFile.open(savePath);
       if (result.type != ResultType.done && context.mounted) {
         _showSnack(context, 'Could not open installer: ${result.message}', Colors.orange);
       }
     } catch (e) {
-      progressNotifier.dispose();
       if (context.mounted) {
         Navigator.pop(context);
+      }
+      progressNotifier.dispose();
+      if (context.mounted) {
         _showSnack(
           context,
           'Download failed. Check your internet connection and try again.',
