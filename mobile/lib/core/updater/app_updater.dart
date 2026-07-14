@@ -257,5 +257,3 @@ class AppUpdater {
     );
   }
 }
-/ /   T r i g g e r   O T A   b u i l d   2 0 0 3 1  
- 
