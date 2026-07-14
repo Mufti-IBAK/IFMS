@@ -31,8 +31,8 @@ class TasksRepository {
         DateTime? transferDate;
         DateTime? hatchDate;
         try {
-          if (batch.breed.startsWith('{')) {
-            final meta = jsonDecode(batch.breed);
+          if (batch.breed != null && batch.breed!.startsWith('{')) {
+            final meta = jsonDecode(batch.breed!);
             if (meta['transfer_date'] != null) {
               transferDate = DateTime.parse(meta['transfer_date']);
             }
@@ -43,7 +43,7 @@ class TasksRepository {
         } catch (_) {}
         
         if (transferDate == null || hatchDate == null) {
-          final placementDate = batch.startDate;
+          final placementDate = batch.setDate;
           transferDate = placementDate.add(const Duration(days: 18));
           hatchDate = placementDate.add(const Duration(days: 21));
         }
@@ -54,7 +54,7 @@ class TasksRepository {
           if (transferExists == null) {
             await db.into(db.localTasks).insert(LocalTasksCompanion.insert(
               id: transferTaskId,
-              title: 'Transfer Batch #${batch.batchNumber} to Hatchery',
+              title: 'Transfer Batch (Source: ${batch.eggSource}) to Hatchery',
               description: const Value('Move eggs from incubator to hatchery compartment.'),
               priority: 'high',
               status: 'pending',
@@ -70,7 +70,7 @@ class TasksRepository {
           if (hatchExists == null) {
             await db.into(db.localTasks).insert(LocalTasksCompanion.insert(
               id: hatchTaskId,
-              title: 'Hatch / Chick Collection for Batch #${batch.batchNumber}',
+              title: 'Hatch / Chick Collection (Source: ${batch.eggSource})',
               description: const Value('Expected hatch date. Collect chicks and record hatchery results.'),
               priority: 'urgent',
               status: 'pending',

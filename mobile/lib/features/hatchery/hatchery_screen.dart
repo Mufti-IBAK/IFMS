@@ -807,7 +807,9 @@ class _HatcheryScreenState extends State<HatcheryScreen> {
         );
       },
     );
-  static const Map<String, int> speciesIncubationDays = {
+  }
+
+  final Map<String, int> speciesIncubationDays = {
     'Chicken': 21,
     'Duck': 28,
     'Turkey': 28,
