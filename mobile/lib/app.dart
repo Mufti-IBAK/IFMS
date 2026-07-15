@@ -60,6 +60,7 @@ class IFMSApp extends StatefulWidget {
 class _IFMSAppState extends State<IFMSApp> {
   late final Future<bool> _isInitializedFuture;
   Timer? _updateTimer;
+  Timer? _syncTimer;
 
   @override
   void initState() {
@@ -68,12 +69,23 @@ class _IFMSAppState extends State<IFMSApp> {
 
     // Notifications and sync
     sl<NotificationService>().initialize();
-    sl<SyncManager>().triggerSync();
+    sl<SyncManager>().syncAll(); // Push and Pull immediately
+
     // Check for OTA updates silently after first frame
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
         AppUpdater.checkForUpdates(context);
         _startUpdatePolling();
+        _startDataSyncPolling();
+      }
+    });
+  }
+
+  void _startDataSyncPolling() {
+    // Aggressively sync data every 30 seconds
+    _syncTimer = Timer.periodic(const Duration(seconds: 30), (timer) {
+      if (mounted) {
+        sl<SyncManager>().syncAll();
       }
     });
   }
@@ -90,6 +102,7 @@ class _IFMSAppState extends State<IFMSApp> {
   @override
   void dispose() {
     _updateTimer?.cancel();
+    _syncTimer?.cancel();
     super.dispose();
   }
 
@@ -263,6 +276,16 @@ class HomeScreen extends StatelessWidget {
       appBar: AppBar(
         title: const Text('IFMS OPERATIONS'),
         actions: [
+          IconButton(
+            onPressed: () {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Syncing Data...'), duration: Duration(seconds: 2)),
+              );
+              sl<SyncManager>().syncAll();
+            },
+            icon: const Icon(Icons.sync),
+            tooltip: 'Sync Now',
+          ),
           // Update button — shows green badge dot when a new version is available
           ValueListenableBuilder<bool>(
             valueListenable: updateAvailableNotifier,

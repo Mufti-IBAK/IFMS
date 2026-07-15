@@ -5,7 +5,6 @@ import 'package:package_info_plus/package_info_plus.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:open_file/open_file.dart';
 import '../network/api_client.dart';
-import '../di/service_locator.dart';
 import 'package:flutter/services.dart';
 import '../../app.dart';
 

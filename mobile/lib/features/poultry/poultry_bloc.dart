@@ -60,7 +60,6 @@ class PoultryBloc extends Bloc<PoultryEvent, PoultryState> {
     });
 
     on<CreateBatch>((event, emit) async {
-      final currentState = state;
       try {
         await repository.createBatch(event.data);
         final batches = await repository.getBatches();

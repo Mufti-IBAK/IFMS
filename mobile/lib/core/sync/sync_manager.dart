@@ -39,6 +39,12 @@ class SyncManager {
       int successCount = 0;
       for (var item in queueItems) {
         try {
+          // Rescue check: discard corrupted IDs that are not valid UUIDs
+          if (item.payload.contains('"id":"anim_') || item.payload.contains('"id":"milk_') || item.payload.contains('"id": "anim_') || item.payload.contains('"id": "milk_')) {
+            await (db.delete(db.syncQueue)..where((t) => t.id.equals(item.id))).go();
+            continue;
+          }
+
           final success = await _processQueueItem(item);
           if (success) {
             await (db.delete(db.syncQueue)..where((t) => t.id.equals(item.id))).go();
@@ -120,9 +126,6 @@ class SyncManager {
   /// pulls all data from Supabase and populates the local database.
   Future<bool> restoreFromSupabaseIfNeeded() async {
     try {
-      final count = await db.localAnimals.count().getSingle();
-      if (count > 0) return false; // Data already exists — skip restore
-
       final connectivity = await Connectivity().checkConnectivity();
       if (connectivity.contains(ConnectivityResult.none)) return false;
 
@@ -131,6 +134,18 @@ class SyncManager {
     } catch (e) {
       return false;
     }
+  }
+
+  /// Pushes local queue, then pulls remote changes
+  Future<void> syncAll() async {
+    final connectivity = await Connectivity().checkConnectivity();
+    if (connectivity.contains(ConnectivityResult.none)) return;
+    
+    // 1. Push local changes first
+    await triggerSync();
+    
+    // 2. Pull remote changes
+    await restoreFromSupabase();
   }
 
   /// Pulls all tables from Supabase and inserts into local DB.

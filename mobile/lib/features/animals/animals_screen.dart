@@ -1403,8 +1403,8 @@ class _AnimalsScreenState extends State<AnimalsScreen> {
     final weightController = TextEditingController(text: animal.weight?.toString() ?? '');
     final colorController = TextEditingController(text: animal.color ?? '');
     final marksController = TextEditingController(text: animal.uniqueMarks ?? '');
-    final acquisitionCostController = TextEditingController(text: animal.acquisitionCost?.toString() ?? '');
-    final salvageValueController = TextEditingController(text: animal.salvageValue?.toString() ?? '');
+    final acquisitionCostController = TextEditingController(text: animal.acquisitionCost.toString());
+    final salvageValueController = TextEditingController(text: animal.salvageValue.toString());
 
     DateTime? selectedDob = animal.dateOfBirth;
     bool dobUnknown = false;

@@ -336,6 +336,7 @@ class DairyBloc extends Bloc<DairyEvent, DairyState> {
       await dairyRepo.addMilkRecord(event.recordData);
       add(LoadDairyData()); // reload dashboard
     } catch (e) {
+      emit(DairyError(e.toString()));
     }
   }
 }
