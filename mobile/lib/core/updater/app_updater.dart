@@ -51,7 +51,15 @@ class AppUpdater {
     }
 
     final latestBuild = int.tryParse(latestBuildStr) ?? 0;
-    final currentBuild = int.tryParse(currentBuildStr) ?? 0;
+    int currentBuild = int.tryParse(currentBuildStr) ?? 0;
+
+    // Flutter split-per-abi adds a prefix to the version code.
+    // e.g. 20036 becomes 1020036, 2020036, or 3020036.
+    // If the build number is suspiciously large, we strip the prefix (million digit).
+    if (currentBuild > 1000000) {
+      currentBuild = currentBuild % 1000000;
+    }
+
     return latestBuild > currentBuild;
   }
 
