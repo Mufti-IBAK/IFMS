@@ -405,48 +405,95 @@ class _AnimalProfileScreenState extends State<AnimalProfileScreen> with SingleTi
             ),
             const SizedBox(height: 16),
           ],
-          Card(
-            color: Colors.teal.shade50,
-            elevation: 0,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(16),
-              side: BorderSide(color: Colors.teal.shade200, width: 0.5),
-            ),
-            child: InkWell(
-              onTap: () => _showFinancialCostCenterBottomSheet(context),
-              borderRadius: BorderRadius.circular(16),
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: Row(
-                  children: [
-                    const CircleAvatar(
-                      backgroundColor: Colors.teal,
-                      child: Icon(Icons.payments_outlined, color: Colors.white),
-                    ),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Text('TOTAL OUTLAY SPENT ON ANIMAL', style: TextStyle(fontSize: 10, color: Colors.grey, fontWeight: FontWeight.bold)),
-                          const SizedBox(height: 2),
-                          Text(
-                            _currencyFmt.format(_totalMedExpense + _totalFeedExpense),
-                            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: Colors.teal.shade900),
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            'Feed: ₦ ${_totalFeedExpense.toStringAsFixed(0)} | Meds: ₦ ${_totalMedExpense.toStringAsFixed(0)}',
-                            style: const TextStyle(fontSize: 10, color: Colors.grey),
-                          ),
-                        ],
-                      ),
-                    ),
-                    const Icon(Icons.chevron_right, color: Colors.teal),
-                  ],
+          FutureBuilder<Map<String, dynamic>>(
+            future: sl<FinanceRepository>().getAnimalFinancialSummary(_id),
+            builder: (context, snapshot) {
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return const Card(
+                  child: Padding(
+                    padding: EdgeInsets.all(16),
+                    child: Center(child: CircularProgressIndicator()),
+                  ),
+                );
+              }
+              final data = snapshot.data ?? {};
+              final netProfit = double.tryParse(data['net_profit']?.toString() ?? '0.0') ?? 0.0;
+              final totalCosts = double.tryParse(data['total_costs']?.toString() ?? '0.0') ?? 0.0;
+              final directRev = double.tryParse(data['direct_revenue']?.toString() ?? '0.0') ?? 0.0;
+              
+              final isProfitable = netProfit >= 0;
+              final cardColor = isProfitable ? Colors.green.shade50 : Colors.red.shade50;
+              final borderColor = isProfitable ? Colors.green.shade200 : Colors.red.shade200;
+              final textColor = isProfitable ? Colors.green.shade900 : Colors.red.shade900;
+
+              return Card(
+                color: cardColor,
+                elevation: 0,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
+                  side: BorderSide(color: borderColor, width: 0.5),
                 ),
-              ),
-            ),
+                child: InkWell(
+                  onTap: () => _showFinancialCostCenterBottomSheet(context),
+                  borderRadius: BorderRadius.circular(16),
+                  child: Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            CircleAvatar(
+                              backgroundColor: isProfitable ? Colors.green : Colors.red,
+                              child: const Icon(Icons.payments_outlined, color: Colors.white),
+                            ),
+                            const SizedBox(width: 16),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'FINANCIAL INSIGHTS (NET PROFIT)', 
+                                    style: TextStyle(fontSize: 10, color: isProfitable ? Colors.green.shade700 : Colors.red.shade700, fontWeight: FontWeight.bold)
+                                  ),
+                                  const SizedBox(height: 2),
+                                  Text(
+                                    _currencyFmt.format(netProfit),
+                                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: textColor),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            Icon(Icons.chevron_right, color: isProfitable ? Colors.green : Colors.red),
+                          ],
+                        ),
+                        const SizedBox(height: 12),
+                        const Divider(height: 1),
+                        const SizedBox(height: 8),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              'Revenue: ${_currencyFmt.format(directRev)}',
+                              style: const TextStyle(fontSize: 11, color: Colors.green, fontWeight: FontWeight.bold),
+                            ),
+                            Text(
+                              'Costs: ${_currencyFmt.format(totalCosts)}',
+                              style: const TextStyle(fontSize: 11, color: Colors.red, fontWeight: FontWeight.bold),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          'Tap to view complete cost center ledger & depreciation',
+                          style: TextStyle(fontSize: 10, color: Colors.grey.shade600, fontStyle: FontStyle.italic),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              );
+            }
           ),
           const SizedBox(height: 20),
 

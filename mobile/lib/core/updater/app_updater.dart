@@ -53,14 +53,19 @@ class AppUpdater {
     final latestBuild = int.tryParse(latestBuildStr) ?? 0;
     int currentBuild = int.tryParse(currentBuildStr) ?? 0;
 
-    // Flutter split-per-abi adds a prefix to the version code.
-    // e.g. 20036 becomes 1020036, 2020036, or 3020036.
-    // If the build number is suspiciously large, we strip the prefix (million digit).
-    if (currentBuild > 1000000) {
-      currentBuild = currentBuild % 1000000;
+    // The base build number is 20000 + run_number.
+    // Flutter split-per-abi adds 1000, 2000, or 3000 to the versionCode.
+    // So 20038 becomes 21038, 22038, or 23038.
+    // To correctly compare them, we extract the true run_number (e.g. 38).
+    int getRunNumber(int code) {
+      int remainder = code % 20000;
+      return remainder % 1000;
     }
 
-    return latestBuild > currentBuild;
+    final currentRun = getRunNumber(currentBuild);
+    final latestRun = getRunNumber(latestBuild);
+
+    return latestRun > currentRun;
   }
 
   static Future<void> _doCheck(BuildContext context, {bool showNoUpdateMessage = false}) async {
