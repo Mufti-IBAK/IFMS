@@ -93,6 +93,9 @@ class AppUpdater {
       if (isNew) {
         _pendingUpdateData = latest;
         updateAvailableNotifier.value = true;
+        if (showNoUpdateMessage && context.mounted) {
+          _showUpdateDialog(context, latest);
+        }
       } else {
         updateAvailableNotifier.value = false;
         if (showNoUpdateMessage && context.mounted) {
