@@ -155,6 +155,23 @@ class ApiClient {
         return handler.next(response);
       },
       onError: (DioException e, handler) async {
+        if (e.type == DioExceptionType.connectionTimeout || 
+            e.type == DioExceptionType.sendTimeout || 
+            e.type == DioExceptionType.receiveTimeout || 
+            e.type == DioExceptionType.connectionError) {
+          
+          final friendlyError = DioException(
+            requestOptions: e.requestOptions,
+            type: e.type,
+            error: e.error,
+            response: Response(
+              requestOptions: e.requestOptions,
+              statusCode: 503,
+              data: {'message': 'No internet connection. Please verify your network and try again.'},
+            ),
+          );
+          return handler.next(friendlyError);
+        }
         return handler.next(e);
       },
     ));
