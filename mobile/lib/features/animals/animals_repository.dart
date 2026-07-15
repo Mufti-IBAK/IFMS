@@ -26,6 +26,8 @@ class AnimalsRepository {
 
     final uuid = animalData['id'] ?? const Uuid().v4();
     animalData['id'] = uuid;
+    animalData['status'] = animalData['status'] ?? 'active';
+    animalData['current_reproductive_status'] = animalData['current_reproductive_status'] ?? 'open';
     
     // Always insert/update locally first
     await db.into(db.localAnimals).insertOnConflictUpdate(LocalAnimalsCompanion.insert(

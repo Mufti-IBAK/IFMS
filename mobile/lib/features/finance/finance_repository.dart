@@ -22,6 +22,9 @@ class FinanceRepository {
   Future<void> addTransaction(Map<String, dynamic> data) async {
     final uuid = const Uuid().v4();
     data['id'] = uuid;
+    data['currency'] = data['currency'] ?? 'NGN';
+    data['is_reconciled'] = data['is_reconciled'] ?? false;
+    
     final type = data['transaction_type'].toString();
     final category = data['category'].toString();
     final amount = double.parse(data['amount'].toString());

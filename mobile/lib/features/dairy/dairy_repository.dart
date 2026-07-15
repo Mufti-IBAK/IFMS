@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:developer';
 import 'package:drift/drift.dart';
 import 'package:uuid/uuid.dart';
@@ -51,14 +52,22 @@ class DairyRepository {
     );
 
     // Sync to backend asynchronously
+    final apiData = {
+      'id': id,
+      ...recordData,
+      'is_withdrawn': isWithdrawn,
+    };
+    
     try {
-      await apiClient.dio.post('/dairy/milk-record', data: {
-        'id': id,
-        ...recordData,
-      });
+      await apiClient.dio.post('/dairy/milk-record', data: apiData);
     } catch (e) {
-      // offline fallback - will be synced later
-      log('Offline mode: Milk record saved locally.');
+      await db.into(db.syncQueue).insert(SyncQueueCompanion.insert(
+        endpoint: '/dairy/milk-record',
+        method: 'POST',
+        body: jsonEncode(apiData),
+        queuedAt: DateTime.now(),
+      ));
+      log('Offline mode: Milk record saved locally and queued for sync.');
     }
   }
 
