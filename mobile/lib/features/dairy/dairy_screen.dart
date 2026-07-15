@@ -137,92 +137,113 @@ class _DairyScreenState extends State<DairyScreen> with SingleTickerProviderStat
     );
   }
 
-  Future<List<double>> _get7DayHistory() async {
-    final List<double> history = [];
-    final now = DateTime.now();
-    for (int i = 6; i >= 0; i--) {
-      final date = now.subtract(Duration(days: i));
-      final records = await sl<DairyRepository>().getHerdDailyTotal(date);
-      double total = 0.0;
-      for (var r in records) {
-        if (!r.isWithdrawn) {
-          total += r.quantityLiters;
-        }
-      }
-      history.add(total);
-    }
-    return history;
-  }
-
-  List<String> _get7DayLabels() {
-    final List<String> labels = [];
-    final now = DateTime.now();
-    for (int i = 6; i >= 0; i--) {
-      final date = now.subtract(Duration(days: i));
-      labels.add(DateFormat('dd/MM').format(date));
-    }
-    return labels;
-  }
-
   Widget _buildAnalyticsTab(DairyLoaded state) {
-    return FutureBuilder<List<double>>(
-      future: _get7DayHistory(),
-      builder: (context, snapshot) {
-        final chartData = snapshot.data ?? List.filled(7, 0.0);
-        return ListView(
-          padding: const EdgeInsets.all(16),
-          children: [
-            Card(
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+    return ListView(
+      padding: const EdgeInsets.all(16),
+      children: [
+        // Time Filter Selector
+        Center(
+          child: SegmentedButton<AnalyticsFilter>(
+            segments: const [
+              ButtonSegment(value: AnalyticsFilter.daily, label: Text('Daily')),
+              ButtonSegment(value: AnalyticsFilter.weekly, label: Text('Weekly')),
+              ButtonSegment(value: AnalyticsFilter.monthly, label: Text('Monthly')),
+            ],
+            selected: {state.currentFilter},
+            onSelectionChanged: (Set<AnalyticsFilter> newSelection) {
+              context.read<DairyBloc>().add(ChangeAnalyticsFilter(newSelection.first));
+            },
+            style: ButtonStyle(
+              backgroundColor: MaterialStateProperty.resolveWith<Color>(
+                (Set<MaterialState> states) {
+                  if (states.contains(MaterialState.selected)) {
+                    return AppColors.primary.withOpacity(0.2);
+                  }
+                  return Colors.transparent;
+                },
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(height: 16),
+        
+        // Herd Chart
+        Card(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
                   children: [
-                    const Row(
-                      children: [
-                        Icon(Icons.show_chart, color: Colors.blue),
-                        SizedBox(width: 8),
-                        Text('7-DAY MILK YIELD CURVE', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Colors.grey)),
-                      ],
-                    ),
-                    const SizedBox(height: 16),
-                    CustomLineChart(
-                      data: chartData,
-                      labels: _get7DayLabels(),
-                      lineColor: Colors.blue.shade700,
-                      gradientColors: [Colors.blue.shade200.withOpacity(0.4), Colors.blue.shade200.withOpacity(0.0)],
+                    const Icon(Icons.show_chart, color: Colors.blue),
+                    const SizedBox(width: 8),
+                    Text(
+                      'HERD YIELD (${state.currentFilter.name.toUpperCase()}) - ${state.totalYieldForPeriod.toStringAsFixed(1)}L',
+                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Colors.grey),
                     ),
                   ],
                 ),
-              ),
+                const SizedBox(height: 16),
+                if (state.herdChartData.every((e) => e == 0))
+                  const SizedBox(
+                    height: 200,
+                    child: Center(child: Text('No milk records for this period.')),
+                  )
+                else
+                  CustomLineChart(
+                    data: state.herdChartData,
+                    labels: state.herdChartLabels,
+                    lineColor: Colors.blue.shade700,
+                    gradientColors: [Colors.blue.shade200.withOpacity(0.4), Colors.blue.shade200.withOpacity(0.0)],
+                  ),
+              ],
             ),
-            const SizedBox(height: 16),
-            const Text('Top Producers (Today)', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.green)),
-            const SizedBox(height: 8),
-            if (state.topProducers.isEmpty)
-              const Center(child: Text('No milking logs for today.'))
-            else
-              ...state.topProducers.entries.map((e) => ListTile(
-                leading: const Icon(Icons.arrow_upward, color: Colors.green),
-                title: Text('Animal ID: ${e.key}'),
-                trailing: Text('${e.value.toStringAsFixed(1)} L', style: const TextStyle(fontWeight: FontWeight.bold)),
-              )),
-            const Divider(),
-            const SizedBox(height: 16),
-            const Text('Low Performers (Today)', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.red)),
-            const SizedBox(height: 8),
-            if (state.lowPerformers.isEmpty)
-              const Center(child: Text('No milking logs for today.'))
-            else
-              ...state.lowPerformers.entries.map((e) => ListTile(
-                leading: const Icon(Icons.arrow_downward, color: Colors.red),
-                title: Text('Animal ID: ${e.key}'),
-                trailing: Text('${e.value.toStringAsFixed(1)} L', style: const TextStyle(fontWeight: FontWeight.bold)),
-              )),
-          ],
-        );
-      }
+          ),
+        ),
+        
+        const SizedBox(height: 16),
+        const Text('Cow Breakdown', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+        const SizedBox(height: 8),
+        
+        if (state.cowYieldBreakdown.isEmpty)
+          const Center(
+            child: Padding(
+              padding: EdgeInsets.all(24.0),
+              child: Text('No cow data available.'),
+            ),
+          )
+        else
+          ...state.cowYieldBreakdown.entries.map((e) {
+            final double percentage = state.totalYieldForPeriod > 0 
+                ? (e.value / state.totalYieldForPeriod) * 100 
+                : 0.0;
+            return Card(
+              child: ListTile(
+                leading: CircleAvatar(
+                  backgroundColor: AppColors.primary.withOpacity(0.1),
+                  child: const Icon(Icons.pets, color: AppColors.primary),
+                ),
+                title: Text('Animal ID: ${e.key}', style: const TextStyle(fontWeight: FontWeight.bold)),
+                subtitle: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const SizedBox(height: 4),
+                    LinearProgressIndicator(
+                      value: percentage / 100,
+                      backgroundColor: Colors.grey.shade200,
+                      color: AppColors.primary,
+                    ),
+                    const SizedBox(height: 4),
+                    Text('${percentage.toStringAsFixed(1)}% of herd total', style: TextStyle(fontSize: 12, color: Colors.grey.shade600)),
+                  ],
+                ),
+                trailing: Text('${e.value.toStringAsFixed(1)} L', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+              ),
+            );
+          }),
+      ],
     );
   }
 

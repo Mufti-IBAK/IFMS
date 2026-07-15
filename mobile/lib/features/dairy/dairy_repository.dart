@@ -72,6 +72,14 @@ class DairyRepository {
         .get();
   }
 
+  Future<List<LocalMilkRecord>> getRecordsByDateRange(DateTime start, DateTime end) async {
+    return await (db.select(db.localMilkRecords)
+      ..where((r) => r.recordDate.isBiggerOrEqualValue(start))
+      ..where((r) => r.recordDate.isSmallerThanValue(end))
+      ..orderBy([(t) => OrderingTerm(expression: t.recordDate, mode: OrderingMode.asc)]))
+        .get();
+  }
+
   Future<List<LocalMilkRecord>> getCowLactationHistory(String animalId) async {
     return await (db.select(db.localMilkRecords)
       ..where((r) => r.animalId.equals(animalId))
