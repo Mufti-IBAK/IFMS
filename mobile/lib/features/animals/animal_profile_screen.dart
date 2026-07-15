@@ -1621,11 +1621,29 @@ class _AnimalProfileScreenState extends State<AnimalProfileScreen> with SingleTi
     final estimatedAgeController = TextEditingController(text: '1');
     String estimatedAgeUnit = 'Years';
 
-    String selectedSpecies = _species;
-    String selectedSex = _sex;
-    String selectedPedigree = _pedigreeType ?? 'pure';
-    String selectedPurpose = _purpose ?? 'milk';
-    String selectedReproductive = _status;
+    String selectedSpecies = _species.toLowerCase();
+    if (selectedSpecies == 'cow' || selectedSpecies == 'cattle') selectedSpecies = 'bovine';
+    if (selectedSpecies == 'goat') selectedSpecies = 'caprine';
+    if (selectedSpecies == 'sheep') selectedSpecies = 'ovine';
+    if (selectedSpecies == 'pig') selectedSpecies = 'porcine';
+    if (selectedSpecies == 'chicken' || selectedSpecies == 'poultry') selectedSpecies = 'avian';
+    const validSpecies = ['bovine', 'caprine', 'ovine', 'porcine', 'avian'];
+    if (!validSpecies.contains(selectedSpecies)) selectedSpecies = 'bovine';
+
+    String selectedSex = _sex.toLowerCase();
+    if (selectedSex != 'female' && selectedSex != 'male') selectedSex = 'female';
+
+    String selectedPedigree = _pedigreeType?.toLowerCase() ?? 'pure';
+    const validPedigrees = ['pure', 'cross', 'grading', 'commercial'];
+    if (!validPedigrees.contains(selectedPedigree)) selectedPedigree = 'pure';
+
+    String selectedPurpose = _purpose?.toLowerCase() ?? 'milk';
+    const validPurposes = ['breeding', 'milk', 'meat', 'others'];
+    if (!validPurposes.contains(selectedPurpose)) selectedPurpose = 'milk';
+
+    String selectedReproductive = _status.toLowerCase();
+    const validRepro = ['open', 'pregnant', 'lactating', 'dry', 'in_heat'];
+    if (!validRepro.contains(selectedReproductive)) selectedReproductive = 'open';
 
     showModalBottomSheet(
       context: context,
