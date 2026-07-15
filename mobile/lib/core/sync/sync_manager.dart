@@ -40,7 +40,7 @@ class SyncManager {
       for (var item in queueItems) {
         try {
           // Rescue check: discard corrupted IDs that are not valid UUIDs
-          if (item.payload.contains('"id":"anim_') || item.payload.contains('"id":"milk_') || item.payload.contains('"id": "anim_') || item.payload.contains('"id": "milk_')) {
+          if (item.body.contains('"id":"anim_') || item.body.contains('"id":"milk_') || item.body.contains('"id": "anim_') || item.body.contains('"id": "milk_')) {
             await (db.delete(db.syncQueue)..where((t) => t.id.equals(item.id))).go();
             continue;
           }

@@ -40,6 +40,8 @@ class _AnimalProfileScreenState extends State<AnimalProfileScreen> with SingleTi
   double _totalMilkLiters = 0.0;
   double _avgMilkLiters = 0.0;
   bool _hasActiveWithdrawal = false;
+  double _totalMedExpense = 0.0;
+  double _totalFeedExpense = 0.0;
 
   // Resolved attributes
   late String _id;
