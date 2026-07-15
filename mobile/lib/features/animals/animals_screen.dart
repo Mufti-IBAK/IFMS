@@ -1369,8 +1369,8 @@ class _AnimalsScreenState extends State<AnimalsScreen> {
                               'vaccination_status': '{}',
                               'deworming_status': '{}',
                               'image_path': selectedImagePath,
-                              'acquisition_cost': acquisitionCostController.text.isNotEmpty ? double.tryParse(acquisitionCostController.text) : null,
-                              'salvage_value': salvageValueController.text.isNotEmpty ? double.tryParse(salvageValueController.text) : null,
+                              'acquisition_cost': acquisitionCostController.text.trim().isNotEmpty ? double.tryParse(acquisitionCostController.text.trim()) : 0.0,
+                              'salvage_value': salvageValueController.text.trim().isNotEmpty ? double.tryParse(salvageValueController.text.trim()) : 0.0,
                             }));
                             Navigator.pop(bottomSheetContext);
                           },
@@ -2098,8 +2098,8 @@ class _AnimalsScreenState extends State<AnimalsScreen> {
                                 'purpose': selectedPurpose,
                                 'current_reproductive_status': isFemale ? selectedReproductive : 'open',
                                 'image_path': selectedImagePath,
-                                'acquisition_cost': acquisitionCostController.text.isNotEmpty ? double.tryParse(acquisitionCostController.text) : null,
-                                'salvage_value': salvageValueController.text.isNotEmpty ? double.tryParse(salvageValueController.text) : null,
+                                'acquisition_cost': acquisitionCostController.text.isNotEmpty ? double.tryParse(acquisitionCostController.text) : 0.0,
+                                'salvage_value': salvageValueController.text.isNotEmpty ? double.tryParse(salvageValueController.text) : 0.0,
                               }));
                               Navigator.pop(bottomSheetContext);
                             }

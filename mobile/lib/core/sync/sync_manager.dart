@@ -27,6 +27,10 @@ class SyncManager {
     _isSyncing = true;
 
     try {
+      // Unblock items that were stuck due to the acquisition_cost bug
+      await (db.update(db.syncQueue)..where((t) => t.endpoint.like('/animals%') & t.attempts.isBiggerOrEqualValue(5)))
+          .write(const SyncQueueCompanion(attempts: Value(4)));
+
       final queueItems = await (db.select(db.syncQueue)
             ..where((t) => t.attempts.isSmallerThanValue(5))
             ..orderBy([(t) => OrderingTerm(expression: t.queuedAt)]))
@@ -87,6 +91,16 @@ class SyncManager {
 
   Future<bool> _processQueueItem(SyncQueueData item) async {
     final data = jsonDecode(item.body);
+    
+    // Rescue missing required fields for animals to unblock old sync queues
+    if (item.endpoint.startsWith('/animals')) {
+      if (data is Map) {
+        if (!data.containsKey('acquisition_cost') || data['acquisition_cost'] == null) data['acquisition_cost'] = 0.0;
+        if (!data.containsKey('salvage_value') || data['salvage_value'] == null) data['salvage_value'] = 0.0;
+        if (!data.containsKey('status') || data['status'] == null) data['status'] = 'active';
+      }
+    }
+
     Response response;
     if (item.method == 'POST') {
       response = await apiClient.dio.post(item.endpoint, data: data);
