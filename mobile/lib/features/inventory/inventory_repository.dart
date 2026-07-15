@@ -98,10 +98,11 @@ class InventoryRepository {
       isActive: const Value(true),
     ));
 
-    // Update payload before sending to backend or queueing
-    itemData['cost_per_kg'] = costKg;
-    itemData['weight_per_unit'] = weightPer;
+    // Prepare payload for backend (remove virtual fields, ensure currency)
+    itemData.remove('cost_per_kg');
+    itemData.remove('weight_per_unit');
     itemData['current_stock'] = stockKg;
+    itemData['currency'] = 'NGN';
 
     try {
       await apiClient.dio.post('/inventory/items', data: itemData);
@@ -141,6 +142,13 @@ class InventoryRepository {
         supplier: itemData['supplier'] != null ? Value(itemData['supplier']) : const Value.absent(),
       ),
     );
+
+    // Prepare payload for backend
+    itemData.remove('cost_per_kg');
+    itemData.remove('weight_per_unit');
+    itemData.remove('cost_per_unit');
+    if (stockKg != null) itemData['current_stock'] = stockKg;
+    itemData['currency'] = 'NGN';
 
     // Sync with backend API
     try {
@@ -260,6 +268,8 @@ class InventoryRepository {
       );
     }
 
+    logData['log_date'] = DateTime.now().toIso8601String();
+    
     try {
       await apiClient.dio.post('/inventory/log', data: logData);
     } catch (e) {

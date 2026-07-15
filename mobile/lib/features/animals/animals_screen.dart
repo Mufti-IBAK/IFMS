@@ -739,6 +739,8 @@ class _AnimalsScreenState extends State<AnimalsScreen> {
     final weightController = TextEditingController();
     final colorController = TextEditingController();
     final marksController = TextEditingController();
+    final acquisitionCostController = TextEditingController();
+    final salvageValueController = TextEditingController();
 
     DateTime? selectedDob;
     bool dobUnknown = false;
@@ -1246,6 +1248,51 @@ class _AnimalsScreenState extends State<AnimalsScreen> {
                               ),
                             ),
                           ),
+                          const SizedBox(height: 12),
+                          
+                          // Financial Card
+                          Card(
+                            elevation: 0,
+                            color: AppColors.surfaceContainerLow,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(16),
+                              side: const BorderSide(color: AppColors.outlineVariant, width: 0.5),
+                            ),
+                            child: Padding(
+                              padding: const EdgeInsets.all(16.0),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  const Text('4. FINANCIAL DETAILS', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: AppColors.primary)),
+                                  const SizedBox(height: 12),
+                                  buildRowIfResponsive(
+                                    buildInputField(
+                                      label: 'Acquisition Price (NGN)',
+                                      child: TextField(
+                                        controller: acquisitionCostController,
+                                        keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                                        decoration: const InputDecoration(
+                                          hintText: 'e.g. 150000',
+                                          prefixIcon: Icon(Icons.attach_money, size: 20),
+                                        ),
+                                      ),
+                                    ),
+                                    buildInputField(
+                                      label: 'Salvage Value (NGN)',
+                                      child: TextField(
+                                        controller: salvageValueController,
+                                        keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                                        decoration: const InputDecoration(
+                                          hintText: 'e.g. 50000',
+                                          prefixIcon: Icon(Icons.money_off, size: 20),
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
                           const SizedBox(height: 20),
                         ],
                       ),
@@ -1316,6 +1363,8 @@ class _AnimalsScreenState extends State<AnimalsScreen> {
                               'vaccination_status': '{}',
                               'deworming_status': '{}',
                               'image_path': selectedImagePath,
+                              'acquisition_cost': acquisitionCostController.text.isNotEmpty ? double.tryParse(acquisitionCostController.text) : null,
+                              'salvage_value': salvageValueController.text.isNotEmpty ? double.tryParse(salvageValueController.text) : null,
                             }));
                             Navigator.pop(bottomSheetContext);
                           },
@@ -1348,6 +1397,8 @@ class _AnimalsScreenState extends State<AnimalsScreen> {
     final weightController = TextEditingController(text: animal.weight?.toString() ?? '');
     final colorController = TextEditingController(text: animal.color ?? '');
     final marksController = TextEditingController(text: animal.uniqueMarks ?? '');
+    final acquisitionCostController = TextEditingController(text: animal.acquisitionCost?.toString() ?? '');
+    final salvageValueController = TextEditingController(text: animal.salvageValue?.toString() ?? '');
 
     DateTime? selectedDob = animal.dateOfBirth;
     bool dobUnknown = false;
@@ -1832,6 +1883,50 @@ class _AnimalsScreenState extends State<AnimalsScreen> {
                             ),
                           ),
                           const SizedBox(height: 12),
+                          // Financial Card
+                          Card(
+                            elevation: 0,
+                            color: AppColors.surfaceContainerLow,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(16),
+                              side: const BorderSide(color: AppColors.outlineVariant, width: 0.5),
+                            ),
+                            child: Padding(
+                              padding: const EdgeInsets.all(16.0),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  const Text('4. FINANCIAL DETAILS', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: AppColors.primary)),
+                                  const SizedBox(height: 12),
+                                  buildRowIfResponsive(
+                                    buildInputField(
+                                      label: 'Acquisition Price (NGN)',
+                                      child: TextField(
+                                        controller: acquisitionCostController,
+                                        keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                                        decoration: const InputDecoration(
+                                          hintText: 'e.g. 150000',
+                                          prefixIcon: Icon(Icons.attach_money, size: 20),
+                                        ),
+                                      ),
+                                    ),
+                                    buildInputField(
+                                      label: 'Salvage Value (NGN)',
+                                      child: TextField(
+                                        controller: salvageValueController,
+                                        keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                                        decoration: const InputDecoration(
+                                          hintText: 'e.g. 50000',
+                                          prefixIcon: Icon(Icons.money_off, size: 20),
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 12),
                           FutureBuilder<List<dynamic>>(
                             future: Future.wait([
                               sl<PharmacyRepository>().getMedicalRecords(animalId: id),
@@ -1991,6 +2086,8 @@ class _AnimalsScreenState extends State<AnimalsScreen> {
                                 'purpose': selectedPurpose,
                                 'current_reproductive_status': isFemale ? selectedReproductive : 'open',
                                 'image_path': selectedImagePath,
+                                'acquisition_cost': acquisitionCostController.text.isNotEmpty ? double.tryParse(acquisitionCostController.text) : null,
+                                'salvage_value': salvageValueController.text.isNotEmpty ? double.tryParse(salvageValueController.text) : null,
                               }));
                               Navigator.pop(bottomSheetContext);
                             }

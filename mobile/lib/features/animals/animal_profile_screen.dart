@@ -669,6 +669,50 @@ class _AnimalProfileScreenState extends State<AnimalProfileScreen> with SingleTi
                       const Divider(),
                       _rowTextVal('Current Book Value', _currencyFmt.format(bookVal), isBold: true),
                       const SizedBox(height: 20),
+                      
+                      // Transactions
+                      const Text('TRANSACTION HISTORY', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                      const Divider(),
+                      if (data['transactions'] == null || (data['transactions'] as List).isEmpty)
+                        const Padding(
+                          padding: EdgeInsets.symmetric(vertical: 16),
+                          child: Text('No individual transactions logged.', style: TextStyle(color: Colors.grey, fontStyle: FontStyle.italic)),
+                        )
+                      else
+                        ListView.builder(
+                          shrinkWrap: true,
+                          physics: const NeverScrollableScrollPhysics(),
+                          itemCount: (data['transactions'] as List).length,
+                          itemBuilder: (ctx, index) {
+                            final t = data['transactions'][index];
+                            final isIncome = t['type'] == 'income';
+                            return ListTile(
+                              contentPadding: EdgeInsets.zero,
+                              leading: CircleAvatar(
+                                backgroundColor: isIncome ? Colors.green.shade50 : Colors.red.shade50,
+                                child: Icon(
+                                  isIncome ? Icons.arrow_downward : Icons.arrow_upward,
+                                  color: isIncome ? Colors.green : Colors.red,
+                                ),
+                              ),
+                              title: Text(t['category'] ?? 'Unknown', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                              subtitle: Text(
+                                '${DateFormat('MMM dd, yyyy').format(DateTime.parse(t['date']))} • ${t['description'] ?? ""}',
+                                style: const TextStyle(fontSize: 11),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                              trailing: Text(
+                                _currencyFmt.format(t['amount'] ?? 0.0),
+                                style: TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  color: isIncome ? Colors.green : Colors.red,
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+                      const SizedBox(height: 20),
                     ],
                   ),
                 );

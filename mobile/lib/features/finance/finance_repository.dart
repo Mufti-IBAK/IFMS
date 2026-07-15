@@ -111,7 +111,18 @@ class FinanceRepository {
   Future<Map<String, dynamic>> getAnimalFinancialSummary(String animalId) async {
     try {
       final response = await apiClient.dio.get('/finance/profit/animal/$animalId');
-      return Map<String, dynamic>.from(response.data);
+      final result = Map<String, dynamic>.from(response.data);
+      
+      final txs = await (db.select(db.localTransactions)..where((t) => t.relatedEntityId.equals(animalId))).get();
+      result['transactions'] = txs.map((t) => {
+          'id': t.id,
+          'date': t.transactionDate.toIso8601String(),
+          'type': t.transactionType,
+          'category': t.category,
+          'amount': t.amount,
+          'description': t.description,
+      }).toList();
+      return result;
     } catch (e) {
       // Offline fallback: calculate from local transactions
       final txs = await (db.select(db.localTransactions)
@@ -142,6 +153,34 @@ class FinanceRepository {
         }
       }
       
+      // Calculate Depreciation from Local Animal record
+      final animal = await (db.select(db.localAnimals)..where((t) => t.id.equals(animalId))).getSingleOrNull();
+      final acquisitionCost = animal?.acquisitionCost ?? 0.0;
+      final salvageValue = animal?.salvageValue ?? 0.0;
+      
+      double ageYears = 0.0;
+      if (animal?.dateOfBirth != null) {
+        ageYears = DateTime.now().difference(animal!.dateOfBirth!).inDays / 365.25;
+      }
+      
+      double annualDepr = 0.0;
+      double cumDepr = 0.0;
+      double bookVal = acquisitionCost;
+      
+      if (acquisitionCost > 0) {
+        // Assume 5 year useful life for livestock
+        annualDepr = (acquisitionCost - salvageValue) / 5.0; 
+        if (annualDepr < 0) annualDepr = 0;
+        
+        cumDepr = annualDepr * ageYears;
+        if (cumDepr > (acquisitionCost - salvageValue)) {
+            cumDepr = acquisitionCost - salvageValue;
+        }
+        if (cumDepr < 0) cumDepr = 0;
+        
+        bookVal = acquisitionCost - cumDepr;
+      }
+
       final totalCosts = feedCost + healthCost + laborCost + overhead;
       final netProfit = directRev - totalCosts;
       
@@ -153,11 +192,22 @@ class FinanceRepository {
         'allocated_overhead': overhead,
         'total_costs': totalCosts,
         'net_profit': netProfit,
+        'acquisition_cost': acquisitionCost,
         'depreciation': {
-          'current_book_value': 0.0,
-          'salvage_value': 0.0,
-          'cumulative_depreciation': 0.0,
-        }
+          'age_years': ageYears,
+          'annual_depreciation': annualDepr,
+          'current_book_value': bookVal,
+          'salvage_value': salvageValue,
+          'cumulative_depreciation': cumDepr,
+        },
+        'transactions': txs.map((t) => {
+          'id': t.id,
+          'date': t.transactionDate.toIso8601String(),
+          'type': t.transactionType,
+          'category': t.category,
+          'amount': t.amount,
+          'description': t.description,
+        }).toList()
       };
     }
   }

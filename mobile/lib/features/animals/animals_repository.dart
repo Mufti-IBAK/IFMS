@@ -49,6 +49,8 @@ class AnimalsRepository {
       status: Value(animalData['status'] ?? 'active'),
       sireId: Value(animalData['sire_id']),
       damId: Value(animalData['dam_id']),
+      acquisitionCost: Value(animalData['acquisition_cost'] != null ? double.tryParse(animalData['acquisition_cost'].toString()) ?? 0.0 : 0.0),
+      salvageValue: Value(animalData['salvage_value'] != null ? double.tryParse(animalData['salvage_value'].toString()) ?? 0.0 : 0.0),
     ));
 
     try {
@@ -97,6 +99,8 @@ class AnimalsRepository {
             status: Value(animal['status'] ?? 'active'),
             sireId: Value(animal['sire_id']),
             damId: Value(animal['dam_id']),
+            acquisitionCost: Value(animal['acquisition_cost'] != null ? double.tryParse(animal['acquisition_cost'].toString()) ?? 0.0 : 0.0),
+            salvageValue: Value(animal['salvage_value'] != null ? double.tryParse(animal['salvage_value'].toString()) ?? 0.0 : 0.0),
           )).toList(),
           mode: InsertMode.insertOrReplace,
         );
@@ -125,6 +129,8 @@ class AnimalsRepository {
       dewormingStatus: updateData.containsKey('deworming_status') ? Value(updateData['deworming_status']) : const Value.absent(),
       imagePath: imagePath != null ? Value(imagePath) : const Value.absent(),
       status: updateData.containsKey('status') ? Value(updateData['status']) : const Value.absent(),
+      acquisitionCost: updateData.containsKey('acquisition_cost') ? Value(updateData['acquisition_cost'] != null ? double.tryParse(updateData['acquisition_cost'].toString()) ?? 0.0 : 0.0) : const Value.absent(),
+      salvageValue: updateData.containsKey('salvage_value') ? Value(updateData['salvage_value'] != null ? double.tryParse(updateData['salvage_value'].toString()) ?? 0.0 : 0.0) : const Value.absent(),
     );
     await (db.update(db.localAnimals)..where((t) => t.id.equals(id))).write(companion);
 

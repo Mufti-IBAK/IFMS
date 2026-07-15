@@ -220,26 +220,46 @@ class _DairyScreenState extends State<DairyScreen> with SingleTickerProviderStat
                 ? (e.value / state.totalYieldForPeriod) * 100 
                 : 0.0;
             return Card(
-              child: ListTile(
-                leading: CircleAvatar(
-                  backgroundColor: AppColors.primary.withOpacity(0.1),
-                  child: const Icon(Icons.pets, color: AppColors.primary),
-                ),
-                title: Text('Animal ID: ${e.key}', style: const TextStyle(fontWeight: FontWeight.bold)),
-                subtitle: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: 8.0),
+                child: Column(
                   children: [
-                    const SizedBox(height: 4),
-                    LinearProgressIndicator(
-                      value: percentage / 100,
-                      backgroundColor: Colors.grey.shade200,
-                      color: AppColors.primary,
+                    ListTile(
+                      leading: CircleAvatar(
+                        backgroundColor: AppColors.primary.withOpacity(0.1),
+                        child: const Icon(Icons.pets, color: AppColors.primary),
+                      ),
+                      title: Text('Animal ID: ${e.key}', style: const TextStyle(fontWeight: FontWeight.bold)),
+                      subtitle: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const SizedBox(height: 4),
+                          LinearProgressIndicator(
+                            value: percentage / 100,
+                            backgroundColor: Colors.grey.shade200,
+                            color: AppColors.primary,
+                          ),
+                          const SizedBox(height: 4),
+                          Text('${percentage.toStringAsFixed(1)}% of herd total', style: TextStyle(fontSize: 12, color: Colors.grey.shade600)),
+                        ],
+                      ),
+                      trailing: Text('${e.value.toStringAsFixed(1)} L', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
                     ),
-                    const SizedBox(height: 4),
-                    Text('${percentage.toStringAsFixed(1)}% of herd total', style: TextStyle(fontSize: 12, color: Colors.grey.shade600)),
+                    if (state.cowChartData[e.key] != null && !state.cowChartData[e.key]!.every((v) => v == 0))
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+                        child: SizedBox(
+                          height: 100,
+                          child: CustomLineChart(
+                            data: state.cowChartData[e.key]!,
+                            labels: state.herdChartLabels,
+                            lineColor: AppColors.primary,
+                            gradientColors: [AppColors.primary.withOpacity(0.2), AppColors.primary.withOpacity(0.0)],
+                          ),
+                        ),
+                      ),
                   ],
                 ),
-                trailing: Text('${e.value.toStringAsFixed(1)} L', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
               ),
             );
           }),

@@ -38,6 +38,7 @@ class DairyLoaded extends DairyState {
   final List<double> herdChartData;
   final List<String> herdChartLabels;
   final Map<String, double> cowYieldBreakdown;
+  final Map<String, List<double>> cowChartData;
   final double totalYieldForPeriod;
 
   DairyLoaded({
@@ -50,6 +51,7 @@ class DairyLoaded extends DairyState {
     required this.herdChartData,
     required this.herdChartLabels,
     required this.cowYieldBreakdown,
+    required this.cowChartData,
     required this.totalYieldForPeriod,
   });
 
@@ -63,6 +65,7 @@ class DairyLoaded extends DairyState {
     List<double>? herdChartData,
     List<String>? herdChartLabels,
     Map<String, double>? cowYieldBreakdown,
+    Map<String, List<double>>? cowChartData,
     double? totalYieldForPeriod,
   }) {
     return DairyLoaded(
@@ -75,6 +78,7 @@ class DairyLoaded extends DairyState {
       herdChartData: herdChartData ?? this.herdChartData,
       herdChartLabels: herdChartLabels ?? this.herdChartLabels,
       cowYieldBreakdown: cowYieldBreakdown ?? this.cowYieldBreakdown,
+      cowChartData: cowChartData ?? this.cowChartData,
       totalYieldForPeriod: totalYieldForPeriod ?? this.totalYieldForPeriod,
     );
   }
@@ -133,6 +137,7 @@ class DairyBloc extends Bloc<DairyEvent, DairyState> {
         herdChartData: analyticsData['chartData'] as List<double>,
         herdChartLabels: analyticsData['chartLabels'] as List<String>,
         cowYieldBreakdown: analyticsData['cowBreakdown'] as Map<String, double>,
+        cowChartData: analyticsData['cowChartData'] as Map<String, List<double>>,
         totalYieldForPeriod: analyticsData['totalYield'] as double,
       ));
     } catch (e) {
@@ -151,6 +156,7 @@ class DairyBloc extends Bloc<DairyEvent, DairyState> {
           herdChartData: analyticsData['chartData'] as List<double>,
           herdChartLabels: analyticsData['chartLabels'] as List<String>,
           cowYieldBreakdown: analyticsData['cowBreakdown'] as Map<String, double>,
+          cowChartData: analyticsData['cowChartData'] as Map<String, List<double>>,
           totalYieldForPeriod: analyticsData['totalYield'] as double,
         ));
       } catch (e) {
@@ -182,6 +188,7 @@ class DairyBloc extends Bloc<DairyEvent, DairyState> {
     final records = await dairyRepo.getRecordsByDateRange(start, end);
 
     final Map<String, double> cowBreakdown = {};
+    final Map<String, List<double>> cowChartData = {};
     double totalYield = 0.0;
     List<double> chartData = List.filled(points, 0.0);
 
@@ -190,24 +197,30 @@ class DairyBloc extends Bloc<DairyEvent, DairyState> {
       
       totalYield += r.quantityLiters;
       cowBreakdown[r.animalId] = (cowBreakdown[r.animalId] ?? 0) + r.quantityLiters;
+      if (!cowChartData.containsKey(r.animalId)) {
+        cowChartData[r.animalId] = List.filled(points, 0.0);
+      }
 
       // Assign to chart bucket
       if (filter == AnalyticsFilter.daily) {
         final diff = r.recordDate.difference(start).inDays;
         if (diff >= 0 && diff < points) {
           chartData[diff] += r.quantityLiters;
+          cowChartData[r.animalId]![diff] += r.quantityLiters;
         }
       } else if (filter == AnalyticsFilter.weekly) {
         final diff = r.recordDate.difference(start).inDays;
         int weekIndex = diff ~/ 7;
         if (weekIndex >= 0 && weekIndex < points) {
           chartData[weekIndex] += r.quantityLiters;
+          cowChartData[r.animalId]![weekIndex] += r.quantityLiters;
         }
       } else if (filter == AnalyticsFilter.monthly) {
         // Calculate months difference
         int monthIndex = (r.recordDate.year - start.year) * 12 + r.recordDate.month - start.month;
         if (monthIndex >= 0 && monthIndex < points) {
           chartData[monthIndex] += r.quantityLiters;
+          cowChartData[r.animalId]![monthIndex] += r.quantityLiters;
         }
       }
     }
@@ -238,6 +251,7 @@ class DairyBloc extends Bloc<DairyEvent, DairyState> {
       'chartData': chartData,
       'chartLabels': labels,
       'cowBreakdown': sortedMap,
+      'cowChartData': cowChartData,
       'totalYield': totalYield,
     };
   }
