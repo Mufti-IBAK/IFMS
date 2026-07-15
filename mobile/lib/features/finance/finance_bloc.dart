@@ -115,7 +115,8 @@ class FinanceBloc extends Bloc<FinanceEvent, FinanceState> {
       await repository.addTransaction(event.data);
       add(LoadFinanceData());
     } catch (e) {
-      emit(FinanceError('Failed to add transaction: ${e.toString()}'));
+      emit(FinanceError(e.toString().replaceAll('Exception:', '').trim()));
+      add(LoadFinanceData());
     }
   }
 
@@ -124,7 +125,8 @@ class FinanceBloc extends Bloc<FinanceEvent, FinanceState> {
       await repository.reconcileTransaction(event.id);
       add(LoadFinanceData());
     } catch (e) {
-      emit(FinanceError('Failed to reconcile transaction: ${e.toString()}'));
+      emit(FinanceError(e.toString().replaceAll('Exception:', '').trim()));
+      add(LoadFinanceData());
     }
   }
 
@@ -133,7 +135,8 @@ class FinanceBloc extends Bloc<FinanceEvent, FinanceState> {
       await repository.reverseTransaction(event.id);
       add(LoadFinanceData());
     } catch (e) {
-      emit(FinanceError('Failed to reverse transaction: ${e.toString()}'));
+      emit(FinanceError(e.toString().replaceAll('Exception:', '').trim()));
+      add(LoadFinanceData());
     }
   }
 }

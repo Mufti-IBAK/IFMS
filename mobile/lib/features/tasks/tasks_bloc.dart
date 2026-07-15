@@ -59,7 +59,8 @@ class TasksBloc extends Bloc<TasksEvent, TasksState> {
         await repository.updateTaskStatus(event.taskId, event.status);
         add(LoadTasks());
       } catch (e) {
-        emit(TasksError('Failed to update task: ${e.toString()}'));
+        emit(TasksError(e.toString().replaceAll('Exception:', '').trim()));
+        add(LoadTasks());
       }
     });
 
@@ -72,7 +73,8 @@ class TasksBloc extends Bloc<TasksEvent, TasksState> {
         );
         add(LoadTasks());
       } catch (e) {
-        emit(TasksError('Failed to create task: ${e.toString()}'));
+        emit(TasksError(e.toString().replaceAll('Exception:', '').trim()));
+        add(LoadTasks());
       }
     });
   }

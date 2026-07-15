@@ -20,20 +20,8 @@ class BreedingRepository {
 
   Future<void> logBreedingEvent(String animalId, String eventType, DateTime eventDate, {String? sireId, String? semenBatchId, String? technician, String? result, String? notes, String? payload}) async {
     final eventId = uuid.v4();
-    await db.into(db.localBreedingEvents).insert(LocalBreedingEventsCompanion.insert(
-      id: eventId,
-      animalId: animalId,
-      eventType: eventType,
-      eventDate: eventDate,
-      sireId: Value(sireId),
-      semenBatchId: Value(semenBatchId),
-      technician: Value(technician),
-      result: Value(result),
-      notes: Value(notes),
-      payload: Value(payload),
-    ));
 
-    // Try API Sync
+    // Try API Sync First
     final apiPayload = {
       'id': eventId,
       'animal_id': animalId,
@@ -49,27 +37,39 @@ class BreedingRepository {
 
     try {
       await apiClient.dio.post('/breeding', data: apiPayload);
-    } catch (e) {
-      await db.into(db.syncQueue).insert(SyncQueueCompanion.insert(
-        endpoint: '/breeding',
-        method: 'POST',
-        body: jsonEncode(apiPayload),
-        queuedAt: DateTime.now(),
-      ));
-    }
 
-    // Automated Workflow Logic
-    if (eventType == 'ai' || eventType == 'natural_mating') {
-      // Schedule pregnancy check 28 days later
-      await _schedulePregnancyCheckTask(animalId, eventDate.add(const Duration(days: 28)));
-    } else if (eventType == 'pregnancy_check' && result == 'pregnant') {
-      // Calculate due date and prepare alerts
-      await _handleConfirmedPregnancy(animalId, eventDate);
-    } else if (eventType == 'calving' || eventType == 'abortion') {
-      // Reset status to open/active
-      await (db.update(db.localAnimals)..where((t) => t.id.equals(animalId))).write(
-        const LocalAnimalsCompanion(currentReproductiveStatus: Value('active')),
-      );
+      // On success, save locally
+      await db.into(db.localBreedingEvents).insert(LocalBreedingEventsCompanion.insert(
+        id: eventId,
+        animalId: animalId,
+        eventType: eventType,
+        eventDate: eventDate,
+        sireId: Value(sireId),
+        semenBatchId: Value(semenBatchId),
+        technician: Value(technician),
+        result: Value(result),
+        notes: Value(notes),
+        payload: Value(payload),
+      ));
+
+      // Automated Workflow Logic
+      if (eventType == 'ai' || eventType == 'natural_mating') {
+        // Schedule pregnancy check 28 days later
+        await _schedulePregnancyCheckTask(animalId, eventDate.add(const Duration(days: 28)));
+      } else if (eventType == 'pregnancy_check' && result == 'pregnant') {
+        // Calculate due date and prepare alerts
+        await _handleConfirmedPregnancy(animalId, eventDate);
+      } else if (eventType == 'calving' || eventType == 'abortion') {
+        // Reset status to open/active
+        await (db.update(db.localAnimals)..where((t) => t.id.equals(animalId))).write(
+          const LocalAnimalsCompanion(currentReproductiveStatus: Value('active')),
+        );
+      }
+    } catch (e) {
+      if (e is DioException) {
+        throw Exception(e.response?.data?['message'] ?? e.response?.data?['details'] ?? 'Failed to log breeding event: ${e.message}');
+      }
+      throw Exception('Failed to log breeding event: $e');
     }
   }
 

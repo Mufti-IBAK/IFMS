@@ -66,28 +66,25 @@ class HatcheryRepository {
         ? DateTime.parse(batchData['expected_hatch_date'])
         : setDt.add(const Duration(days: 21));
 
-    // Update local cache optimistically
-    await db.into(db.localHatcheryBatches).insertOnConflictUpdate(LocalHatcheryBatchesCompanion.insert(
-      id: uuid,
-      eggSource: batchData['egg_source'],
-      eggCount: int.parse(batchData['egg_count'].toString()),
-      breed: Value(batchData['breed']),
-      setDate: setDt,
-      expectedHatchDate: expectedDt,
-      initialEggCost: Value(double.parse((batchData['initial_egg_cost'] ?? 0.0).toString())),
-      status: const Value('incubating'),
-    ));
-
     try {
       await apiClient.dio.post('/hatchery/batch', data: batchData);
-    } catch (e) {
-      // Queue sync
-      await db.into(db.syncQueue).insert(SyncQueueCompanion.insert(
-        endpoint: '/hatchery/batch',
-        method: 'POST',
-        body: jsonEncode(batchData),
-        queuedAt: DateTime.now(),
+
+      // Update local cache optimistically on success
+      await db.into(db.localHatcheryBatches).insertOnConflictUpdate(LocalHatcheryBatchesCompanion.insert(
+        id: uuid,
+        eggSource: batchData['egg_source'],
+        eggCount: int.parse(batchData['egg_count'].toString()),
+        breed: Value(batchData['breed']),
+        setDate: setDt,
+        expectedHatchDate: expectedDt,
+        initialEggCost: Value(double.parse((batchData['initial_egg_cost'] ?? 0.0).toString())),
+        status: const Value('incubating'),
       ));
+    } catch (e) {
+      if (e is DioException) {
+        throw Exception(e.response?.data?['message'] ?? e.response?.data?['details'] ?? 'Failed to create batch: ${e.message}');
+      }
+      throw Exception('Failed to create batch: $e');
     }
   }
 
@@ -110,55 +107,52 @@ class HatcheryRepository {
     final uuid = const Uuid().v4();
     eventData['id'] = uuid;
 
-    // Apply change locally first (optimistic UI)
     final eventType = eventData['event_type'];
     final eventDate = DateTime.parse(eventData['event_date']);
     final valMap = eventData['value_json'] as Map<String, dynamic>? ?? {};
 
-    await db.into(db.localHatcheryEvents).insertOnConflictUpdate(LocalHatcheryEventsCompanion.insert(
-      id: uuid,
-      batchId: batchId,
-      eventType: eventType,
-      eventDate: eventDate,
-      valueJson: Value(jsonEncode(valMap)),
-    ));
-
-    // Update batch stats locally based on event type
-    final batchQuery = await (db.select(db.localHatcheryBatches)..where((t) => t.id.equals(batchId))).getSingleOrNull();
-    if (batchQuery != null) {
-      if (eventType == 'candling') {
-        final fertile = valMap['fertile_eggs'];
-        if (fertile != null) {
-          await (db.update(db.localHatcheryBatches)..where((t) => t.id.equals(batchId))).write(
-            LocalHatcheryBatchesCompanion(fertileEggs: Value(int.parse(fertile.toString())))
-          );
-        }
-      } else if (eventType == 'hatch_complete') {
-        final hatched = valMap['hatched_chicks'];
-        if (hatched != null) {
-          final hatchedInt = int.parse(hatched.toString());
-          final failed = batchQuery.eggCount - hatchedInt;
-          await (db.update(db.localHatcheryBatches)..where((t) => t.id.equals(batchId))).write(
-            LocalHatcheryBatchesCompanion(
-              hatchedChicks: Value(hatchedInt),
-              failedEggs: Value(failed),
-              status: const Value('completed'),
-            )
-          );
-        }
-      }
-    }
-
     try {
       await apiClient.dio.post('/hatchery/batch/$batchId/event', data: eventData);
-    } catch (e) {
-      // Queue sync
-      await db.into(db.syncQueue).insert(SyncQueueCompanion.insert(
-        endpoint: '/hatchery/batch/$batchId/event',
-        method: 'POST',
-        body: jsonEncode(eventData),
-        queuedAt: DateTime.now(),
+
+      // Apply change locally on success
+      await db.into(db.localHatcheryEvents).insertOnConflictUpdate(LocalHatcheryEventsCompanion.insert(
+        id: uuid,
+        batchId: batchId,
+        eventType: eventType,
+        eventDate: eventDate,
+        valueJson: Value(jsonEncode(valMap)),
       ));
+
+      // Update batch stats locally based on event type
+      final batchQuery = await (db.select(db.localHatcheryBatches)..where((t) => t.id.equals(batchId))).getSingleOrNull();
+      if (batchQuery != null) {
+        if (eventType == 'candling') {
+          final fertile = valMap['fertile_eggs'];
+          if (fertile != null) {
+            await (db.update(db.localHatcheryBatches)..where((t) => t.id.equals(batchId))).write(
+              LocalHatcheryBatchesCompanion(fertileEggs: Value(int.parse(fertile.toString())))
+            );
+          }
+        } else if (eventType == 'hatch_complete') {
+          final hatched = valMap['hatched_chicks'];
+          if (hatched != null) {
+            final hatchedInt = int.parse(hatched.toString());
+            final failed = batchQuery.eggCount - hatchedInt;
+            await (db.update(db.localHatcheryBatches)..where((t) => t.id.equals(batchId))).write(
+              LocalHatcheryBatchesCompanion(
+                hatchedChicks: Value(hatchedInt),
+                failedEggs: Value(failed),
+                status: const Value('completed'),
+              )
+            );
+          }
+        }
+      }
+    } catch (e) {
+      if (e is DioException) {
+        throw Exception(e.response?.data?['message'] ?? e.response?.data?['details'] ?? 'Failed to add event: ${e.message}');
+      }
+      throw Exception('Failed to add event: $e');
     }
   }
 

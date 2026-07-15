@@ -31,30 +31,28 @@ class FinanceRepository {
     final description = data['description'] ?? '';
     final dateVal = DateTime.parse(data['transaction_date'].toString());
 
-    // Local Insert
-    await db.into(db.localTransactions).insert(LocalTransactionsCompanion.insert(
-      id: uuid,
-      transactionType: type,
-      category: category,
-      amount: amount,
-      currency: const Value('NGN'),
-      relatedEntityType: Value(data['related_entity_type']),
-      relatedEntityId: Value(data['related_entity_id']),
-      description: Value(description),
-      transactionDate: dateVal,
-      isReconciled: const Value(false),
-    ));
-
-    // Remote sync
     try {
+      // Remote sync first
       await apiClient.dio.post('/finance/transaction', data: data);
-    } catch (e) {
-      await db.into(db.syncQueue).insert(SyncQueueCompanion.insert(
-        endpoint: '/finance/transaction',
-        method: 'POST',
-        body: jsonEncode(data),
-        queuedAt: DateTime.now(),
+      
+      // Local Insert on success
+      await db.into(db.localTransactions).insert(LocalTransactionsCompanion.insert(
+        id: uuid,
+        transactionType: type,
+        category: category,
+        amount: amount,
+        currency: const Value('NGN'),
+        relatedEntityType: Value(data['related_entity_type']),
+        relatedEntityId: Value(data['related_entity_id']),
+        description: Value(description),
+        transactionDate: dateVal,
+        isReconciled: const Value(false),
       ));
+    } catch (e) {
+      if (e is DioException) {
+        throw Exception(e.response?.data?['message'] ?? e.response?.data?['details'] ?? 'Failed to add transaction: ${e.message}');
+      }
+      throw Exception('Failed to add transaction: $e');
     }
   }
 
@@ -222,18 +220,17 @@ class FinanceRepository {
   }
 
   Future<void> reconcileTransaction(String id) async {
-    await (db.update(db.localTransactions)..where((t) => t.id.equals(id))).write(
-      const LocalTransactionsCompanion(isReconciled: Value(true)),
-    );
     try {
       await apiClient.dio.patch('/finance/transactions/$id/reconcile');
+      
+      await (db.update(db.localTransactions)..where((t) => t.id.equals(id))).write(
+        const LocalTransactionsCompanion(isReconciled: Value(true)),
+      );
     } catch (e) {
-      await db.into(db.syncQueue).insert(SyncQueueCompanion.insert(
-        endpoint: '/finance/transactions/$id/reconcile',
-        method: 'PATCH',
-        body: '{}',
-        queuedAt: DateTime.now(),
-      ));
+      if (e is DioException) {
+        throw Exception(e.response?.data?['message'] ?? e.response?.data?['details'] ?? 'Failed to reconcile transaction: ${e.message}');
+      }
+      throw Exception('Failed to reconcile transaction: $e');
     }
   }
 
@@ -254,27 +251,10 @@ class FinanceRepository {
         isReconciled: Value(newItem['is_reconciled'] ?? false),
       ));
     } catch (e) {
-      final localOrig = await (db.select(db.localTransactions)..where((t) => t.id.equals(id))).getSingle();
-      final reversedType = localOrig.transactionType == 'income' ? 'expense' : 'income';
-      final newId = const Uuid().v4();
-      await db.into(db.localTransactions).insert(LocalTransactionsCompanion.insert(
-        id: newId,
-        transactionType: reversedType,
-        category: localOrig.category,
-        amount: localOrig.amount,
-        currency: const Value('NGN'),
-        relatedEntityType: Value(localOrig.relatedEntityType),
-        relatedEntityId: Value(localOrig.relatedEntityId),
-        description: Value('REVERSAL of transaction ${localOrig.id}: ${localOrig.description ?? ""}'),
-        transactionDate: DateTime.now(),
-        isReconciled: const Value(false),
-      ));
-      await db.into(db.syncQueue).insert(SyncQueueCompanion.insert(
-        endpoint: '/finance/transactions/$id/reverse',
-        method: 'POST',
-        body: '{}',
-        queuedAt: DateTime.now(),
-      ));
+      if (e is DioException) {
+        throw Exception(e.response?.data?['message'] ?? e.response?.data?['details'] ?? 'Failed to reverse transaction: ${e.message}');
+      }
+      throw Exception('Failed to reverse transaction: $e');
     }
   }
 }

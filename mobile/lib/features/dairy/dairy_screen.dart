@@ -47,13 +47,28 @@ class _DairyScreenState extends State<DairyScreen> with SingleTickerProviderStat
           ],
         ),
       ),
-      body: BlocBuilder<DairyBloc, DairyState>(
+      body: BlocConsumer<DairyBloc, DairyState>(
+        listener: (context, state) {
+          if (state is DairyError) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(state.message),
+                backgroundColor: Colors.red,
+                behavior: SnackBarBehavior.floating,
+                margin: const EdgeInsets.only(bottom: 80, left: 20, right: 20),
+                duration: const Duration(seconds: 4),
+              ),
+            );
+          }
+        },
         builder: (context, state) {
           if (state is DairyLoading) {
             return const Center(child: CircularProgressIndicator());
           }
           if (state is DairyError) {
-            return Center(child: Text('Error: ${state.message}', style: const TextStyle(color: Colors.red)));
+            // Error is handled by listener, but we return a temporary loading indicator
+            // because DairyBloc immediately fires LoadDairyData() after emitting an error.
+            return const Center(child: CircularProgressIndicator());
           }
           if (state is DairyLoaded) {
             return TabBarView(

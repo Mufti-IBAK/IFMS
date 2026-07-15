@@ -168,19 +168,16 @@ class TasksRepository {
   Future<void> updateTaskStatus(String taskId, String status) async {
     try {
       await apiClient.dio.patch('/tasks/$taskId/status', data: {'status': status});
-    } catch (e) {
-      // Local cache update
+      
+      // Local cache update on success
       await (db.update(db.localTasks)..where((t) => t.id.equals(taskId))).write(
         LocalTasksCompanion(status: Value(status))
       );
-      
-      // Queue sync
-      await db.into(db.syncQueue).insert(SyncQueueCompanion.insert(
-        endpoint: '/tasks/$taskId/status',
-        method: 'PATCH',
-        body: jsonEncode({'status': status}),
-        queuedAt: DateTime.now(),
-      ));
+    } catch (e) {
+      if (e is DioException) {
+        throw Exception(e.response?.data?['message'] ?? e.response?.data?['details'] ?? 'Failed to update task status: ${e.message}');
+      }
+      throw Exception('Failed to update task status: $e');
     }
   }
 
@@ -196,9 +193,6 @@ class TasksRepository {
       category: Value(taskData['category'] ?? 'other'),
     );
 
-    // Save to local database
-    await db.into(db.localTasks).insertOnConflictUpdate(companion);
-
     if (isPublic) {
       try {
         await apiClient.dio.post('/tasks', data: {
@@ -211,23 +205,15 @@ class TasksRepository {
           'category': taskData['category'] ?? 'other',
         });
       } catch (e) {
-        // Queue synchronization
-        await db.into(db.syncQueue).insert(SyncQueueCompanion.insert(
-          endpoint: '/tasks',
-          method: 'POST',
-          body: jsonEncode({
-            'id': taskData['id'],
-            'title': taskData['title'],
-            'description': taskData['description'],
-            'priority': taskData['priority'] ?? 'medium',
-            'status': taskData['status'] ?? 'pending',
-            'due_date': taskData['due_date'],
-            'category': taskData['category'] ?? 'other',
-          }),
-          queuedAt: DateTime.now(),
-        ));
+        if (e is DioException) {
+          throw Exception(e.response?.data?['message'] ?? e.response?.data?['details'] ?? 'Failed to create task: ${e.message}');
+        }
+        throw Exception('Failed to create task: $e');
       }
     }
+
+    // Save to local database only on success (or if personal/not synced)
+    await db.into(db.localTasks).insertOnConflictUpdate(companion);
   }
 
   Future<void> _updateLocalCache(List<dynamic> tasks) async {

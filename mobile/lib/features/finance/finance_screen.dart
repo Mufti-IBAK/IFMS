@@ -70,7 +70,20 @@ class _FinanceScreenState extends State<FinanceScreen> with SingleTickerProvider
 
   @override
   Widget build(BuildContext context) {
-    return BlocBuilder<FinanceBloc, FinanceState>(
+    return BlocConsumer<FinanceBloc, FinanceState>(
+      listener: (context, state) {
+        if (state is FinanceError) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(state.message),
+              backgroundColor: Colors.red,
+              behavior: SnackBarBehavior.floating,
+              margin: const EdgeInsets.only(bottom: 80, left: 20, right: 20),
+              duration: const Duration(seconds: 4),
+            ),
+          );
+        }
+      },
       builder: (context, state) {
         if (state is FinanceLoading) {
           return const Scaffold(
@@ -110,20 +123,9 @@ class _FinanceScreenState extends State<FinanceScreen> with SingleTickerProvider
                 : null,
           );
         } else if (state is FinanceError) {
-          return Scaffold(
-            body: Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text('Error: ${state.message}', style: const TextStyle(color: Colors.red)),
-                  const SizedBox(height: 16),
-                  ElevatedButton(
-                    onPressed: () => BlocProvider.of<FinanceBloc>(context).add(LoadFinanceData()),
-                    child: const Text('Retry'),
-                  ),
-                ],
-              ),
-            ),
+          // Temporarily return loading, listener shows snackbar
+          return const Scaffold(
+            body: Center(child: CircularProgressIndicator()),
           );
         }
         return const Scaffold(

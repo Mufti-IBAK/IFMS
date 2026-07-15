@@ -52,24 +52,8 @@ class StaffRepository {
     final newId = data['id'] ?? const Uuid().v4();
     data['id'] = newId;
     
-    // Save locally first for offline support and immediate UI feedback
-    await db.into(db.localStaff).insertOnConflictUpdate(LocalStaffCompanion.insert(
-      id: newId,
-      name: data['name'],
-      role: data['role'],
-      phone: Value(data['phone']),
-      baseSalary: Value(data['base_salary']),
-      isActive: const Value(true),
-      profilePic: Value(data['profile_pic']),
-      gender: Value(data['gender']),
-      dateOfBirth: Value(data['date_of_birth'] != null ? DateTime.tryParse(data['date_of_birth']) : null),
-      address: Value(data['address']),
-      emergencyContact: Value(data['emergency_contact']),
-      employmentType: Value(data['employment_type']),
-    ));
-
     try {
-      if (data['profile_pic'] != null) {
+      if (data['profile_pic'] != null && !data['profile_pic'].toString().startsWith('http')) {
         final Map<String, dynamic> formDataMap = Map.from(data);
         formDataMap.remove('profile_pic');
         
@@ -82,22 +66,35 @@ class StaffRepository {
       } else {
         await apiClient.dio.post('/staff', data: data);
       }
-    } catch (e) {
-      log('Offline: Staff saved locally.');
-      await db.into(db.syncQueue).insert(SyncQueueCompanion.insert(
-        endpoint: '/staff',
-        method: 'POST',
-        body: jsonEncode(data),
-        queuedAt: DateTime.now(),
+
+      // Save locally on success
+      await db.into(db.localStaff).insertOnConflictUpdate(LocalStaffCompanion.insert(
+        id: newId,
+        name: data['name'],
+        role: data['role'],
+        phone: Value(data['phone']),
+        baseSalary: Value(data['base_salary'] != null ? double.parse(data['base_salary'].toString()) : 0.0),
+        isActive: const Value(true),
+        profilePic: Value(data['profile_pic']),
+        gender: Value(data['gender']),
+        dateOfBirth: Value(data['date_of_birth'] != null ? DateTime.tryParse(data['date_of_birth']) : null),
+        address: Value(data['address']),
+        emergencyContact: Value(data['emergency_contact']),
+        employmentType: Value(data['employment_type']),
       ));
+    } catch (e) {
+      if (e is DioException) {
+        throw Exception(e.response?.data?['message'] ?? e.response?.data?['details'] ?? 'Failed to add staff: ${e.message}');
+      }
+      throw Exception('Failed to add staff: $e');
     }
   }
 
   Future<void> updateStaff(String id, Map<String, dynamic> data) async {
     try {
       await apiClient.dio.patch('/staff/$id', data: data);
-    } catch (e) {
-      // Local update
+
+      // Local update on success
       await (db.update(db.localStaff)..where((t) => t.id.equals(id))).write(
         LocalStaffCompanion(
           baseSalary: data.containsKey('base_salary') ? Value(double.parse(data['base_salary'].toString())) : const Value.absent(),
@@ -107,22 +104,24 @@ class StaffRepository {
           employmentType: data.containsKey('employment_type') ? Value(data['employment_type'].toString()) : const Value.absent(),
         )
       );
+    } catch (e) {
+      if (e is DioException) {
+        throw Exception(e.response?.data?['message'] ?? e.response?.data?['details'] ?? 'Failed to update staff: ${e.message}');
+      }
+      throw Exception('Failed to update staff: $e');
     }
   }
 
   Future<void> deleteStaff(String id) async {
     try {
       await apiClient.dio.delete('/staff/$id');
+      await (db.delete(db.localStaff)..where((t) => t.id.equals(id))).go();
     } catch (e) {
-      log('Offline: Delete deferred for staff $id');
-      await db.into(db.syncQueue).insert(SyncQueueCompanion.insert(
-        endpoint: '/staff/$id',
-        method: 'DELETE',
-        body: '{}',
-        queuedAt: DateTime.now(),
-      ));
+      if (e is DioException) {
+        throw Exception(e.response?.data?['message'] ?? e.response?.data?['details'] ?? 'Failed to delete staff: ${e.message}');
+      }
+      throw Exception('Failed to delete staff: $e');
     }
-    await (db.delete(db.localStaff)..where((t) => t.id.equals(id))).go();
   }
 
   Future<List<LocalStaffQuery>> getQueries({String? staffId}) async {
@@ -165,15 +164,18 @@ class StaffRepository {
     try {
       await apiClient.dio.post('/staff/$staffId/queries', data: data);
     } catch (e) {
-       // Minimal offline support
+      if (e is DioException) {
+        throw Exception(e.response?.data?['message'] ?? e.response?.data?['details'] ?? 'Failed to issue query: ${e.message}');
+      }
+      throw Exception('Failed to issue query: $e');
     }
   }
 
   Future<void> resolveQuery(String queryId, String notes) async {
     try {
       await apiClient.dio.patch('/staff/queries/$queryId/resolve', data: {'resolution_notes': notes});
-    } catch (e) {
-      // Local update
+
+      // Local update on success
       await (db.update(db.localStaffQueries)..where((t) => t.id.equals(queryId))).write(
         LocalStaffQueriesCompanion(
           isResolved: const Value(true),
@@ -181,6 +183,11 @@ class StaffRepository {
           resolvedAt: Value(DateTime.now()),
         )
       );
+    } catch (e) {
+      if (e is DioException) {
+        throw Exception(e.response?.data?['message'] ?? e.response?.data?['details'] ?? 'Failed to resolve query: ${e.message}');
+      }
+      throw Exception('Failed to resolve query: $e');
     }
   }
 

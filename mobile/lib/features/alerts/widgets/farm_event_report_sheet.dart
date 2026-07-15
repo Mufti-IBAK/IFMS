@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/di/service_locator.dart';
 import '../../../core/database/local_db.dart';
+import '../../../core/network/api_client.dart';
+import 'package:dio/dio.dart';
 import 'package:drift/drift.dart' as drift;
 import 'package:intl/intl.dart';
 
@@ -92,51 +94,66 @@ class _FarmEventReportSheetState extends State<FarmEventReportSheet> {
     }
 
     final db = sl<LocalDatabase>();
+    final apiClient = sl<ApiClient>();
     final eventId = 'ev_${DateTime.now().millisecondsSinceEpoch}';
     final involvedAnimalsStr = _selectedAnimalTags.join(', ');
 
-    await db.into(db.localFarmEvents).insert(LocalFarmEventsCompanion.insert(
-      id: eventId,
-      eventType: _eventType,
-      eventDate: DateTime.now(),
-      description: _descriptionCtrl.text,
-      involvedAnimals: drift.Value(involvedAnimalsStr),
-    ));
+    try {
+      // Remote sync first
+      await apiClient.dio.post('/farm-events', data: {
+        'id': eventId,
+        'type': _eventType,
+        'description': _descriptionCtrl.text,
+        'animals': involvedAnimalsStr,
+      });
 
-    // Update animal status to deceased if mortality
-    if (_eventType == 'mortality') {
-      for (var tag in _selectedAnimalTags) {
-        await (db.update(db.localAnimals)..where((a) => a.tagId.equals(tag)))
-            .write(const LocalAnimalsCompanion(status: drift.Value('deceased')));
+      // On success, insert to local db
+      await db.into(db.localFarmEvents).insert(LocalFarmEventsCompanion.insert(
+        id: eventId,
+        eventType: _eventType,
+        eventDate: DateTime.now(),
+        description: _descriptionCtrl.text,
+        involvedAnimals: drift.Value(involvedAnimalsStr),
+      ));
+
+      // Update animal status to deceased if mortality
+      if (_eventType == 'mortality') {
+        for (var tag in _selectedAnimalTags) {
+          await (db.update(db.localAnimals)..where((a) => a.tagId.equals(tag)))
+              .write(const LocalAnimalsCompanion(status: drift.Value('deceased')));
+        }
       }
-    }
 
-    // Also queue for sync
-    await db.into(db.syncQueue).insert(SyncQueueCompanion.insert(
-      endpoint: '/farm-events',
-      method: 'POST',
-      body: '{"id": "$eventId", "type": "$_eventType", "description": "${_descriptionCtrl.text}", "animals": "$involvedAnimalsStr"}',
-      queuedAt: DateTime.now(),
-    ));
+      // Schedule an informational task in the Notification Center
+      final taskId = 'task_ev_$eventId';
+      await db.into(db.localTasks).insert(LocalTasksCompanion.insert(
+        id: taskId,
+        title: 'Farm Event Reported: ${_eventType.toUpperCase()}',
+        description: drift.Value('${_descriptionCtrl.text} (Animals: $involvedAnimalsStr)'),
+        priority: 'high',
+        status: 'completed',
+        dueDate: drift.Value(DateTime.now()),
+        category: const drift.Value('other'),
+        isActionable: const drift.Value(false),
+      ));
 
-    // Schedule an informational task in the Notification Center
-    final taskId = 'task_ev_$eventId';
-    await db.into(db.localTasks).insert(LocalTasksCompanion.insert(
-      id: taskId,
-      title: 'Farm Event Reported: ${_eventType.toUpperCase()}',
-      description: drift.Value('${_descriptionCtrl.text} (Animals: $involvedAnimalsStr)'),
-      priority: 'high',
-      status: 'completed',
-      dueDate: drift.Value(DateTime.now()),
-      category: const drift.Value('other'),
-      isActionable: const drift.Value(false),
-    ));
-
-    if (mounted) {
-      Navigator.pop(context);
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Farm Event logged successfully!')),
-      );
+      if (mounted) {
+        Navigator.pop(context);
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Farm Event logged successfully!')),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to log event: $e'.replaceAll('Exception:', '').trim()),
+            backgroundColor: Colors.red,
+            behavior: SnackBarBehavior.floating,
+            margin: const EdgeInsets.only(bottom: 80, left: 20, right: 20),
+          ),
+        );
+      }
     }
   }
 

@@ -37,7 +37,20 @@ class _TasksScreenState extends State<TasksScreen> {
             indicatorSize: TabBarIndicatorSize.tab,
           ),
         ),
-        body: BlocBuilder<TasksBloc, TasksState>(
+        body: BlocConsumer<TasksBloc, TasksState>(
+          listener: (context, state) {
+            if (state is TasksError) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(state.message),
+                  backgroundColor: Colors.red,
+                  behavior: SnackBarBehavior.floating,
+                  margin: const EdgeInsets.only(bottom: 80, left: 20, right: 20),
+                  duration: const Duration(seconds: 4),
+                ),
+              );
+            }
+          },
           builder: (context, state) {
             if (state is TasksLoading) {
               return const Center(child: CircularProgressIndicator());
@@ -58,29 +71,35 @@ class _TasksScreenState extends State<TasksScreen> {
 
               for (var task in allTasks) {
                 final status = task is Map ? task['status'] : task.status;
-                final visibility = task is Map ? task['assigned_to'] : task.assignedTo;
+                final assignedTo = task is Map ? task['assignedTo'] : task.assignedTo;
+                final isActionable = task is Map ? task['isActionable'] : task.isActionable;
                 
-                if (visibility == 'personal') {
-                  personalCount++;
-                } else {
-                  publicCount++;
+                if (status == 'pending') {
+                  totalPending++;
+                  if (assignedTo == 'personal') personalCount++;
+                  if (assignedTo == 'public') publicCount++;
                 }
 
                 if (status == 'completed') {
                   completedTasks.add(task);
+                  continue;
+                }
+                
+                DateTime? dueDate;
+                if (task is Map && task['due_date'] != null) {
+                  dueDate = DateTime.tryParse(task['due_date']);
+                } else if (task.dueDate != null) {
+                  dueDate = task.dueDate;
+                }
+
+                if (dueDate == null) {
+                  upcomingTasks.add(task);
                 } else {
-                  totalPending++;
-                  final dueDateRaw = task is Map ? task['due_date'] ?? task['dueDate'] : task.dueDate;
-                  if (dueDateRaw != null) {
-                    DateTime dt = dueDateRaw is DateTime ? dueDateRaw : DateTime.parse(dueDateRaw.toString());
-                    final taskDate = DateTime(dt.year, dt.month, dt.day);
-                    if (taskDate.isAfter(today)) {
-                      upcomingTasks.add(task);
-                    } else {
-                      todayTasks.add(task); // Today or Overdue
-                    }
+                  final taskDay = DateTime(dueDate.year, dueDate.month, dueDate.day);
+                  if (taskDay.isAtSameMomentAs(today) || taskDay.isBefore(today)) {
+                    todayTasks.add(task);
                   } else {
-                    todayTasks.add(task); // Fallback to today if no date
+                    upcomingTasks.add(task);
                   }
                 }
               }
@@ -90,13 +109,13 @@ class _TasksScreenState extends State<TasksScreen> {
                   _buildStatsBanner(totalPending, personalCount, publicCount),
                   if (state.isOffline)
                     Container(
-                      color: AppColors.warning.withValues(alpha: 0.1),
+                      color: Colors.orange.shade100,
                       width: double.infinity,
-                      padding: const EdgeInsets.symmetric(vertical: 8),
+                      padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 16),
                       child: const Text(
-                        'Offline Mode - Queueing Actions',
+                        'Offline Mode - Showing Local Data',
                         textAlign: TextAlign.center,
-                        style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.warning, fontSize: 12),
+                        style: TextStyle(fontSize: 12, color: Colors.deepOrange),
                       ),
                     ),
                   Expanded(
@@ -111,7 +130,7 @@ class _TasksScreenState extends State<TasksScreen> {
                 ],
               );
             } else if (state is TasksError) {
-              return Center(child: Text(state.message));
+              return const Center(child: CircularProgressIndicator());
             }
             return const Center(child: Text('No farm tasks found.'));
           },

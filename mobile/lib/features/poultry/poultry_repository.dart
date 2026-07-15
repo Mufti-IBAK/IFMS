@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:drift/drift.dart';
 import 'package:uuid/uuid.dart';
+import 'package:dio/dio.dart';
 import '../../core/database/local_db.dart';
 import '../../core/network/api_client.dart';
 
@@ -28,17 +29,6 @@ class PoultryRepository {
     final breed = data['breed'] ?? 'Broiler';
     final startDate = DateTime.parse(data['start_date'].toString());
 
-    // Local Insert
-    await db.into(db.localPoultryBatches).insert(LocalPoultryBatchesCompanion.insert(
-      id: uuid,
-      batchNumber: batchNumber,
-      houseName: houseName,
-      initialCount: initialCount,
-      currentCount: initialCount,
-      startDate: startDate,
-      status: 'active',
-    ));
-
     // Remote Sync
     final remoteData = {
       'id': uuid,
@@ -52,13 +42,22 @@ class PoultryRepository {
 
     try {
       await apiClient.dio.post('/poultry/batch', data: remoteData);
-    } catch (e) {
-      await db.into(db.syncQueue).insert(SyncQueueCompanion.insert(
-        endpoint: '/poultry/batch',
-        method: 'POST',
-        body: jsonEncode(remoteData),
-        queuedAt: DateTime.now(),
+
+      // Local Insert
+      await db.into(db.localPoultryBatches).insert(LocalPoultryBatchesCompanion.insert(
+        id: uuid,
+        batchNumber: batchNumber,
+        houseName: houseName,
+        initialCount: initialCount,
+        currentCount: initialCount,
+        startDate: startDate,
+        status: 'active',
       ));
+    } catch (e) {
+      if (e is DioException) {
+        throw Exception(e.response?.data?['message'] ?? e.response?.data?['details'] ?? 'Failed to create batch: ${e.message}');
+      }
+      throw Exception('Failed to create batch: $e');
     }
   }
 
@@ -114,31 +113,6 @@ class PoultryRepository {
     final changeType = eventData['event_type'].toString(); // feed, mortality, weight_sample
     final double qty = double.parse(eventData['quantity'].toString());
     
-    if (changeType == 'mortality') {
-      final batch = await (db.select(db.localPoultryBatches)..where((t) => t.id.equals(batchId))).getSingle();
-      final newCount = (batch.currentCount - qty.toInt()).clamp(0, batch.initialCount);
-      await (db.update(db.localPoultryBatches)..where((t) => t.id.equals(batchId))).write(
-        LocalPoultryBatchesCompanion(currentCount: Value(newCount))
-      );
-      await db.into(db.localPoultryLogs).insert(LocalPoultryLogsCompanion.insert(
-        batchId: batchId,
-        logDate: DateTime.now(),
-        mortality: Value(qty.toInt()),
-      ));
-    } else if (changeType == 'feed') {
-      await db.into(db.localPoultryLogs).insert(LocalPoultryLogsCompanion.insert(
-        batchId: batchId,
-        logDate: DateTime.now(),
-        feedBags: Value(qty.toInt()),
-      ));
-    } else if (changeType == 'weight_sample') {
-      await db.into(db.localPoultryLogs).insert(LocalPoultryLogsCompanion.insert(
-        batchId: batchId,
-        logDate: DateTime.now(),
-        averageWeight: Value(qty),
-      ));
-    }
-
     // Remote sync
     final remoteData = {
       'id': const Uuid().v4(),
@@ -150,13 +124,36 @@ class PoultryRepository {
 
     try {
       await apiClient.dio.post('/poultry/batch/$batchId/event', data: remoteData);
+
+      if (changeType == 'mortality') {
+        final batch = await (db.select(db.localPoultryBatches)..where((t) => t.id.equals(batchId))).getSingle();
+        final newCount = (batch.currentCount - qty.toInt()).clamp(0, batch.initialCount);
+        await (db.update(db.localPoultryBatches)..where((t) => t.id.equals(batchId))).write(
+          LocalPoultryBatchesCompanion(currentCount: Value(newCount))
+        );
+        await db.into(db.localPoultryLogs).insert(LocalPoultryLogsCompanion.insert(
+          batchId: batchId,
+          logDate: DateTime.now(),
+          mortality: Value(qty.toInt()),
+        ));
+      } else if (changeType == 'feed') {
+        await db.into(db.localPoultryLogs).insert(LocalPoultryLogsCompanion.insert(
+          batchId: batchId,
+          logDate: DateTime.now(),
+          feedBags: Value(qty.toInt()),
+        ));
+      } else if (changeType == 'weight_sample') {
+        await db.into(db.localPoultryLogs).insert(LocalPoultryLogsCompanion.insert(
+          batchId: batchId,
+          logDate: DateTime.now(),
+          averageWeight: Value(qty),
+        ));
+      }
     } catch (e) {
-      await db.into(db.syncQueue).insert(SyncQueueCompanion.insert(
-        endpoint: '/poultry/batch/$batchId/event',
-        method: 'POST',
-        body: jsonEncode(remoteData),
-        queuedAt: DateTime.now(),
-      ));
+      if (e is DioException) {
+        throw Exception(e.response?.data?['message'] ?? e.response?.data?['details'] ?? 'Failed to log event: ${e.message}');
+      }
+      throw Exception('Failed to log event: $e');
     }
   }
 
@@ -212,17 +209,6 @@ class PoultryRepository {
     final double revenue = double.parse(saleData['revenue'].toString());
     final bool isClosing = saleData['is_closing'] == true;
 
-    // Update local count and conditionally update status
-    final batch = await (db.select(db.localPoultryBatches)..where((t) => t.id.equals(batchId))).getSingle();
-    final newCount = (batch.currentCount - soldCount).clamp(0, batch.initialCount);
-
-    var companion = LocalPoultryBatchesCompanion(currentCount: Value(newCount));
-    if (isClosing || newCount == 0) {
-      companion = companion.copyWith(status: const Value('closed'));
-    }
-
-    await (db.update(db.localPoultryBatches)..where((t) => t.id.equals(batchId))).write(companion);
-
     // Sync sale event to backend
     final remoteData = {
       'event_type': 'sale',
@@ -234,6 +220,9 @@ class PoultryRepository {
       }
     };
 
+    final batch = await (db.select(db.localPoultryBatches)..where((t) => t.id.equals(batchId))).getSingle();
+    final newCount = (batch.currentCount - soldCount).clamp(0, batch.initialCount);
+
     try {
       await apiClient.dio.post('/poultry/batch/$batchId/event', data: remoteData);
       if (isClosing && newCount > 0) {
@@ -244,26 +233,19 @@ class PoultryRepository {
             'value_json': null
          });
       }
-    } catch (e) {
-      await db.into(db.syncQueue).insert(SyncQueueCompanion.insert(
-        endpoint: '/poultry/batch/$batchId/event',
-        method: 'POST',
-        body: jsonEncode(remoteData),
-        queuedAt: DateTime.now(),
-      ));
-      if (isClosing && newCount > 0) {
-         await db.into(db.syncQueue).insert(SyncQueueCompanion.insert(
-           endpoint: '/poultry/batch/$batchId/event',
-           method: 'POST',
-           body: jsonEncode({
-              'event_type': 'close',
-              'event_date': DateTime.now().toIso8601String().substring(0, 10),
-              'quantity': 0,
-              'value_json': null
-           }),
-           queuedAt: DateTime.now(),
-         ));
+
+      // Update local count and conditionally update status
+      var companion = LocalPoultryBatchesCompanion(currentCount: Value(newCount));
+      if (isClosing || newCount == 0) {
+        companion = companion.copyWith(status: const Value('closed'));
       }
+      await (db.update(db.localPoultryBatches)..where((t) => t.id.equals(batchId))).write(companion);
+
+    } catch (e) {
+      if (e is DioException) {
+        throw Exception(e.response?.data?['message'] ?? e.response?.data?['details'] ?? 'Failed to log sale: ${e.message}');
+      }
+      throw Exception('Failed to log sale: $e');
     }
   }
 

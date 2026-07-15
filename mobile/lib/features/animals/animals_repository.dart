@@ -29,30 +29,7 @@ class AnimalsRepository {
     animalData['status'] = animalData['status'] ?? 'active';
     animalData['current_reproductive_status'] = animalData['current_reproductive_status'] ?? 'open';
     
-    // Always insert/update locally first
-    await db.into(db.localAnimals).insertOnConflictUpdate(LocalAnimalsCompanion.insert(
-      id: uuid,
-      tagId: animalData['tag_id'],
-      species: animalData['species'],
-      sex: animalData['sex'],
-      dateOfBirth: Value(animalData['date_of_birth'] != null ? DateTime.parse(animalData['date_of_birth']) : null),
-      currentReproductiveStatus: animalData['current_reproductive_status'] ?? 'open',
-      imagePath: Value(imagePath),
-      breed: Value(animalData['breed']),
-      weight: Value(animalData['weight'] != null ? double.tryParse(animalData['weight'].toString()) : null),
-      color: Value(animalData['color']),
-      uniqueMarks: Value(animalData['unique_marks']),
-      pedigreeType: Value(animalData['pedigree_type']),
-      purpose: Value(animalData['purpose']),
-      vaccinationStatus: Value(animalData['vaccination_status']),
-      dewormingStatus: Value(animalData['deworming_status']),
-      status: Value(animalData['status'] ?? 'active'),
-      sireId: Value(animalData['sire_id']),
-      damId: Value(animalData['dam_id']),
-      acquisitionCost: Value(animalData['acquisition_cost'] != null ? double.tryParse(animalData['acquisition_cost'].toString()) ?? 0.0 : 0.0),
-      salvageValue: Value(animalData['salvage_value'] != null ? double.tryParse(animalData['salvage_value'].toString()) ?? 0.0 : 0.0),
-    ));
-
+    // Online-First: Make API call first
     try {
       final response = await apiClient.dio.post('/animals', data: animalData);
       final animalId = response.data['id'];
@@ -64,14 +41,14 @@ class AnimalsRepository {
         });
         await apiClient.dio.post('/animals/$animalId/image', data: formData);
       }
+
+      // Update local cache on success
+      await _updateLocalCache([response.data]);
     } catch (e) {
-      // Add to SyncQueue if API call failed
-      await db.into(db.syncQueue).insert(SyncQueueCompanion.insert(
-        endpoint: '/animals',
-        method: 'POST',
-        body: jsonEncode(animalData),
-        queuedAt: DateTime.now(),
-      ));
+      if (e is DioException) {
+        throw Exception(e.response?.data?['message'] ?? e.response?.data?['details'] ?? 'Failed to add animal: ${e.message}');
+      }
+      throw Exception('Failed to add animal: $e');
     }
   }
 
@@ -112,30 +89,8 @@ class AnimalsRepository {
     final imagePath = updateData['image_path'] as String?;
     updateData.remove('image_path');
 
-    // Always update locally first
-    final companion = LocalAnimalsCompanion(
-      tagId: updateData['tag_id'] != null ? Value(updateData['tag_id']) : const Value.absent(),
-      species: updateData['species'] != null ? Value(updateData['species']) : const Value.absent(),
-      sex: updateData['sex'] != null ? Value(updateData['sex']) : const Value.absent(),
-      breed: updateData.containsKey('breed') ? Value(updateData['breed']) : const Value.absent(),
-      dateOfBirth: updateData['date_of_birth'] != null ? Value(DateTime.parse(updateData['date_of_birth'])) : const Value.absent(),
-      currentReproductiveStatus: updateData['current_reproductive_status'] != null ? Value(updateData['current_reproductive_status']) : const Value.absent(),
-      weight: updateData.containsKey('weight') ? Value(updateData['weight'] != null ? double.tryParse(updateData['weight'].toString()) : null) : const Value.absent(),
-      color: updateData.containsKey('color') ? Value(updateData['color']) : const Value.absent(),
-      uniqueMarks: updateData.containsKey('unique_marks') ? Value(updateData['unique_marks']) : const Value.absent(),
-      pedigreeType: updateData['pedigree_type'] != null ? Value(updateData['pedigree_type']) : const Value.absent(),
-      purpose: updateData['purpose'] != null ? Value(updateData['purpose']) : const Value.absent(),
-      vaccinationStatus: updateData.containsKey('vaccination_status') ? Value(updateData['vaccination_status']) : const Value.absent(),
-      dewormingStatus: updateData.containsKey('deworming_status') ? Value(updateData['deworming_status']) : const Value.absent(),
-      imagePath: imagePath != null ? Value(imagePath) : const Value.absent(),
-      status: updateData.containsKey('status') ? Value(updateData['status']) : const Value.absent(),
-      acquisitionCost: updateData.containsKey('acquisition_cost') ? Value(updateData['acquisition_cost'] != null ? double.tryParse(updateData['acquisition_cost'].toString()) ?? 0.0 : 0.0) : const Value.absent(),
-      salvageValue: updateData.containsKey('salvage_value') ? Value(updateData['salvage_value'] != null ? double.tryParse(updateData['salvage_value'].toString()) ?? 0.0 : 0.0) : const Value.absent(),
-    );
-    await (db.update(db.localAnimals)..where((t) => t.id.equals(id))).write(companion);
-
     try {
-      await apiClient.dio.patch('/animals/$id', data: updateData);
+      final response = await apiClient.dio.patch('/animals?id=eq.$id', data: updateData);
       
       // If image exists, upload it
       if (imagePath != null) {
@@ -144,65 +99,38 @@ class AnimalsRepository {
         });
         await apiClient.dio.post('/animals/$id/image', data: formData);
       }
+      
+      // Fetch fresh animal data to update cache
+      final freshResponse = await apiClient.dio.get('/animals?id=eq.$id');
+      if (freshResponse.data is List && freshResponse.data.isNotEmpty) {
+        await _updateLocalCache([freshResponse.data[0]]);
+      }
     } catch (e) {
-      // Add to SyncQueue if API call failed
-      await db.into(db.syncQueue).insert(SyncQueueCompanion.insert(
-        endpoint: '/animals/$id',
-        method: 'PATCH',
-        body: jsonEncode(updateData),
-        queuedAt: DateTime.now(),
-      ));
+      if (e is DioException) {
+        throw Exception(e.response?.data?['message'] ?? e.response?.data?['details'] ?? 'Failed to update animal: ${e.message}');
+      }
+      throw Exception('Failed to update animal: $e');
     }
   }
 
   Future<void> deleteAnimal(String id) async {
-    // Always delete locally first
-    await (db.delete(db.localAnimals)..where((t) => t.id.equals(id))).go();
-
     try {
-      await apiClient.dio.delete('/animals/$id');
+      await apiClient.dio.delete('/animals?id=eq.$id');
+      await (db.delete(db.localAnimals)..where((t) => t.id.equals(id))).go();
     } catch (e) {
-      // Add to SyncQueue if API call failed
-      await db.into(db.syncQueue).insert(SyncQueueCompanion.insert(
-        endpoint: '/animals/$id',
-        method: 'DELETE',
-        body: '',
-        queuedAt: DateTime.now(),
-      ));
+      if (e is DioException) {
+        throw Exception(e.response?.data?['message'] ?? e.response?.data?['details'] ?? 'Failed to delete animal: ${e.message}');
+      }
+      throw Exception('Failed to delete animal: $e');
     }
   }
 
   Future<void> logAnimalEvent(String animalId, String eventType, Map<String, dynamic> payload) async {
     final eventId = const Uuid().v4();
     final now = DateTime.now();
-    
-    // Save locally
-    await db.into(db.localAnimalMedicalRecords).insert(LocalAnimalMedicalRecordsCompanion.insert(
-      id: eventId,
-      animalId: animalId,
-      medicationId: 'report',
-      administeredDose: 0.0,
-      cost: 0.0,
-      treatmentDate: now,
-      diagnosedCondition: ((payload['diagnostics'] as Map?)?['observations'] as String?) ?? 'Medical Report',
-      notes: Value(jsonEncode(payload)),
-    ));
 
-    // Handle Medical Report Follow-ups and Outcomes
-    if (eventType == 'medical_report') {
-      // Tasks are now scheduled directly by MedicalReportSheet to respect frequency
-
-
-      final outcome = payload['outcome'] as Map<String, dynamic>?;
-      if (outcome != null && outcome['is_deceased'] == true) {
-        await (db.update(db.localAnimals)..where((t) => t.id.equals(animalId))).write(
-          const LocalAnimalsCompanion(status: Value('deceased')),
-        );
-      }
-    }
-
-    // Sync to Server
     try {
+      // Sync to Server first
       final data = {
         'animal_id': animalId,
         'event_type': eventType,
@@ -210,39 +138,40 @@ class AnimalsRepository {
         'event_timestamp': now.toIso8601String(),
         'payload': payload,
       };
-      await apiClient.dio.post('/animals/$animalId/events', data: data);
+      await apiClient.dio.post('/animal_events', data: data); // Path rewritten by ApiClient interceptor for this anyway, but keeping standard
       
       if (eventType == 'medical_report') {
         final outcome = payload['outcome'] as Map<String, dynamic>?;
         if (outcome != null && outcome['is_deceased'] == true) {
-          await apiClient.dio.patch('/animals/$animalId', data: {'status': 'deceased'});
+          await apiClient.dio.patch('/animals?id=eq.$animalId', data: {'status': 'deceased'});
+        }
+      }
+
+      // Save locally after success
+      await db.into(db.localAnimalMedicalRecords).insert(LocalAnimalMedicalRecordsCompanion.insert(
+        id: eventId,
+        animalId: animalId,
+        medicationId: 'report',
+        administeredDose: 0.0,
+        cost: 0.0,
+        treatmentDate: now,
+        diagnosedCondition: ((payload['diagnostics'] as Map?)?['observations'] as String?) ?? 'Medical Report',
+        notes: Value(jsonEncode(payload)),
+      ));
+
+      if (eventType == 'medical_report') {
+        final outcome = payload['outcome'] as Map<String, dynamic>?;
+        if (outcome != null && outcome['is_deceased'] == true) {
+          await (db.update(db.localAnimals)..where((t) => t.id.equals(animalId))).write(
+            const LocalAnimalsCompanion(status: Value('deceased')),
+          );
         }
       }
     } catch (e) {
-      await db.into(db.syncQueue).insert(SyncQueueCompanion.insert(
-        endpoint: '/animals/$animalId/events',
-        method: 'POST',
-        body: jsonEncode({
-          'animal_id': animalId,
-          'event_type': eventType,
-          'event_category': 'health',
-          'event_timestamp': now.toIso8601String(),
-          'payload': payload,
-        }),
-        queuedAt: DateTime.now(),
-      ));
-      
-      if (eventType == 'medical_report') {
-        final outcome = payload['outcome'] as Map<String, dynamic>?;
-        if (outcome != null && outcome['is_deceased'] == true) {
-          await db.into(db.syncQueue).insert(SyncQueueCompanion.insert(
-            endpoint: '/animals/$animalId',
-            method: 'PATCH',
-            body: jsonEncode({'status': 'deceased'}),
-            queuedAt: DateTime.now(),
-          ));
-        }
+      if (e is DioException) {
+        throw Exception(e.response?.data?['message'] ?? e.response?.data?['details'] ?? 'Failed to log event: ${e.message}');
       }
+      throw Exception('Failed to log event: $e');
     }
   }
 }

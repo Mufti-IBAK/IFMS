@@ -68,7 +68,8 @@ class AnimalsBloc extends Bloc<AnimalsEvent, AnimalsState> {
         );
         add(LoadAnimals());
       } catch (e) {
-        emit(AnimalsError('Failed to add animal: ${e.toString()}'));
+        emit(AnimalsError(e.toString().replaceAll('Exception:', '').trim()));
+        add(LoadAnimals());
       }
     });
 
@@ -77,7 +78,8 @@ class AnimalsBloc extends Bloc<AnimalsEvent, AnimalsState> {
         await repository.logAnimalEvent(event.animalId, event.eventType, event.payload);
         add(LoadAnimals());
       } catch (e) {
-        emit(AnimalsError('Failed to log event: ${e.toString()}'));
+        emit(AnimalsError(e.toString().replaceAll('Exception:', '').trim()));
+        add(LoadAnimals());
       }
     });
 
@@ -86,7 +88,8 @@ class AnimalsBloc extends Bloc<AnimalsEvent, AnimalsState> {
         await repository.updateAnimal(event.id, event.updateData);
         add(LoadAnimals());
       } catch (e) {
-        emit(AnimalsError('Failed to update animal: ${e.toString()}'));
+        emit(AnimalsError(e.toString().replaceAll('Exception:', '').trim()));
+        add(LoadAnimals());
       }
     });
 
@@ -95,7 +98,8 @@ class AnimalsBloc extends Bloc<AnimalsEvent, AnimalsState> {
         await repository.deleteAnimal(event.id);
         add(LoadAnimals());
       } catch (e) {
-        emit(AnimalsError('Failed to delete animal: ${e.toString()}'));
+        emit(AnimalsError(e.toString().replaceAll('Exception:', '').trim()));
+        add(LoadAnimals());
       }
     });
   }

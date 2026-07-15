@@ -104,7 +104,20 @@ class _AnimalsScreenState extends State<AnimalsScreen> {
           ),
         ],
       ),
-      body: BlocBuilder<AnimalsBloc, AnimalsState>(
+      body: BlocConsumer<AnimalsBloc, AnimalsState>(
+        listener: (context, state) {
+          if (state is AnimalsError) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(state.message),
+                backgroundColor: Colors.red,
+                behavior: SnackBarBehavior.floating,
+                margin: const EdgeInsets.only(bottom: 80, left: 20, right: 20),
+                duration: const Duration(seconds: 4),
+              ),
+            );
+          }
+        },
         builder: (context, state) {
           if (state is AnimalsLoading) {
             return const Center(child: CircularProgressIndicator());
@@ -580,7 +593,9 @@ class _AnimalsScreenState extends State<AnimalsScreen> {
               ],
             );
           } else if (state is AnimalsError) {
-            return Center(child: Text(state.message));
+            // Error is handled by listener, but we return a temporary loading indicator
+            // because AnimalsBloc immediately fires LoadAnimals() after emitting an error.
+            return const Center(child: CircularProgressIndicator());
           }
           return const Center(child: Text('No animals recorded.'));
         },

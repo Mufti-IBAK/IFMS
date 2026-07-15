@@ -38,20 +38,7 @@ class DairyRepository {
     
     final bool isWithdrawn = activeWithdrawals.isNotEmpty;
 
-    await db.into(db.localMilkRecords).insert(
-      LocalMilkRecordsCompanion.insert(
-        id: id,
-        animalId: recordData['animal_id'],
-        recordDate: DateTime.parse(recordData['record_date']),
-        milkingSession: recordData['milking_session'],
-        quantityLiters: quantity,
-        fatPercentage: Value(fatPercentage),
-        proteinPercentage: Value(proteinPercentage),
-        isWithdrawn: Value(isWithdrawn),
-      ),
-    );
-
-    // Sync to backend asynchronously
+    // Sync to backend synchronously
     final apiData = {
       'id': id,
       ...recordData,
@@ -59,15 +46,26 @@ class DairyRepository {
     };
     
     try {
-      await apiClient.dio.post('/dairy/milk-record', data: apiData);
+      final response = await apiClient.dio.post('/dairy/milk-record', data: apiData);
+      
+      // Update local cache on success
+      await db.into(db.localMilkRecords).insert(
+        LocalMilkRecordsCompanion.insert(
+          id: id,
+          animalId: recordData['animal_id'],
+          recordDate: DateTime.parse(recordData['record_date']),
+          milkingSession: recordData['milking_session'],
+          quantityLiters: quantity,
+          fatPercentage: Value(fatPercentage),
+          proteinPercentage: Value(proteinPercentage),
+          isWithdrawn: Value(isWithdrawn),
+        ),
+      );
     } catch (e) {
-      await db.into(db.syncQueue).insert(SyncQueueCompanion.insert(
-        endpoint: '/dairy/milk-record',
-        method: 'POST',
-        body: jsonEncode(apiData),
-        queuedAt: DateTime.now(),
-      ));
-      log('Offline mode: Milk record saved locally and queued for sync.');
+      if (e is DioException) {
+        throw Exception(e.response?.data?['message'] ?? e.response?.data?['details'] ?? 'Failed to add milk record: ${e.message}');
+      }
+      throw Exception('Failed to add milk record: $e');
     }
   }
 

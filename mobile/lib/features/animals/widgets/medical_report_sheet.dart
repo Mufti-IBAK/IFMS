@@ -9,6 +9,7 @@ import '../../../core/database/local_db.dart';
 import '../../../core/network/notification_service.dart';
 import '../../pharmacy/pharmacy_repository.dart';
 import '../../finance/finance_repository.dart';
+import '../../tasks/tasks_repository.dart';
 
 class MedicationEntry {
   LocalMedication? medication;
@@ -126,35 +127,25 @@ class _MedicalReportSheetState extends State<MedicalReportSheet> {
     DateTime dueDate,
     {String category = 'medical_record', bool isActionable = true}
   ) async {
-    final db = sl<LocalDatabase>();
+    final tasksRepo = sl<TasksRepository>();
     final taskId = 'rem_${animalId}_${title.hashCode}_${dueDate.millisecondsSinceEpoch}';
     
-    // Save locally
-    await db.into(db.localTasks).insertOnConflictUpdate(LocalTasksCompanion.insert(
-      id: taskId,
-      title: title,
-      description: drift.Value(description),
-      priority: 'high',
-      status: 'pending',
-      dueDate: drift.Value(dueDate),
-      category: drift.Value(category),
-      isActionable: drift.Value(isActionable),
-    ));
-
-    // Queue for sync
-    await db.into(db.syncQueue).insert(SyncQueueCompanion.insert(
-      endpoint: '/tasks',
-      method: 'POST',
-      body: jsonEncode({
+    try {
+      await tasksRepo.createTask({
+        'id': taskId,
         'title': title,
         'description': description,
         'priority': 'high',
+        'status': 'pending',
         'due_date': dueDate.toIso8601String().substring(0, 10),
-        'related_entity_type': 'animal',
-        'related_entity_id': animalId,
-      }),
-      queuedAt: DateTime.now(),
-    ));
+        'category': category,
+        'assignedTo': 'personal',
+        'isActionable': isActionable,
+      }, isPublic: true);
+    } catch (e) {
+      // Ignored for background scheduling from UI, or show a snackbar if critical
+      debugPrint('Error scheduling task: $e');
+    }
   }
 
   Future<void> _saveReport(String animalId) async {
