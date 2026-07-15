@@ -48,7 +48,12 @@ class _AddMilkEntrySheetState extends State<AddMilkEntrySheet> {
                     final sex = (isMap ? a['sex'] : (a as dynamic).sex).toString().toLowerCase();
                     final species = (isMap ? a['species'] : (a as dynamic).species).toString().toLowerCase();
                     final status = (isMap ? a['status'] : (a as dynamic).status).toString().toLowerCase();
-                    return sex == 'female' && (species == 'cow' || species == 'bovine' || species == 'cattle') && status == 'active';
+                    final repro = (isMap ? a['current_reproductive_status'] ?? a['currentReproductiveStatus'] : (a as dynamic).currentReproductiveStatus).toString().toLowerCase();
+                    
+                    return sex == 'female' && 
+                           (species == 'cow' || species == 'bovine' || species == 'cattle') && 
+                           status == 'active' && 
+                           repro == 'lactating';
                   }).toList();
                   
                   return DropdownMenu<String>(

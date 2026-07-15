@@ -10,13 +10,27 @@ class HatcheryRepository {
 
   HatcheryRepository(this.apiClient, this.db);
 
-  Future<List<LocalHatcheryBatche>> getBatches() async {
+  Future<List<Map<String, dynamic>>> getBatches() async {
     try {
       final response = await apiClient.dio.get('/hatchery/batches');
       final list = response.data as List;
       await _updateBatchesCache(list);
     } catch (_) {}
-    return await db.select(db.localHatcheryBatches).get();
+    
+    final localBatches = await db.select(db.localHatcheryBatches).get();
+    return localBatches.map((b) => {
+      'id': b.id,
+      'egg_source': b.eggSource,
+      'egg_count': b.eggCount,
+      'breed': b.breed,
+      'set_date': b.setDate.toIso8601String().split('T')[0],
+      'expected_hatch_date': b.expectedHatchDate.toIso8601String().split('T')[0],
+      'fertile_eggs': b.fertileEggs,
+      'hatched_chicks': b.hatchedChicks,
+      'failed_eggs': b.failedEggs,
+      'initial_egg_cost': b.initialEggCost,
+      'status': b.status,
+    }).toList();
   }
 
   Future<void> _updateBatchesCache(List<dynamic> batches) async {
