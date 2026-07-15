@@ -90,48 +90,103 @@ class _DairyScreenState extends State<DairyScreen> with SingleTickerProviderStat
   }
 
   Widget _buildDashboardTab(DairyLoaded state) {
+    String dateLabel = '';
+    if (state.dashboardFilter == AnalyticsFilter.daily) {
+      dateLabel = DateFormat('MMM dd, yyyy').format(state.selectedDashboardDate);
+    } else if (state.dashboardFilter == AnalyticsFilter.weekly) {
+      int weekday = state.selectedDashboardDate.weekday;
+      final start = state.selectedDashboardDate.subtract(Duration(days: weekday - 1));
+      final end = start.add(const Duration(days: 6));
+      dateLabel = '${DateFormat('MMM dd').format(start)} - ${DateFormat('MMM dd').format(end)}';
+    } else {
+      dateLabel = DateFormat('MMMM yyyy').format(state.selectedDashboardDate);
+    }
+
+    void shiftDate(int direction) {
+      DateTime newDate = state.selectedDashboardDate;
+      if (state.dashboardFilter == AnalyticsFilter.daily) {
+        newDate = state.selectedDashboardDate.add(Duration(days: direction));
+      } else if (state.dashboardFilter == AnalyticsFilter.weekly) {
+        newDate = state.selectedDashboardDate.add(Duration(days: 7 * direction));
+      } else {
+        newDate = DateTime(state.selectedDashboardDate.year, state.selectedDashboardDate.month + direction, state.selectedDashboardDate.day);
+      }
+      context.read<DairyBloc>().add(ChangeDashboardDate(newDate));
+    }
+
     return RefreshIndicator(
       onRefresh: () async => context.read<DairyBloc>().add(LoadDairyData()),
       child: ListView(
         padding: const EdgeInsets.all(16),
         children: [
-          _buildKpiCard('Total Milk Today', '${state.totalMilkToday.toStringAsFixed(1)} Liters', Icons.water_drop, Colors.blue),
+          Center(
+            child: SegmentedButton<AnalyticsFilter>(
+              segments: const [
+                ButtonSegment(value: AnalyticsFilter.daily, label: Text('Daily')),
+                ButtonSegment(value: AnalyticsFilter.weekly, label: Text('Weekly')),
+                ButtonSegment(value: AnalyticsFilter.monthly, label: Text('Monthly')),
+              ],
+              selected: {state.dashboardFilter},
+              onSelectionChanged: (Set<AnalyticsFilter> newSelection) {
+                context.read<DairyBloc>().add(ChangeDashboardFilter(newSelection.first));
+              },
+              style: ButtonStyle(
+                backgroundColor: MaterialStateProperty.resolveWith<Color>((Set<MaterialState> states) {
+                  return states.contains(MaterialState.selected) ? AppColors.primary.withOpacity(0.2) : Colors.transparent;
+                }),
+              ),
+            ),
+          ),
+          const SizedBox(height: 8),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              IconButton(icon: const Icon(Icons.chevron_left), onPressed: () => shiftDate(-1)),
+              Text(dateLabel, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+              IconButton(icon: const Icon(Icons.chevron_right), onPressed: () => shiftDate(1)),
+            ],
+          ),
+          const SizedBox(height: 16),
+          _buildKpiCard('Total Milk', '${state.totalMilkDashboard.toStringAsFixed(1)} Liters', Icons.water_drop, Colors.blue),
           const SizedBox(height: 12),
           Row(
             children: [
-              Expanded(child: _buildKpiCard('Avg / Cow', '${state.averagePerCow.toStringAsFixed(1)} L', Icons.scale, Colors.teal)),
+              Expanded(child: _buildKpiCard('Avg / Cow', '${state.averagePerCowDashboard.toStringAsFixed(1)} L', Icons.scale, Colors.teal)),
               const SizedBox(width: 12),
-              Expanded(child: _buildKpiCard('Cows Milked', '${state.topProducers.length + state.lowPerformers.length}', Icons.pets, Colors.orange)),
+              Expanded(child: _buildKpiCard('Cows Milked', '${state.topProducersDashboard.length + state.lowPerformersDashboard.length}', Icons.pets, Colors.orange)),
             ],
           ),
           const SizedBox(height: 24),
-          const Text('Recent Entries', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+          Text(state.dashboardFilter == AnalyticsFilter.daily ? 'Entries for $dateLabel' : 'Entries for this period', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
           const SizedBox(height: 12),
-          if (state.todayRecords.isEmpty)
-            const Center(child: Text('No milk records for today.'))
+          if (state.dashboardRecords.isEmpty)
+            const Center(child: Text('No milk records found.'))
           else
-            ...state.todayRecords.map((record) => Card(
-              child: ListTile(
-                leading: CircleAvatar(
-                  backgroundColor: record.isWithdrawn ? Colors.red.shade100 : Colors.blue.shade50,
-                  child: Icon(
-                    record.isWithdrawn ? Icons.warning : Icons.water_drop,
-                    color: record.isWithdrawn ? Colors.red : Colors.blue,
+            ...state.dashboardRecords.map((record) {
+              final tagId = state.animalTagMap[record.animalId] ?? record.animalId.substring(0, 8);
+              return Card(
+                child: ListTile(
+                  leading: CircleAvatar(
+                    backgroundColor: record.isWithdrawn ? Colors.red.shade100 : Colors.blue.shade50,
+                    child: Icon(
+                      record.isWithdrawn ? Icons.warning : Icons.water_drop,
+                      color: record.isWithdrawn ? Colors.red : Colors.blue,
+                    ),
+                  ),
+                  title: Text('Cow ID: $tagId', style: const TextStyle(fontWeight: FontWeight.bold)),
+                  subtitle: Text('Session: ${record.milkingSession} • ${DateFormat('MMM dd, HH:mm').format(record.recordDate)}'),
+                  trailing: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      Text('${record.quantityLiters.toStringAsFixed(1)} L', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                      if (record.isWithdrawn)
+                        const Text('WITHDRAWN', style: TextStyle(color: Colors.red, fontSize: 10, fontWeight: FontWeight.bold))
+                    ],
                   ),
                 ),
-                title: Text('Animal ID: ${record.animalId}', style: const TextStyle(fontWeight: FontWeight.bold)),
-                subtitle: Text('Session: ${record.milkingSession} • ${DateFormat('HH:mm').format(record.recordDate)}'),
-                trailing: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  children: [
-                    Text('${record.quantityLiters.toStringAsFixed(1)} L', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-                    if (record.isWithdrawn)
-                      const Text('WITHDRAWN', style: TextStyle(color: Colors.red, fontSize: 10, fontWeight: FontWeight.bold))
-                  ],
-                ),
-              ),
-            )),
+              );
+            }),
         ],
       ),
     );
@@ -229,7 +284,7 @@ class _DairyScreenState extends State<DairyScreen> with SingleTickerProviderStat
                         backgroundColor: AppColors.primary.withOpacity(0.1),
                         child: const Icon(Icons.pets, color: AppColors.primary),
                       ),
-                      title: Text('Animal ID: ${e.key}', style: const TextStyle(fontWeight: FontWeight.bold)),
+                      title: Text('Cow ID: ${e.key}', style: const TextStyle(fontWeight: FontWeight.bold)),
                       subtitle: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [

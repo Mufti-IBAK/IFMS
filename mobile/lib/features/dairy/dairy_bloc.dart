@@ -20,6 +20,16 @@ class ChangeAnalyticsFilter extends DairyEvent {
   ChangeAnalyticsFilter(this.filter);
 }
 
+class ChangeDashboardFilter extends DairyEvent {
+  final AnalyticsFilter filter;
+  ChangeDashboardFilter(this.filter);
+}
+
+class ChangeDashboardDate extends DairyEvent {
+  final DateTime date;
+  ChangeDashboardDate(this.date);
+}
+
 // --- States ---
 abstract class DairyState {}
 
@@ -27,11 +37,15 @@ class DairyInitial extends DairyState {}
 class DairyLoading extends DairyState {}
 
 class DairyLoaded extends DairyState {
-  final List<LocalMilkRecord> todayRecords;
-  final double totalMilkToday;
-  final double averagePerCow;
-  final Map<String, double> topProducers; // animalId -> liters
-  final Map<String, double> lowPerformers;
+  final List<LocalMilkRecord> dashboardRecords;
+  final double totalMilkDashboard;
+  final double averagePerCowDashboard;
+  final Map<String, double> topProducersDashboard;
+  final Map<String, double> lowPerformersDashboard;
+  
+  final DateTime selectedDashboardDate;
+  final AnalyticsFilter dashboardFilter;
+  final Map<String, String> animalTagMap; // Maps UUID to Tag ID
 
   // Analytics tab specific
   final AnalyticsFilter currentFilter;
@@ -42,11 +56,14 @@ class DairyLoaded extends DairyState {
   final double totalYieldForPeriod;
 
   DairyLoaded({
-    required this.todayRecords,
-    required this.totalMilkToday,
-    required this.averagePerCow,
-    required this.topProducers,
-    required this.lowPerformers,
+    required this.dashboardRecords,
+    required this.totalMilkDashboard,
+    required this.averagePerCowDashboard,
+    required this.topProducersDashboard,
+    required this.lowPerformersDashboard,
+    required this.selectedDashboardDate,
+    required this.dashboardFilter,
+    required this.animalTagMap,
     required this.currentFilter,
     required this.herdChartData,
     required this.herdChartLabels,
@@ -56,11 +73,14 @@ class DairyLoaded extends DairyState {
   });
 
   DairyLoaded copyWith({
-    List<LocalMilkRecord>? todayRecords,
-    double? totalMilkToday,
-    double? averagePerCow,
-    Map<String, double>? topProducers,
-    Map<String, double>? lowPerformers,
+    List<LocalMilkRecord>? dashboardRecords,
+    double? totalMilkDashboard,
+    double? averagePerCowDashboard,
+    Map<String, double>? topProducersDashboard,
+    Map<String, double>? lowPerformersDashboard,
+    DateTime? selectedDashboardDate,
+    AnalyticsFilter? dashboardFilter,
+    Map<String, String>? animalTagMap,
     AnalyticsFilter? currentFilter,
     List<double>? herdChartData,
     List<String>? herdChartLabels,
@@ -69,11 +89,14 @@ class DairyLoaded extends DairyState {
     double? totalYieldForPeriod,
   }) {
     return DairyLoaded(
-      todayRecords: todayRecords ?? this.todayRecords,
-      totalMilkToday: totalMilkToday ?? this.totalMilkToday,
-      averagePerCow: averagePerCow ?? this.averagePerCow,
-      topProducers: topProducers ?? this.topProducers,
-      lowPerformers: lowPerformers ?? this.lowPerformers,
+      dashboardRecords: dashboardRecords ?? this.dashboardRecords,
+      totalMilkDashboard: totalMilkDashboard ?? this.totalMilkDashboard,
+      averagePerCowDashboard: averagePerCowDashboard ?? this.averagePerCowDashboard,
+      topProducersDashboard: topProducersDashboard ?? this.topProducersDashboard,
+      lowPerformersDashboard: lowPerformersDashboard ?? this.lowPerformersDashboard,
+      selectedDashboardDate: selectedDashboardDate ?? this.selectedDashboardDate,
+      dashboardFilter: dashboardFilter ?? this.dashboardFilter,
+      animalTagMap: animalTagMap ?? this.animalTagMap,
       currentFilter: currentFilter ?? this.currentFilter,
       herdChartData: herdChartData ?? this.herdChartData,
       herdChartLabels: herdChartLabels ?? this.herdChartLabels,
@@ -94,45 +117,93 @@ class DairyBloc extends Bloc<DairyEvent, DairyState> {
   final DairyRepository dairyRepo;
   final AnimalsRepository animalsRepo;
   AnalyticsFilter _currentFilter = AnalyticsFilter.daily;
+  
+  DateTime _dashboardDate = DateTime.now();
+  AnalyticsFilter _dashboardFilter = AnalyticsFilter.daily;
 
   DairyBloc(this.dairyRepo, this.animalsRepo) : super(DairyInitial()) {
     on<LoadDairyData>(_onLoadDairyData);
     on<AddMilkEntry>(_onAddMilkEntry);
     on<ChangeAnalyticsFilter>(_onChangeAnalyticsFilter);
+    on<ChangeDashboardFilter>(_onChangeDashboardFilter);
+    on<ChangeDashboardDate>(_onChangeDashboardDate);
   }
 
   Future<void> _onLoadDairyData(LoadDairyData event, Emitter<DairyState> emit) async {
     emit(DairyLoading());
+    await _loadAllData(emit);
+  }
+  
+  Future<void> _onChangeDashboardFilter(ChangeDashboardFilter event, Emitter<DairyState> emit) async {
+    _dashboardFilter = event.filter;
+    if (state is DairyLoaded) {
+      emit(DairyLoading());
+      await _loadAllData(emit);
+    }
+  }
+
+  Future<void> _onChangeDashboardDate(ChangeDashboardDate event, Emitter<DairyState> emit) async {
+    _dashboardDate = event.date;
+    if (state is DairyLoaded) {
+      emit(DairyLoading());
+      await _loadAllData(emit);
+    }
+  }
+
+  Future<void> _loadAllData(Emitter<DairyState> emit) async {
     try {
-      final now = DateTime.now();
-      
-      // Dashboard Data
-      final todayRecords = await dairyRepo.getHerdDailyTotal(now);
-      double totalMilkToday = 0;
+      final animals = await animalsRepo.getAnimals(forceRefresh: false);
+      final tagMap = {for (var a in animals) a.id: a.tagId};
+
+      // 1. Dashboard Data based on _dashboardDate and _dashboardFilter
+      DateTime dStart;
+      DateTime dEnd;
+      if (_dashboardFilter == AnalyticsFilter.daily) {
+        dStart = DateTime(_dashboardDate.year, _dashboardDate.month, _dashboardDate.day);
+        dEnd = DateTime(_dashboardDate.year, _dashboardDate.month, _dashboardDate.day, 23, 59, 59);
+      } else if (_dashboardFilter == AnalyticsFilter.weekly) {
+        // Week starts on Monday
+        int weekday = _dashboardDate.weekday;
+        dStart = DateTime(_dashboardDate.year, _dashboardDate.month, _dashboardDate.day - (weekday - 1));
+        dEnd = dStart.add(const Duration(days: 6, hours: 23, minutes: 59, seconds: 59));
+      } else {
+        dStart = DateTime(_dashboardDate.year, _dashboardDate.month, 1);
+        int nextMonth = _dashboardDate.month + 1;
+        int year = _dashboardDate.year;
+        if (nextMonth > 12) { nextMonth = 1; year++; }
+        dEnd = DateTime(year, nextMonth, 1).subtract(const Duration(seconds: 1));
+      }
+
+      final dashboardRecords = await dairyRepo.getRecordsByDateRange(dStart, dEnd);
+      double totalMilkDashboard = 0;
       final Map<String, double> cowTotals = {};
 
-      for (var record in todayRecords) {
+      for (var record in dashboardRecords) {
         if (!record.isWithdrawn) {
-          totalMilkToday += record.quantityLiters;
-          cowTotals[record.animalId] = (cowTotals[record.animalId] ?? 0) + record.quantityLiters;
+          totalMilkDashboard += record.quantityLiters;
+          final key = tagMap[record.animalId] ?? record.animalId.substring(0, 8);
+          cowTotals[key] = (cowTotals[key] ?? 0) + record.quantityLiters;
         }
       }
 
       final cowCount = cowTotals.keys.length;
-      final averagePerCow = cowCount > 0 ? totalMilkToday / cowCount : 0.0;
+      final averagePerCowDashboard = cowCount > 0 ? totalMilkDashboard / cowCount : 0.0;
       final sortedCows = cowTotals.entries.toList()..sort((a, b) => b.value.compareTo(a.value));
-      final topProducers = Map.fromEntries(sortedCows.take(3));
-      final lowPerformers = Map.fromEntries(sortedCows.reversed.take(3));
+      final topProducersDashboard = Map.fromEntries(sortedCows.take(3));
+      final lowPerformersDashboard = Map.fromEntries(sortedCows.reversed.take(3));
 
-      // Analytics Data
-      final analyticsData = await _calculateAnalytics(_currentFilter);
+      // 2. Analytics Data
+      final analyticsData = await _calculateAnalytics(_currentFilter, tagMap);
 
       emit(DairyLoaded(
-        todayRecords: todayRecords,
-        totalMilkToday: totalMilkToday,
-        averagePerCow: averagePerCow,
-        topProducers: topProducers,
-        lowPerformers: lowPerformers,
+        dashboardRecords: dashboardRecords,
+        totalMilkDashboard: totalMilkDashboard,
+        averagePerCowDashboard: averagePerCowDashboard,
+        topProducersDashboard: topProducersDashboard,
+        lowPerformersDashboard: lowPerformersDashboard,
+        selectedDashboardDate: _dashboardDate,
+        dashboardFilter: _dashboardFilter,
+        animalTagMap: tagMap,
         currentFilter: _currentFilter,
         herdChartData: analyticsData['chartData'] as List<double>,
         herdChartLabels: analyticsData['chartLabels'] as List<String>,
@@ -150,7 +221,9 @@ class DairyBloc extends Bloc<DairyEvent, DairyState> {
       final currentState = state as DairyLoaded;
       _currentFilter = event.filter;
       try {
-        final analyticsData = await _calculateAnalytics(_currentFilter);
+        final animals = await animalsRepo.getAnimals(forceRefresh: false);
+        final tagMap = {for (var a in animals) a.id: a.tagId};
+        final analyticsData = await _calculateAnalytics(_currentFilter, tagMap);
         emit(currentState.copyWith(
           currentFilter: _currentFilter,
           herdChartData: analyticsData['chartData'] as List<double>,
@@ -165,7 +238,7 @@ class DairyBloc extends Bloc<DairyEvent, DairyState> {
     }
   }
 
-  Future<Map<String, dynamic>> _calculateAnalytics(AnalyticsFilter filter) async {
+  Future<Map<String, dynamic>> _calculateAnalytics(AnalyticsFilter filter, Map<String, String> tagMap) async {
     final now = DateTime.now();
     DateTime start;
     int points;
@@ -196,9 +269,11 @@ class DairyBloc extends Bloc<DairyEvent, DairyState> {
       if (r.isWithdrawn) continue;
       
       totalYield += r.quantityLiters;
-      cowBreakdown[r.animalId] = (cowBreakdown[r.animalId] ?? 0) + r.quantityLiters;
-      if (!cowChartData.containsKey(r.animalId)) {
-        cowChartData[r.animalId] = List.filled(points, 0.0);
+      final key = tagMap[r.animalId] ?? r.animalId.substring(0, 8);
+      
+      cowBreakdown[key] = (cowBreakdown[key] ?? 0) + r.quantityLiters;
+      if (!cowChartData.containsKey(key)) {
+        cowChartData[key] = List.filled(points, 0.0);
       }
 
       // Assign to chart bucket
@@ -206,21 +281,21 @@ class DairyBloc extends Bloc<DairyEvent, DairyState> {
         final diff = r.recordDate.difference(start).inDays;
         if (diff >= 0 && diff < points) {
           chartData[diff] += r.quantityLiters;
-          cowChartData[r.animalId]![diff] += r.quantityLiters;
+          cowChartData[key]![diff] += r.quantityLiters;
         }
       } else if (filter == AnalyticsFilter.weekly) {
         final diff = r.recordDate.difference(start).inDays;
         int weekIndex = diff ~/ 7;
         if (weekIndex >= 0 && weekIndex < points) {
           chartData[weekIndex] += r.quantityLiters;
-          cowChartData[r.animalId]![weekIndex] += r.quantityLiters;
+          cowChartData[key]![weekIndex] += r.quantityLiters;
         }
       } else if (filter == AnalyticsFilter.monthly) {
         // Calculate months difference
         int monthIndex = (r.recordDate.year - start.year) * 12 + r.recordDate.month - start.month;
         if (monthIndex >= 0 && monthIndex < points) {
           chartData[monthIndex] += r.quantityLiters;
-          cowChartData[r.animalId]![monthIndex] += r.quantityLiters;
+          cowChartData[key]![monthIndex] += r.quantityLiters;
         }
       }
     }
@@ -261,7 +336,6 @@ class DairyBloc extends Bloc<DairyEvent, DairyState> {
       await dairyRepo.addMilkRecord(event.recordData);
       add(LoadDairyData()); // reload dashboard
     } catch (e) {
-      emit(DairyError(e.toString()));
     }
   }
 }

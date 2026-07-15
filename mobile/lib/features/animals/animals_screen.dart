@@ -1273,7 +1273,10 @@ class _AnimalsScreenState extends State<AnimalsScreen> {
                                         keyboardType: const TextInputType.numberWithOptions(decimal: true),
                                         decoration: const InputDecoration(
                                           hintText: 'e.g. 150000',
-                                          prefixIcon: Icon(Icons.attach_money, size: 20),
+                                          prefixIcon: Padding(
+                                            padding: EdgeInsets.all(12.0),
+                                            child: Text('₦', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.grey)),
+                                          ),
                                         ),
                                       ),
                                     ),
@@ -1284,7 +1287,10 @@ class _AnimalsScreenState extends State<AnimalsScreen> {
                                         keyboardType: const TextInputType.numberWithOptions(decimal: true),
                                         decoration: const InputDecoration(
                                           hintText: 'e.g. 50000',
-                                          prefixIcon: Icon(Icons.money_off, size: 20),
+                                          prefixIcon: Padding(
+                                            padding: EdgeInsets.all(12.0),
+                                            child: Text('₦', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.grey)),
+                                          ),
                                         ),
                                       ),
                                     ),
@@ -1906,7 +1912,10 @@ class _AnimalsScreenState extends State<AnimalsScreen> {
                                         keyboardType: const TextInputType.numberWithOptions(decimal: true),
                                         decoration: const InputDecoration(
                                           hintText: 'e.g. 150000',
-                                          prefixIcon: Icon(Icons.attach_money, size: 20),
+                                          prefixIcon: Padding(
+                                            padding: EdgeInsets.all(12.0),
+                                            child: Text('₦', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.grey)),
+                                          ),
                                         ),
                                       ),
                                     ),
@@ -1917,7 +1926,10 @@ class _AnimalsScreenState extends State<AnimalsScreen> {
                                         keyboardType: const TextInputType.numberWithOptions(decimal: true),
                                         decoration: const InputDecoration(
                                           hintText: 'e.g. 50000',
-                                          prefixIcon: Icon(Icons.money_off, size: 20),
+                                          prefixIcon: Padding(
+                                            padding: EdgeInsets.all(12.0),
+                                            child: Text('₦', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.grey)),
+                                          ),
                                         ),
                                       ),
                                     ),
