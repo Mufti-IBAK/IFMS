@@ -152,8 +152,8 @@ class DairyBloc extends Bloc<DairyEvent, DairyState> {
 
   Future<void> _loadAllData(Emitter<DairyState> emit) async {
     try {
-      final animals = await animalsRepo.getAnimals(forceRefresh: false);
-      final tagMap = {for (var a in animals) a.id: a.tagId};
+      final animals = await animalsRepo.getAnimals();
+      final tagMap = <String, String>{for (var a in animals) a.id: a.tagId};
 
       // 1. Dashboard Data based on _dashboardDate and _dashboardFilter
       DateTime dStart;
@@ -221,8 +221,8 @@ class DairyBloc extends Bloc<DairyEvent, DairyState> {
       final currentState = state as DairyLoaded;
       _currentFilter = event.filter;
       try {
-        final animals = await animalsRepo.getAnimals(forceRefresh: false);
-        final tagMap = {for (var a in animals) a.id: a.tagId};
+        final animals = await animalsRepo.getAnimals();
+        final tagMap = <String, String>{for (var a in animals) a.id: a.tagId};
         final analyticsData = await _calculateAnalytics(_currentFilter, tagMap);
         emit(currentState.copyWith(
           currentFilter: _currentFilter,

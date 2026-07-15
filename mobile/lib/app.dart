@@ -371,7 +371,7 @@ class HomeScreen extends StatelessWidget {
                 ),
                 BlocBuilder<DairyBloc, DairyState>(
                   builder: (context, state) {
-                    final yieldVal = state is DairyLoaded ? state.totalMilkToday : 0.0;
+                    final yieldVal = state is DairyLoaded ? state.totalMilkDashboard : 0.0;
                     return _buildMenuCard(
                       context,
                       title: 'Dairy Intel',
