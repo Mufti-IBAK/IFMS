@@ -24,6 +24,7 @@ dependencies:
   intl: ^0.18.1
   connectivity_plus: ^6.1.0
   flutter_secure_storage: ^10.3.1
+  flutter_downloader: ^1.11.8
   get_it: ^7.6.6
   firebase_core: ^3.11.0
   firebase_messaging: ^15.2.10
