@@ -3,10 +3,8 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/widgets/custom_charts.dart';
-import '../../core/database/local_db.dart';
 import 'dairy_bloc.dart';
 import 'widgets/add_milk_entry_sheet.dart';
-import 'widgets/edit_milk_entry_sheet.dart';
 
 class DairyScreen extends StatefulWidget {
   const DairyScreen({super.key});
@@ -205,14 +203,34 @@ class _DairyScreenState extends State<DairyScreen> with SingleTickerProviderStat
                       PopupMenuButton<String>(
                         onSelected: (value) {
                           if (value == 'edit') {
-                            _showEditMilkRecordSheet(context, record);
+                            showModalBottomSheet(
+                              context: context,
+                              isScrollControlled: true,
+                              builder: (_) => AddMilkEntrySheet(existingRecord: record),
+                            );
                           } else if (value == 'delete') {
-                            _confirmDelete(context, record);
+                            showDialog(
+                              context: context,
+                              builder: (ctx) => AlertDialog(
+                                title: const Text('Delete Record'),
+                                content: const Text('Are you sure you want to delete this milk record?'),
+                                actions: [
+                                  TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
+                                  TextButton(
+                                    onPressed: () {
+                                      context.read<DairyBloc>().add(DeleteMilkRecord(record.id));
+                                      Navigator.pop(ctx);
+                                    },
+                                    child: const Text('Delete', style: TextStyle(color: Colors.red)),
+                                  ),
+                                ],
+                              ),
+                            );
                           }
                         },
-                        itemBuilder: (context) => [
-                          const PopupMenuItem(value: 'edit', child: Text('Edit')),
-                          const PopupMenuItem(value: 'delete', child: Text('Delete', style: TextStyle(color: Colors.red))),
+                        itemBuilder: (context) => const [
+                          PopupMenuItem(value: 'edit', child: Text('Edit')),
+                          PopupMenuItem(value: 'delete', child: Text('Delete', style: TextStyle(color: Colors.red))),
                         ],
                       ),
                     ],
@@ -375,38 +393,6 @@ class _DairyScreenState extends State<DairyScreen> with SingleTickerProviderStat
             Text(value, style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
           ],
         ),
-      ),
-    );
-  }
-
-  void _showEditMilkRecordSheet(BuildContext context, LocalMilkRecord record) {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (ctx) => BlocProvider.value(
-        value: context.read<DairyBloc>(),
-        child: EditMilkEntrySheet(record: record),
-      ),
-    );
-  }
-
-  void _confirmDelete(BuildContext context, LocalMilkRecord record) {
-    showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Delete Record'),
-        content: const Text('Are you sure you want to delete this milk record? This action cannot be undone.'),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('CANCEL')),
-          TextButton(
-            onPressed: () {
-              Navigator.pop(ctx);
-              context.read<DairyBloc>().add(DeleteMilkEntry(record.id));
-            },
-            child: const Text('DELETE', style: TextStyle(color: Colors.red)),
-          ),
-        ],
       ),
     );
   }

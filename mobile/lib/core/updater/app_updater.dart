@@ -4,7 +4,6 @@ import 'package:dio/dio.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:open_file/open_file.dart';
-import 'package:background_downloader/background_downloader.dart';
 import '../network/api_client.dart';
 import 'package:flutter/services.dart';
 import '../../app.dart';
@@ -195,43 +194,77 @@ class AppUpdater {
   }
 
   static Future<void> _downloadAndInstall(BuildContext context, String url) async {
-    _showSnack(context, 'Update is downloading in the background. You will be notified when it is ready.', Colors.green);
+    final progressNotifier = ValueNotifier<double>(0);
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: const Text('Downloading Update'),
+        content: ValueListenableBuilder<double>(
+          valueListenable: progressNotifier,
+          builder: (_, p, __) => Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              LinearProgressIndicator(value: p > 0 ? p : null, color: const Color(0xFF4CAF50)),
+              const SizedBox(height: 12),
+              Text(
+                p > 0 ? '${(p * 100).toStringAsFixed(0)}%  —  Please wait...' : 'Starting download...',
+                style: const TextStyle(fontSize: 13),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
 
     try {
-      final task = DownloadTask(
-        url: url,
-        filename: 'Namanzo_IFMS_update.apk',
-        baseDirectory: BaseDirectory.temporary,
-        updates: Updates.statusAndProgress,
+      // Use a plain Dio — no auth interceptors needed for public Supabase Storage URL
+      final plainDio = Dio();
+      final tempDir = await getTemporaryDirectory();
+      final savePath = '${tempDir.path}/Namanzo_IFMS_update.apk';
+
+      await plainDio.download(
+        url,
+        savePath,
+        options: Options(responseType: ResponseType.bytes, followRedirects: true),
+        onReceiveProgress: (received, total) {
+          if (total > 0) progressNotifier.value = received / total;
+        },
       );
 
-      FileDownloader().registerCallbacks(
-        taskNotificationTapCallback: (task, notificationType) async {
-          if (notificationType == NotificationType.complete) {
-            final filePath = await task.filePath();
-            await OpenFile.open(filePath);
-          }
+      if (context.mounted) Navigator.pop(context);
+      progressNotifier.dispose();
+
+      // Verify the downloaded file is at least 5 MB (a valid APK)
+      final downloadedFile = File(savePath);
+      final fileSize = await downloadedFile.length();
+      if (fileSize < 5 * 1024 * 1024) {
+        if (context.mounted) {
+          _showSnack(context, 'Download appears corrupt (${(fileSize / 1024).round()} KB). Please try again.', Colors.red.shade700);
         }
-      );
+        return;
+      }
 
-      FileDownloader().configureNotification(
-        running: const TaskNotification('Downloading Update', 'Progress: {progress}'),
-        complete: const TaskNotification('Update Ready', 'Tap to install the update'),
-        error: const TaskNotification('Download Error', 'Could not download the update.'),
-      );
-
-      await FileDownloader().enqueue(task);
+      final result = await OpenFile.open(savePath);
+      if (result.type != ResultType.done && context.mounted) {
+        _showSnack(context, 'Could not open installer: ${result.message}', Colors.orange);
+      }
     } catch (e) {
+      if (context.mounted) {
+        Navigator.pop(context);
+      }
+      progressNotifier.dispose();
       if (context.mounted) {
         _showSnack(
           context,
-          'Download failed to start. Check your permissions and try again.',
+          'Download failed. Check your internet connection and try again.',
           Colors.red.shade700,
         );
       }
     }
   }
-
 
   static void _showSnack(BuildContext context, String message, Color color) {
     scaffoldMessengerKey.currentState?.showSnackBar(

@@ -70,69 +70,6 @@ class DairyRepository {
     }
   }
 
-  Future<void> updateMilkRecord(String id, Map<String, dynamic> recordData) async {
-    // Convert dynamic values safely
-    double quantity = 0.0;
-    if (recordData['quantity_liters'] != null) {
-      quantity = double.parse(recordData['quantity_liters'].toString());
-    }
-    
-    double? fatPercentage;
-    if (recordData['fat_percentage'] != null) {
-      fatPercentage = double.parse(recordData['fat_percentage'].toString());
-    }
-
-    double? proteinPercentage;
-    if (recordData['protein_percentage'] != null) {
-      proteinPercentage = double.parse(recordData['protein_percentage'].toString());
-    }
-
-    final now = DateTime.now();
-    final activeWithdrawals = await (db.select(db.localAnimalMedicalRecords)
-      ..where((r) => r.animalId.equals(recordData['animal_id']))
-      ..where((r) => r.withdrawalEndDate.isBiggerOrEqualValue(now)))
-        .get();
-    
-    final bool isWithdrawn = activeWithdrawals.isNotEmpty;
-
-    final apiData = {
-      ...recordData,
-      'is_withdrawn': isWithdrawn,
-    };
-    
-    try {
-      await apiClient.dio.patch('/dairy/milk-record?id=eq.$id', data: apiData);
-      
-      await (db.update(db.localMilkRecords)..where((t) => t.id.equals(id))).write(
-        LocalMilkRecordsCompanion(
-          recordDate: Value(DateTime.parse(recordData['record_date'])),
-          milkingSession: Value(recordData['milking_session']),
-          quantityLiters: Value(quantity),
-          fatPercentage: Value(fatPercentage),
-          proteinPercentage: Value(proteinPercentage),
-          isWithdrawn: Value(isWithdrawn),
-        ),
-      );
-    } catch (e) {
-      if (e is DioException) {
-        throw Exception(e.response?.data?['message'] ?? e.response?.data?['details'] ?? 'Failed to update milk record: ${e.message}');
-      }
-      throw Exception('Failed to update milk record: $e');
-    }
-  }
-
-  Future<void> deleteMilkRecord(String id) async {
-    try {
-      await apiClient.dio.delete('/dairy/milk-record?id=eq.$id');
-      await (db.delete(db.localMilkRecords)..where((t) => t.id.equals(id))).go();
-    } catch (e) {
-      if (e is DioException) {
-        throw Exception(e.response?.data?['message'] ?? e.response?.data?['details'] ?? 'Failed to delete milk record: ${e.message}');
-      }
-      throw Exception('Failed to delete milk record: $e');
-    }
-  }
-
   Future<List<LocalMilkRecord>> getHerdDailyTotal(DateTime date) async {
     final startOfDay = DateTime(date.year, date.month, date.day);
     final endOfDay = startOfDay.add(const Duration(days: 1));
@@ -156,5 +93,46 @@ class DairyRepository {
       ..where((r) => r.animalId.equals(animalId))
       ..orderBy([(t) => OrderingTerm(expression: t.recordDate, mode: OrderingMode.desc)]))
         .get();
+  }
+
+  Future<void> updateMilkRecord(String id, Map<String, dynamic> recordData) async {
+    try {
+      await apiClient.dio.patch(
+        '/dairy/milk-record',
+        queryParameters: {'id': 'eq.$id'},
+        data: recordData,
+      );
+
+      await (db.update(db.localMilkRecords)..where((t) => t.id.equals(id))).write(
+        LocalMilkRecordsCompanion(
+          animalId: recordData['animal_id'] != null ? Value(recordData['animal_id']) : const Value.absent(),
+          milkingSession: recordData['milking_session'] != null ? Value(recordData['milking_session']) : const Value.absent(),
+          quantityLiters: recordData['quantity_liters'] != null ? Value(double.parse(recordData['quantity_liters'].toString())) : const Value.absent(),
+          fatPercentage: recordData.containsKey('fat_percentage') ? Value(recordData['fat_percentage'] != null ? double.parse(recordData['fat_percentage'].toString()) : null) : const Value.absent(),
+          proteinPercentage: recordData.containsKey('protein_percentage') ? Value(recordData['protein_percentage'] != null ? double.parse(recordData['protein_percentage'].toString()) : null) : const Value.absent(),
+        ),
+      );
+    } catch (e) {
+      if (e is DioException) {
+        throw Exception(e.response?.data?['message'] ?? e.response?.data?['details'] ?? 'Failed to update milk record: ${e.message}');
+      }
+      throw Exception('Failed to update milk record: $e');
+    }
+  }
+
+  Future<void> deleteMilkRecord(String id) async {
+    try {
+      await apiClient.dio.delete(
+        '/dairy/milk-record',
+        queryParameters: {'id': 'eq.$id'},
+      );
+
+      await (db.delete(db.localMilkRecords)..where((t) => t.id.equals(id))).go();
+    } catch (e) {
+      if (e is DioException) {
+        throw Exception(e.response?.data?['message'] ?? e.response?.data?['details'] ?? 'Failed to delete milk record: ${e.message}');
+      }
+      throw Exception('Failed to delete milk record: $e');
+    }
   }
 }

@@ -15,15 +15,15 @@ class AddMilkEntry extends DairyEvent {
   AddMilkEntry(this.recordData);
 }
 
-class UpdateMilkEntry extends DairyEvent {
+class UpdateMilkRecord extends DairyEvent {
   final String id;
   final Map<String, dynamic> recordData;
-  UpdateMilkEntry(this.id, this.recordData);
+  UpdateMilkRecord(this.id, this.recordData);
 }
 
-class DeleteMilkEntry extends DairyEvent {
+class DeleteMilkRecord extends DairyEvent {
   final String id;
-  DeleteMilkEntry(this.id);
+  DeleteMilkRecord(this.id);
 }
 
 class ChangeAnalyticsFilter extends DairyEvent {
@@ -135,8 +135,8 @@ class DairyBloc extends Bloc<DairyEvent, DairyState> {
   DairyBloc(this.dairyRepo, this.animalsRepo) : super(DairyInitial()) {
     on<LoadDairyData>(_onLoadDairyData);
     on<AddMilkEntry>(_onAddMilkEntry);
-    on<UpdateMilkEntry>(_onUpdateMilkEntry);
-    on<DeleteMilkEntry>(_onDeleteMilkEntry);
+    on<UpdateMilkRecord>(_onUpdateMilkRecord);
+    on<DeleteMilkRecord>(_onDeleteMilkRecord);
     on<ChangeAnalyticsFilter>(_onChangeAnalyticsFilter);
     on<ChangeDashboardFilter>(_onChangeDashboardFilter);
     on<ChangeDashboardDate>(_onChangeDashboardDate);
@@ -354,20 +354,20 @@ class DairyBloc extends Bloc<DairyEvent, DairyState> {
     }
   }
 
-  Future<void> _onUpdateMilkEntry(UpdateMilkEntry event, Emitter<DairyState> emit) async {
+  Future<void> _onUpdateMilkRecord(UpdateMilkRecord event, Emitter<DairyState> emit) async {
     try {
       await dairyRepo.updateMilkRecord(event.id, event.recordData);
-      add(LoadDairyData()); // reload dashboard
+      add(LoadDairyData());
     } catch (e) {
       emit(DairyError(e.toString().replaceAll('Exception:', '').trim()));
       add(LoadDairyData());
     }
   }
 
-  Future<void> _onDeleteMilkEntry(DeleteMilkEntry event, Emitter<DairyState> emit) async {
+  Future<void> _onDeleteMilkRecord(DeleteMilkRecord event, Emitter<DairyState> emit) async {
     try {
       await dairyRepo.deleteMilkRecord(event.id);
-      add(LoadDairyData()); // reload dashboard
+      add(LoadDairyData());
     } catch (e) {
       emit(DairyError(e.toString().replaceAll('Exception:', '').trim()));
       add(LoadDairyData());
