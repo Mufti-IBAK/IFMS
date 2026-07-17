@@ -4,7 +4,7 @@ import 'package:dio/dio.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:open_file/open_file.dart';
-import 'package:flutter_downloader/flutter_downloader.dart';
+import 'package:background_downloader/background_downloader.dart';
 import '../network/api_client.dart';
 import 'package:flutter/services.dart';
 import '../../app.dart';
@@ -198,20 +198,29 @@ class AppUpdater {
     _showSnack(context, 'Update is downloading in the background. You will be notified when it is ready.', Colors.green);
 
     try {
-      final tempDir = await getExternalStorageDirectory();
-      if (tempDir == null) return;
-      
-      final savePath = tempDir.path;
-
-      await FlutterDownloader.enqueue(
+      final task = DownloadTask(
         url: url,
-        savedDir: savePath,
-        fileName: 'Namanzo_IFMS_update.apk',
-        showNotification: true, 
-        openFileFromNotification: true,
-        saveInPublicStorage: true,
+        filename: 'Namanzo_IFMS_update.apk',
+        baseDirectory: BaseDirectory.temporary,
+        updates: Updates.statusAndProgress,
       );
 
+      FileDownloader().registerCallbacks(
+        taskNotificationTapCallback: (task, notificationType) async {
+          if (notificationType == NotificationType.complete) {
+            final filePath = await task.filePath();
+            await OpenFile.open(filePath);
+          }
+        }
+      );
+
+      FileDownloader().configureNotification(
+        running: const TaskNotification('Downloading Update', 'Progress: {progress}'),
+        complete: const TaskNotification('Update Ready', 'Tap to install the update'),
+        error: const TaskNotification('Download Error', 'Could not download the update.'),
+      );
+
+      await FileDownloader().enqueue(task);
     } catch (e) {
       if (context.mounted) {
         _showSnack(
