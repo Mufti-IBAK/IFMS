@@ -47,7 +47,7 @@ class DairyRepository {
     };
     
     try {
-      final response = await apiClient.dio.post('/dairy/milk-record', data: apiData);
+      final response = await apiClient.dio.post('/milk_records', data: apiData);
       
       // Update local cache on success
       await db.into(db.localMilkRecords).insert(
@@ -98,7 +98,7 @@ class DairyRepository {
   Future<void> updateMilkRecord(String id, Map<String, dynamic> recordData) async {
     try {
       await apiClient.dio.patch(
-        '/dairy/milk-record',
+        '/milk_records',
         queryParameters: {'id': 'eq.$id'},
         data: recordData,
       );
@@ -123,7 +123,7 @@ class DairyRepository {
   Future<void> deleteMilkRecord(String id) async {
     try {
       await apiClient.dio.delete(
-        '/dairy/milk-record',
+        '/milk_records',
         queryParameters: {'id': 'eq.$id'},
       );
 

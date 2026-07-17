@@ -172,6 +172,16 @@ class ApiClient {
           );
           return handler.next(friendlyError);
         }
+
+        if (e.response != null && e.response?.data is Map) {
+          final code = e.response?.data['code'];
+          if (code == 'PGRST116') {
+            e.response?.data['message'] = 'Record not found on the server. Please ensure your app is fully synced.';
+          } else if (code == 'PGRST205') {
+            e.response?.data['message'] = 'System Error: Cannot find the corresponding online table. Please contact support.';
+          }
+        }
+
         return handler.next(e);
       },
     ));
