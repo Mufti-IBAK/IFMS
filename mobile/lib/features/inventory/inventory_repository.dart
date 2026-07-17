@@ -76,6 +76,7 @@ class InventoryRepository {
     final uuid = const Uuid().v4();
     itemData['id'] = uuid;
     itemData['category'] = 'feed'; // Always feed on this screen
+    itemData['currency'] = 'NGN'; // Default currency
 
     final weightPer = double.tryParse(itemData['weight_per_unit'].toString()) ?? 1.0;
     final costPer = double.tryParse(itemData['cost_per_unit'].toString()) ?? 0.0;

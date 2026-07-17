@@ -75,6 +75,10 @@ class _InventoryScreenState extends State<InventoryScreen> with SingleTickerProv
           _cachedLogs = state.logs;
           _cachedFormulas = state.formulas;
           _cachedConsumption = state.consumptionLogs;
+        } else if (state is InventoryError) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(state.message), backgroundColor: AppColors.error),
+          );
         }
       },
       builder: (context, state) {

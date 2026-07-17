@@ -51,6 +51,8 @@ class StaffRepository {
   Future<void> addStaff(Map<String, dynamic> data) async {
     final newId = data['id'] ?? const Uuid().v4();
     data['id'] = newId;
+    data['performance_rating'] = data['performance_rating'] ?? 0.0;
+    data['is_active'] = data['is_active'] ?? true;
     
     try {
       if (data['profile_pic'] != null && !data['profile_pic'].toString().startsWith('http')) {

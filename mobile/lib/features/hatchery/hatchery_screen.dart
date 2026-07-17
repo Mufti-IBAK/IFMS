@@ -39,15 +39,23 @@ class _HatcheryScreenState extends State<HatcheryScreen> {
           ),
         ],
       ),
-      body: BlocBuilder<HatcheryBloc, HatcheryState>(
+      body: BlocConsumer<HatcheryBloc, HatcheryState>(
+        listener: (context, state) {
+          if (state is HatcheryError) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text(state.message), backgroundColor: Colors.red),
+            );
+          }
+        },
         builder: (context, state) {
           if (state is HatcheryLoading) {
             return const Center(child: CircularProgressIndicator());
           } else if (state is HatcheryLoaded) {
             return _buildHatcheryDashboard(state.batches);
-          } else if (state is HatcheryError) {
-            return Center(child: Text(state.message));
           }
+          // Default fallback if we haven't loaded anything yet or we had an error but still want to show UI.
+          // Wait, if it's an error, we should probably fall back to loaded state or an empty list if there's no data.
+          // The repository handles offline cache, so we usually get a Loaded state anyway.
           return const Center(child: Text('Press sync or load data.'));
         },
       ),

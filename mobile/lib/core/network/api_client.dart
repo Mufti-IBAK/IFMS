@@ -57,6 +57,13 @@ class ApiClient {
               path = '/hatchery_events';
               data['batch_id'] = batchId;
             }
+          } else if (path.startsWith('/staff/')) {
+            final segments = path.split('/');
+            if (segments.length > 3 && segments[3] == 'queries') {
+              final staffId = segments[2];
+              path = '/staff_queries';
+              data['staff_id'] = staffId;
+            }
           }
         }
 
@@ -115,8 +122,6 @@ class ApiClient {
            } else {
              path = '/hatchery_batches';
            }
-        } else if (path.startsWith('/staff/queries')) {
-           path = '/staff_queries';
         } else if (path.startsWith('/staff')) {
            path = '/staff';
         } else if (path.startsWith('/tasks')) {
