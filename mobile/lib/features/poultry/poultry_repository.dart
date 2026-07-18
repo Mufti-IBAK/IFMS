@@ -36,8 +36,6 @@ class PoultryRepository {
       'breed': breed,
       'start_date': data['start_date'],
       'initial_count': initialCount,
-      'current_count': initialCount,
-      'status': 'active',
       'initial_chick_cost': initialChickCost,
       'location_id': houseName,
     };

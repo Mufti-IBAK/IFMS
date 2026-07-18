@@ -41,14 +41,7 @@ class _PoultryScreenState extends State<PoultryScreen> with SingleTickerProvider
           ],
         ),
       ),
-      body: BlocConsumer<PoultryBloc, PoultryState>(
-        listener: (context, state) {
-          if (state is PoultryError) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text(state.message), backgroundColor: Colors.red),
-            );
-          }
-        },
+      body: BlocBuilder<PoultryBloc, PoultryState>(
         builder: (context, state) {
           if (state is PoultryLoading) {
             return const Center(child: CircularProgressIndicator());
@@ -64,7 +57,7 @@ class _PoultryScreenState extends State<PoultryScreen> with SingleTickerProvider
               ],
             );
           }
-          return const Center(child: Text('Press sync to load data.'));
+          return const Center(child: Text('Error loading poultry data.'));
         },
       ),
       floatingActionButton: FloatingActionButton.extended(

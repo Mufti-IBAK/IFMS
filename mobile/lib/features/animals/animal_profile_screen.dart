@@ -2101,30 +2101,21 @@ class _AnimalProfileScreenState extends State<AnimalProfileScreen> with SingleTi
                             // Removed inline schedule task creation; now handled by _showScheduleActionSheet
 
                             // Update repository
-                            try {
-                              await sl<AnimalsRepository>().updateAnimal(_id, {
-                                'tag_id': tagController.text.trim(),
-                                'species': selectedSpecies,
-                                'sex': selectedSex,
-                                'breed': breedController.text.trim().isNotEmpty ? breedController.text.trim() : null,
-                                'date_of_birth': dobStr,
-                                'weight': weightController.text.isNotEmpty ? double.tryParse(weightController.text) : null,
-                                'color': colorController.text.trim().isNotEmpty ? colorController.text.trim() : null,
-                                'unique_marks': marksController.text.trim().isNotEmpty ? marksController.text.trim() : null,
-                                'pedigree_type': selectedPedigree,
-                                'purpose': selectedPurpose,
-                                'current_reproductive_status': isFemale ? selectedReproductive : 'open',
-                                'vaccination_status': vacJson,
-                                'deworming_status': dewormJson,
-                              });
-                            } catch (e) {
-                              if (context.mounted) {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(content: Text(e.toString().replaceAll('Exception: ', '')), backgroundColor: Colors.red),
-                                );
-                              }
-                              return; // Stop execution on error
-                            }
+                            await sl<AnimalsRepository>().updateAnimal(_id, {
+                              'tag_id': tagController.text.trim(),
+                              'species': selectedSpecies,
+                              'sex': selectedSex,
+                              'breed': breedController.text.trim().isNotEmpty ? breedController.text.trim() : null,
+                              'date_of_birth': dobStr,
+                              'weight': weightController.text.isNotEmpty ? double.tryParse(weightController.text) : null,
+                              'color': colorController.text.trim().isNotEmpty ? colorController.text.trim() : null,
+                              'unique_marks': marksController.text.trim().isNotEmpty ? marksController.text.trim() : null,
+                              'pedigree_type': selectedPedigree,
+                              'purpose': selectedPurpose,
+                              'current_reproductive_status': isFemale ? selectedReproductive : 'open',
+                              'vaccination_status': vacJson,
+                              'deworming_status': dewormJson,
+                            });
 
                             // Fetch updated local model to trigger state refresh
                             final updated = await (db.select(db.localAnimals)..where((t) => t.id.equals(_id))).getSingle();

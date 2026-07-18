@@ -203,6 +203,7 @@ class TasksRepository {
           'priority': taskData['priority'] ?? 'medium',
           'status': taskData['status'] ?? 'pending',
           'due_date': taskData['due_date'],
+          'category': taskData['category'] ?? 'other',
         });
       } catch (e) {
         if (e is DioException) {

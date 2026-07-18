@@ -47,7 +47,7 @@ class DairyRepository {
     };
     
     try {
-      final response = await apiClient.dio.post('/milk_records', data: apiData);
+      final response = await apiClient.dio.post('/dairy/milk-record', data: apiData);
       
       // Update local cache on success
       await db.into(db.localMilkRecords).insert(
@@ -93,46 +93,5 @@ class DairyRepository {
       ..where((r) => r.animalId.equals(animalId))
       ..orderBy([(t) => OrderingTerm(expression: t.recordDate, mode: OrderingMode.desc)]))
         .get();
-  }
-
-  Future<void> updateMilkRecord(String id, Map<String, dynamic> recordData) async {
-    try {
-      await apiClient.dio.patch(
-        '/milk_records',
-        queryParameters: {'id': 'eq.$id'},
-        data: recordData,
-      );
-
-      await (db.update(db.localMilkRecords)..where((t) => t.id.equals(id))).write(
-        LocalMilkRecordsCompanion(
-          animalId: recordData['animal_id'] != null ? Value(recordData['animal_id']) : const Value.absent(),
-          milkingSession: recordData['milking_session'] != null ? Value(recordData['milking_session']) : const Value.absent(),
-          quantityLiters: recordData['quantity_liters'] != null ? Value(double.parse(recordData['quantity_liters'].toString())) : const Value.absent(),
-          fatPercentage: recordData.containsKey('fat_percentage') ? Value(recordData['fat_percentage'] != null ? double.parse(recordData['fat_percentage'].toString()) : null) : const Value.absent(),
-          proteinPercentage: recordData.containsKey('protein_percentage') ? Value(recordData['protein_percentage'] != null ? double.parse(recordData['protein_percentage'].toString()) : null) : const Value.absent(),
-        ),
-      );
-    } catch (e) {
-      if (e is DioException) {
-        throw Exception(e.response?.data?['message'] ?? e.response?.data?['details'] ?? 'Failed to update milk record: ${e.message}');
-      }
-      throw Exception('Failed to update milk record: $e');
-    }
-  }
-
-  Future<void> deleteMilkRecord(String id) async {
-    try {
-      await apiClient.dio.delete(
-        '/milk_records',
-        queryParameters: {'id': 'eq.$id'},
-      );
-
-      await (db.delete(db.localMilkRecords)..where((t) => t.id.equals(id))).go();
-    } catch (e) {
-      if (e is DioException) {
-        throw Exception(e.response?.data?['message'] ?? e.response?.data?['details'] ?? 'Failed to delete milk record: ${e.message}');
-      }
-      throw Exception('Failed to delete milk record: $e');
-    }
   }
 }

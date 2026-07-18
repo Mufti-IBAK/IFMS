@@ -67,8 +67,6 @@ class HatcheryRepository {
         ? DateTime.parse(batchData['expected_hatch_date'])
         : setDt.add(const Duration(days: 21));
 
-    batchData['status'] = 'incubating';
-
     try {
       await apiClient.dio.post('/hatchery/batch', data: batchData);
 

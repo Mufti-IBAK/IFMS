@@ -57,13 +57,6 @@ class ApiClient {
               path = '/hatchery_events';
               data['batch_id'] = batchId;
             }
-          } else if (path.startsWith('/staff/')) {
-            final segments = path.split('/');
-            if (segments.length > 3 && segments[3] == 'queries') {
-              final staffId = segments[2];
-              path = '/staff_queries';
-              data['staff_id'] = staffId;
-            }
           }
         }
 
@@ -122,6 +115,8 @@ class ApiClient {
            } else {
              path = '/hatchery_batches';
            }
+        } else if (path.startsWith('/staff/queries')) {
+           path = '/staff_queries';
         } else if (path.startsWith('/staff')) {
            path = '/staff';
         } else if (path.startsWith('/tasks')) {
@@ -177,16 +172,6 @@ class ApiClient {
           );
           return handler.next(friendlyError);
         }
-
-        if (e.response != null && e.response?.data is Map) {
-          final code = e.response?.data['code'];
-          if (code == 'PGRST116') {
-            e.response?.data['message'] = 'Record not found on the server. Please ensure your app is fully synced.';
-          } else if (code == 'PGRST205') {
-            e.response?.data['message'] = 'System Error: Cannot find the corresponding online table. Please contact support.';
-          }
-        }
-
         return handler.next(e);
       },
     ));

@@ -188,51 +188,13 @@ class _DairyScreenState extends State<DairyScreen> with SingleTickerProviderStat
                   ),
                   title: Text('Cow ID: $tagId', style: const TextStyle(fontWeight: FontWeight.bold)),
                   subtitle: Text('Session: ${record.milkingSession} • ${DateFormat('MMM dd, HH:mm').format(record.recordDate)}'),
-                  trailing: Row(
-                    mainAxisSize: MainAxisSize.min,
+                  trailing: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    crossAxisAlignment: CrossAxisAlignment.end,
                     children: [
-                      Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        crossAxisAlignment: CrossAxisAlignment.end,
-                        children: [
-                          Text('${record.quantityLiters.toStringAsFixed(1)} L', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-                          if (record.isWithdrawn)
-                            const Text('WITHDRAWN', style: TextStyle(color: Colors.red, fontSize: 10, fontWeight: FontWeight.bold))
-                        ],
-                      ),
-                      PopupMenuButton<String>(
-                        onSelected: (value) {
-                          if (value == 'edit') {
-                            showModalBottomSheet(
-                              context: context,
-                              isScrollControlled: true,
-                              builder: (_) => AddMilkEntrySheet(existingRecord: record),
-                            );
-                          } else if (value == 'delete') {
-                            showDialog(
-                              context: context,
-                              builder: (ctx) => AlertDialog(
-                                title: const Text('Delete Record'),
-                                content: const Text('Are you sure you want to delete this milk record?'),
-                                actions: [
-                                  TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
-                                  TextButton(
-                                    onPressed: () {
-                                      context.read<DairyBloc>().add(DeleteMilkRecord(record.id));
-                                      Navigator.pop(ctx);
-                                    },
-                                    child: const Text('Delete', style: TextStyle(color: Colors.red)),
-                                  ),
-                                ],
-                              ),
-                            );
-                          }
-                        },
-                        itemBuilder: (context) => const [
-                          PopupMenuItem(value: 'edit', child: Text('Edit')),
-                          PopupMenuItem(value: 'delete', child: Text('Delete', style: TextStyle(color: Colors.red))),
-                        ],
-                      ),
+                      Text('${record.quantityLiters.toStringAsFixed(1)} L', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                      if (record.isWithdrawn)
+                        const Text('WITHDRAWN', style: TextStyle(color: Colors.red, fontSize: 10, fontWeight: FontWeight.bold))
                     ],
                   ),
                 ),

@@ -50,14 +50,7 @@ class _StaffScreenState extends State<StaffScreen> with SingleTickerProviderStat
           ],
         ),
       ),
-      body: BlocConsumer<StaffBloc, StaffState>(
-        listener: (context, state) {
-          if (state is StaffError) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text(state.message), backgroundColor: Colors.red),
-            );
-          }
-        },
+      body: BlocBuilder<StaffBloc, StaffState>(
         builder: (context, state) {
           if (state is StaffLoading) {
             return const Center(child: CircularProgressIndicator());
@@ -70,8 +63,10 @@ class _StaffScreenState extends State<StaffScreen> with SingleTickerProviderStat
                 _buildBudgetTab(state),
               ],
             );
+          } else if (state is StaffError) {
+            return Center(child: Text(state.message));
           }
-          return const Center(child: Text('Press sync to load data.'));
+          return const Center(child: Text('No data found.'));
         },
       ),
       floatingActionButton: _tabController.index == 2 ? null : FloatingActionButton.extended(

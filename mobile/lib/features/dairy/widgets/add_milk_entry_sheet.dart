@@ -2,13 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 import '../../../core/theme/app_colors.dart';
-import '../../../core/database/local_db.dart';
 import '../dairy_bloc.dart';
 import '../../animals/animals_bloc.dart';
 
 class AddMilkEntrySheet extends StatefulWidget {
-  final LocalMilkRecord? existingRecord;
-  const AddMilkEntrySheet({super.key, this.existingRecord});
+  const AddMilkEntrySheet({super.key});
 
   @override
   State<AddMilkEntrySheet> createState() => _AddMilkEntrySheetState();
@@ -24,23 +22,6 @@ class _AddMilkEntrySheetState extends State<AddMilkEntrySheet> {
   final proteinCtrl = TextEditingController();
 
   @override
-  void initState() {
-    super.initState();
-    if (widget.existingRecord != null) {
-      selectedAnimalId = widget.existingRecord!.animalId;
-      selectedSession = widget.existingRecord!.milkingSession;
-      selectedDate = widget.existingRecord!.recordDate;
-      litersCtrl.text = widget.existingRecord!.quantityLiters.toString();
-      if (widget.existingRecord!.fatPercentage != null) {
-        fatCtrl.text = widget.existingRecord!.fatPercentage.toString();
-      }
-      if (widget.existingRecord!.proteinPercentage != null) {
-        proteinCtrl.text = widget.existingRecord!.proteinPercentage.toString();
-      }
-    }
-  }
-
-  @override
   Widget build(BuildContext context) {
     return Container(
       decoration: const BoxDecoration(
@@ -53,7 +34,7 @@ class _AddMilkEntrySheetState extends State<AddMilkEntrySheet> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(widget.existingRecord != null ? 'Update Milk Entry' : 'Record Milk Entry', style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
+            const Text('Record Milk Entry', style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
             const SizedBox(height: 24),
 
             // Cow Selection
@@ -79,7 +60,6 @@ class _AddMilkEntrySheetState extends State<AddMilkEntrySheet> {
                     enableSearch: true,
                     enableFilter: true,
                     requestFocusOnTap: true,
-                    initialSelection: selectedAnimalId,
                     leadingIcon: const Icon(Icons.search),
                     label: const Text('Search Cow by Tag ID'),
                     inputDecorationTheme: const InputDecorationTheme(
@@ -188,25 +168,20 @@ class _AddMilkEntrySheetState extends State<AddMilkEntrySheet> {
                     ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Please enter valid liters.')));
                     return;
                   }
-                  final payload = {
+
+                  context.read<DairyBloc>().add(AddMilkEntry({
                     'animal_id': selectedAnimalId,
                     'record_date': selectedDate.toIso8601String(),
                     'milking_session': selectedSession,
                     'quantity_liters': liters,
                     'fat_percentage': double.tryParse(fatCtrl.text),
                     'protein_percentage': double.tryParse(proteinCtrl.text),
-                  };
-
-                  if (widget.existingRecord != null) {
-                    context.read<DairyBloc>().add(UpdateMilkRecord(widget.existingRecord!.id, payload));
-                  } else {
-                    context.read<DairyBloc>().add(AddMilkEntry(payload));
-                  }
+                  }));
 
                   Navigator.pop(context);
                 },
                 style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary, foregroundColor: Colors.white, padding: const EdgeInsets.symmetric(vertical: 16)),
-                child: Text(widget.existingRecord != null ? 'Save Changes' : 'Save Milk Record'),
+                child: const Text('Save Milk Record'),
               ),
             ),
             const SizedBox(height: 16),
