@@ -102,9 +102,9 @@ class _InventoryScreenState extends State<InventoryScreen> with SingleTickerProv
             title: const Text('FEED STOCK VAULT'),
             bottom: TabBar(
               controller: _tabController,
-              labelColor: AppColors.primary,
-              unselectedLabelColor: Colors.grey,
-              indicatorColor: AppColors.primary,
+              labelColor: Colors.white,
+              unselectedLabelColor: Colors.white70,
+              indicatorColor: AppColors.secondary,
               isScrollable: true,
               tabs: const [
                 Tab(icon: Icon(Icons.storage), text: 'Stock Items'),

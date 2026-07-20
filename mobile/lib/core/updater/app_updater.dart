@@ -332,7 +332,7 @@ class AppUpdater {
     try {
       final plainDio = Dio();
       final tempDir = await getTemporaryDirectory();
-      final savePath = '${tempDir.path}/Namanzo_IFMS_update.apk';
+      final savePath = '${tempDir.path}/Royal_Heritage_update.apk';
 
       await plainDio.download(
         url,

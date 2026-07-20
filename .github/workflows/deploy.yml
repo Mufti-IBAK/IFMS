@@ -90,14 +90,14 @@ jobs:
           -H "x-upsert: true" \
           -F "file=@mobile/build/app/outputs/flutter-apk/app-arm64-v8a-release.apk" \
           -F "cacheControl=3600" \
-          "$SUPABASE_URL/storage/v1/object/updates/Namanzo_IFMS_arm64_$BUILD_NUMBER.apk"
+          "$SUPABASE_URL/storage/v1/object/updates/Royal_Heritage_arm64_$BUILD_NUMBER.apk"
           
         # 2. Construct JSON payload dynamically using jq to avoid escaping problems
         COMMIT_MSG=$(git log -1 --pretty=%B | tr '\n' ' ')
         JSON_PAYLOAD=$(jq -n \
           --arg vn "2.5.0+$BUILD_NUMBER" \
-          --arg dl "$SUPABASE_URL/storage/v1/object/public/updates/Namanzo_IFMS_arm64_$BUILD_NUMBER.apk" \
-          --arg rn "NFarms Build #$BUILD_NUMBER: $COMMIT_MSG" \
+          --arg dl "$SUPABASE_URL/storage/v1/object/public/updates/Royal_Heritage_arm64_$BUILD_NUMBER.apk" \
+          --arg rn "Royal Heritage Build #$BUILD_NUMBER: $COMMIT_MSG" \
           '{version_number: $vn, download_url: $dl, release_notes: $rn}')
           
         # 3. Register update details in the database system_updates table
@@ -112,5 +112,5 @@ jobs:
         curl -sS -X DELETE \
           -H "Authorization: Bearer $SUPABASE_SERVICE_ROLE_KEY" \
           -H "apikey: $SUPABASE_SERVICE_ROLE_KEY" \
-          "$SUPABASE_URL/rest/v1/system_updates?download_url=like.*Namanzo_IFMS_latest*"
+          "$SUPABASE_URL/rest/v1/system_updates?download_url=like.*Royal_Heritage_latest*"
 

@@ -103,9 +103,9 @@ class _FinanceScreenState extends State<FinanceScreen> with SingleTickerProvider
               ],
               bottom: TabBar(
                 controller: _tabController,
-                labelColor: AppColors.primary,
-                unselectedLabelColor: Colors.grey,
-                indicatorColor: AppColors.primary,
+                labelColor: Colors.white,
+                unselectedLabelColor: Colors.white70,
+                indicatorColor: AppColors.secondary,
                 tabs: const [
                   Tab(icon: Icon(Icons.dashboard_outlined), text: 'Dashboard'),
                   Tab(icon: Icon(Icons.receipt_long_outlined), text: 'Ledger'),

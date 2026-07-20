@@ -52,6 +52,24 @@ class AppTheme {
           letterSpacing: 0.5,
         ),
       ),
+      tabBarTheme: TabBarThemeData(
+        labelColor: Colors.white,
+        unselectedLabelColor: Colors.white70,
+        indicatorColor: AppColors.secondary,
+        labelStyle: GoogleFonts.rajdhani(
+          fontSize: 14,
+          fontWeight: FontWeight.bold,
+          color: Colors.white,
+        ),
+        unselectedLabelStyle: GoogleFonts.rajdhani(
+          fontSize: 14,
+          fontWeight: FontWeight.w600,
+          color: Colors.white70,
+        ),
+        indicator: const UnderlineTabIndicator(
+          borderSide: BorderSide(color: AppColors.secondary, width: 3),
+        ),
+      ),
       bottomNavigationBarTheme: const BottomNavigationBarThemeData(
         backgroundColor: AppColors.surfaceContainerLowest,
         selectedItemColor: AppColors.primary,

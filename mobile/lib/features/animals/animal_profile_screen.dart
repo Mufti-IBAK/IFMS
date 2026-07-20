@@ -271,9 +271,9 @@ class _AnimalProfileScreenState extends State<AnimalProfileScreen> with SingleTi
         bottom: TabBar(
           controller: _tabController,
           isScrollable: true,
-          labelColor: AppColors.primary,
-          unselectedLabelColor: Colors.grey,
-          indicatorColor: AppColors.primary,
+          labelColor: Colors.white,
+          unselectedLabelColor: Colors.white70,
+          indicatorColor: AppColors.secondary,
           tabs: [
             const Tab(icon: Icon(Icons.info_outline), text: 'Info'),
             if (isCow && _sex.toLowerCase() == 'female')
