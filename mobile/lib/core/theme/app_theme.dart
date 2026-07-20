@@ -39,12 +39,14 @@ class AppTheme {
         ),
       ),
       appBarTheme: AppBarTheme(
-        backgroundColor: AppColors.surface,
+        backgroundColor: AppColors.primary,
         surfaceTintColor: Colors.transparent,
         elevation: 0,
         centerTitle: false,
+        iconTheme: const IconThemeData(color: Colors.white),
+        actionsIconTheme: const IconThemeData(color: Colors.white),
         titleTextStyle: GoogleFonts.rajdhani(
-          color: AppColors.onSurface,
+          color: Colors.white,
           fontSize: 20,
           fontWeight: FontWeight.bold,
           letterSpacing: 0.5,

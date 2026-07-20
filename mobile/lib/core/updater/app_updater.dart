@@ -7,6 +7,7 @@ import 'package:open_file/open_file.dart';
 import '../network/api_client.dart';
 import 'package:flutter/services.dart';
 import '../../app.dart';
+import '../theme/app_colors.dart';
 
 /// Tracks whether an update is available — consumed by the AppBar badge.
 final ValueNotifier<bool> updateAvailableNotifier = ValueNotifier(false);
@@ -54,8 +55,6 @@ class AppUpdater {
 
     // The base build number is 20000 + run_number.
     // Flutter split-per-abi adds 1000, 2000, or 3000 to the versionCode.
-    // So 20038 becomes 21038, 22038, or 23038.
-    // To correctly compare them, we extract the true run_number (e.g. 38).
     int getRunNumber(int code) {
       int remainder = code % 20000;
       return remainder % 1000;
@@ -68,6 +67,29 @@ class AppUpdater {
   }
 
   static Future<void> _doCheck(BuildContext context, {bool showNoUpdateMessage = false}) async {
+    BuildContext? loadingCtx;
+    final activeContext = appNavigatorKey.currentContext ?? context;
+
+    if (showNoUpdateMessage && activeContext.mounted) {
+      showDialog(
+        context: activeContext,
+        barrierDismissible: false,
+        builder: (dialogCtx) {
+          loadingCtx = dialogCtx;
+          return AlertDialog(
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            content: const Row(
+              children: [
+                CircularProgressIndicator(color: AppColors.primary),
+                SizedBox(width: 20),
+                Text('Checking for updates...', style: TextStyle(fontSize: 14)),
+              ],
+            ),
+          );
+        },
+      );
+    }
+
     try {
       final packageInfo = await PackageInfo.fromPlatform();
 
@@ -84,9 +106,15 @@ class AppUpdater {
         queryParameters: {'order': 'id.desc', 'limit': '1'},
       );
 
+      // Dismiss loading dialog if shown
+      if (loadingCtx != null && loadingCtx!.mounted) {
+        Navigator.pop(loadingCtx!);
+        loadingCtx = null;
+      }
+
       if (response.data == null || (response.data as List).isEmpty) {
-        if (showNoUpdateMessage && context.mounted) {
-          _showSnack(context, '✓ App is up to date (v${packageInfo.version}+${packageInfo.buildNumber}, server returned empty)', Colors.green);
+        if (showNoUpdateMessage) {
+          _showSnack('App is up to date (v${packageInfo.version}+${packageInfo.buildNumber})', Colors.green);
         }
         return;
       }
@@ -105,38 +133,89 @@ class AppUpdater {
       if (isNew) {
         _pendingUpdateData = latest;
         updateAvailableNotifier.value = true;
-        if (showNoUpdateMessage && context.mounted) {
-          _showUpdateDialog(context, latest);
+        if (showNoUpdateMessage) {
+          _showUpdateDialog(latest);
         }
       } else {
         updateAvailableNotifier.value = false;
-        if (showNoUpdateMessage && context.mounted) {
-          _showSnack(context, '✓ App is up to date (v${packageInfo.version}+${packageInfo.buildNumber}, server: $latestVersion)', Colors.green);
+        if (showNoUpdateMessage) {
+          _showUpToDateDialog(latest, packageInfo.version, packageInfo.buildNumber);
         }
       }
     } catch (e) {
+      if (loadingCtx != null && loadingCtx!.mounted) {
+        Navigator.pop(loadingCtx!);
+        loadingCtx = null;
+      }
       debugPrint('Update check failed: $e');
-      if (showNoUpdateMessage && context.mounted) {
-        _showSnack(context, 'Update check failed: $e', Colors.orange);
+      if (showNoUpdateMessage) {
+        _showSnack('Update check failed: $e', Colors.orange);
       }
     }
   }
 
-
-  /// Call when user taps the update button. Shows the update dialog if
-  /// an update is available, or checks again if none was cached.
+  /// Call when user taps the update button in drawer or settings.
   static void showUpdateDialog(BuildContext context) {
     if (_pendingUpdateData != null) {
-      _showUpdateDialog(context, _pendingUpdateData!);
+      _showUpdateDialog(_pendingUpdateData!);
     } else {
-      // Trigger a fresh check with feedback
       checkForUpdates(context, showNoUpdateMessage: true);
     }
   }
 
+  static void _showUpToDateDialog(Map<String, dynamic> data, String currentVer, String currentBuild) {
+    final ctx = appNavigatorKey.currentContext;
+    if (ctx == null || !ctx.mounted) return;
 
+    final latestVer = data['version_number'] ?? 'Latest';
+    final downloadUrl = data['download_url'] as String?;
 
-  static void _showUpdateDialog(BuildContext context, Map<String, dynamic> data) {
+    showDialog(
+      context: ctx,
+      builder: (dialogCtx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: const Row(
+          children: [
+            Icon(Icons.check_circle_outline, color: Colors.green),
+            SizedBox(width: 8),
+            Text('App is Up to Date'),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Installed Version: v$currentVer+$currentBuild', style: const TextStyle(fontWeight: FontWeight.bold)),
+            const SizedBox(height: 4),
+            Text('Latest Server Build: $latestVer', style: const TextStyle(color: Colors.grey, fontSize: 13)),
+            const SizedBox(height: 12),
+            const Text('You already have the newest release installed.', style: TextStyle(fontSize: 13)),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogCtx),
+            child: const Text('CLOSE'),
+          ),
+          if (downloadUrl != null)
+            ElevatedButton.icon(
+              onPressed: () {
+                Navigator.pop(dialogCtx);
+                _downloadAndInstall(downloadUrl);
+              },
+              icon: const Icon(Icons.download, size: 16),
+              label: const Text('FORCE RE-DOWNLOAD (OTA)', style: TextStyle(fontSize: 11)),
+              style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary, foregroundColor: Colors.white),
+            ),
+        ],
+      ),
+    );
+  }
+
+  static void _showUpdateDialog(Map<String, dynamic> data) {
+    final ctx = appNavigatorKey.currentContext;
+    if (ctx == null || !ctx.mounted) return;
+
     final version = data['version_number'] ?? 'New Version';
     final notes = data['release_notes'] ?? 'Performance improvements and bug fixes.';
     final downloadUrl = data['download_url'] as String?;
@@ -144,8 +223,8 @@ class AppUpdater {
     if (downloadUrl == null) return;
 
     showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
+      context: ctx,
+      builder: (dialogCtx) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: const Row(
           children: [
@@ -167,12 +246,12 @@ class AppUpdater {
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(ctx),
+            onPressed: () => Navigator.pop(dialogCtx),
             child: const Text('LATER'),
           ),
           TextButton.icon(
             onPressed: () {
-              Navigator.pop(ctx);
+              Navigator.pop(dialogCtx);
               _openBrowser(downloadUrl);
             },
             icon: const Icon(Icons.open_in_browser, size: 18),
@@ -181,8 +260,8 @@ class AppUpdater {
           ),
           ElevatedButton.icon(
             onPressed: () {
-              Navigator.pop(ctx);
-              _downloadAndInstall(context, downloadUrl);
+              Navigator.pop(dialogCtx);
+              _downloadAndInstall(downloadUrl);
             },
             icon: const Icon(Icons.download, size: 16),
             label: const Text('UPDATE VIA OTA'),
@@ -193,34 +272,64 @@ class AppUpdater {
     );
   }
 
-  static Future<void> _downloadAndInstall(BuildContext context, String url) async {
+  static Future<void> _downloadAndInstall(String url) async {
+    final ctx = appNavigatorKey.currentContext;
+    if (ctx == null || !ctx.mounted) return;
+
     final progressNotifier = ValueNotifier<double>(0);
+    final statusTextNotifier = ValueNotifier<String>('Starting download...');
+    BuildContext? downloadDialogContext;
 
     showDialog(
-      context: context,
+      context: ctx,
       barrierDismissible: false,
-      builder: (ctx) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: const Text('Downloading Update'),
-        content: ValueListenableBuilder<double>(
-          valueListenable: progressNotifier,
-          builder: (_, p, __) => Column(
+      builder: (dCtx) {
+        downloadDialogContext = dCtx;
+        return AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          title: const Row(
+            children: [
+              Icon(Icons.downloading, color: Color(0xFF4CAF50)),
+              SizedBox(width: 8),
+              Text('Downloading Update'),
+            ],
+          ),
+          content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              LinearProgressIndicator(value: p > 0 ? p : null, color: const Color(0xFF4CAF50)),
-              const SizedBox(height: 12),
-              Text(
-                p > 0 ? '${(p * 100).toStringAsFixed(0)}%  —  Please wait...' : 'Starting download...',
-                style: const TextStyle(fontSize: 13),
+              ValueListenableBuilder<double>(
+                valueListenable: progressNotifier,
+                builder: (_, p, __) => Column(
+                  children: [
+                    LinearProgressIndicator(
+                      value: p > 0 ? p : null,
+                      color: const Color(0xFF4CAF50),
+                      backgroundColor: Colors.grey.shade200,
+                      minHeight: 8,
+                    ),
+                    const SizedBox(height: 12),
+                    Text(
+                      p > 0 ? '${(p * 100).toStringAsFixed(1)}%' : 'Connecting...',
+                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 8),
+              ValueListenableBuilder<String>(
+                valueListenable: statusTextNotifier,
+                builder: (_, status, __) => Text(
+                  status,
+                  style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+                ),
               ),
             ],
           ),
-        ),
-      ),
+        );
+      },
     );
 
     try {
-      // Use a plain Dio — no auth interceptors needed for public Supabase Storage URL
       final plainDio = Dio();
       final tempDir = await getTemporaryDirectory();
       final savePath = '${tempDir.path}/Namanzo_IFMS_update.apk';
@@ -230,45 +339,57 @@ class AppUpdater {
         savePath,
         options: Options(responseType: ResponseType.bytes, followRedirects: true),
         onReceiveProgress: (received, total) {
-          if (total > 0) progressNotifier.value = received / total;
+          if (total > 0) {
+            progressNotifier.value = received / total;
+            final recMB = (received / (1024 * 1024)).toStringAsFixed(1);
+            final totMB = (total / (1024 * 1024)).toStringAsFixed(1);
+            statusTextNotifier.value = '$recMB MB / $totMB MB';
+          } else {
+            final recMB = (received / (1024 * 1024)).toStringAsFixed(1);
+            statusTextNotifier.value = '$recMB MB downloaded';
+          }
         },
       );
 
-      if (context.mounted) Navigator.pop(context);
+      if (downloadDialogContext != null && downloadDialogContext!.mounted) {
+        Navigator.pop(downloadDialogContext!);
+      }
       progressNotifier.dispose();
+      statusTextNotifier.dispose();
 
-      // Verify the downloaded file is at least 5 MB (a valid APK)
+      // Verify the downloaded file is valid size
       final downloadedFile = File(savePath);
       final fileSize = await downloadedFile.length();
-      if (fileSize < 5 * 1024 * 1024) {
-        if (context.mounted) {
-          _showSnack(context, 'Download appears corrupt (${(fileSize / 1024).round()} KB). Please try again.', Colors.red.shade700);
-        }
+      if (fileSize < 2 * 1024 * 1024) {
+        _showSnack('Download appears incomplete (${(fileSize / 1024).round()} KB). Please try again.', Colors.red.shade700);
         return;
       }
 
       final result = await OpenFile.open(savePath);
-      if (result.type != ResultType.done && context.mounted) {
-        _showSnack(context, 'Could not open installer: ${result.message}', Colors.orange);
+      if (result.type != ResultType.done) {
+        _showSnack('Downloaded APK (${(fileSize / (1024 * 1024)).toStringAsFixed(1)} MB). ${result.message}', Colors.orange);
+        _openBrowser(url);
       }
     } catch (e) {
-      if (context.mounted) {
-        Navigator.pop(context);
+      if (downloadDialogContext != null && downloadDialogContext!.mounted) {
+        Navigator.pop(downloadDialogContext!);
       }
       progressNotifier.dispose();
-      if (context.mounted) {
-        _showSnack(
-          context,
-          'Download failed. Check your internet connection and try again.',
-          Colors.red.shade700,
-        );
-      }
+      statusTextNotifier.dispose();
+      _showSnack('Download failed: $e. Opening browser link...', Colors.red.shade700);
+      _openBrowser(url);
     }
   }
 
-  static void _showSnack(BuildContext context, String message, Color color) {
+  static void _showSnack(String message, Color color) {
     scaffoldMessengerKey.currentState?.showSnackBar(
-      SnackBar(content: Text(message), backgroundColor: color, duration: const Duration(seconds: 4)),
+      SnackBar(
+        content: Text(message),
+        backgroundColor: color,
+        duration: const Duration(seconds: 5),
+        behavior: SnackBarBehavior.floating,
+      ),
     );
   }
 }
+

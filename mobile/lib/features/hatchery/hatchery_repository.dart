@@ -4,6 +4,8 @@ import 'package:uuid/uuid.dart';
 import 'package:dio/dio.dart';
 import '../../core/database/local_db.dart';
 import '../../core/network/api_client.dart';
+import '../../core/audit/audit_repository.dart';
+import '../../core/di/service_locator.dart';
 
 class HatcheryRepository {
   final ApiClient apiClient;
@@ -92,6 +94,33 @@ class HatcheryRepository {
         crateNumber: Value(batchData['crate_number']),
         crateSection: Value(batchData['crate_section']),
       ));
+
+      sl<AuditRepository>().logAction(
+        userName: 'Farm Manager',
+        actionType: 'CREATE',
+        moduleName: 'hatchery',
+        entityId: uuid,
+        entityName: 'Batch (${batchData['egg_source']})',
+        description: 'Created incubation batch of ${batchData['egg_count']} eggs in Crate ${batchData['crate_number'] ?? 'Unassigned'}',
+        details: batchData,
+      );
+
+      final initialEggCost = double.parse((batchData['initial_egg_cost'] ?? 0.0).toString());
+      if (initialEggCost > 0) {
+        final txUuid = const Uuid().v4();
+        await db.into(db.localTransactions).insertOnConflictUpdate(LocalTransactionsCompanion.insert(
+          id: txUuid,
+          transactionType: 'expense',
+          category: 'poultry_purchase',
+          amount: initialEggCost,
+          currency: const Value('NGN'),
+          relatedEntityType: const Value('hatchery'),
+          relatedEntityId: Value(uuid),
+          description: Value('Incubation egg batch purchase: ${batchData['egg_count']} eggs (${batchData['egg_source']})'),
+          transactionDate: setDt,
+          isReconciled: const Value(false),
+        ));
+      }
     } catch (e) {
       if (e is DioException && ApiClient.isNetworkError(e)) {
         await db.into(db.localHatcheryBatches).insertOnConflictUpdate(LocalHatcheryBatchesCompanion.insert(

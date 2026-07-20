@@ -4,6 +4,8 @@ import 'package:uuid/uuid.dart';
 import 'package:dio/dio.dart';
 import '../../core/database/local_db.dart';
 import '../../core/network/api_client.dart';
+import '../../core/audit/audit_repository.dart';
+import '../../core/di/service_locator.dart';
 
 class DairyRepository {
   final LocalDatabase db;
@@ -61,6 +63,38 @@ class DairyRepository {
           isWithdrawn: Value(isWithdrawn),
         ),
       );
+
+      sl<AuditRepository>().logAction(
+        userName: 'Farm Manager',
+        actionType: 'CREATE',
+        moduleName: 'animals',
+        entityId: id,
+        entityName: 'Milk Log ($quantity L)',
+        description: 'Recorded $quantity L milk production (${recordData['milking_session']})',
+        details: recordData,
+      );
+
+      // Auto-post milk sale revenue if sale_price_per_liter or sale_amount is provided
+      final pricePerLiter = double.tryParse((recordData['price_per_liter'] ?? 0).toString()) ?? 0.0;
+      final saleAmount = recordData['sale_amount'] != null 
+          ? double.parse(recordData['sale_amount'].toString())
+          : (pricePerLiter * quantity);
+
+      if (saleAmount > 0) {
+        final txUuid = const Uuid().v4();
+        await db.into(db.localTransactions).insertOnConflictUpdate(LocalTransactionsCompanion.insert(
+          id: txUuid,
+          transactionType: 'income',
+          category: 'milk_sales',
+          amount: saleAmount,
+          currency: const Value('NGN'),
+          relatedEntityType: const Value('dairy'),
+          relatedEntityId: Value(id),
+          description: Value('Milk sale revenue: $quantity L @ ₦$pricePerLiter/L'),
+          transactionDate: DateTime.now(),
+          isReconciled: const Value(false),
+        ));
+      }
     } catch (e) {
       if (e is DioException && ApiClient.isNetworkError(e)) {
         await db.into(db.localMilkRecords).insert(

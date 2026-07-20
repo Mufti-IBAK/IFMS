@@ -2,7 +2,6 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import '../../core/di/service_locator.dart';
 import '../../core/audit/audit_repository.dart';
-import '../../core/database/local_db.dart';
 import '../../core/theme/app_colors.dart';
 
 class HistoryTrackingScreen extends StatefulWidget {
@@ -122,14 +121,15 @@ class _HistoryTrackingScreenState extends State<HistoryTrackingScreen> {
                       fontSize: 12,
                     )),
                     backgroundColor: Colors.white,
-                    selectedColor: _getActionColor(action == 'All' ? 'CREATE' : action).withOpacity(0.8),
+                    selectedColor: _getActionColor(action == 'All' ? 'CREATE' : action).withValues(alpha: 0.8),
                     checkmarkColor: Colors.white,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(20),
-                      side: BorderSide(color: isSelected ? Colors.transparent : AppColors.primary.withOpacity(0.2)),
+                      side: BorderSide(color: isSelected ? Colors.transparent : AppColors.primary.withValues(alpha: 0.2)),
                     ),
                     onSelected: (val) {
                       setState(() => _selectedAction = action);
+                      _loadLogs();
                     },
                   ),
                 );
@@ -169,6 +169,7 @@ class _HistoryTrackingScreenState extends State<HistoryTrackingScreen> {
                     ),
                     onSelected: (val) {
                       setState(() => _selectedModule = module);
+                      _loadLogs();
                     },
                   ),
                 );

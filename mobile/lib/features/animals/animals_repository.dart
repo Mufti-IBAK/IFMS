@@ -4,6 +4,8 @@ import 'package:uuid/uuid.dart';
 import 'package:drift/drift.dart';
 import '../../core/database/local_db.dart';
 import '../../core/network/api_client.dart';
+import '../../core/audit/audit_repository.dart';
+import '../../core/di/service_locator.dart';
 
 class AnimalsRepository {
   final ApiClient apiClient;
@@ -43,6 +45,35 @@ class AnimalsRepository {
       }
 
       await _updateLocalCache([response.data]);
+
+      // Audit Log
+      sl<AuditRepository>().logAction(
+        userName: 'Farm Manager',
+        actionType: 'CREATE',
+        moduleName: 'animals',
+        entityId: uuid,
+        entityName: '${animalData['species']} (${animalData['tag_id']})',
+        description: 'Registered animal tag #${animalData['tag_id']}',
+        details: animalData,
+      );
+
+      // Auto-log acquisition cost if > 0
+      final acqCost = double.tryParse((animalData['acquisition_cost'] ?? 0).toString()) ?? 0.0;
+      if (acqCost > 0) {
+        final txUuid = const Uuid().v4();
+        await db.into(db.localTransactions).insertOnConflictUpdate(LocalTransactionsCompanion.insert(
+          id: txUuid,
+          transactionType: 'expense',
+          category: 'animal_purchase',
+          amount: acqCost,
+          currency: const Value('NGN'),
+          relatedEntityType: const Value('animal'),
+          relatedEntityId: Value(uuid),
+          description: Value('Acquisition cost for ${animalData['tag_id']} (${animalData['species']})'),
+          transactionDate: DateTime.now(),
+          isReconciled: const Value(false),
+        ));
+      }
     } catch (e) {
       if (e is DioException && ApiClient.isNetworkError(e)) {
         final localData = Map<String, dynamic>.from(animalData);
@@ -118,6 +149,16 @@ class AnimalsRepository {
       if (freshResponse.data is List && freshResponse.data.isNotEmpty) {
         await _updateLocalCache([freshResponse.data[0]]);
       }
+
+      sl<AuditRepository>().logAction(
+        userName: 'Farm Manager',
+        actionType: 'UPDATE',
+        moduleName: 'animals',
+        entityId: id,
+        entityName: 'Animal Tag #${updateData['tag_id'] ?? id}',
+        description: 'Updated details for animal #${updateData['tag_id'] ?? id}',
+        details: updateData,
+      );
     } catch (e) {
       if (e is DioException && ApiClient.isNetworkError(e)) {
         await (db.update(db.localAnimals)..where((t) => t.id.equals(id))).write(
@@ -154,6 +195,15 @@ class AnimalsRepository {
     try {
       await apiClient.dio.delete('/animals/$id');
       await (db.delete(db.localAnimals)..where((t) => t.id.equals(id))).go();
+
+      sl<AuditRepository>().logAction(
+        userName: 'Farm Manager',
+        actionType: 'DELETE',
+        moduleName: 'animals',
+        entityId: id,
+        entityName: 'Animal ID $id',
+        description: 'Deleted animal record $id',
+      );
     } catch (e) {
       if (e is DioException && ApiClient.isNetworkError(e)) {
         await (db.delete(db.localAnimals)..where((t) => t.id.equals(id))).go();

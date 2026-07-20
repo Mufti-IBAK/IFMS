@@ -8,6 +8,9 @@ import '../../core/services/payroll_pdf_service.dart';
 import '../../core/widgets/app_dropdown.dart';
 import 'staff_bloc.dart';
 
+import 'staff_profile_screen.dart';
+import '../../core/database/local_db.dart';
+
 class StaffScreen extends StatefulWidget {
   const StaffScreen({super.key});
 
@@ -135,7 +138,13 @@ class _StaffScreenState extends State<StaffScreen> with SingleTickerProviderStat
                 const Text('Est. Payout', style: TextStyle(fontSize: 10, color: Colors.grey)),
               ],
             ),
-            onTap: () => _showEditStaffSheet(context, worker),
+            onTap: () {
+              if (worker is LocalStaffData) {
+                Navigator.push(context, MaterialPageRoute(builder: (_) => StaffProfileScreen(staff: worker)));
+              } else {
+                _showEditStaffSheet(context, worker);
+              }
+            },
           ),
         );
       },

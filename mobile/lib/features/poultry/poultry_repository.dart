@@ -5,6 +5,7 @@ import '../../core/database/local_db.dart';
 import '../../core/network/api_client.dart';
 import '../../core/di/service_locator.dart';
 import '../../core/network/notification_service.dart';
+import '../../core/audit/audit_repository.dart';
 
 class PoultryRepository {
   final ApiClient apiClient;
@@ -56,6 +57,32 @@ class PoultryRepository {
         startDate: startDate,
         status: 'active',
       ));
+
+      sl<AuditRepository>().logAction(
+        userName: 'Farm Manager',
+        actionType: 'CREATE',
+        moduleName: 'poultry',
+        entityId: uuid,
+        entityName: 'Poultry Batch #$batchNumber ($houseName)',
+        description: 'Created poultry batch #$batchNumber with $initialCount birds ($breed)',
+        details: remoteData,
+      );
+
+      if (initialChickCost > 0) {
+        final txUuid = const Uuid().v4();
+        await db.into(db.localTransactions).insertOnConflictUpdate(LocalTransactionsCompanion.insert(
+          id: txUuid,
+          transactionType: 'expense',
+          category: 'poultry_purchase',
+          amount: initialChickCost,
+          currency: const Value('NGN'),
+          relatedEntityType: const Value('poultry'),
+          relatedEntityId: Value(uuid),
+          description: Value('Initial chick purchase: $initialCount $breed chicks for Batch #$batchNumber'),
+          transactionDate: startDate,
+          isReconciled: const Value(false),
+        ));
+      }
     } catch (e) {
       await db.into(db.localPoultryBatches).insert(LocalPoultryBatchesCompanion.insert(
         id: uuid,

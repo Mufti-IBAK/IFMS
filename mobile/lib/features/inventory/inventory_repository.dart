@@ -4,6 +4,8 @@ import 'package:uuid/uuid.dart';
 import 'package:dio/dio.dart';
 import '../../core/database/local_db.dart';
 import '../../core/network/api_client.dart';
+import '../../core/audit/audit_repository.dart';
+import '../../core/di/service_locator.dart';
 
 class InventoryRepository {
   final LocalDatabase db;
@@ -115,6 +117,16 @@ class InventoryRepository {
         supplier: Value(itemData['supplier']),
         isActive: const Value(true),
       ));
+
+      sl<AuditRepository>().logAction(
+        userName: 'Farm Manager',
+        actionType: 'CREATE',
+        moduleName: 'inventory',
+        entityId: uuid,
+        entityName: itemData['name'],
+        description: 'Added new feed item "${itemData['name']}"',
+        details: apiData,
+      );
     } catch (e) {
       if (e is DioException && ApiClient.isNetworkError(e)) {
         await db.into(db.localFeedItems).insertOnConflictUpdate(LocalFeedItemsCompanion.insert(
@@ -388,6 +400,16 @@ class InventoryRepository {
         isReconciled: const Value(false),
       ));
     }
+
+    sl<AuditRepository>().logAction(
+      userName: 'Farm Manager',
+      actionType: changeType == 'purchase' ? 'CREATE' : 'UPDATE',
+      moduleName: 'inventory',
+      entityId: itemId,
+      entityName: itemName,
+      description: '$actionText $changeVal units of $itemName (New balance: $newBal)',
+      details: logData,
+    );
 
     // ── THEN attempt remote sync (non-blocking) ──
     try {

@@ -48,6 +48,23 @@ class AuditRepository {
     // Always save locally first
     await db.into(db.localAuditLogs).insertOnConflictUpdate(companion);
 
+    // Also insert an informational task notification for the system bell
+    final taskTitle = '$actionType: ${moduleName.toUpperCase()}';
+    final taskDesc = entityName != null && entityName.isNotEmpty
+        ? '$description ($entityName)'
+        : description;
+
+    await db.into(db.localTasks).insertOnConflictUpdate(LocalTasksCompanion.insert(
+      id: 'task_audit_$uuid',
+      title: taskTitle,
+      description: Value(taskDesc),
+      priority: actionType == 'DELETE' ? 'high' : 'medium',
+      status: 'completed',
+      dueDate: Value(now),
+      category: Value(moduleName),
+      isActionable: const Value(false),
+    ));
+
     // Attempt remote sync (non-blocking)
     try {
       await apiClient.dio.post('/audit_logs', data: {
