@@ -83,7 +83,7 @@ class _AnimalsScreenState extends State<AnimalsScreen> {
             onPressed: () async {
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(
-                  content: Text('Synchronizing records with Namanzo Farms cloud...'),
+                  content: Text('Synchronizing records with Royal Heritage cloud...'),
                   duration: Duration(seconds: 1),
                 ),
               );

@@ -81,7 +81,7 @@ class ReportService {
                   pw.Column(
                     crossAxisAlignment: pw.CrossAxisAlignment.start,
                     children: [
-                      pw.Text('NAMANZO FARMS', style: pw.TextStyle(fontSize: 12, fontWeight: pw.FontWeight.bold, color: PdfColor.fromHex('#004D40'))),
+                      pw.Text('ROYAL HERITAGE FARMS', style: pw.TextStyle(fontSize: 12, fontWeight: pw.FontWeight.bold, color: PdfColor.fromHex('#004D40'))),
                       pw.Text('INTEGRATED FARM MANAGEMENT SYSTEM (IFMS)', style: const pw.TextStyle(fontSize: 8, color: PdfColors.grey700)),
                     ],
                   ),
@@ -259,7 +259,7 @@ class ReportService {
               pw.Row(
                 mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
                 children: [
-                  pw.Text('CONFIDENTIAL - NAMANZO FARMS STATISTICAL ANALYSIS', style: const pw.TextStyle(fontSize: 7, color: PdfColors.grey500)),
+                  pw.Text('CONFIDENTIAL - ROYAL HERITAGE FARMS STATISTICAL ANALYSIS', style: const pw.TextStyle(fontSize: 7, color: PdfColors.grey500)),
                   pw.Text('Page 1', style: const pw.TextStyle(fontSize: 7, color: PdfColors.grey500)),
                 ],
               ),
@@ -283,7 +283,7 @@ class ReportService {
                   pw.Column(
                     crossAxisAlignment: pw.CrossAxisAlignment.start,
                     children: [
-                      pw.Text('NAMANZO FARMS', style: pw.TextStyle(fontSize: 12, fontWeight: pw.FontWeight.bold, color: PdfColor.fromHex('#004D40'))),
+                      pw.Text('ROYAL HERITAGE FARMS', style: pw.TextStyle(fontSize: 12, fontWeight: pw.FontWeight.bold, color: PdfColor.fromHex('#004D40'))),
                       pw.Text('INTEGRATED FARM MANAGEMENT SYSTEM (IFMS)', style: const pw.TextStyle(fontSize: 8, color: PdfColors.grey700)),
                     ],
                   ),
@@ -514,7 +514,7 @@ class ReportService {
                   pw.Column(
                     crossAxisAlignment: pw.CrossAxisAlignment.start,
                     children: [
-                      pw.Text('NAMANZO FARMS', style: pw.TextStyle(fontSize: 14, fontWeight: pw.FontWeight.bold, color: PdfColor.fromHex('#004D40'))),
+                      pw.Text('ROYAL HERITAGE FARMS', style: pw.TextStyle(fontSize: 14, fontWeight: pw.FontWeight.bold, color: PdfColor.fromHex('#004D40'))),
                       pw.Text('ANIMAL INDIVIDUAL DOSSIER', style: const pw.TextStyle(fontSize: 9, color: PdfColors.grey700)),
                     ],
                   ),

@@ -63,7 +63,7 @@ class AlertScreen extends StatelessWidget {
       await HealthReportService.generateReport(
         startDate: startDate,
         endDate: endDate,
-        farmName: 'NAMANZO IFMS',
+        farmName: 'ROYAL HERITAGE',
       );
     } catch (e) {
       if (context.mounted) {
