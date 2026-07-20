@@ -78,6 +78,13 @@ jobs:
           --build-name=2.5.0 \
           --build-number=${{ env.BUILD_NUMBER }} \
           --split-per-abi
+    - name: Run Supabase Database Migration
+      env:
+        SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+        SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+      run: |
+        python .github/scripts/migrate_db.py
+
     - name: Upload OTA APK
       env:
         SUPABASE_URL: ${{ secrets.SUPABASE_URL }}

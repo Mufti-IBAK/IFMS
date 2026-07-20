@@ -471,52 +471,53 @@ class _HatcheryScreenState extends State<HatcheryScreen> {
                           side: BorderSide(color: Colors.grey.shade200),
                         ),
                         child: Padding(
-                          padding: const EdgeInsets.all(12),
+                          padding: const EdgeInsets.all(8),
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              const Text('CRATE GRID PREVIEW', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 11, color: AppColors.primary)),
-                              const SizedBox(height: 12),
-                              SingleChildScrollView(
-                                scrollDirection: Axis.horizontal,
+                              const Text('CRATE GRID PREVIEW', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 10, color: AppColors.primary)),
+                              const SizedBox(height: 8),
+                              FittedBox(
+                                fit: BoxFit.scaleDown,
+                                alignment: Alignment.centerLeft,
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
                                     Row(
                                       children: [
-                                        const SizedBox(width: 24),
+                                        const SizedBox(width: 16),
                                         ...List.generate(11, (c) => SizedBox(
-                                          width: 28, 
-                                          child: Center(child: Text('${c + 1}', style: const TextStyle(fontSize: 10, color: Colors.grey))),
+                                          width: 18, 
+                                          child: Center(child: Text('${c + 1}', style: const TextStyle(fontSize: 8, color: Colors.grey, fontWeight: FontWeight.bold))),
                                         )),
                                       ],
                                     ),
-                                    const SizedBox(height: 4),
+                                    const SizedBox(height: 2),
                                     ...List.generate(8, (r) {
                                       final rowNum = r + 1;
                                       return Padding(
-                                        padding: const EdgeInsets.only(bottom: 4),
+                                        padding: const EdgeInsets.only(bottom: 2),
                                         child: Row(
                                           children: [
                                             SizedBox(
-                                              width: 24,
-                                              child: Text('$rowNum', style: const TextStyle(fontSize: 10, color: Colors.grey)),
+                                              width: 16,
+                                              child: Text('$rowNum', style: const TextStyle(fontSize: 8, color: Colors.grey, fontWeight: FontWeight.bold)),
                                             ),
                                             ...List.generate(11, (c) {
                                               final colNum = c + 1;
                                               final isSelected = rowNum >= rowStart && rowNum <= rowEnd && colNum >= colStart && colNum <= colEnd;
                                               return AnimatedContainer(
                                                 duration: const Duration(milliseconds: 200),
-                                                margin: const EdgeInsets.only(right: 4),
-                                                width: 24,
-                                                height: 24,
+                                                margin: const EdgeInsets.only(right: 2),
+                                                width: 16,
+                                                height: 16,
                                                 decoration: BoxDecoration(
                                                   color: isSelected ? AppColors.primary : Colors.grey.shade100,
-                                                  borderRadius: BorderRadius.circular(4),
+                                                  borderRadius: BorderRadius.circular(2),
                                                   border: Border.all(color: isSelected ? AppColors.primary : Colors.grey.shade300, width: 0.5),
-                                                  boxShadow: isSelected ? [BoxShadow(color: AppColors.primary.withOpacity(0.3), blurRadius: 2, offset: const Offset(0, 1))] : null,
+                                                  boxShadow: isSelected ? [BoxShadow(color: AppColors.primary.withValues(alpha: 0.3), blurRadius: 1)] : null,
                                                 ),
-                                                child: isSelected ? const Icon(Icons.egg, size: 14, color: Colors.white) : null,
+                                                child: isSelected ? const Icon(Icons.egg, size: 10, color: Colors.white) : null,
                                               );
                                             }),
                                           ],
@@ -526,9 +527,12 @@ class _HatcheryScreenState extends State<HatcheryScreen> {
                                   ],
                                 ),
                               ),
-                              const SizedBox(height: 12),
+                              const SizedBox(height: 8),
                               Center(
-                                child: Text('${((rowEnd - rowStart + 1).clamp(0, 8) * (colEnd - colStart + 1).clamp(0, 11))} eggs selected', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                                child: Text(
+                                  'Crate $selectedCrate Section: ${((rowEnd - rowStart + 1).clamp(0, 8) * (colEnd - colStart + 1).clamp(0, 11))} / 88 slots selected',
+                                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 11, color: AppColors.primary),
+                                ),
                               ),
                             ],
                           ),

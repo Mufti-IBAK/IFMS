@@ -386,7 +386,7 @@ class _StaffProfileScreenState extends State<StaffProfileScreen> {
 
   void _showRecordAdvanceDialog(BuildContext context) {
     final amountCtrl = TextEditingController();
-    final deductionCtrl = TextEditingController();
+    final monthsCtrl = TextEditingController(text: '4');
     final notesCtrl = TextEditingController();
     DateTime collectionDate = DateTime.now();
 
@@ -395,80 +395,120 @@ class _StaffProfileScreenState extends State<StaffProfileScreen> {
       isScrollControlled: true,
       shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
       builder: (bCtx) => StatefulBuilder(
-        builder: (ctx, setModalState) => Padding(
-          padding: EdgeInsets.only(
-            left: 16,
-            right: 16,
-            top: 16,
-            bottom: MediaQuery.of(ctx).viewInsets.bottom + 16,
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text('RECORD SALARY ADVANCE', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: AppColors.primary)),
-              const SizedBox(height: 16),
-              TextField(
-                controller: amountCtrl,
-                keyboardType: TextInputType.number,
-                decoration: const InputDecoration(labelText: 'Advance Amount Collected (₦)', prefixIcon: Icon(Icons.payments)),
-              ),
-              const SizedBox(height: 12),
-              TextField(
-                controller: deductionCtrl,
-                keyboardType: TextInputType.number,
-                decoration: const InputDecoration(labelText: 'Monthly Deduction (₦)', prefixIcon: Icon(Icons.calendar_month)),
-              ),
-              const SizedBox(height: 12),
-              ListTile(
-                contentPadding: EdgeInsets.zero,
-                title: Text('Collection Date: ${DateFormat('dd MMM yyyy').format(collectionDate)}'),
-                trailing: const Icon(Icons.calendar_today),
-                onTap: () async {
-                  final picked = await showDatePicker(
-                    context: ctx,
-                    initialDate: collectionDate,
-                    firstDate: DateTime(2020),
-                    lastDate: DateTime.now(),
-                  );
-                  if (picked != null) setModalState(() => collectionDate = picked);
-                },
-              ),
-              const SizedBox(height: 12),
-              TextField(
-                controller: notesCtrl,
-                decoration: const InputDecoration(labelText: 'Notes / Reason', prefixIcon: Icon(Icons.note)),
-              ),
-              const SizedBox(height: 20),
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: () {
-                    final amt = double.tryParse(amountCtrl.text);
-                    final ded = double.tryParse(deductionCtrl.text);
-                    if (amt == null || amt <= 0 || ded == null || ded <= 0) {
-                      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Please enter valid amount and deduction values')));
-                      return;
-                    }
-                    context.read<StaffBloc>().add(CreateSalaryAdvance(
-                      widget.staff.id,
-                      {
-                        'advance_amount': amt,
-                        'monthly_deduction': ded,
-                        'collection_date': collectionDate.toIso8601String(),
-                        'notes': notesCtrl.text.isEmpty ? null : notesCtrl.text,
-                      },
-                    ));
-                    Navigator.pop(bCtx);
-                    _loadStaffData();
-                  },
-                  style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary, foregroundColor: Colors.white),
-                  child: const Text('SAVE ADVANCE RECORD'),
+        builder: (ctx, setModalState) {
+          final amt = double.tryParse(amountCtrl.text) ?? 0.0;
+          final months = int.tryParse(monthsCtrl.text) ?? 1;
+          final monthlyDeduction = (amt > 0 && months > 0) ? (amt / months) : 0.0;
+
+          return Padding(
+            padding: EdgeInsets.only(
+              left: 16,
+              right: 16,
+              top: 16,
+              bottom: MediaQuery.of(ctx).viewInsets.bottom + 16,
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text('RECORD SALARY ADVANCE', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: AppColors.primary)),
+                const SizedBox(height: 16),
+                TextField(
+                  controller: amountCtrl,
+                  keyboardType: TextInputType.number,
+                  decoration: const InputDecoration(labelText: 'Advance Amount Collected (₦)', prefixIcon: Icon(Icons.payments)),
+                  onChanged: (_) => setModalState(() {}),
                 ),
-              ),
-            ],
-          ),
-        ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: monthsCtrl,
+                  keyboardType: TextInputType.number,
+                  decoration: const InputDecoration(
+                    labelText: 'Repayment Duration (Months to Pay Back)', 
+                    prefixIcon: Icon(Icons.calendar_month),
+                    helperText: 'e.g. Enter 4 for 4 months repayment'
+                  ),
+                  onChanged: (_) => setModalState(() {}),
+                ),
+                const SizedBox(height: 12),
+                if (amt > 0 && months > 0) ...[
+                  Card(
+                    color: AppColors.primary.withValues(alpha: 0.1),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    child: Padding(
+                      padding: const EdgeInsets.all(12),
+                      child: Row(
+                        children: [
+                          const Icon(Icons.calculate, color: AppColors.primary, size: 24),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                const Text('AUTO-DEDUCTION CALCULATION', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 10, color: AppColors.primary)),
+                                Text(
+                                  '₦${NumberFormat('#,##0.00').format(monthlyDeduction)} / month',
+                                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: AppColors.primary),
+                                ),
+                                Text('Deducted automatically over $months months', style: const TextStyle(fontSize: 11, color: Colors.black87)),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                ],
+                ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  title: Text('Collection Date: ${DateFormat('dd MMM yyyy').format(collectionDate)}'),
+                  trailing: const Icon(Icons.calendar_today),
+                  onTap: () async {
+                    final picked = await showDatePicker(
+                      context: ctx,
+                      initialDate: collectionDate,
+                      firstDate: DateTime(2020),
+                      lastDate: DateTime.now(),
+                    );
+                    if (picked != null) setModalState(() => collectionDate = picked);
+                  },
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: notesCtrl,
+                  decoration: const InputDecoration(labelText: 'Notes / Reason', prefixIcon: Icon(Icons.note)),
+                ),
+                const SizedBox(height: 20),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: () {
+                      if (amt <= 0 || months <= 0) {
+                        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Please enter valid advance amount and duration in months')));
+                        return;
+                      }
+                      context.read<StaffBloc>().add(CreateSalaryAdvance(
+                        widget.staff.id,
+                        {
+                          'advance_amount': amt,
+                          'monthly_deduction': monthlyDeduction,
+                          'repayment_months': months,
+                          'collection_date': collectionDate.toIso8601String(),
+                          'notes': notesCtrl.text.isEmpty ? null : notesCtrl.text,
+                        },
+                      ));
+                      Navigator.pop(bCtx);
+                      _loadStaffData();
+                    },
+                    style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary, foregroundColor: Colors.white),
+                    child: const Text('SAVE ADVANCE RECORD'),
+                  ),
+                ),
+              ],
+            ),
+          );
+        },
       ),
     );
   }

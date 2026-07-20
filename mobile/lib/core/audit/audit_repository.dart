@@ -110,11 +110,11 @@ class AuditRepository {
       ..orderBy([(t) => OrderingTerm.desc(t.timestamp)])
       ..limit(limit, offset: offset);
 
-    if (moduleFilter != null && moduleFilter.isNotEmpty) {
-      query = query..where((t) => t.moduleName.equals(moduleFilter));
+    if (moduleFilter != null && moduleFilter.isNotEmpty && moduleFilter.toLowerCase() != 'all') {
+      query = query..where((t) => t.moduleName.equals(moduleFilter.toLowerCase()));
     }
-    if (actionFilter != null && actionFilter.isNotEmpty) {
-      query = query..where((t) => t.actionType.equals(actionFilter));
+    if (actionFilter != null && actionFilter.isNotEmpty && actionFilter.toUpperCase() != 'ALL') {
+      query = query..where((t) => t.actionType.equals(actionFilter.toUpperCase()));
     }
 
     return query.get();

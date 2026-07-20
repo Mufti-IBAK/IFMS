@@ -772,29 +772,18 @@ class _StaffScreenState extends State<StaffScreen> with SingleTickerProviderStat
 
   void _showSalaryAdvanceDialog(BuildContext context, String staffId, String staffName) {
     final amountCtrl = TextEditingController();
-    final deductionCtrl = TextEditingController();
+    final monthsCtrl = TextEditingController(text: '4');
     final notesCtrl = TextEditingController();
     DateTime collectionDate = DateTime.now();
-    int repaymentMonths = 0;
 
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       builder: (ctx) => StatefulBuilder(
         builder: (ctx, setDiagState) {
-          void calculateRepayment() {
-            final amt = double.tryParse(amountCtrl.text) ?? 0.0;
-            final ded = double.tryParse(deductionCtrl.text) ?? 0.0;
-            if (amt > 0 && ded > 0) {
-              setDiagState(() {
-                repaymentMonths = (amt / ded).ceil();
-              });
-            } else {
-              setDiagState(() {
-                repaymentMonths = 0;
-              });
-            }
-          }
+          final amt = double.tryParse(amountCtrl.text) ?? 0.0;
+          final months = int.tryParse(monthsCtrl.text) ?? 1;
+          final monthlyDeduction = (amt > 0 && months > 0) ? (amt / months) : 0.0;
 
           return Padding(
             padding: EdgeInsets.only(bottom: MediaQuery.of(ctx).viewInsets.bottom, left: 24, right: 24, top: 24),
@@ -807,28 +796,63 @@ class _StaffScreenState extends State<StaffScreen> with SingleTickerProviderStat
                   const SizedBox(height: 24),
                   TextField(
                     controller: amountCtrl,
-                    decoration: InputDecoration(labelText: 'Advance Amount (₦)', prefixIcon: const Icon(Icons.money), border: OutlineInputBorder(borderRadius: BorderRadius.circular(12))),
+                    decoration: InputDecoration(
+                      labelText: 'Advance Amount Collected (₦)', 
+                      prefixIcon: const Icon(Icons.money), 
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12))
+                    ),
                     keyboardType: TextInputType.number,
-                    onChanged: (_) => calculateRepayment(),
+                    onChanged: (_) => setDiagState(() {}),
                   ),
                   const SizedBox(height: 16),
                   TextField(
-                    controller: deductionCtrl,
-                    decoration: InputDecoration(labelText: 'Monthly Deduction (₦)', prefixIcon: const Icon(Icons.money_off), border: OutlineInputBorder(borderRadius: BorderRadius.circular(12))),
+                    controller: monthsCtrl,
+                    decoration: InputDecoration(
+                      labelText: 'Repayment Duration (Months to Pay Back)', 
+                      prefixIcon: const Icon(Icons.calendar_month), 
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                      helperText: 'e.g. Enter 4 for 4 months repayment'
+                    ),
                     keyboardType: TextInputType.number,
-                    onChanged: (_) => calculateRepayment(),
+                    onChanged: (_) => setDiagState(() {}),
                   ),
-                  const SizedBox(height: 8),
-                  if (repaymentMonths > 0)
-                    Text('Repayment: $repaymentMonths months', style: const TextStyle(color: Colors.green, fontWeight: FontWeight.bold)),
                   const SizedBox(height: 16),
+                  if (amt > 0 && months > 0) ...[
+                    Card(
+                      color: AppColors.primary.withValues(alpha: 0.1),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      child: Padding(
+                        padding: const EdgeInsets.all(16),
+                        child: Row(
+                          children: [
+                            const Icon(Icons.calculate, color: AppColors.primary, size: 28),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  const Text('AUTO-DEDUCTION CALCULATION', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 11, color: AppColors.primary)),
+                                  Text(
+                                    '₦${NumberFormat('#,##0.00').format(monthlyDeduction)} / month',
+                                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: AppColors.primary),
+                                  ),
+                                  Text('Deducted automatically over $months months', style: const TextStyle(fontSize: 12, color: Colors.black87)),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                  ],
                   GestureDetector(
                     onTap: () async {
                       final date = await showDatePicker(
                         context: context,
                         initialDate: collectionDate,
-                        firstDate: DateTime(2000),
-                        lastDate: DateTime(2100),
+                        firstDate: DateTime(2020),
+                        lastDate: DateTime.now(),
                       );
                       if (date != null) setDiagState(() => collectionDate = date);
                     },
@@ -837,36 +861,41 @@ class _StaffScreenState extends State<StaffScreen> with SingleTickerProviderStat
                       decoration: BoxDecoration(border: Border.all(color: Colors.grey.shade400), borderRadius: BorderRadius.circular(12)),
                       child: Row(
                         children: [
-                          const Icon(Icons.calendar_today, color: Colors.grey),
+                          const Icon(Icons.event, color: Colors.grey),
                           const SizedBox(width: 12),
-                          Text(DateFormat('MMM dd, yyyy').format(collectionDate)),
+                          Text('Collection Date: ${DateFormat('MMM dd, yyyy').format(collectionDate)}'),
                         ],
                       ),
                     ),
                   ),
                   const SizedBox(height: 16),
                   TextField(
-                    controller: notesCtrl,
-                    decoration: InputDecoration(labelText: 'Notes (Optional)', prefixIcon: const Icon(Icons.note), border: OutlineInputBorder(borderRadius: BorderRadius.circular(12))),
-                    textCapitalization: TextCapitalization.sentences,
+                    textCapitalization: TextCapitalization.sentences, 
+                    controller: notesCtrl, 
+                    decoration: InputDecoration(labelText: 'Notes / Reason (Optional)', prefixIcon: const Icon(Icons.note), border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)))
                   ),
                   const SizedBox(height: 24),
                   SizedBox(
                     width: double.infinity,
                     child: ElevatedButton(
                       onPressed: () {
-                        if (amountCtrl.text.isEmpty || deductionCtrl.text.isEmpty) {
-                          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Please fill all required fields.')));
+                        if (amt <= 0 || months <= 0) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text('Please enter a valid advance amount and duration in months.')),
+                          );
                           return;
                         }
                         context.read<StaffBloc>().add(CreateSalaryAdvance(staffId, {
-                          'advance_amount': double.tryParse(amountCtrl.text) ?? 0.0,
-                          'monthly_deduction': double.tryParse(deductionCtrl.text) ?? 0.0,
+                          'advance_amount': amt,
+                          'monthly_deduction': monthlyDeduction,
+                          'repayment_months': months,
                           'collection_date': collectionDate.toIso8601String(),
-                          'notes': notesCtrl.text,
+                          'notes': notesCtrl.text.isEmpty ? null : notesCtrl.text,
                         }));
                         Navigator.pop(ctx);
-                        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Salary advance recorded successfully.')));
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(content: Text('Salary advance of ₦${NumberFormat('#,##0').format(amt)} recorded (₦${NumberFormat('#,##0').format(monthlyDeduction)}/mo for $months mos)')),
+                        );
                       },
                       style: ElevatedButton.styleFrom(
                         backgroundColor: AppColors.primary,
@@ -881,7 +910,7 @@ class _StaffScreenState extends State<StaffScreen> with SingleTickerProviderStat
               ),
             ),
           );
-        }
+        },
       ),
     );
   }
