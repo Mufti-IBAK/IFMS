@@ -2,11 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/database/local_db.dart';
 import '../dairy_bloc.dart';
 import '../../animals/animals_bloc.dart';
 
 class AddMilkEntrySheet extends StatefulWidget {
-  const AddMilkEntrySheet({super.key});
+  final LocalMilkRecord? record;
+  const AddMilkEntrySheet({super.key, this.record});
 
   @override
   State<AddMilkEntrySheet> createState() => _AddMilkEntrySheetState();
@@ -20,6 +22,27 @@ class _AddMilkEntrySheetState extends State<AddMilkEntrySheet> {
   final litersCtrl = TextEditingController();
   final fatCtrl = TextEditingController();
   final proteinCtrl = TextEditingController();
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.record != null) {
+      selectedAnimalId = widget.record!.animalId;
+      selectedSession = widget.record!.milkingSession;
+      selectedDate = widget.record!.recordDate;
+      litersCtrl.text = widget.record!.quantityLiters.toString();
+      fatCtrl.text = widget.record!.fatPercentage?.toString() ?? '';
+      proteinCtrl.text = widget.record!.proteinPercentage?.toString() ?? '';
+    }
+  }
+
+  @override
+  void dispose() {
+    litersCtrl.dispose();
+    fatCtrl.dispose();
+    proteinCtrl.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -55,8 +78,19 @@ class _AddMilkEntrySheetState extends State<AddMilkEntrySheet> {
                            repro == 'lactating';
                   }).toList();
                   
+                  if (widget.record != null && !cows.any((c) => (c is Map ? c['id'] : (c as dynamic).id) == selectedAnimalId)) {
+                    final originalCow = state.animals.firstWhere(
+                      (a) => (a is Map ? a['id'] : (a as dynamic).id) == selectedAnimalId,
+                      orElse: () => null as dynamic,
+                    );
+                    if (originalCow != null) {
+                      cows.add(originalCow);
+                    }
+                  }
+                  
                   return DropdownMenu<String>(
                     width: MediaQuery.of(context).size.width - 48,
+                    initialSelection: selectedAnimalId,
                     enableSearch: true,
                     enableFilter: true,
                     requestFocusOnTap: true,
@@ -168,20 +202,35 @@ class _AddMilkEntrySheetState extends State<AddMilkEntrySheet> {
                     ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Please enter valid liters.')));
                     return;
                   }
+                  final now = DateTime.now();
+                  final recordDate = DateTime(
+                    selectedDate.year,
+                    selectedDate.month,
+                    selectedDate.day,
+                    widget.record != null ? widget.record!.recordDate.hour : now.hour,
+                    widget.record != null ? widget.record!.recordDate.minute : now.minute,
+                    widget.record != null ? widget.record!.recordDate.second : now.second,
+                  );
 
-                  context.read<DairyBloc>().add(AddMilkEntry({
+                  final recordData = {
                     'animal_id': selectedAnimalId,
-                    'record_date': selectedDate.toIso8601String(),
+                    'record_date': recordDate.toIso8601String(),
                     'milking_session': selectedSession,
                     'quantity_liters': liters,
                     'fat_percentage': double.tryParse(fatCtrl.text),
                     'protein_percentage': double.tryParse(proteinCtrl.text),
-                  }));
+                  };
+
+                  if (widget.record != null) {
+                    context.read<DairyBloc>().add(UpdateMilkEntry(widget.record!.id, recordData));
+                  } else {
+                    context.read<DairyBloc>().add(AddMilkEntry(recordData));
+                  }
 
                   Navigator.pop(context);
                 },
                 style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary, foregroundColor: Colors.white, padding: const EdgeInsets.symmetric(vertical: 16)),
-                child: const Text('Save Milk Record'),
+                child: Text(widget.record != null ? 'Update Milk Record' : 'Save Milk Record'),
               ),
             ),
             const SizedBox(height: 16),

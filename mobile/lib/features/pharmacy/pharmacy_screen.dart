@@ -70,7 +70,7 @@ class _PharmacyScreenState extends State<PharmacyScreen> with SingleTickerProvid
 
         return Scaffold(
           appBar: AppBar(
-            title: const Text('FARM PHARMACY'),
+            title: const Text('VETERINARY APOTHECARY'),
             bottom: TabBar(
               controller: _tabController,
               labelColor: AppColors.primary,
@@ -247,6 +247,13 @@ class _PharmacyScreenState extends State<PharmacyScreen> with SingleTickerProvid
                                 ),
                                 Row(
                                   children: [
+                                    IconButton(
+                                      icon: const Icon(Icons.edit_outlined, color: AppColors.secondary),
+                                      onPressed: () => _showEditMedicationDialog(context, med),
+                                      tooltip: 'Edit Details',
+                                      constraints: const BoxConstraints(),
+                                      padding: const EdgeInsets.symmetric(horizontal: 8),
+                                    ),
                                     IconButton(
                                       icon: const Icon(Icons.add_circle_outline, color: AppColors.primary),
                                       onPressed: () => _showRestockDialog(context, med),
@@ -525,27 +532,27 @@ class _PharmacyScreenState extends State<PharmacyScreen> with SingleTickerProvid
   // ═══════════════════════════════════════════
 
   void _showAddMedicationDialog(BuildContext context) {
+    final nameCtrl = TextEditingController();
+    final thresholdCtrl = TextEditingController(text: '10');
+    final supplierCtrl = TextEditingController();
+    final milkWithdrawCtrl = TextEditingController(text: '0');
+    final meatWithdrawCtrl = TextEditingController(text: '0');
+
+    // Wholesale Pricing Fields
+    final numPacksCtrl = TextEditingController(text: '1');
+    final costPackCtrl = TextEditingController();
+    final unitsPackCtrl = TextEditingController(text: '100');
+
+    String category = 'antibiotic';
+    String unit = 'ml';
+    String purchaseUnitType = 'box';
+    DateTime? expiryDate;
+
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (dialogCtx) {
-        final nameCtrl = TextEditingController();
-        final thresholdCtrl = TextEditingController(text: '10');
-        final supplierCtrl = TextEditingController();
-        final milkWithdrawCtrl = TextEditingController(text: '0');
-        final meatWithdrawCtrl = TextEditingController(text: '0');
-
-        // Wholesale Pricing Fields
-        final numPacksCtrl = TextEditingController(text: '1');
-        final costPackCtrl = TextEditingController();
-        final unitsPackCtrl = TextEditingController(text: '100');
-
-        String category = 'antibiotic';
-        String unit = 'ml';
-        String purchaseUnitType = 'box';
-        DateTime? expiryDate;
-
         return StatefulBuilder(
           builder: (ctx, setStateDialog) {
             // Live calculations
@@ -841,6 +848,172 @@ class _PharmacyScreenState extends State<PharmacyScreen> with SingleTickerProvid
     );
   }
 
+  void _showEditMedicationDialog(BuildContext context, LocalMedication med) {
+    final nameCtrl = TextEditingController(text: med.name);
+    final thresholdCtrl = TextEditingController(text: med.reorderThreshold.toStringAsFixed(0));
+    final supplierCtrl = TextEditingController(text: med.supplier ?? '');
+    final milkWithdrawCtrl = TextEditingController(text: med.milkWithdrawalDays.toString());
+    final meatWithdrawCtrl = TextEditingController(text: med.meatWithdrawalDays.toString());
+    final costPerUnitCtrl = TextEditingController(text: med.costPerUnit.toStringAsFixed(2));
+
+    String category = med.category;
+    String unit = med.unit;
+    DateTime? expiryDate = med.expiryDate;
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (dialogCtx) {
+        return StatefulBuilder(
+          builder: (ctx, setStateDialog) {
+            return Container(
+              decoration: const BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+              ),
+              padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom, left: 24, right: 24, top: 24),
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text('Edit Medication Details', style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
+                    const SizedBox(height: 16),
+                    TextField(
+                      controller: nameCtrl,
+                      decoration: const InputDecoration(labelText: 'Medication Name *'),
+                    ),
+                    const SizedBox(height: 12),
+                    DropdownButtonFormField<String>(
+                      value: category,
+                      decoration: const InputDecoration(labelText: 'Category *'),
+                      items: ['antibiotic', 'vaccine', 'dewormer', 'vitamin', 'supplement', 'other']
+                          .map((c) => DropdownMenuItem(value: c, child: Text(c.toUpperCase())))
+                          .toList(),
+                      onChanged: (v) => setStateDialog(() => category = v!),
+                    ),
+                    const SizedBox(height: 12),
+                    DropdownButtonFormField<String>(
+                      value: unit,
+                      decoration: const InputDecoration(labelText: 'Unit *'),
+                      items: ['ml', 'g', 'kg', 'bolus', 'vial', 'tablets', 'units']
+                          .map((u) => DropdownMenuItem(value: u, child: Text(u)))
+                          .toList(),
+                      onChanged: (v) => setStateDialog(() => unit = v!),
+                    ),
+                    const SizedBox(height: 12),
+                    TextField(
+                      controller: thresholdCtrl,
+                      keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                      decoration: const InputDecoration(labelText: 'Reorder Level Threshold *'),
+                    ),
+                    const SizedBox(height: 12),
+                    TextField(
+                      controller: costPerUnitCtrl,
+                      keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                      decoration: const InputDecoration(labelText: 'Cost Per Unit (₦) *'),
+                    ),
+                    const SizedBox(height: 12),
+                    TextField(
+                      controller: milkWithdrawCtrl,
+                      keyboardType: TextInputType.number,
+                      decoration: const InputDecoration(labelText: 'Milk Withdrawal (Days) *'),
+                    ),
+                    const SizedBox(height: 12),
+                    TextField(
+                      controller: meatWithdrawCtrl,
+                      keyboardType: TextInputType.number,
+                      decoration: const InputDecoration(labelText: 'Meat Withdrawal (Days) *'),
+                    ),
+                    const SizedBox(height: 12),
+                    TextField(
+                      controller: supplierCtrl,
+                      decoration: const InputDecoration(labelText: 'Supplier Name'),
+                    ),
+                    const SizedBox(height: 12),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          expiryDate == null
+                              ? 'No Expiry Date Set'
+                              : 'Expires: ${DateFormat('yyyy-MM-dd').format(expiryDate!)}',
+                          style: const TextStyle(fontWeight: FontWeight.bold),
+                        ),
+                        TextButton(
+                          onPressed: () async {
+                            final picked = await showDatePicker(
+                              context: context,
+                              initialDate: expiryDate ?? DateTime.now().add(const Duration(days: 365)),
+                              firstDate: DateTime.now().subtract(const Duration(days: 365)),
+                              lastDate: DateTime.now().add(const Duration(days: 3650)),
+                            );
+                            if (picked != null) {
+                              setStateDialog(() => expiryDate = picked);
+                            }
+                          },
+                          child: const Text('Pick Expiry'),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: OutlinedButton(
+                            onPressed: () => Navigator.pop(dialogCtx),
+                            style: OutlinedButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 16)),
+                            child: const Text('Cancel'),
+                          ),
+                        ),
+                        const SizedBox(width: 16),
+                        Expanded(
+                          child: ElevatedButton(
+                            onPressed: () {
+                              if (nameCtrl.text.isEmpty || thresholdCtrl.text.isEmpty || costPerUnitCtrl.text.isEmpty) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(content: Text('Please fill all required fields'), backgroundColor: AppColors.error),
+                                );
+                                return;
+                              }
+                              BlocProvider.of<PharmacyBloc>(context).add(EditMedication(
+                                med.id,
+                                {
+                                  'name': nameCtrl.text.trim(),
+                                  'category': category,
+                                  'unit': unit,
+                                  'reorder_threshold': thresholdCtrl.text.trim(),
+                                  'cost_per_unit': costPerUnitCtrl.text.trim(),
+                                  'milk_withdrawal_days': milkWithdrawCtrl.text.trim(),
+                                  'meat_withdrawal_days': meatWithdrawCtrl.text.trim(),
+                                  'supplier': supplierCtrl.text.trim().isNotEmpty ? supplierCtrl.text.trim() : null,
+                                  'expiry_date': expiryDate?.toIso8601String(),
+                                },
+                              ));
+                              Navigator.pop(dialogCtx);
+                            },
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: AppColors.primary,
+                              foregroundColor: Colors.white,
+                              padding: const EdgeInsets.symmetric(vertical: 16),
+                            ),
+                            child: const Text('Save Changes'),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 24),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
   void _showRestockDialog(BuildContext context, LocalMedication med) {
     final numPacksCtrl = TextEditingController(text: '1');
     final costPackCtrl = TextEditingController();
@@ -1078,19 +1251,18 @@ class _PharmacyScreenState extends State<PharmacyScreen> with SingleTickerProvid
     final animalsRepo = sl<AnimalsRepository>();
     final pharmacyBloc = BlocProvider.of<PharmacyBloc>(context);
 
+    String? selectedAnimalId;
+    String? selectedMedId = medications.first.id;
+    final doseCtrl = TextEditingController();
+    final diagnosisCtrl = TextEditingController();
+    final adminByCtrl = TextEditingController();
+    final notesCtrl = TextEditingController();
+    DateTime treatmentDate = DateTime.now();
+    double totalCost = 0.0;
+
     showDialog(
       context: context,
       builder: (dialogCtx) {
-        String? selectedAnimalId;
-        String? selectedMedId = medications.first.id;
-        final doseCtrl = TextEditingController();
-        final diagnosisCtrl = TextEditingController();
-        final adminByCtrl = TextEditingController();
-        final notesCtrl = TextEditingController();
-        DateTime treatmentDate = DateTime.now();
-
-        double totalCost = 0.0;
-
         return FutureBuilder<List<dynamic>>(
           future: animalsRepo.getAnimals(),
           builder: (context, snapshot) {

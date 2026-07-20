@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 import 'package:drift/drift.dart' as drift;
+import 'package:uuid/uuid.dart';
+import 'package:dio/dio.dart';
 import 'dart:io';
 import 'dart:convert';
 import '../breeding/breeding_repository.dart';
@@ -36,12 +38,9 @@ class _AnimalProfileScreenState extends State<AnimalProfileScreen> with SingleTi
   late Future<List<Map<String, dynamic>>> _medRecordsFuture;
   late Future<List<dynamic>> _breedingEventsFuture;
 
-  // Overview metrics
   double _totalMilkLiters = 0.0;
   double _avgMilkLiters = 0.0;
   bool _hasActiveWithdrawal = false;
-  double _totalMedExpense = 0.0;
-  double _totalFeedExpense = 0.0;
 
   // Resolved attributes
   late String _id;
@@ -133,15 +132,9 @@ class _AnimalProfileScreenState extends State<AnimalProfileScreen> with SingleTi
         final items = results[1] as List<LocalFeedItem>;
         final itemMap = {for (var i in items) i.id: i};
 
-        double feedCost = 0.0;
-        for (var l in logs) {
-          final costPerKg = itemMap[l.feedItemId]?.costPerKg ?? 150.0;
-          feedCost += l.quantityKg * costPerKg;
-        }
+
         
-        setState(() {
-          _totalFeedExpense = feedCost;
-        });
+
 
         return logs.map((l) {
           final itemName = itemMap[l.feedItemId]?.name ?? 'Unknown Feed';
@@ -168,10 +161,8 @@ class _AnimalProfileScreenState extends State<AnimalProfileScreen> with SingleTi
 
         _hasActiveWithdrawal = logs.any((r) => r.withdrawalEndDate != null && r.withdrawalEndDate!.isAfter(DateTime.now()));
 
-        final double medCost = logs.fold<double>(0.0, (s, r) => s + r.cost);
-        setState(() {
-          _totalMedExpense = medCost;
-        });
+
+
 
         return logs.map((l) {
           final med = medMap[l.medicationId];
@@ -251,7 +242,7 @@ class _AnimalProfileScreenState extends State<AnimalProfileScreen> with SingleTi
                 isScrollControlled: true,
                 backgroundColor: Colors.transparent,
                 builder: (ctx) => MedicalReportSheet(animal: widget.animal),
-              );
+              ).then((_) => _refreshAllData());
             },
           ),
           IconButton(
@@ -2441,6 +2432,7 @@ class _AnimalProfileScreenState extends State<AnimalProfileScreen> with SingleTi
                   onPressed: () async {
                     final dialogNav = Navigator.of(dialogCtx);
                     final apiClient = sl<ApiClient>();
+                    final db = sl<LocalDatabase>();
 
                     // Pack structured outputs into result and notes
                     String resultValue = 'Logged';
@@ -2470,7 +2462,9 @@ class _AnimalProfileScreenState extends State<AnimalProfileScreen> with SingleTi
                       notesValue = 'Ease: ${calvingEase.toUpperCase()} | Offspring Tag: ${offspringTagCtrl.text.isEmpty ? "Unregistered" : offspringTagCtrl.text}. $notesValue'.trim();
                     }
 
+                    final eventId = const Uuid().v4();
                     final payload = {
+                      'id': eventId,
                       'animal_id': _id,
                       'event_type': selectedType,
                       'event_date': selectedDate.toIso8601String().substring(0, 10),
@@ -2480,10 +2474,38 @@ class _AnimalProfileScreenState extends State<AnimalProfileScreen> with SingleTi
 
                     try {
                       await apiClient.dio.post('/breeding_events', data: payload);
+                      await db.into(db.localBreedingEvents).insert(LocalBreedingEventsCompanion.insert(
+                        id: eventId,
+                        animalId: _id,
+                        eventType: selectedType,
+                        eventDate: selectedDate,
+                        result: drift.Value(resultValue),
+                        notes: drift.Value(notesValue.isEmpty ? null : notesValue),
+                      ));
                       if (!context.mounted) return;
                       dialogNav.pop();
                       _refreshAllData();
                     } catch (e) {
+                      if (e is DioException && ApiClient.isNetworkError(e)) {
+                        await db.into(db.localBreedingEvents).insert(LocalBreedingEventsCompanion.insert(
+                          id: eventId,
+                          animalId: _id,
+                          eventType: selectedType,
+                          eventDate: selectedDate,
+                          result: drift.Value(resultValue),
+                          notes: drift.Value(notesValue.isEmpty ? null : notesValue),
+                        ));
+                        await db.into(db.syncQueue).insert(SyncQueueCompanion.insert(
+                          endpoint: '/breeding_events',
+                          method: 'POST',
+                          body: jsonEncode(payload),
+                          queuedAt: DateTime.now(),
+                        ));
+                        if (!context.mounted) return;
+                        dialogNav.pop();
+                        _refreshAllData();
+                        return;
+                      }
                       if (!context.mounted) return;
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(content: Text('Failed to save breeding event: $e'), backgroundColor: AppColors.error),

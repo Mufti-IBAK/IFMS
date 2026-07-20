@@ -37,7 +37,7 @@ class _StaffScreenState extends State<StaffScreen> with SingleTickerProviderStat
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('FARM HR & STAFFING'),
+        title: const Text('LABOR & OPERATIONS MANAGEMENT'),
         bottom: TabBar(
           controller: _tabController,
           labelColor: AppColors.primary,
@@ -143,7 +143,13 @@ class _StaffScreenState extends State<StaffScreen> with SingleTickerProviderStat
       itemCount: state.queries.length,
       itemBuilder: (context, index) {
         final query = state.queries[index];
-        final staff = state.staff.firstWhere((s) => (s is Map ? s['id'] : s.id) == query.staffId, orElse: () => null);
+        dynamic staff;
+        for (var s in state.staff) {
+          if ((s is Map ? s['id'] : s.id) == query.staffId) {
+            staff = s;
+            break;
+          }
+        }
         final staffName = staff != null ? (staff is Map ? staff['name'] : staff.name) : 'Unknown';
 
         return Card(
@@ -553,26 +559,23 @@ class _StaffScreenState extends State<StaffScreen> with SingleTickerProviderStat
               const SizedBox(height: 8),
               const Text('Record an infraction and set a pending deduction amount.', style: TextStyle(color: Colors.grey)),
               const SizedBox(height: 24),
-              Autocomplete<Object>(
-                displayStringForOption: (option) => option is Map ? option['name'] : (option as dynamic).name,
-                optionsBuilder: (TextEditingValue textEditingValue) {
-                  if (textEditingValue.text.isEmpty) return const Iterable<Object>.empty();
-                  return state.staff.where((s) {
-                    final name = (s is Map ? s['name'] : (s as dynamic).name).toString().toLowerCase();
-                    return name.contains(textEditingValue.text.toLowerCase());
-                  }).cast<Object>();
-                },
-                onSelected: (selection) => selectedStaffId = selection is Map ? selection['id'] : (selection as dynamic).id,
-                fieldViewBuilder: (context, textEditingController, focusNode, onFieldSubmitted) {
-                  return TextField(textCapitalization: TextCapitalization.sentences, controller: textEditingController,
-                    focusNode: focusNode,
-                    decoration: const InputDecoration(
-                      labelText: 'Search Staff Member',
-                      prefixIcon: Icon(Icons.search),
-                      border: OutlineInputBorder(),
-                    ),
+              DropdownButtonFormField<String>(
+                decoration: const InputDecoration(
+                  labelText: 'Select Staff Member *',
+                  prefixIcon: Icon(Icons.person),
+                  border: OutlineInputBorder(),
+                ),
+                value: selectedStaffId,
+                items: state.staff.map((s) {
+                  final id = s is Map ? s['id'] : (s as dynamic).id;
+                  final name = s is Map ? s['name'] : (s as dynamic).name;
+                  final role = s is Map ? s['role'] : (s as dynamic).role;
+                  return DropdownMenuItem<String>(
+                    value: id.toString(),
+                    child: Text('$name ($role)'),
                   );
-                },
+                }).toList(),
+                onChanged: (val) => setDiagState(() => selectedStaffId = val),
               ),
               const SizedBox(height: 16),
               TextField(textCapitalization: TextCapitalization.sentences, controller: titleCtrl,

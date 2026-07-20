@@ -37,7 +37,7 @@ class BreedingRepository {
     };
 
     try {
-      await apiClient.dio.post('/breeding', data: apiPayload);
+      await apiClient.dio.post('/breeding_events', data: apiPayload);
 
       // On success, save locally
       await db.into(db.localBreedingEvents).insert(LocalBreedingEventsCompanion.insert(
@@ -67,6 +67,38 @@ class BreedingRepository {
         );
       }
     } catch (e) {
+      if (e is DioException && ApiClient.isNetworkError(e)) {
+        await db.into(db.localBreedingEvents).insert(LocalBreedingEventsCompanion.insert(
+          id: eventId,
+          animalId: animalId,
+          eventType: eventType,
+          eventDate: eventDate,
+          sireId: Value(sireId),
+          semenBatchId: Value(semenBatchId),
+          technician: Value(technician),
+          result: Value(result),
+          notes: Value(notes),
+          payload: Value(payload),
+        ));
+
+        if (eventType == 'ai' || eventType == 'natural_mating') {
+          await _schedulePregnancyCheckTask(animalId, eventDate.add(const Duration(days: 28)));
+        } else if (eventType == 'pregnancy_check' && result == 'pregnant') {
+          await _handleConfirmedPregnancy(animalId, eventDate);
+        } else if (eventType == 'calving' || eventType == 'abortion') {
+          await (db.update(db.localAnimals)..where((t) => t.id.equals(animalId))).write(
+            const LocalAnimalsCompanion(currentReproductiveStatus: Value('active')),
+          );
+        }
+
+        await db.into(db.syncQueue).insert(SyncQueueCompanion.insert(
+          endpoint: '/breeding_events',
+          method: 'POST',
+          body: jsonEncode(apiPayload),
+          queuedAt: DateTime.now(),
+        ));
+        throw Exception('Saved locally. Will sync when connection is restored.');
+      }
       if (e is DioException) {
         throw Exception(e.response?.data?['message'] ?? e.response?.data?['details'] ?? 'Failed to log breeding event: ${e.message}');
       }

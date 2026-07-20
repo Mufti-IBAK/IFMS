@@ -30,6 +30,12 @@ class DiscardStock extends PharmacyEvent {
   DiscardStock(this.data);
 }
 
+class EditMedication extends PharmacyEvent {
+  final String id;
+  final Map<String, dynamic> data;
+  EditMedication(this.id, this.data);
+}
+
 // ──────────────────────────────────────────────
 // STATES
 // ──────────────────────────────────────────────
@@ -64,6 +70,7 @@ class PharmacyBloc extends Bloc<PharmacyEvent, PharmacyState> {
     on<LoadPharmacy>(_onLoad);
     on<AddMedication>(_onAddMedication);
     on<UpdateMedicationStock>(_onUpdateStock);
+    on<EditMedication>(_onEditMedication);
     on<LogTreatment>(_onLogTreatment);
     on<DiscardStock>(_onDiscardStock);
   }
@@ -116,6 +123,15 @@ class PharmacyBloc extends Bloc<PharmacyEvent, PharmacyState> {
       add(LoadPharmacy());
     } catch (e) {
       emit(PharmacyError('Failed to discard medication: ${e.toString()}'));
+    }
+  }
+
+  Future<void> _onEditMedication(EditMedication event, Emitter<PharmacyState> emit) async {
+    try {
+      await repository.updateMedication(event.id, event.data);
+      add(LoadPharmacy());
+    } catch (e) {
+      emit(PharmacyError('Failed to update medication: ${e.toString()}'));
     }
   }
 }

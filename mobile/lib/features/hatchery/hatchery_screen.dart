@@ -20,7 +20,7 @@ class _HatcheryScreenState extends State<HatcheryScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('IFMS HATCHERY COHORTS'),
+        title: const Text('AVIAN INCUBATION HUB'),
         actions: [
           IconButton(
             onPressed: () async {
@@ -116,7 +116,9 @@ class _HatcheryScreenState extends State<HatcheryScreen> {
                   itemCount: batches.length,
                   itemBuilder: (context, index) {
                     final batch = batches[index];
-                    final metadata = _parseBreedMetadata(batch['breed']);
+                    final setDateVal = batch['set_date'] is String ? DateTime.tryParse(batch['set_date']) : batch['set_date'] as DateTime?;
+                    final expectedHatchVal = batch['expected_hatch_date'] is String ? DateTime.tryParse(batch['expected_hatch_date']) : batch['expected_hatch_date'] as DateTime?;
+                    final metadata = _parseBreedMetadata(batch['breed'], setDate: setDateVal, expectedHatchDate: expectedHatchVal);
                     final breed = metadata['breed'] ?? 'Unknown Breed';
                     final species = metadata['species'] ?? 'Chicken';
                     final incubationDays = metadata['incubation_days'] ?? (speciesIncubationDays[species] ?? 21);
@@ -131,7 +133,6 @@ class _HatcheryScreenState extends State<HatcheryScreen> {
 
                     final isIncubating = status == 'incubating';
 
-                    // Compute progress based on selected species incubation duration
                     double progress = 0.0;
                     int daysRemaining = incubationDays;
                     if (setDate.isNotEmpty) {
@@ -437,8 +438,6 @@ class _HatcheryScreenState extends State<HatcheryScreen> {
                         'species': species,
                         'incubation_days': incubationDays,
                         'collection_date': formatDate(collectionDate),
-                        'switch_date': formatDate(switchDate),
-                        'chick_collection_date': formatDate(collectionProposedDate),
                       });
 
                       BlocProvider.of<HatcheryBloc>(context).add(CreateHatcheryBatch({
@@ -486,7 +485,9 @@ class _HatcheryScreenState extends State<HatcheryScreen> {
               builder: (context, setSheetState) {
                 final status = kpis['status'] ?? batch['status'];
                 final isIncubating = status == 'incubating';
-                final metadata = _parseBreedMetadata(batch['breed']);
+                final setDateVal = batch['set_date'] is String ? DateTime.tryParse(batch['set_date']) : batch['set_date'] as DateTime?;
+                final expectedHatchVal = batch['expected_hatch_date'] is String ? DateTime.tryParse(batch['expected_hatch_date']) : batch['expected_hatch_date'] as DateTime?;
+                final metadata = _parseBreedMetadata(batch['breed'], setDate: setDateVal, expectedHatchDate: expectedHatchVal);
                 final breedName = metadata['breed'] ?? 'Unknown Breed';
                 final species = metadata['species'] ?? 'Chicken';
                 final collectionDate = metadata['collection_date'] ?? 'N/A';
@@ -837,21 +838,31 @@ class _HatcheryScreenState extends State<HatcheryScreen> {
     'Other': 21,
   };
 
-  Map<String, dynamic> _parseBreedMetadata(String? breedField) {
+  Map<String, dynamic> _parseBreedMetadata(String? breedField, {DateTime? setDate, DateTime? expectedHatchDate}) {
     if (breedField == null) return {'breed': 'General', 'species': 'Chicken', 'collection_date': '', 'switch_date': '', 'chick_collection_date': ''};
+    Map<String, dynamic> result = {'breed': breedField, 'species': 'Chicken', 'collection_date': '', 'switch_date': '', 'chick_collection_date': ''};
     if (breedField.startsWith('{')) {
       try {
         final Map<String, dynamic> data = jsonDecode(breedField);
-        return data;
+        result = data;
       } catch (_) {}
     }
-    return {
-      'breed': breedField,
-      'species': 'Chicken',
-      'collection_date': '',
-      'switch_date': '',
-      'chick_collection_date': '',
-    };
+    
+    if (result['collection_date'] == null) {
+      result['collection_date'] = '';
+    }
+    if (result['switch_date'] == null || result['switch_date'].toString().isEmpty) {
+      if (setDate != null) {
+        final incubation = int.tryParse(result['incubation_days']?.toString() ?? '21') ?? 21;
+        result['switch_date'] = setDate.add(Duration(days: incubation - 3)).toIso8601String().split('T')[0];
+      }
+    }
+    if (result['chick_collection_date'] == null || result['chick_collection_date'].toString().isEmpty) {
+      if (expectedHatchDate != null) {
+        result['chick_collection_date'] = expectedHatchDate.toIso8601String().split('T')[0];
+      }
+    }
+    return result;
   }
 
   Widget _buildDateRow(String label, String value) {

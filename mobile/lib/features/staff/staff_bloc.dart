@@ -126,7 +126,11 @@ class StaffBloc extends Bloc<StaffEvent, StaffState> {
         await repository.resolveQuery(event.queryId, event.notes);
         add(LoadStaffData());
       } catch (e) {
-        emit(StaffError(e.toString()));
+        if (e.toString().contains('Saved locally')) {
+          add(LoadStaffData());
+        } else {
+          emit(StaffError(e.toString()));
+        }
       }
     });
 

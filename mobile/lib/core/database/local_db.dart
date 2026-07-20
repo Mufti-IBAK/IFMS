@@ -377,7 +377,7 @@ class LocalBreedingEvents extends Table {
   LocalBreedingEvents
 ])
 class LocalDatabase extends _$LocalDatabase {
-  LocalDatabase() : super(_openConnection());
+  LocalDatabase([QueryExecutor? executor]) : super(executor ?? _openConnection());
 
   @override
   int get schemaVersion => 18;

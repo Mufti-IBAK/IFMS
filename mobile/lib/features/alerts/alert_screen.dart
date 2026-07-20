@@ -1,5 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:intl/intl.dart';
+import 'dart:convert';
+import 'package:drift/drift.dart' as drift;
+import '../../core/di/service_locator.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/database/local_db.dart';
 import '../../core/services/health_report_service.dart';
@@ -76,7 +80,7 @@ class AlertScreen extends StatelessWidget {
       length: 3,
       child: Scaffold(
         appBar: AppBar(
-          title: const Text('FARM BRAIN ALERTS'),
+          title: const Text('ALERTS & INSIGHTS CONTROL'),
           actions: [
             IconButton(
               icon: const Icon(Icons.picture_as_pdf),
@@ -86,9 +90,9 @@ class AlertScreen extends StatelessWidget {
           ],
           bottom: const TabBar(
             tabs: [
+              Tab(text: 'INSIGHTS & EVENTS'),
               Tab(text: 'CRITICAL'),
               Tab(text: 'ACTION REQUIRED'),
-              Tab(text: 'INSIGHTS'),
             ],
             labelStyle: TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
           ),
@@ -100,9 +104,9 @@ class AlertScreen extends StatelessWidget {
             } else if (state is AlertLoaded) {
               return TabBarView(
                 children: [
+                  _InsightsAndEventsView(insights: state.alerts.where((a) => a.severity == 'insight').toList()),
                   _AlertListView(alerts: state.alerts.where((a) => a.severity == 'critical').toList()),
                   _AlertListView(alerts: state.alerts.where((a) => a.severity == 'warning').toList()),
-                  _AlertListView(alerts: state.alerts.where((a) => a.severity == 'insight').toList()),
                 ],
               );
             }
@@ -115,7 +119,11 @@ class AlertScreen extends StatelessWidget {
               context: context,
               isScrollControlled: true,
               builder: (ctx) => const FarmEventReportSheet(),
-            );
+            ).then((_) {
+              if (context.mounted) {
+                context.read<AlertBloc>().add(LoadAlerts());
+              }
+            });
           },
           icon: const Icon(Icons.report),
           label: const Text('Report Event'),
@@ -174,7 +182,19 @@ class _AlertListView extends StatelessWidget {
                   children: [
                     Expanded(
                       child: ElevatedButton(
-                        onPressed: () {},
+                        onPressed: () {
+                          context.read<AlertBloc>().add(ResolveAlert(alert.id));
+                          final titleLower = alert.title.toLowerCase();
+                          if (titleLower.contains('feed')) {
+                            Navigator.pushNamed(context, '/inventory');
+                          } else if (titleLower.contains('medication') || titleLower.contains('pharmacy')) {
+                            Navigator.pushNamed(context, '/pharmacy');
+                          } else if (titleLower.contains('animal') || titleLower.contains('mortality') || titleLower.contains('sick')) {
+                            Navigator.pushNamed(context, '/animals');
+                          } else {
+                            Navigator.pushNamed(context, '/tasks');
+                          }
+                        },
                         style: ElevatedButton.styleFrom(
                           backgroundColor: AppColors.surfaceContainerHigh,
                           foregroundColor: AppColors.onSurface,
@@ -185,7 +205,9 @@ class _AlertListView extends StatelessWidget {
                     const SizedBox(width: 12),
                     Expanded(
                       child: ElevatedButton(
-                        onPressed: () {},
+                        onPressed: () {
+                          context.read<AlertBloc>().add(ResolveAlert(alert.id));
+                        },
                         child: const Text('Dismiss', style: TextStyle(fontSize: 12)),
                       ),
                     ),
@@ -194,6 +216,133 @@ class _AlertListView extends StatelessWidget {
               ],
             ),
           ),
+        );
+      },
+    );
+  }
+}
+
+class _InsightsAndEventsView extends StatelessWidget {
+  final List<LocalAlert> insights;
+  const _InsightsAndEventsView({required this.insights});
+
+  @override
+  Widget build(BuildContext context) {
+    final db = sl<LocalDatabase>();
+
+    return FutureBuilder<List<LocalFarmEvent>>(
+      future: (db.select(db.localFarmEvents)..orderBy([(t) => drift.OrderingTerm(expression: t.eventDate, mode: drift.OrderingMode.desc)])).get(),
+      builder: (context, snapshot) {
+        final events = snapshot.data ?? [];
+
+        return ListView(
+          padding: const EdgeInsets.all(16),
+          children: [
+            if (events.isNotEmpty) ...[
+              const Text('Reported Events History', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: AppColors.primary)),
+              const SizedBox(height: 10),
+              ...events.map((ev) {
+                Map<String, dynamic>? meta;
+                if (ev.description.startsWith('{')) {
+                  try {
+                    meta = jsonDecode(ev.description);
+                  } catch (_) {}
+                }
+                
+                final descText = meta != null ? meta['description']?.toString() : ev.description;
+                final severity = meta != null ? meta['severity']?.toString() : 'insight';
+                final actionText = meta != null ? meta['action_required_details']?.toString() : null;
+
+                Color badgeColor = Colors.blue;
+                if (severity == 'critical') badgeColor = Colors.red;
+                if (severity == 'warning') badgeColor = Colors.orange;
+
+                return Card(
+                  margin: const EdgeInsets.only(bottom: 12),
+                  child: Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              ev.eventType.replaceAll('_', ' ').toUpperCase(),
+                              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                            ),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                              decoration: BoxDecoration(
+                                color: badgeColor.withOpacity(0.1),
+                                borderRadius: BorderRadius.circular(4),
+                              ),
+                              child: Text(
+                                severity == 'warning' ? 'ACTION REQUIRED' : severity!.toUpperCase(),
+                                style: TextStyle(color: badgeColor, fontWeight: FontWeight.bold, fontSize: 10),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+                        Text(descText ?? '', style: const TextStyle(fontSize: 13)),
+                        if (actionText != null) ...[
+                          const SizedBox(height: 8),
+                          Text(
+                            'Action Required: $actionText',
+                            style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.orange),
+                          ),
+                        ],
+                        if (ev.involvedAnimals != null && ev.involvedAnimals!.isNotEmpty) ...[
+                          const SizedBox(height: 8),
+                          Text(
+                            'Involved Animals: ${ev.involvedAnimals}',
+                            style: TextStyle(fontSize: 11, color: Colors.grey[600]),
+                          ),
+                        ],
+                        const SizedBox(height: 8),
+                        Align(
+                          alignment: Alignment.bottomRight,
+                          child: Text(
+                            DateFormat('yyyy-MM-dd HH:mm').format(ev.eventDate),
+                            style: TextStyle(fontSize: 10, color: Colors.grey[500]),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              }),
+              const SizedBox(height: 24),
+            ],
+            
+            const Text('System Insights & Suggestions', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: AppColors.primary)),
+            const SizedBox(height: 10),
+            if (insights.isEmpty)
+              const Center(
+                child: Padding(
+                  padding: EdgeInsets.symmetric(vertical: 20),
+                  child: Text('No system insights at this time.'),
+                ),
+              )
+            else
+              ...insights.map((alert) {
+                return Card(
+                  margin: const EdgeInsets.only(bottom: 12),
+                  child: ListTile(
+                    leading: const Icon(Icons.lightbulb_outline, color: Colors.amber),
+                    title: Text(alert.title.toUpperCase(), style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                    subtitle: Text(alert.message, style: const TextStyle(fontSize: 12)),
+                    trailing: IconButton(
+                      icon: const Icon(Icons.check),
+                      onPressed: () {
+                        context.read<AlertBloc>().add(ResolveAlert(alert.id));
+                      },
+                    ),
+                  ),
+                );
+              }),
+          ],
         );
       },
     );

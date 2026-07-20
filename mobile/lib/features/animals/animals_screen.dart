@@ -64,7 +64,7 @@ class _AnimalsScreenState extends State<AnimalsScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('IFMS FARM REGISTRY PRO'),
+        title: const Text('LIVESTOCK PORTFOLIO'),
         actions: [
           BlocBuilder<AnimalsBloc, AnimalsState>(
             builder: (context, state) {

@@ -32,8 +32,15 @@ class _LogBreedingSheetState extends State<LogBreedingSheet> {
     'ai',
     'pregnancy_check',
     'abortion',
-    'birth'
+    'birth',
+    'estrus_synchronization'
   ];
+
+  // Synchronization Details
+  String _syncProtocol = 'ovsynch';
+  DateTime _injectionDate = DateTime.now();
+  DateTime _expectedEstrusDate = DateTime.now().add(const Duration(days: 3));
+  String _estrusPeriod = 'morning';
 
   @override
   Widget build(BuildContext context) {
@@ -240,6 +247,74 @@ class _LogBreedingSheetState extends State<LogBreedingSheet> {
                 const SizedBox(height: 16),
               ],
 
+            if (_eventType == 'estrus_synchronization')
+              ...[
+                const SizedBox(height: 16),
+                DropdownButtonFormField<String>(
+                  value: _syncProtocol,
+                  decoration: const InputDecoration(labelText: 'Synchronization Protocol', border: OutlineInputBorder()),
+                  items: const [
+                    DropdownMenuItem(value: 'ovsynch', child: Text('Ovsynch')),
+                    DropdownMenuItem(value: 'cosynch', child: Text('Cosynch')),
+                    DropdownMenuItem(value: 'cidr', child: Text('CIDR')),
+                    DropdownMenuItem(value: 'double_pg', child: Text('Double-PG')),
+                  ],
+                  onChanged: (v) => setState(() => _syncProtocol = v!),
+                ),
+                const SizedBox(height: 16),
+                Row(
+                  children: [
+                    Expanded(
+                      child: InkWell(
+                        onTap: () async {
+                          final date = await showDatePicker(
+                            context: context,
+                            initialDate: _injectionDate,
+                            firstDate: DateTime.now().subtract(const Duration(days: 30)),
+                            lastDate: DateTime.now().add(const Duration(days: 30)),
+                          );
+                          if (date != null) setState(() => _injectionDate = date);
+                        },
+                        child: InputDecorator(
+                          decoration: const InputDecoration(labelText: 'Injection Date', border: OutlineInputBorder()),
+                          child: Text(_injectionDate.toIso8601String().split('T')[0]),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: InkWell(
+                        onTap: () async {
+                          final date = await showDatePicker(
+                            context: context,
+                            initialDate: _expectedEstrusDate,
+                            firstDate: DateTime.now().subtract(const Duration(days: 30)),
+                            lastDate: DateTime.now().add(const Duration(days: 30)),
+                          );
+                          if (date != null) setState(() => _expectedEstrusDate = date);
+                        },
+                        child: InputDecorator(
+                          decoration: const InputDecoration(labelText: 'Expected Estrus', border: OutlineInputBorder()),
+                          child: Text(_expectedEstrusDate.toIso8601String().split('T')[0]),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                DropdownButtonFormField<String>(
+                  value: _estrusPeriod,
+                  decoration: const InputDecoration(labelText: 'Expected Estrus Period', border: OutlineInputBorder()),
+                  items: const [
+                    DropdownMenuItem(value: 'morning', child: Text('Morning')),
+                    DropdownMenuItem(value: 'evening', child: Text('Evening')),
+                    DropdownMenuItem(value: 'all_day', child: Text('All Day')),
+                  ],
+                  onChanged: (v) => setState(() => _estrusPeriod = v!),
+                ),
+                const SizedBox(height: 16),
+              ],
+
             // Notes
             TextField(
               controller: _notesCtrl,
@@ -267,6 +342,14 @@ class _LogBreedingSheetState extends State<LogBreedingSheet> {
                     'offspringGender': _offspringGender,
                     'healthStatus': _healthStatus,
                     'motherStatus': _motherStatus,
+                  });
+                }
+                if (_eventType == 'estrus_synchronization') {
+                  payloadJson = jsonEncode({
+                    'protocol': _syncProtocol,
+                    'injectionDate': _injectionDate.toIso8601String(),
+                    'expectedEstrusDate': _expectedEstrusDate.toIso8601String(),
+                    'estrusPeriod': _estrusPeriod,
                   });
                 }
 

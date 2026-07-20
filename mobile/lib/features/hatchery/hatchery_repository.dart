@@ -61,11 +61,16 @@ class HatcheryRepository {
   Future<void> createBatch(Map<String, dynamic> batchData) async {
     final uuid = const Uuid().v4();
     batchData['id'] = uuid;
+    batchData['status'] = 'incubating';
 
     final setDt = DateTime.parse(batchData['set_date']);
     final expectedDt = batchData['expected_hatch_date'] != null
         ? DateTime.parse(batchData['expected_hatch_date'])
         : setDt.add(const Duration(days: 21));
+
+    batchData['expected_hatch_date'] = expectedDt.toIso8601String().substring(0, 10);
+    batchData['egg_count'] = int.parse(batchData['egg_count'].toString());
+    batchData['initial_egg_cost'] = double.parse((batchData['initial_egg_cost'] ?? 0.0).toString());
 
     try {
       await apiClient.dio.post('/hatchery/batch', data: batchData);
@@ -82,10 +87,30 @@ class HatcheryRepository {
         status: const Value('incubating'),
       ));
     } catch (e) {
-      if (e is DioException) {
-        throw Exception(e.response?.data?['message'] ?? e.response?.data?['details'] ?? 'Failed to create batch: ${e.message}');
+      if (e is DioException && ApiClient.isNetworkError(e)) {
+        await db.into(db.localHatcheryBatches).insertOnConflictUpdate(LocalHatcheryBatchesCompanion.insert(
+          id: uuid,
+          eggSource: batchData['egg_source'],
+          eggCount: int.parse(batchData['egg_count'].toString()),
+          breed: Value(batchData['breed']),
+          setDate: setDt,
+          expectedHatchDate: expectedDt,
+          initialEggCost: Value(double.parse((batchData['initial_egg_cost'] ?? 0.0).toString())),
+          status: const Value('incubating'),
+        ));
+
+        await db.into(db.syncQueue).insert(SyncQueueCompanion.insert(
+          endpoint: '/hatchery/batch',
+          method: 'POST',
+          body: jsonEncode(batchData),
+          queuedAt: DateTime.now(),
+        ));
+        throw Exception('Saved locally. Will sync when connection is restored.');
       }
-      throw Exception('Failed to create batch: $e');
+      if (e is DioException) {
+        throw Exception(e.response?.data?['message'] ?? e.response?.data?['details'] ?? 'Failed to create hatchery batch: ${e.message}');
+      }
+      throw Exception('Failed to create hatchery batch: $e');
     }
   }
 
@@ -150,6 +175,48 @@ class HatcheryRepository {
         }
       }
     } catch (e) {
+      if (e is DioException && ApiClient.isNetworkError(e)) {
+        await db.into(db.localHatcheryEvents).insertOnConflictUpdate(LocalHatcheryEventsCompanion.insert(
+          id: uuid,
+          batchId: batchId,
+          eventType: eventType,
+          eventDate: eventDate,
+          valueJson: Value(jsonEncode(valMap)),
+        ));
+
+        final batchQuery = await (db.select(db.localHatcheryBatches)..where((t) => t.id.equals(batchId))).getSingleOrNull();
+        if (batchQuery != null) {
+          if (eventType == 'candling') {
+            final fertile = valMap['fertile_eggs'];
+            if (fertile != null) {
+              await (db.update(db.localHatcheryBatches)..where((t) => t.id.equals(batchId))).write(
+                LocalHatcheryBatchesCompanion(fertileEggs: Value(int.parse(fertile.toString())))
+              );
+            }
+          } else if (eventType == 'hatch_complete') {
+            final hatched = valMap['hatched_chicks'];
+            if (hatched != null) {
+              final hatchedInt = int.parse(hatched.toString());
+              final failed = batchQuery.eggCount - hatchedInt;
+              await (db.update(db.localHatcheryBatches)..where((t) => t.id.equals(batchId))).write(
+                LocalHatcheryBatchesCompanion(
+                  hatchedChicks: Value(hatchedInt),
+                  failedEggs: Value(failed),
+                  status: const Value('completed'),
+                )
+              );
+            }
+          }
+        }
+
+        await db.into(db.syncQueue).insert(SyncQueueCompanion.insert(
+          endpoint: '/hatchery/batch/$batchId/event',
+          method: 'POST',
+          body: jsonEncode(eventData),
+          queuedAt: DateTime.now(),
+        ));
+        throw Exception('Saved locally. Will sync when connection is restored.');
+      }
       if (e is DioException) {
         throw Exception(e.response?.data?['message'] ?? e.response?.data?['details'] ?? 'Failed to add event: ${e.message}');
       }

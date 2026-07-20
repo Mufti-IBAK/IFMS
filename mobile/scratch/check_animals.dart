@@ -1,9 +1,9 @@
+// ignore_for_file: avoid_print
 import 'package:flutter/material.dart';
 import 'package:drift/native.dart';
-import 'package:drift/drift.dart';
 import 'dart:io';
 
-import 'package:mobile/core/database/local_db.dart';
+import 'package:ifms_mobile/core/database/local_db.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();

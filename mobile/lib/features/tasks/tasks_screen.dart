@@ -26,7 +26,7 @@ class _TasksScreenState extends State<TasksScreen> {
       length: 3,
       child: Scaffold(
         appBar: AppBar(
-          title: const Text('FARM TASKS'),
+          title: const Text('TASK & OPERATION LOGS'),
           bottom: const TabBar(
             tabs: [
               Tab(text: 'TODAY'),
@@ -72,7 +72,6 @@ class _TasksScreenState extends State<TasksScreen> {
               for (var task in allTasks) {
                 final status = task is Map ? task['status'] : task.status;
                 final assignedTo = task is Map ? task['assignedTo'] : task.assignedTo;
-                final isActionable = task is Map ? task['isActionable'] : task.isActionable;
                 
                 if (status == 'pending') {
                   totalPending++;

@@ -92,7 +92,7 @@ class _FinanceScreenState extends State<FinanceScreen> with SingleTickerProvider
         } else if (state is FinanceLoaded) {
           return Scaffold(
             appBar: AppBar(
-              title: const Text('ENTERPRISE FINANCIALS'),
+              title: const Text('FINANCIAL LEDGER'),
               bottom: TabBar(
                 controller: _tabController,
                 labelColor: AppColors.primary,

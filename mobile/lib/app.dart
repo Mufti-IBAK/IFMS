@@ -45,6 +45,7 @@ import 'features/settings/settings_screen.dart';
 import 'features/settings/auth_screen.dart';
 import 'dart:io';
 import 'dart:async';
+import 'package:google_fonts/google_fonts.dart';
 
 
 final GlobalKey<NavigatorState> appNavigatorKey = GlobalKey<NavigatorState>();
@@ -228,104 +229,82 @@ class _IFMSAppState extends State<IFMSApp> {
   }
 }
 
-class MainNavigationWrapper extends StatefulWidget {
+class MainNavigationWrapper extends StatelessWidget {
   const MainNavigationWrapper({super.key});
 
   @override
-  State<MainNavigationWrapper> createState() => _MainNavigationWrapperState();
-}
-
-class _MainNavigationWrapperState extends State<MainNavigationWrapper> {
-  int _selectedIndex = 0;
-
-  static const List<Widget> _screens = [
-    HomeScreen(),
-    AnimalsScreen(),
-    TasksScreen(),
-    AlertScreen(),
-  ];
-
-  @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: IndexedStack(
-        index: _selectedIndex,
-        children: _screens,
-      ),
-      bottomNavigationBar: BottomNavigationBar(
-        currentIndex: _selectedIndex,
-        onTap: (index) => setState(() => _selectedIndex = index),
-        items: const [
-          BottomNavigationBarItem(icon: Icon(Icons.dashboard_outlined), activeIcon: Icon(Icons.dashboard), label: 'Home'),
-          BottomNavigationBarItem(icon: Icon(Icons.pets_outlined), activeIcon: Icon(Icons.pets), label: 'Herd'),
-          BottomNavigationBarItem(icon: Icon(Icons.assignment_outlined), activeIcon: Icon(Icons.assignment), label: 'Tasks'),
-          BottomNavigationBarItem(icon: Icon(Icons.notifications_outlined), activeIcon: Icon(Icons.notifications), label: 'Alerts'),
-        ],
-      ),
-    );
+    return const HomeScreen();
   }
 }
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
 
+  String _getTimeBasedGreeting(String? userName) {
+    final hour = DateTime.now().hour;
+    final name = userName?.trim().isNotEmpty == true ? userName!.trim() : 'Manager';
+    
+    if (hour >= 5 && hour < 12) {
+      return 'Good morning, $name';
+    } else if (hour >= 12 && hour < 17) {
+      return 'Good afternoon, $name';
+    } else if (hour >= 17 && hour < 22) {
+      return 'Good evening, $name';
+    } else {
+      return 'Good night, $name';
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final settingsController = sl<SettingsController>();
     return Scaffold(
       appBar: AppBar(
-        title: const Text('IFMS OPERATIONS'),
-        actions: [
-          IconButton(
-            onPressed: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Syncing Data...'), duration: Duration(seconds: 2)),
-              );
-              sl<SyncManager>().syncAll();
-            },
-            icon: const Icon(Icons.sync),
-            tooltip: 'Sync Now',
-          ),
-          // Update button — shows green badge dot when a new version is available
-          ValueListenableBuilder<bool>(
-            valueListenable: updateAvailableNotifier,
-            builder: (context, hasUpdate, _) => Stack(
-              alignment: Alignment.center,
-              children: [
-                IconButton(
-                  onPressed: () => AppUpdater.showUpdateDialog(context),
-                  icon: const Icon(Icons.system_update_alt_outlined),
-                  tooltip: 'Check for Updates',
-                ),
-                if (hasUpdate)
-                  Positioned(
-                    right: 8,
-                    top: 8,
-                    child: Container(
-                      width: 9,
-                      height: 9,
-                      decoration: const BoxDecoration(
-                        color: Colors.green,
-                        shape: BoxShape.circle,
-                      ),
+        backgroundColor: AppColors.primary,
+        foregroundColor: Colors.white,
+        title: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(6),
+              decoration: const BoxDecoration(
+                color: AppColors.secondary,
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(Icons.shield, color: Colors.white, size: 18),
+            ),
+            const SizedBox(width: 10),
+            Text(
+              'RoyalHeritage Farms',
+              style: GoogleFonts.rajdhani(
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+                fontSize: 20,
+                letterSpacing: 0.5,
+              ),
+            ),
+          ],
+        ),
+        actions: const [],
+      ),
+      drawer: Drawer(
+        child: ListView(
+          padding: EdgeInsets.zero,
+          children: [
+            AnimatedBuilder(
+              animation: settingsController,
+              builder: (context, _) {
+                final profile = settingsController.profile;
+                return UserAccountsDrawerHeader(
+                  decoration: const BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [AppColors.primary, Color(0xFF061835)],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
                     ),
                   ),
-              ],
-            ),
-          ),
-          AnimatedBuilder(
-            animation: settingsController,
-            builder: (context, _) {
-              final profile = settingsController.profile;
-              return GestureDetector(
-                onTap: () {
-                  Navigator.of(context).pushNamed('/settings');
-                },
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 8.0),
-                  child: CircleAvatar(
-                    radius: 18,
-                    backgroundColor: AppColors.surfaceContainerHigh,
+                  currentAccountPicture: CircleAvatar(
+                    backgroundColor: Colors.white24,
                     backgroundImage: profile?.profilePicPath != null &&
                             profile!.profilePicPath!.isNotEmpty &&
                             File(profile.profilePicPath!).existsSync()
@@ -334,309 +313,496 @@ class HomeScreen extends StatelessWidget {
                     child: profile?.profilePicPath == null ||
                             profile!.profilePicPath!.isEmpty ||
                             !File(profile.profilePicPath!).existsSync()
-                        ? const Icon(Icons.person, size: 20, color: AppColors.outline)
+                        ? const Icon(Icons.person, size: 36, color: Colors.white)
                         : null,
                   ),
-                ),
-              );
-            },
-          ),
-        ],
+                  accountName: Text(
+                    profile?.name ?? 'Royal Manager',
+                    style: const TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                  accountEmail: Text(
+                    profile?.role.toUpperCase() ?? 'OPERATIONS DIRECTOR',
+                    style: const TextStyle(color: AppColors.secondary, fontWeight: FontWeight.w600, fontSize: 11, letterSpacing: 0.5),
+                  ),
+                  onDetailsPressed: () {
+                    Navigator.pop(context);
+                    Navigator.of(context).pushNamed('/settings');
+                  },
+                );
+              },
+            ),
+            
+            _buildDrawerItem(context, 'Livestock Portfolio', Icons.agriculture, '/animals'),
+            _buildDrawerItem(context, 'Genetics & Lineage', Icons.favorite, '/breeding'),
+            _buildDrawerItem(context, 'Milk Production Registry', Icons.water_drop, '/dairy'),
+            _buildDrawerItem(context, 'Poultry Batches Control', Icons.egg, '/poultry'),
+            _buildDrawerItem(context, 'Task & Operation Logs', Icons.assignment, '/tasks'),
+            _buildDrawerItem(context, 'Alerts & Insights Control', Icons.notifications_active, '/alerts'),
+            _buildDrawerItem(context, 'Financial Ledger', Icons.account_balance_wallet, '/finance'),
+            _buildDrawerItem(context, 'Feed Stock Vault', Icons.storage, '/inventory'),
+            _buildDrawerItem(context, 'Avian Incubation Hub', Icons.bubble_chart, '/hatchery'),
+            _buildDrawerItem(context, 'Veterinary Apothecary', Icons.local_pharmacy, '/pharmacy'),
+            _buildDrawerItem(context, 'Labor & Operations Management', Icons.groups, '/staff'),
+            
+            const Divider(),
+            
+            ListTile(
+              leading: const Icon(Icons.sync, color: AppColors.primary),
+              title: const Text('Synchronize Database', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500)),
+              trailing: const Icon(Icons.chevron_right, size: 16),
+              onTap: () {
+                Navigator.pop(context);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Syncing Data...'), duration: Duration(seconds: 2)),
+                );
+                sl<SyncManager>().syncAll();
+              },
+            ),
+            
+            ValueListenableBuilder<bool>(
+              valueListenable: updateAvailableNotifier,
+              builder: (context, hasUpdate, _) => ListTile(
+                leading: Icon(Icons.system_update_alt_outlined, color: hasUpdate ? Colors.green : AppColors.primary),
+                title: const Text('Check for Updates', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500)),
+                trailing: hasUpdate 
+                    ? Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        decoration: BoxDecoration(color: Colors.green, borderRadius: BorderRadius.circular(10)),
+                        child: const Text('NEW', style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold)),
+                      )
+                    : const Icon(Icons.chevron_right, size: 16),
+                onTap: () {
+                  Navigator.pop(context);
+                  AppUpdater.showUpdateDialog(context);
+                },
+              ),
+            ),
+            
+            _buildDrawerItem(context, 'System Settings', Icons.settings, '/settings'),
+          ],
+        ),
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const SizedBox(height: 12),
+            // Welcome Section
+            AnimatedBuilder(
+              animation: settingsController,
+              builder: (context, _) {
+                final profile = settingsController.profile;
+                final greeting = _getTimeBasedGreeting(profile?.name);
+                return Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(20),
+                  decoration: BoxDecoration(
+                    gradient: const LinearGradient(
+                      colors: [AppColors.primary, Color(0xFF0A2B5C)],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: AppColors.secondary.withOpacity(0.4), width: 1.5),
+                    boxShadow: [
+                      BoxShadow(
+                        color: AppColors.primary.withOpacity(0.15),
+                        blurRadius: 10,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'ROYALHERITAGE ESTATES',
+                        style: TextStyle(
+                          color: AppColors.secondary,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 11,
+                          letterSpacing: 1.5,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        greeting,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 20,
+                        ),
+                      ),
+                      const SizedBox(height: 6),
+                      const Text(
+                        'Here is your live operational overview for today.',
+                        style: TextStyle(color: Colors.white70, fontSize: 12),
+                      ),
+                    ],
+                  ),
+                );
+              },
+            ),
+            
+            const SizedBox(height: 24),
             Text(
-              'MANAGEMENT LAYERS',
+              'LIVE MONITORING STATS',
               style: Theme.of(context).textTheme.labelLarge?.copyWith(
                     letterSpacing: 1.5,
                     fontWeight: FontWeight.bold,
                     color: AppColors.onSurfaceVariant,
                   ),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 12),
             GridView.count(
               shrinkWrap: true,
               physics: const NeverScrollableScrollPhysics(),
               crossAxisCount: 2,
-              crossAxisSpacing: 16,
-              mainAxisSpacing: 16,
-              childAspectRatio: 1.1,
+              crossAxisSpacing: 12,
+              mainAxisSpacing: 12,
+              childAspectRatio: 1.45,
               children: [
-                BlocBuilder<AnimalsBloc, AnimalsState>(
-                  builder: (context, state) {
-                    final count = state is AnimalsLoaded 
-                        ? state.animals.cast<LocalAnimal>().where((a) {
-                            final status = a.status.toLowerCase();
-                            return status != 'dead';
-                          }).length
-                        : 0;
-                    return _buildMenuCard(
-                      context,
-                      title: 'Farm Registry',
-                      subtitle: '$count Animals Active',
-                      icon: Icons.agriculture,
-                      color: AppColors.primary,
-                      route: '/animals',
-                    );
-                  },
-                ),
-                _buildMenuCard(
+                _insightKpiCard(
                   context,
-                  title: 'Breeding & Genetics',
-                  subtitle: 'Manage Lifecycles',
-                  icon: Icons.favorite,
-                  color: Colors.pink,
-                  route: '/breeding',
+                  title: 'Active Livestock',
+                  icon: Icons.pets,
+                  color: AppColors.primary,
+                  route: '/animals',
+                  valueWidget: BlocBuilder<AnimalsBloc, AnimalsState>(
+                    builder: (context, state) {
+                      final count = state is AnimalsLoaded
+                          ? state.animals.cast<LocalAnimal>().where((a) => a.status.toLowerCase() != 'dead').length
+                          : 0;
+                      return Text('$count head', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold));
+                    },
+                  ),
                 ),
-                BlocBuilder<DairyBloc, DairyState>(
-                  builder: (context, state) {
-                    final yieldVal = state is DairyLoaded ? state.totalMilkDashboard : 0.0;
-                    return _buildMenuCard(
-                      context,
-                      title: 'Dairy Intel',
-                      subtitle: '${yieldVal.toStringAsFixed(1)}L Total',
-                      icon: Icons.water_drop,
-                      color: Colors.blue,
-                      route: '/dairy',
-                    );
-                  },
+                _insightKpiCard(
+                  context,
+                  title: 'Today\'s Milk Yield',
+                  icon: Icons.water_drop,
+                  color: Colors.teal,
+                  route: '/dairy',
+                  valueWidget: BlocBuilder<DairyBloc, DairyState>(
+                    builder: (context, state) {
+                      final yieldVal = state is DairyLoaded ? state.totalMilkDashboard : 0.0;
+                      return Text('${yieldVal.toStringAsFixed(1)} Litres', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold));
+                    },
+                  ),
                 ),
-                BlocBuilder<PoultryBloc, PoultryState>(
-                  builder: (context, state) {
-                    return _buildMenuCard(
-                      context,
-                      title: 'Poultry Batch',
-                      subtitle: 'FCR 1.62 Normal',
-                      icon: Icons.egg,
-                      color: Colors.brown,
-                      route: '/poultry',
-                    );
-                  },
+                _insightKpiCard(
+                  context,
+                  title: 'Pending Operations',
+                  icon: Icons.assignment_turned_in,
+                  color: Colors.orange,
+                  route: '/tasks',
+                  valueWidget: BlocBuilder<TasksBloc, TasksState>(
+                    builder: (context, state) {
+                      final count = state is TasksLoaded
+                          ? state.tasks.where((t) {
+                              final status = (t is Map ? t['status'] : t.status).toString().toLowerCase();
+                              return status != 'completed' && status != 'cancelled';
+                            }).length
+                          : 0;
+                      return Text('$count Tasks', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold));
+                    },
+                  ),
                 ),
-                BlocBuilder<TasksBloc, TasksState>(
-                  builder: (context, state) {
-                    final count = state is TasksLoaded
-                        ? state.tasks.where((t) {
-                            final status = (t is Map ? t['status'] : t.status).toString().toLowerCase();
-                            return status != 'completed' && status != 'cancelled';
-                          }).length
-                        : 0;
-                    return _buildMenuCard(
-                      context,
-                      title: 'Work Orders',
-                      subtitle: '$count Pending Tasks',
-                      icon: Icons.assignment,
-                      color: Colors.orange,
-                      route: '/tasks',
-                    );
-                  },
-                ),
-                BlocBuilder<AlertBloc, AlertState>(
-                  builder: (context, state) {
-                    final count = state is AlertLoaded ? state.alerts.where((a) => !a.isResolved).length : 0;
-                    return _buildMenuCard(
-                      context,
-                      title: 'Alert Hub',
-                      subtitle: '$count Active Alerts',
-                      icon: Icons.notifications_active,
-                      color: AppColors.error,
-                      route: '/alerts',
-                    );
-                  },
-                ),
-                BlocBuilder<FinanceBloc, FinanceState>(
-                  builder: (context, state) {
-                    double totalMargin = 0.0;
-                    if (state is FinanceLoaded) {
-                      for (var tx in state.transactions) {
-                        totalMargin += tx.transactionType == 'income' ? tx.amount : -tx.amount;
-                      }
-                    }
-                    final marginStr = totalMargin >= 0
-                        ? '₦ ${totalMargin.toStringAsFixed(0)} Margin'
-                        : '-₦ ${totalMargin.abs().toStringAsFixed(0)} Deficit';
-                    return _buildMenuCard(
-                      context,
-                      title: 'Financials',
-                      subtitle: state is FinanceLoaded ? marginStr : 'Margin Insights',
-                      icon: Icons.account_balance_wallet,
-                      color: Colors.teal,
-                      route: '/finance',
-                    );
-                  },
-                ),
-                BlocBuilder<InventoryBloc, InventoryState>(
-                  builder: (context, state) {
-                    int lowCount = 0;
-                    if (state is InventoryLoaded) {
-                      lowCount = state.items.where((i) {
-                        final stock = double.tryParse(i['current_stock'].toString()) ?? 0.0;
-                        final threshold = double.tryParse(i['reorder_threshold'].toString()) ?? 0.0;
-                        return stock <= threshold;
-                      }).length;
-                    }
-                    final subtitle = state is InventoryLoaded
-                        ? '$lowCount Items Low'
-                        : 'Stock Levels';
-                    return _buildMenuCard(
-                      context,
-                      title: 'Farm Inventory',
-                      subtitle: subtitle,
-                      icon: Icons.storage,
-                      color: Colors.blueGrey,
-                      route: '/inventory',
-                    );
-                  },
-                ),
-                BlocBuilder<HatcheryBloc, HatcheryState>(
-                  builder: (context, state) {
-                    int incubating = 0;
-                    if (state is HatcheryLoaded) {
-                      incubating = state.batches.where((b) => b['status'] == 'incubating').length;
-                    }
-                    final subtitle = state is HatcheryLoaded
-                        ? '$incubating Incubating'
-                        : 'Cohorts';
-                    return _buildMenuCard(
-                      context,
-                      title: 'Hatchery Hub',
-                      subtitle: subtitle,
-                      icon: Icons.bubble_chart,
-                      color: Colors.deepPurple,
-                      route: '/hatchery',
-                    );
-                  },
-                ),
-                BlocBuilder<PharmacyBloc, PharmacyState>(
-                  builder: (context, state) {
-                    int lowCount = 0;
-                    if (state is PharmacyLoaded) {
-                      lowCount = state.medications.where((m) => m.currentStock <= m.reorderThreshold).length;
-                    }
-                    final subtitle = state is PharmacyLoaded
-                        ? '$lowCount Low Stock'
-                        : 'Vet Pharmacy';
-                    return _buildMenuCard(
-                      context,
-                      title: 'Pharmacy',
-                      subtitle: subtitle,
-                      icon: Icons.local_pharmacy,
-                      color: Colors.pink,
-                      route: '/pharmacy',
-                    );
-                  },
-                ),
-                BlocBuilder<StaffBloc, StaffState>(
-                  builder: (context, state) {
-                    int staffCount = 0;
-                    if (state is StaffLoaded) {
-                      staffCount = state.staff.length;
-                    }
-                    final subtitle = state is StaffLoaded
-                        ? '$staffCount Workers'
-                        : 'HR & Payroll';
-                    return _buildMenuCard(
-                      context,
-                      title: 'Staffing',
-                      subtitle: subtitle,
-                      icon: Icons.groups,
-                      color: Colors.indigo,
-                      route: '/staff',
-                    );
-                  },
+                _insightKpiCard(
+                  context,
+                  title: 'System Alerts',
+                  icon: Icons.notifications_active,
+                  color: AppColors.error,
+                  route: '/alerts',
+                  valueWidget: BlocBuilder<AlertBloc, AlertState>(
+                    builder: (context, state) {
+                      final count = state is AlertLoaded ? state.alerts.where((a) => !a.isResolved).length : 0;
+                      return Text('$count Active', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.error));
+                    },
+                  ),
                 ),
               ],
             ),
+            
             const SizedBox(height: 24),
-            _buildFinancialOverview(context),
+            Text(
+              'FINANCIAL HEALTH',
+              style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                    letterSpacing: 1.5,
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.onSurfaceVariant,
+                  ),
+            ),
+            const SizedBox(height: 12),
+            BlocBuilder<FinanceBloc, FinanceState>(
+              builder: (context, state) {
+                double revenue = 0.0;
+                double expenses = 0.0;
+                if (state is FinanceLoaded) {
+                  for (var tx in state.transactions) {
+                    if (tx.transactionType == 'income') {
+                      revenue += tx.amount;
+                    } else {
+                      expenses += tx.amount;
+                    }
+                  }
+                }
+                final netMargin = revenue - expenses;
+
+                return Container(
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: AppColors.secondary.withOpacity(0.3), width: 1.5),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.04),
+                        blurRadius: 8,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                  child: InkWell(
+                    onTap: () => Navigator.pushNamed(context, '/finance'),
+                    borderRadius: BorderRadius.circular(16),
+                    child: Padding(
+                      padding: const EdgeInsets.all(16.0),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              const Text('ESTIMATED REVENUE LEDGER', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: AppColors.secondary)),
+                              Icon(
+                                netMargin >= 0 ? Icons.trending_up : Icons.trending_down,
+                                color: netMargin >= 0 ? Colors.green : AppColors.error,
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 12),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  const Text('Estimated Revenue', style: TextStyle(fontSize: 11, color: Colors.grey)),
+                                  const SizedBox(height: 2),
+                                  Text('₦ ${revenue.toStringAsFixed(2)}', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.green)),
+                                ],
+                              ),
+                              Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  const Text('Recorded Expenses', style: TextStyle(fontSize: 11, color: Colors.grey)),
+                                  const SizedBox(height: 2),
+                                  Text('₦ ${expenses.toStringAsFixed(2)}', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: AppColors.error)),
+                                ],
+                              ),
+                              Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  const Text('Net Margin', style: TextStyle(fontSize: 11, color: Colors.grey)),
+                                  const SizedBox(height: 2),
+                                  Text(
+                                    '₦ ${netMargin.toStringAsFixed(2)}', 
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.bold, 
+                                      fontSize: 16, 
+                                      color: netMargin >= 0 ? AppColors.primary : AppColors.error
+                                    )
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                );
+              },
+            ),
+            
+            const SizedBox(height: 24),
+            Text(
+              'INVENTORY & STOCKS',
+              style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                    letterSpacing: 1.5,
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.onSurfaceVariant,
+                  ),
+            ),
+            const SizedBox(height: 12),
+            Container(
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: AppColors.secondary.withOpacity(0.15), width: 1.2),
+              ),
+              child: Column(
+                children: [
+                  BlocBuilder<InventoryBloc, InventoryState>(
+                    builder: (context, state) {
+                      int lowCount = 0;
+                      if (state is InventoryLoaded) {
+                        lowCount = state.items.where((i) {
+                          final stock = double.tryParse(i['current_stock'].toString()) ?? 0.0;
+                          final threshold = double.tryParse(i['reorder_threshold'].toString()) ?? 0.0;
+                          return stock <= threshold;
+                        }).length;
+                      }
+                      return ListTile(
+                        leading: const Icon(Icons.storage, color: Colors.blueGrey),
+                        title: const Text('Feed Ingredients Vault', style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold)),
+                        subtitle: Text('$lowCount items need restock'),
+                        trailing: const Icon(Icons.chevron_right, size: 18),
+                        onTap: () => Navigator.pushNamed(context, '/inventory'),
+                      );
+                    },
+                  ),
+                  const Divider(height: 1),
+                  BlocBuilder<PharmacyBloc, PharmacyState>(
+                    builder: (context, state) {
+                      int lowCount = 0;
+                      if (state is PharmacyLoaded) {
+                        lowCount = state.medications.where((m) => m.currentStock <= m.reorderThreshold).length;
+                      }
+                      return ListTile(
+                        leading: const Icon(Icons.local_pharmacy, color: Colors.pink),
+                        title: const Text('Veterinary Apothecary', style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold)),
+                        subtitle: Text('$lowCount drugs low on stock'),
+                        trailing: const Icon(Icons.chevron_right, size: 18),
+                        onTap: () => Navigator.pushNamed(context, '/pharmacy'),
+                      );
+                    },
+                  ),
+                  const Divider(height: 1),
+                  BlocBuilder<HatcheryBloc, HatcheryState>(
+                    builder: (context, state) {
+                      int incubating = 0;
+                      if (state is HatcheryLoaded) {
+                        incubating = state.batches.where((b) => b['status'] == 'incubating').length;
+                      }
+                      return ListTile(
+                        leading: const Icon(Icons.bubble_chart, color: Colors.deepPurple),
+                        title: const Text('Avian Incubation Hub', style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold)),
+                        subtitle: Text('$incubating cohorts incubating'),
+                        trailing: const Icon(Icons.chevron_right, size: 18),
+                        onTap: () => Navigator.pushNamed(context, '/hatchery'),
+                      );
+                    },
+                  ),
+                ],
+              ),
+            ),
+            
+            const SizedBox(height: 24),
+            Text(
+              'LABOR & WORKFORCE',
+              style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                    letterSpacing: 1.5,
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.onSurfaceVariant,
+                  ),
+            ),
+            const SizedBox(height: 12),
+            BlocBuilder<StaffBloc, StaffState>(
+              builder: (context, state) {
+                int staffCount = 0;
+                int activeQueries = 0;
+                if (state is StaffLoaded) {
+                  staffCount = state.staff.length;
+                  activeQueries = state.queries.where((q) => !q.isResolved).length;
+                }
+                return Container(
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: AppColors.secondary.withOpacity(0.15), width: 1.2),
+                  ),
+                  child: ListTile(
+                    leading: const Icon(Icons.groups, color: Colors.indigo),
+                    title: const Text('Labor & Operations Control', style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold)),
+                    subtitle: Text('$staffCount active workers • $activeQueries unresolved queries'),
+                    trailing: const Icon(Icons.chevron_right, size: 18),
+                    onTap: () => Navigator.pushNamed(context, '/staff'),
+                  ),
+                );
+              },
+            ),
           ],
         ),
       ),
     );
   }
 
-
-
-  Widget _buildFinancialOverview(BuildContext context) {
-    return BlocBuilder<FinanceBloc, FinanceState>(
-      builder: (context, state) {
-        double totalRevenue = 0.0;
-        if (state is FinanceLoaded) {
-          for (var tx in state.transactions) {
-            if (tx.transactionType == 'income') {
-              totalRevenue += tx.amount;
-            }
-          }
-        }
-        return Card(
-          child: Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text('ESTIMATED REVENUE', style: Theme.of(context).textTheme.labelLarge),
-                    const Icon(Icons.trending_up, color: AppColors.secondary, size: 16),
-                  ],
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  '₦ ${totalRevenue.toStringAsFixed(2)}',
-                  style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: AppColors.primary),
-                ),
-                const SizedBox(height: 4),
-                Text('Across all active enterprise layers', style: Theme.of(context).textTheme.bodySmall),
-              ],
-            ),
-          ),
-        );
+  Widget _buildDrawerItem(BuildContext context, String title, IconData icon, String route) {
+    return ListTile(
+      leading: Icon(icon, color: AppColors.primary),
+      title: Text(title, style: const TextStyle(fontWeight: FontWeight.w500, fontSize: 14)),
+      onTap: () {
+        Navigator.pop(context);
+        Navigator.pushNamed(context, route);
       },
     );
   }
 
-  Widget _buildMenuCard(
+  Widget _insightKpiCard(
     BuildContext context, {
     required String title,
-    required String subtitle,
     required IconData icon,
     required Color color,
     required String route,
+    required Widget valueWidget,
   }) {
-    return Card(
-      clipBehavior: Clip.antiAlias,
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppColors.secondary.withOpacity(0.15), width: 1.2),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.01),
+            blurRadius: 4,
+            offset: const Offset(0, 1),
+          ),
+        ],
+      ),
       child: InkWell(
         onTap: () => Navigator.pushNamed(context, route),
+        borderRadius: BorderRadius.circular(16),
         child: Padding(
           padding: const EdgeInsets.all(12.0),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: color.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Icon(icon, color: color, size: 24),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(6),
+                    decoration: BoxDecoration(
+                      color: color.withOpacity(0.1),
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(icon, color: color, size: 18),
+                  ),
+                  const Icon(Icons.chevron_right, size: 16, color: Colors.grey),
+                ],
               ),
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    title,
-                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
-                  ),
+                  valueWidget,
                   const SizedBox(height: 2),
                   Text(
-                    subtitle,
-                    style: TextStyle(fontSize: 11, color: AppColors.onSurfaceVariant.withValues(alpha: 0.7)),
+                    title,
+                    style: TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: AppColors.onSurfaceVariant.withOpacity(0.8)),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
                 ],
               ),

@@ -1,3 +1,4 @@
+// ignore_for_file: avoid_print
 void main() {
   bool isUpdateAvailable(String currentVer, String currentBuildStr, String latestVerWithBuild) {
     final latestParts = latestVerWithBuild.split('+');
@@ -24,7 +25,7 @@ void main() {
     return latestBuild > currentBuild;
   }
 
-  print('1.0.0+28 vs 2.5.0+20028: \${isUpdateAvailable('1.0.0', '28', '2.5.0+20028')}');
-  print('2.5.0+20028 vs 2.5.0+20028: \${isUpdateAvailable('2.5.0', '20028', '2.5.0+20028')}');
-  print('1.0.0+0028 vs 2.5.0+20028: \${isUpdateAvailable('1.0.0', '0028', '2.5.0+20028')}');
+  print("1.0.0+28 vs 2.5.0+20028: ${isUpdateAvailable('1.0.0', '28', '2.5.0+20028')}");
+  print("2.5.0+20028 vs 2.5.0+20028: ${isUpdateAvailable('2.5.0', '20028', '2.5.0+20028')}");
+  print("1.0.0+0028 vs 2.5.0+20028: ${isUpdateAvailable('1.0.0', '0028', '2.5.0+20028')}");
 }

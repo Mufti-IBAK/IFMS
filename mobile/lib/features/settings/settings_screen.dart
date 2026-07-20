@@ -155,6 +155,18 @@ class SettingsScreen extends StatelessWidget {
                           ),
                         ),
                         const Divider(),
+                        SwitchListTile(
+                          contentPadding: EdgeInsets.zero,
+                          secondary: const Icon(Icons.fullscreen, color: AppColors.primary),
+                          title: const Text('Full Screen Display', style: TextStyle(fontWeight: FontWeight.w600)),
+                          subtitle: const Text('Hide system status & navigation overlays'),
+                          value: controller.fullScreen,
+                          activeColor: AppColors.primary,
+                          onChanged: (val) {
+                            controller.updateFullScreen(val);
+                          },
+                        ),
+                        const Divider(),
                         // Font size settings
                         ListTile(
                           contentPadding: EdgeInsets.zero,

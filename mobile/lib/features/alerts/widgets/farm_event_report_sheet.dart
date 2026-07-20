@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
+import 'dart:convert';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/di/service_locator.dart';
 import '../../../core/database/local_db.dart';
 import '../../../core/network/api_client.dart';
-import 'package:dio/dio.dart';
 import 'package:drift/drift.dart' as drift;
 import 'package:intl/intl.dart';
+import 'package:uuid/uuid.dart';
 
 class FarmEventReportSheet extends StatefulWidget {
   const FarmEventReportSheet({super.key});
@@ -18,6 +19,15 @@ class _FarmEventReportSheetState extends State<FarmEventReportSheet> {
   final _formKey = GlobalKey<FormState>();
   String _eventType = 'mortality';
   final _descriptionCtrl = TextEditingController();
+  String _severity = 'insight';
+  final _actionRequiredDetailsCtrl = TextEditingController();
+
+  @override
+  void dispose() {
+    _descriptionCtrl.dispose();
+    _actionRequiredDetailsCtrl.dispose();
+    super.dispose();
+  }
   
   List<LocalAnimal> _activeAnimals = [];
   final List<String> _selectedAnimalTags = [];
@@ -95,15 +105,21 @@ class _FarmEventReportSheetState extends State<FarmEventReportSheet> {
 
     final db = sl<LocalDatabase>();
     final apiClient = sl<ApiClient>();
-    final eventId = 'ev_${DateTime.now().millisecondsSinceEpoch}';
+    final eventId = const Uuid().v4();
     final involvedAnimalsStr = _selectedAnimalTags.join(', ');
+
+    final localDescription = jsonEncode({
+      'description': _descriptionCtrl.text,
+      'severity': _severity,
+      'action_required_details': _severity == 'warning' ? _actionRequiredDetailsCtrl.text : null,
+    });
 
     try {
       // Remote sync first
       await apiClient.dio.post('/farm-events', data: {
         'id': eventId,
         'type': _eventType,
-        'description': _descriptionCtrl.text,
+        'description': localDescription,
         'animals': involvedAnimalsStr,
       });
 
@@ -112,7 +128,7 @@ class _FarmEventReportSheetState extends State<FarmEventReportSheet> {
         id: eventId,
         eventType: _eventType,
         eventDate: DateTime.now(),
-        description: _descriptionCtrl.text,
+        description: localDescription,
         involvedAnimals: drift.Value(involvedAnimalsStr),
       ));
 
@@ -202,6 +218,32 @@ class _FarmEventReportSheetState extends State<FarmEventReportSheet> {
                 onChanged: (v) => setState(() => _eventType = v!),
               ),
               const SizedBox(height: 16),
+
+              DropdownButtonFormField<String>(
+                decoration: const InputDecoration(labelText: 'Severity / Category', border: OutlineInputBorder()),
+                value: _severity,
+                items: const [
+                  DropdownMenuItem(value: 'insight', child: Text('Insight / Event Log')),
+                  DropdownMenuItem(value: 'warning', child: Text('Action Required')),
+                  DropdownMenuItem(value: 'critical', child: Text('Critical Alert')),
+                ],
+                onChanged: (v) => setState(() => _severity = v!),
+              ),
+              const SizedBox(height: 16),
+              
+              if (_severity == 'warning') ...[
+                TextFormField(
+                  controller: _actionRequiredDetailsCtrl,
+                  maxLines: 2,
+                  decoration: const InputDecoration(
+                    labelText: 'Specify Action Required *',
+                    border: OutlineInputBorder(),
+                    hintText: 'e.g. Call Vet, isolate animal, repair fence...',
+                  ),
+                  validator: (v) => v!.isEmpty ? 'Please specify the action required' : null,
+                ),
+                const SizedBox(height: 16),
+              ],
               
               if (_eventType != 'morning_report') ...[
                 Container(

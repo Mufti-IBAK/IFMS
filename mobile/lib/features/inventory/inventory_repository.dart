@@ -81,12 +81,25 @@ class InventoryRepository {
     final costPer = double.tryParse(itemData['cost_per_unit'].toString()) ?? 0.0;
     final costKg = costPer / weightPer;
     
-    // UI inputs stock in packs (e.g. bags), so we store it in base kg/litres
-    final stockInPacks = double.tryParse(itemData['current_stock'].toString()) ?? 0.0;
-    final stockKg = stockInPacks * weightPer;
+    // UI inputs stock in packs (e.g. bags), and we store it directly in units
+    final stockKg = double.tryParse(itemData['current_stock'].toString()) ?? 0.0;
+
+    final apiData = {
+      'id': uuid,
+      'name': itemData['name'],
+      'category': 'feed',
+      'unit': itemData['unit'],
+      'current_stock': stockKg,
+      'reorder_threshold': double.parse((itemData['reorder_threshold'] ?? 10.0).toString()),
+      'cost_per_unit': costPer,
+      'weight_per_unit': weightPer,
+      'cost_per_kg': costKg,
+      'supplier': itemData['supplier'],
+      'is_active': true,
+    };
 
     try {
-      await apiClient.dio.post('/inventory/items', data: itemData);
+      await apiClient.dio.post('/inventory/items', data: apiData);
 
       // On success, save locally
       await db.into(db.localFeedItems).insertOnConflictUpdate(LocalFeedItemsCompanion.insert(
@@ -95,7 +108,7 @@ class InventoryRepository {
         category: 'feed',
         unit: itemData['unit'],
         currentStock: stockKg,
-        reorderThreshold: double.parse(itemData['reorder_threshold'].toString()),
+        reorderThreshold: double.parse((itemData['reorder_threshold'] ?? 10.0).toString()),
         costPerUnit: costPer,
         weightPerUnit: Value(weightPer),
         costPerKg: Value(costKg),
@@ -103,6 +116,29 @@ class InventoryRepository {
         isActive: const Value(true),
       ));
     } catch (e) {
+      if (e is DioException && ApiClient.isNetworkError(e)) {
+        await db.into(db.localFeedItems).insertOnConflictUpdate(LocalFeedItemsCompanion.insert(
+          id: uuid,
+          name: itemData['name'],
+          category: 'feed',
+          unit: itemData['unit'],
+          currentStock: stockKg,
+          reorderThreshold: double.parse((itemData['reorder_threshold'] ?? 10.0).toString()),
+          costPerUnit: costPer,
+          weightPerUnit: Value(weightPer),
+          costPerKg: Value(costKg),
+          supplier: Value(itemData['supplier']),
+          isActive: const Value(true),
+        ));
+
+        await db.into(db.syncQueue).insert(SyncQueueCompanion.insert(
+          endpoint: '/inventory/items',
+          method: 'POST',
+          body: jsonEncode(apiData),
+          queuedAt: DateTime.now(),
+        ));
+        throw Exception('Saved locally. Will sync when connection is restored.');
+      }
       if (e is DioException) {
         throw Exception(e.response?.data?['message'] ?? e.response?.data?['details'] ?? 'Failed to add feed item: ${e.message}');
       }
@@ -115,16 +151,27 @@ class InventoryRepository {
     final costPer = double.tryParse((itemData['cost_per_unit'] ?? 0.0).toString()) ?? 0.0;
     final costKg = costPer / weightPer;
 
-    // Convert stock to base kg if it was updated
+    // Convert stock to units if it was updated
     double? stockKg;
     if (itemData['current_stock'] != null) {
-      final stockInPacks = double.tryParse(itemData['current_stock'].toString()) ?? 0.0;
-      stockKg = stockInPacks * weightPer;
+      stockKg = double.tryParse(itemData['current_stock'].toString()) ?? 0.0;
     }
+
+    final apiData = <String, dynamic>{};
+    if (itemData.containsKey('name')) apiData['name'] = itemData['name'];
+    if (itemData.containsKey('unit')) apiData['unit'] = itemData['unit'];
+    if (itemData.containsKey('supplier')) apiData['supplier'] = itemData['supplier'];
+    if (itemData.containsKey('current_stock')) apiData['current_stock'] = stockKg;
+    if (itemData.containsKey('reorder_threshold')) {
+      apiData['reorder_threshold'] = double.parse(itemData['reorder_threshold'].toString());
+    }
+    apiData['weight_per_unit'] = weightPer;
+    apiData['cost_per_unit'] = costPer;
+    apiData['cost_per_kg'] = costKg;
 
     // Sync with backend API first
     try {
-      await apiClient.dio.patch('/inventory/items/$id', data: itemData);
+      await apiClient.dio.patch('/inventory/items/$id', data: apiData);
 
       // On success, update locally
       await (db.update(db.localFeedItems)..where((t) => t.id.equals(id))).write(
@@ -142,6 +189,30 @@ class InventoryRepository {
         ),
       );
     } catch (e) {
+      if (e is DioException && ApiClient.isNetworkError(e)) {
+        await (db.update(db.localFeedItems)..where((t) => t.id.equals(id))).write(
+          LocalFeedItemsCompanion(
+            name: itemData['name'] != null ? Value(itemData['name']) : const Value.absent(),
+            unit: itemData['unit'] != null ? Value(itemData['unit']) : const Value.absent(),
+            weightPerUnit: Value(weightPer),
+            costPerUnit: Value(costPer),
+            costPerKg: Value(costKg),
+            currentStock: stockKg != null ? Value(stockKg) : const Value.absent(),
+            reorderThreshold: itemData['reorder_threshold'] != null 
+                ? Value(double.parse(itemData['reorder_threshold'].toString())) 
+                : const Value.absent(),
+            supplier: itemData['supplier'] != null ? Value(itemData['supplier']) : const Value.absent(),
+          ),
+        );
+
+        await db.into(db.syncQueue).insert(SyncQueueCompanion.insert(
+          endpoint: '/inventory/items/$id',
+          method: 'PATCH',
+          body: jsonEncode(apiData),
+          queuedAt: DateTime.now(),
+        ));
+        throw Exception('Saved locally. Will sync when connection is restored.');
+      }
       if (e is DioException) {
         throw Exception(e.response?.data?['message'] ?? e.response?.data?['details'] ?? 'Failed to update feed item: ${e.message}');
       }
@@ -159,6 +230,19 @@ class InventoryRepository {
         const LocalFeedItemsCompanion(isActive: Value(false)),
       );
     } catch (e) {
+      if (e is DioException && ApiClient.isNetworkError(e)) {
+        await (db.update(db.localFeedItems)..where((t) => t.id.equals(id))).write(
+          const LocalFeedItemsCompanion(isActive: Value(false)),
+        );
+
+        await db.into(db.syncQueue).insert(SyncQueueCompanion.insert(
+          endpoint: '/inventory/items/$id',
+          method: 'DELETE',
+          body: jsonEncode({}),
+          queuedAt: DateTime.now(),
+        ));
+        throw Exception('Deleted locally. Will sync when connection is restored.');
+      }
       if (e is DioException) {
         throw Exception(e.response?.data?['message'] ?? e.response?.data?['details'] ?? 'Failed to delete feed item: ${e.message}');
       }
@@ -235,10 +319,23 @@ class InventoryRepository {
       newBal -= changeVal.abs();
     }
 
-    logData['log_date'] = DateTime.now().toIso8601String();
+    final logDateStr = DateTime.now().toIso8601String();
+    logData['log_date'] = logDateStr;
     
+    final apiData = {
+      'id': uuid,
+      'item_id': itemId,
+      'change_type': changeType,
+      'quantity_change': changeVal,
+      'balance_after': newBal,
+      'related_entity_type': logData['related_entity_type'],
+      'related_entity_id': logData['related_entity_id'],
+      'notes': logData['notes'],
+      'log_date': logDateStr,
+    };
+
     try {
-      await apiClient.dio.post('/inventory/log', data: logData);
+      await apiClient.dio.post('/inventory/log', data: apiData);
 
       // On success, save locally
       await db.into(db.localInventoryLogs).insertOnConflictUpdate(LocalInventoryLogsCompanion.insert(
@@ -277,6 +374,50 @@ class InventoryRepository {
         isActionable: const Value(false),
       ));
     } catch (e) {
+      if (e is DioException && ApiClient.isNetworkError(e)) {
+        await db.into(db.localInventoryLogs).insertOnConflictUpdate(LocalInventoryLogsCompanion.insert(
+          id: uuid,
+          itemId: itemId,
+          changeType: changeType,
+          quantityChange: changeVal,
+          balanceAfter: newBal,
+          relatedEntityType: Value(logData['related_entity_type']),
+          relatedEntityId: Value(logData['related_entity_id']),
+          notes: Value(logData['notes']),
+          logDate: DateTime.now(),
+        ));
+
+        if (itemQuery != null) {
+          await (db.update(db.localFeedItems)..where((t) => t.id.equals(itemId))).write(
+            LocalFeedItemsCompanion(currentStock: Value(newBal))
+          );
+        }
+
+        await db.into(db.syncQueue).insert(SyncQueueCompanion.insert(
+          endpoint: '/inventory/log',
+          method: 'POST',
+          body: jsonEncode(apiData),
+          queuedAt: DateTime.now(),
+        ));
+        
+        final String itemName = itemQuery?.name ?? 'Item';
+        final String actionText = changeType == 'purchase' ? 'Restocked' 
+            : changeType == 'consumption' ? 'Consumed' 
+            : changeType == 'waste' ? 'Wasted' 
+            : 'Adjusted';
+            
+        await db.into(db.localTasks).insert(LocalTasksCompanion.insert(
+          id: 'task_inv_$uuid',
+          title: 'Feed Inventory $actionText',
+          description: Value('$actionText $changeVal units of $itemName. New balance: $newBal.'),
+          priority: 'medium',
+          status: 'completed',
+          dueDate: Value(DateTime.now()),
+          category: const Value('feed'),
+          isActionable: const Value(false),
+        ));
+        return;
+      }
       if (e is DioException) {
         throw Exception(e.response?.data?['message'] ?? e.response?.data?['details'] ?? 'Failed to log inventory change: ${e.message}');
       }

@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:async';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:dio/dio.dart';
 import 'package:drift/drift.dart';
@@ -18,6 +19,9 @@ class SyncManager {
         triggerSync();
       }
     });
+    Timer.periodic(const Duration(seconds: 3), (timer) {
+      syncAll();
+    });
   }
 
   // ─── Outbound Sync (local → Supabase) ─────────────────────────────────────
@@ -27,9 +31,9 @@ class SyncManager {
     _isSyncing = true;
 
     try {
-      // Unblock items that were stuck due to the acquisition_cost bug
-      await (db.update(db.syncQueue)..where((t) => t.endpoint.like('/animals%') & t.attempts.isBiggerOrEqualValue(5)))
-          .write(const SyncQueueCompanion(attempts: Value(4)));
+      // Reset all stuck items to 0 attempts so they can retry on app launch / connection restored
+      await (db.update(db.syncQueue)..where((t) => t.attempts.isBiggerOrEqualValue(5)))
+          .write(const SyncQueueCompanion(attempts: Value(0)));
 
       final queueItems = await (db.select(db.syncQueue)
             ..where((t) => t.attempts.isSmallerThanValue(5))

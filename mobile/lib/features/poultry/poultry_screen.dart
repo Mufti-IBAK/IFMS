@@ -32,7 +32,7 @@ class _PoultryScreenState extends State<PoultryScreen> with SingleTickerProvider
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('POULTRY PERFORMANCE'),
+        title: const Text('POULTRY BATCHES CONTROL'),
         bottom: TabBar(
           controller: _tabController,
           tabs: const [
@@ -108,26 +108,48 @@ class _PoultryScreenState extends State<PoultryScreen> with SingleTickerProvider
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text(
-                        'FLOCK BATCH #${batch.batchNumber}',
-                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-                      ),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                        decoration: BoxDecoration(
-                          color: isActive
-                              ? Colors.green.withValues(alpha: 0.1)
-                              : Colors.grey.withValues(alpha: 0.1),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
+                      Expanded(
                         child: Text(
-                          batch.status.toUpperCase(),
-                          style: TextStyle(
-                            color: isActive ? Colors.green : Colors.grey,
-                            fontWeight: FontWeight.bold,
-                            fontSize: 10,
-                          ),
+                          'FLOCK BATCH #${batch.batchNumber}',
+                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                          overflow: TextOverflow.ellipsis,
                         ),
+                      ),
+                      Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                            decoration: BoxDecoration(
+                              color: isActive
+                                  ? Colors.green.withOpacity(0.1)
+                                  : Colors.grey.withOpacity(0.1),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Text(
+                              batch.status.toUpperCase(),
+                              style: TextStyle(
+                                color: isActive ? Colors.green : Colors.grey,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 10,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          IconButton(
+                            icon: const Icon(Icons.edit_outlined, size: 20, color: AppColors.primary),
+                            padding: EdgeInsets.zero,
+                            constraints: const BoxConstraints(),
+                            onPressed: () => _showEditBatchDialog(context, batch),
+                          ),
+                          const SizedBox(width: 8),
+                          IconButton(
+                            icon: const Icon(Icons.delete_outline, size: 20, color: Colors.red),
+                            padding: EdgeInsets.zero,
+                            constraints: const BoxConstraints(),
+                            onPressed: () => _confirmDeleteBatch(context, batch),
+                          ),
+                        ],
                       ),
                     ],
                   ),
@@ -299,6 +321,165 @@ class _PoultryScreenState extends State<PoultryScreen> with SingleTickerProvider
       },
     );
   }
+
+  void _showEditBatchDialog(BuildContext context, LocalPoultryBatche batch) {
+    String breedVal = 'Cobb 500';
+    String ageVal = 'Day-Old';
+    String supplierVal = '';
+
+    final numberCtrl = TextEditingController(text: batch.batchNumber);
+    final houseCtrl = TextEditingController(text: batch.houseName);
+    final countCtrl = TextEditingController(text: batch.initialCount.toString());
+    final currentCtrl = TextEditingController(text: batch.currentCount.toString());
+    final breedCtrl = TextEditingController(text: breedVal);
+    final ageCtrl = TextEditingController(text: ageVal);
+    final supplierCtrl = TextEditingController(text: supplierVal);
+    DateTime startDate = batch.startDate;
+    String selectedStatus = batch.status;
+
+    showDialog(
+      context: context,
+      builder: (dialogCtx) {
+        return StatefulBuilder(
+          builder: (ctx, setStateDialog) {
+            return AlertDialog(
+              title: const Text('Edit Flock Batch'),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+              content: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    DropdownButtonFormField<String>(
+                      value: selectedStatus,
+                      decoration: const InputDecoration(labelText: 'Flock Status *'),
+                      isExpanded: true,
+                      items: const [
+                        DropdownMenuItem(value: 'active', child: Text('Active')),
+                        DropdownMenuItem(value: 'closed', child: Text('Closed')),
+                      ],
+                      onChanged: (v) => setStateDialog(() => selectedStatus = v!),
+                    ),
+                    const SizedBox(height: 8),
+                    TextField(textCapitalization: TextCapitalization.sentences, controller: numberCtrl,
+                      decoration: const InputDecoration(labelText: 'Batch Number/ID *'),
+                      keyboardType: TextInputType.number,
+                    ),
+                    const SizedBox(height: 8),
+                    TextField(textCapitalization: TextCapitalization.sentences, controller: houseCtrl,
+                      decoration: const InputDecoration(labelText: 'House/Pen Name *'),
+                    ),
+                    const SizedBox(height: 8),
+                    TextField(textCapitalization: TextCapitalization.sentences, controller: countCtrl,
+                      decoration: const InputDecoration(labelText: 'Initial Count *'),
+                      keyboardType: TextInputType.number,
+                    ),
+                    const SizedBox(height: 8),
+                    TextField(textCapitalization: TextCapitalization.sentences, controller: currentCtrl,
+                      decoration: const InputDecoration(labelText: 'Current Count *'),
+                      keyboardType: TextInputType.number,
+                    ),
+                    const SizedBox(height: 8),
+                    TextField(textCapitalization: TextCapitalization.sentences, controller: breedCtrl,
+                      decoration: const InputDecoration(labelText: 'Breed'),
+                    ),
+                    const SizedBox(height: 8),
+                    TextField(textCapitalization: TextCapitalization.sentences, controller: ageCtrl,
+                      decoration: const InputDecoration(labelText: 'Age upon Stocking'),
+                    ),
+                    const SizedBox(height: 8),
+                    TextField(textCapitalization: TextCapitalization.sentences, controller: supplierCtrl,
+                      decoration: const InputDecoration(labelText: 'Supplier / Source'),
+                    ),
+                    const SizedBox(height: 12),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            'Start Date: ${DateFormat('yyyy-MM-dd').format(startDate)}',
+                            style: const TextStyle(fontSize: 13),
+                          ),
+                        ),
+                        TextButton(
+                          onPressed: () async {
+                            final picked = await showDatePicker(
+                              context: context,
+                              initialDate: startDate,
+                              firstDate: DateTime.now().subtract(const Duration(days: 365)),
+                              lastDate: DateTime.now().add(const Duration(days: 30)),
+                            );
+                            if (picked != null) {
+                              setStateDialog(() => startDate = picked);
+                            }
+                          },
+                          child: const Text('Pick Date'),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+              actions: [
+                TextButton(onPressed: () => Navigator.pop(dialogCtx), child: const Text('Cancel')),
+                ElevatedButton(
+                  onPressed: () {
+                    if (numberCtrl.text.isEmpty || houseCtrl.text.isEmpty || countCtrl.text.isEmpty || currentCtrl.text.isEmpty) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('Please fill all required fields'), backgroundColor: AppColors.error),
+                      );
+                      return;
+                    }
+                    final count = int.tryParse(countCtrl.text) ?? 0;
+                    final current = int.tryParse(currentCtrl.text) ?? 0;
+                    final combinedBreed = '${breedCtrl.text.trim()} (${ageCtrl.text.trim()}, Source: ${supplierCtrl.text.trim().isEmpty ? "Unknown" : supplierCtrl.text.trim()})';
+
+                    BlocProvider.of<PoultryBloc>(context).add(UpdateBatch(batch.id, {
+                      'batch_number': numberCtrl.text.trim(),
+                      'house_name': houseCtrl.text.trim(),
+                      'initial_count': count,
+                      'current_count': current,
+                      'breed': combinedBreed,
+                      'start_date': startDate.toIso8601String().substring(0, 10),
+                      'status': selectedStatus,
+                      'initial_chick_cost': 0.0,
+                    }));
+                    Navigator.pop(dialogCtx);
+                  },
+                  style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary, foregroundColor: Colors.white),
+                  child: const Text('Save Changes'),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
+
+  void _confirmDeleteBatch(BuildContext context, LocalPoultryBatche batch) {
+    showDialog(
+      context: context,
+      builder: (dialogCtx) {
+        return AlertDialog(
+          title: const Text('Delete Flock Batch'),
+          content: Text('Are you sure you want to delete Flock Batch #${batch.batchNumber} located at ${batch.houseName}? All daily logs, mortality records, and sale logs associated with this batch will be permanently removed.'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogCtx),
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                BlocProvider.of<PoultryBloc>(context).add(DeleteBatch(batch.id));
+                Navigator.pop(dialogCtx);
+              },
+              style: ElevatedButton.styleFrom(backgroundColor: Colors.red, foregroundColor: Colors.white),
+              child: const Text('Delete'),
+            ),
+          ],
+        );
+      },
+    );
+  }
 }
 
 class PoultryDetailScreen extends StatefulWidget {
@@ -346,10 +527,12 @@ class _PoultryDetailScreenState extends State<PoultryDetailScreen> {
         for (var l in logs) {
           merged.add({
             'type': 'poultry_log',
+            'id': l.id,
             'date': l.logDate,
             'feed_bags': l.feedBags,
             'mortality': l.mortality,
             'average_weight': l.averageWeight,
+            'raw_log': l,
           });
         }
         for (var m in meds) {
@@ -357,12 +540,14 @@ class _PoultryDetailScreenState extends State<PoultryDetailScreen> {
           final medUnit = medMap[m.medicationId]?.unit ?? 'units';
           merged.add({
             'type': 'medication',
+            'id': m.id,
             'date': m.treatmentDate,
             'medication_name': medName,
             'dose': m.administeredDose,
             'unit': medUnit,
             'condition': m.diagnosedCondition,
             'cost': m.cost,
+            'raw_med': m,
           });
         }
         merged.sort((a, b) => (b['date'] as DateTime).compareTo(a['date'] as DateTime));
@@ -383,87 +568,99 @@ class _PoultryDetailScreenState extends State<PoultryDetailScreen> {
     final ageDays = DateTime.now().difference(_currentBatch.startDate).inDays;
     final isActive = _currentBatch.status == 'active';
 
-    return Scaffold(
-      appBar: AppBar(
-        title: Text('FLOCK BATCH #${_currentBatch.batchNumber}'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.refresh),
-            onPressed: _refreshData,
-          )
-        ],
-      ),
-      body: FutureBuilder<Map<String, dynamic>>(
-        future: _kpiFuture,
-        builder: (context, snapshot) {
-          if (!snapshot.hasData) {
-            return const Center(child: CircularProgressIndicator());
-          }
+    return BlocListener<PoultryBloc, PoultryState>(
+      listener: (context, state) {
+        if (state is PoultryLoaded) {
+          final match = state.batches.firstWhere((b) => b.id == _currentBatch.id, orElse: () => _currentBatch);
+          setState(() {
+            _currentBatch = match;
+          });
+          _refreshData();
+        }
+      },
+      child: Scaffold(
+        appBar: AppBar(
+          title: Text('FLOCK BATCH #${_currentBatch.batchNumber}'),
+          actions: [
+            IconButton(
+              icon: const Icon(Icons.refresh),
+              onPressed: _refreshData,
+            )
+          ],
+        ),
+        body: FutureBuilder<Map<String, dynamic>>(
+          future: _kpiFuture,
+          builder: (context, snapshot) {
+            if (!snapshot.hasData) {
+              return const Center(child: CircularProgressIndicator());
+            }
 
-          final kpis = snapshot.data!;
-          final bool outbreakRisk = kpis['alerts']?['disease_outbreak_risk'] ?? false;
-          final bool poorFcr = kpis['alerts']?['poor_fcr_alert'] ?? false;
-          final bool highMortality = kpis['alerts']?['high_mortality_alert'] ?? false;
+            final kpis = snapshot.data!;
+            final bool outbreakRisk = kpis['alerts']?['disease_outbreak_risk'] ?? false;
+            final bool poorFcr = kpis['alerts']?['poor_fcr_alert'] ?? false;
+            final bool highMortality = kpis['alerts']?['high_mortality_alert'] ?? false;
 
-          return SingleChildScrollView(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Alert Banners
-                if (outbreakRisk)
-                  _buildAlertBanner('DISEASE OUTBREAK RISK DETECTED!', 'Flock mortality is rising rapidly (>2% in 48 hours). Administer vet diagnosis immediately!', AppColors.error)
-                else if (highMortality)
-                  _buildAlertBanner('HIGH MORTALITY DETECTED!', 'Cumulative mortality has exceeded 5%. Audit temperature, ventilation, and water supplies.', Colors.orange)
-                else if (poorFcr)
-                  _buildAlertBanner('POOR FEED CONVERSION RATIO!', 'FCR exceeds 2.2. Audit feeding recipes, check for feed waste, or audit bird weights.', Colors.orange),
+            return SingleChildScrollView(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Alert Banners
+                  if (outbreakRisk)
+                    _buildAlertBanner('DISEASE OUTBREAK RISK DETECTED!', 'Flock mortality is rising rapidly (>2% in 48 hours). Administer vet diagnosis immediately!', AppColors.error)
+                  else if (highMortality)
+                    _buildAlertBanner('HIGH MORTALITY DETECTED!', 'Cumulative mortality has exceeded 5%. Audit temperature, ventilation, and water supplies.', Colors.orange)
+                  else if (poorFcr)
+                    _buildAlertBanner('POOR FEED CONVERSION RATIO!', 'FCR exceeds 2.2. Audit feeding recipes, check for feed waste, or audit bird weights.', Colors.orange),
 
-                const Text('PRODUCTION KPIs', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
-                const SizedBox(height: 12),
-                _buildKpiGrid(kpis, ageDays),
-                const SizedBox(height: 16),
-
-                FutureBuilder<List<Map<String, dynamic>>>(
-                  future: _timelineFuture,
-                  builder: (context, timelineSnapshot) {
-                    if (timelineSnapshot.hasData) {
-                      return _buildPerformanceCharts(timelineSnapshot.data!);
-                    }
-                    return const SizedBox();
-                  },
-                ),
-                const SizedBox(height: 24),
-
-                if (isActive) ...[
-
-                  const Text('QUICK PERFORMANCE LOGGING', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                  const Text('PRODUCTION KPIs', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
                   const SizedBox(height: 12),
-                  _buildQuickLogPanel(context),
-                  const SizedBox(height: 12),
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton.icon(
-                      onPressed: () => _showSaleDialog(context, kpis),
-                      icon: const Icon(Icons.point_of_sale),
-                      label: const Text('Log Sales / Harvest'),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.secondary,
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(vertical: 14),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                      ),
-                    ),
+                  _buildKpiGrid(kpis, ageDays),
+                  const SizedBox(height: 16),
+
+                  FutureBuilder<List<Map<String, dynamic>>>(
+                    future: _timelineFuture,
+                    builder: (context, timelineSnapshot) {
+                      if (timelineSnapshot.hasData) {
+                        return _buildPerformanceCharts(timelineSnapshot.data!);
+                      }
+                      return const SizedBox();
+                    },
                   ),
                   const SizedBox(height: 24),
-                ],
 
-                const Text('FLOCK LOG TIMELINE', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
-                const SizedBox(height: 12),
-                _buildTimelineList(),
-              ],
-            ),
-          );
-        },
+                  if (isActive) ...[
+
+                    const Text('QUICK PERFORMANCE LOGGING', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                    const SizedBox(height: 12),
+                    _buildQuickLogPanel(context),
+                    const SizedBox(height: 16),
+
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton.icon(
+                        onPressed: () => _showSaleDialog(context, kpis),
+                        icon: const Icon(Icons.point_of_sale),
+                        label: const Text('Log Sales / Harvest'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.secondary,
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+                  ],
+
+                  const Text('FLOCK LOG TIMELINE', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                  const SizedBox(height: 12),
+                  _buildTimelineList(),
+                ],
+              ),
+            );
+          },
+        ),
       ),
     );
   }
@@ -648,12 +845,254 @@ class _PoultryDetailScreenState extends State<PoultryDetailScreen> {
                 ),
                 title: Text(title),
                 subtitle: Text(DateFormat('yyyy-MM-dd HH:mm').format(date)),
+                trailing: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    IconButton(
+                      icon: const Icon(Icons.edit_outlined, size: 18, color: Colors.blue),
+                      onPressed: () => _showEditTimelineDialog(context, item),
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.delete_outline, size: 18, color: Colors.red),
+                      onPressed: () => _confirmDeleteTimeline(context, item),
+                    ),
+                  ],
+                ),
               ),
             );
           },
         );
       },
     );
+  }
+
+  void _showEditTimelineDialog(BuildContext context, Map<String, dynamic> item) async {
+    try {
+      if (item['type'] == 'poultry_log') {
+        final rawLog = item['raw_log'];
+        LocalPoultryLog? log;
+        if (rawLog is LocalPoultryLog) {
+          log = rawLog;
+        } else {
+          final logId = int.tryParse(item['id']?.toString() ?? '') ?? 0;
+          log = await (sl<PoultryRepository>().db.select(sl<PoultryRepository>().db.localPoultryLogs)
+                ..where((t) => t.id.equals(logId)))
+              .getSingleOrNull();
+        }
+        if (log == null) throw Exception('Log entry not found in database.');
+
+        final feedCtrl = TextEditingController(text: log.feedBags.toString());
+        final mortCtrl = TextEditingController(text: log.mortality.toString());
+        final weightCtrl = TextEditingController(text: log.averageWeight?.toString() ?? '');
+
+        if (context.mounted) {
+          showDialog(
+            context: context,
+            builder: (dialogCtx) => AlertDialog(
+              title: const Text('Edit Daily Log'),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextField(textCapitalization: TextCapitalization.sentences, controller: feedCtrl,
+                  decoration: const InputDecoration(labelText: 'Feed Bags Consumed'),
+                  keyboardType: TextInputType.number,
+                ),
+                const SizedBox(height: 8),
+                TextField(textCapitalization: TextCapitalization.sentences, controller: mortCtrl,
+                  decoration: const InputDecoration(labelText: 'Mortality (Bird Deaths)'),
+                  keyboardType: TextInputType.number,
+                ),
+                const SizedBox(height: 8),
+                TextField(textCapitalization: TextCapitalization.sentences, controller: weightCtrl,
+                  decoration: const InputDecoration(labelText: 'Average Weight (kg)'),
+                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                ),
+              ],
+            ),
+            actions: [
+              TextButton(onPressed: () => Navigator.pop(dialogCtx), child: const Text('Cancel')),
+              ElevatedButton(
+                onPressed: () async {
+                  try {
+                    final feed = int.tryParse(feedCtrl.text) ?? 0;
+                    final mort = int.tryParse(mortCtrl.text) ?? 0;
+                    final weight = double.tryParse(weightCtrl.text);
+                    final dialogNav = Navigator.of(dialogCtx);
+
+                    await sl<PoultryRepository>().updatePoultryLog(
+                      log!,
+                      feedBags: feed,
+                      mortality: mort,
+                      averageWeight: weight,
+                    );
+
+                    dialogNav.pop();
+                    if (context.mounted) {
+                      BlocProvider.of<PoultryBloc>(context).add(LoadPoultryData());
+                    }
+                    _refreshData();
+                  } catch (err) {
+                    debugPrint('Error updating log: $err');
+                    if (context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text('Error: $err'), backgroundColor: Colors.red),
+                      );
+                    }
+                  }
+                },
+                style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary, foregroundColor: Colors.white),
+                child: const Text('Save Changes'),
+              ),
+            ],
+          ),
+        );
+      }
+      } else if (item['type'] == 'medication') {
+        final rawMed = item['raw_med'];
+        LocalAnimalMedicalRecord? med;
+        if (rawMed is LocalAnimalMedicalRecord) {
+          med = rawMed;
+        } else {
+          final medId = item['id']?.toString() ?? '';
+          med = await (sl<PoultryRepository>().db.select(sl<PoultryRepository>().db.localAnimalMedicalRecords)
+                ..where((t) => t.id.equals(medId)))
+              .getSingleOrNull();
+        }
+        if (med == null) throw Exception('Medical record not found in database.');
+
+        final doseCtrl = TextEditingController(text: med.administeredDose.toString());
+        final condCtrl = TextEditingController(text: med.diagnosedCondition);
+        final costCtrl = TextEditingController(text: med.cost.toString());
+
+        if (context.mounted) {
+          showDialog(
+            context: context,
+            builder: (dialogCtx) => AlertDialog(
+              title: const Text('Edit Medication Treatment'),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  TextField(textCapitalization: TextCapitalization.sentences, controller: condCtrl,
+                    decoration: const InputDecoration(labelText: 'Diagnosed Condition'),
+                  ),
+                  const SizedBox(height: 8),
+                  TextField(textCapitalization: TextCapitalization.sentences, controller: doseCtrl,
+                    decoration: const InputDecoration(labelText: 'Administered Dose'),
+                    keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                  ),
+                  const SizedBox(height: 8),
+                  TextField(textCapitalization: TextCapitalization.sentences, controller: costCtrl,
+                    decoration: const InputDecoration(labelText: 'Treatment Cost (₦)'),
+                    keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                  ),
+                ],
+              ),
+              actions: [
+                TextButton(onPressed: () => Navigator.pop(dialogCtx), child: const Text('Cancel')),
+                ElevatedButton(
+                  onPressed: () async {
+                    try {
+                      final dose = double.tryParse(doseCtrl.text) ?? med!.administeredDose;
+                      final cond = condCtrl.text;
+                      final cost = double.tryParse(costCtrl.text) ?? med!.cost;
+                      final dialogNav = Navigator.of(dialogCtx);
+
+                      await sl<PoultryRepository>().updateMedicalRecord(
+                        med!,
+                        dose: dose,
+                        condition: cond,
+                        cost: cost,
+                      );
+
+                      dialogNav.pop();
+                      if (context.mounted) {
+                        BlocProvider.of<PoultryBloc>(context).add(LoadPoultryData());
+                      }
+                      _refreshData();
+                    } catch (err) {
+                      debugPrint('Error updating medical log: $err');
+                      if (context.mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(content: Text('Error: $err'), backgroundColor: Colors.red),
+                        );
+                      }
+                    }
+                  },
+                  style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary, foregroundColor: Colors.white),
+                  child: const Text('Save Changes'),
+                ),
+              ],
+            ),
+          );
+        }
+      }
+    } catch (e, stack) {
+      debugPrint('Error showing edit dialog: $e\n$stack');
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to open edit dialog: $e'), backgroundColor: Colors.red),
+        );
+      }
+    }
+  }
+
+  void _confirmDeleteTimeline(BuildContext context, Map<String, dynamic> item) {
+    try {
+      showDialog(
+        context: context,
+        builder: (dialogCtx) => AlertDialog(
+          title: const Text('Delete Log Entry'),
+          content: const Text('Are you sure you want to permanently delete this timeline log? This action will adjust flock metrics accordingly.'),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(dialogCtx), child: const Text('Cancel')),
+            ElevatedButton(
+              onPressed: () async {
+                try {
+                  final dialogNav = Navigator.of(dialogCtx);
+                  if (item['type'] == 'poultry_log') {
+                    final rawLog = item['raw_log'];
+                    LocalPoultryLog? log;
+                    if (rawLog is LocalPoultryLog) {
+                      log = rawLog;
+                    } else {
+                      final logId = int.tryParse(item['id']?.toString() ?? '') ?? 0;
+                      log = await (sl<PoultryRepository>().db.select(sl<PoultryRepository>().db.localPoultryLogs)
+                            ..where((t) => t.id.equals(logId)))
+                          .getSingleOrNull();
+                    }
+                    if (log == null) throw Exception('Log entry not found in database.');
+                    await sl<PoultryRepository>().deletePoultryLog(log);
+                  } else if (item['type'] == 'medication') {
+                    final medId = item['id'].toString();
+                    await sl<PoultryRepository>().deleteMedicalRecord(medId);
+                  }
+                  dialogNav.pop();
+                  
+                  if (context.mounted) {
+                    BlocProvider.of<PoultryBloc>(context).add(LoadPoultryData());
+                  }
+                  _refreshData();
+                } catch (err) {
+                  debugPrint('Error deleting log: $err');
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('Error: $err'), backgroundColor: Colors.red),
+                    );
+                  }
+                }
+              },
+              style: ElevatedButton.styleFrom(backgroundColor: AppColors.error, foregroundColor: Colors.white),
+              child: const Text('Delete'),
+            ),
+          ],
+        ),
+      );
+    } catch (e, stack) {
+      debugPrint('Error showing delete dialog: $e\n$stack');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to open delete dialog: $e'), backgroundColor: Colors.red),
+      );
+    }
   }
 
   void _showLogFeedDialog(BuildContext context) {
@@ -1158,6 +1597,9 @@ class _PoultryDetailScreenState extends State<PoultryDetailScreen> {
     final List<String> labels = [];
     
     double cumMortality = 0.0;
+    double cumFeedKg = 0.0;
+    double currentAvgWeight = 0.04;
+    int currentLiveCount = _currentBatch.initialCount;
     
     for (int i = 0; i < logs.length; i++) {
       final log = logs[i];
@@ -1168,17 +1610,32 @@ class _PoultryDetailScreenState extends State<PoultryDetailScreen> {
       cumMortality += dailyMort;
       mortData.add(cumMortality);
       
-      final mockFcr = 1.95 - (i * 0.08);
-      fcrData.add(mockFcr.clamp(1.58, 2.1));
+      currentLiveCount = (currentLiveCount - dailyMort).clamp(0, _currentBatch.initialCount);
+
+      final feedBags = int.tryParse(log['feed_bags']?.toString() ?? '0') ?? 0;
+      cumFeedKg += feedBags * 25.0;
+
+      final double? avgWeight = double.tryParse(log['average_weight']?.toString() ?? '');
+      if (avgWeight != null && avgWeight > 0) {
+        currentAvgWeight = avgWeight;
+      }
+
+      final liveWeight = currentAvgWeight * currentLiveCount;
+      final initialWeight = _currentBatch.initialCount * 0.04;
+      final weightGain = (liveWeight - initialWeight).clamp(0.0, double.infinity);
+      final double fcr = weightGain > 0 ? (cumFeedKg / weightGain) : 1.5;
+      fcrData.add(double.parse(fcr.toStringAsFixed(2)).clamp(0.5, 4.0));
     }
     
-    if (fcrData.length < 3) {
-      fcrData.clear();
-      mortData.clear();
-      labels.clear();
-      fcrData.addAll([1.92, 1.84, 1.76, 1.70, 1.62]);
-      mortData.addAll([2.0, 4.0, 5.0, 7.0, 8.0]);
-      labels.addAll(['Day 7', 'Day 14', 'Day 21', 'Day 28', 'Day 35']);
+    // Adapt for fresh batches with limited logs so line chart renders beautifully from baseline start
+    if (logs.isEmpty) {
+      labels.addAll(['Start', 'Today']);
+      mortData.addAll([0.0, 0.0]);
+      fcrData.addAll([1.50, 1.50]);
+    } else if (logs.length == 1) {
+      labels.insert(0, 'Start');
+      mortData.insert(0, 0.0);
+      fcrData.insert(0, 1.50);
     }
 
     return Card(

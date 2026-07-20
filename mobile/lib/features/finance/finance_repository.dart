@@ -50,6 +50,28 @@ class FinanceRepository {
         isReconciled: const Value(false),
       ));
     } catch (e) {
+      if (e is DioException && ApiClient.isNetworkError(e)) {
+        await db.into(db.localTransactions).insert(LocalTransactionsCompanion.insert(
+          id: uuid,
+          transactionType: type,
+          category: category,
+          amount: amount,
+          currency: const Value('NGN'),
+          relatedEntityType: Value(data['related_entity_type']),
+          relatedEntityId: Value(data['related_entity_id']),
+          description: Value(description),
+          transactionDate: dateVal,
+          isReconciled: const Value(false),
+        ));
+
+        await db.into(db.syncQueue).insert(SyncQueueCompanion.insert(
+          endpoint: '/finance/transaction',
+          method: 'POST',
+          body: jsonEncode(data),
+          queuedAt: DateTime.now(),
+        ));
+        throw Exception('Saved locally. Will sync when connection is restored.');
+      }
       if (e is DioException) {
         throw Exception(e.response?.data?['message'] ?? e.response?.data?['details'] ?? 'Failed to add transaction: ${e.message}');
       }
@@ -228,6 +250,18 @@ class FinanceRepository {
         const LocalTransactionsCompanion(isReconciled: Value(true)),
       );
     } catch (e) {
+      if (e is DioException && ApiClient.isNetworkError(e)) {
+        await (db.update(db.localTransactions)..where((t) => t.id.equals(id))).write(
+          const LocalTransactionsCompanion(isReconciled: Value(true)),
+        );
+        await db.into(db.syncQueue).insert(SyncQueueCompanion.insert(
+          endpoint: '/finance/transactions/$id/reconcile',
+          method: 'PATCH',
+          body: jsonEncode({}),
+          queuedAt: DateTime.now(),
+        ));
+        throw Exception('Saved locally. Will sync when connection is restored.');
+      }
       if (e is DioException) {
         throw Exception(e.response?.data?['message'] ?? e.response?.data?['details'] ?? 'Failed to reconcile transaction: ${e.message}');
       }

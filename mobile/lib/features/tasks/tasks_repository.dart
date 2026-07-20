@@ -167,6 +167,14 @@ class TasksRepository {
   }
 
   Future<void> updateTaskStatus(String taskId, String status) async {
+    final bool isLocalOnly = taskId.startsWith('auto_') || taskId.startsWith('task_inv_') || !taskId.contains('-');
+    if (isLocalOnly) {
+      await (db.update(db.localTasks)..where((t) => t.id.equals(taskId))).write(
+        LocalTasksCompanion(status: Value(status))
+      );
+      return;
+    }
+
     try {
       await apiClient.dio.patch('/tasks/$taskId/status', data: {'status': status});
       
@@ -175,10 +183,22 @@ class TasksRepository {
         LocalTasksCompanion(status: Value(status))
       );
     } catch (e) {
-      if (e is DioException) {
-        throw Exception(e.response?.data?['message'] ?? e.response?.data?['details'] ?? 'Failed to update task status: ${e.message}');
+      if (e is DioException && ApiClient.isNetworkError(e)) {
+        await (db.update(db.localTasks)..where((t) => t.id.equals(taskId))).write(
+          LocalTasksCompanion(status: Value(status))
+        );
+        await db.into(db.syncQueue).insert(SyncQueueCompanion.insert(
+          endpoint: '/tasks/$taskId/status',
+          method: 'PATCH',
+          body: jsonEncode({'status': status}),
+          queuedAt: DateTime.now(),
+        ));
+        throw Exception('Saved locally. Will sync when connection is restored.');
       }
-      throw Exception('Failed to update task status: $e');
+      if (e is DioException) {
+        throw Exception(e.response?.data?['message'] ?? e.response?.data?['details'] ?? 'Failed to update task: ${e.message}');
+      }
+      throw Exception('Failed to update task: $e');
     }
   }
 
@@ -206,6 +226,25 @@ class TasksRepository {
           'category': taskData['category'] ?? 'other',
         });
       } catch (e) {
+        if (e is DioException && ApiClient.isNetworkError(e)) {
+          await db.into(db.localTasks).insertOnConflictUpdate(companion);
+
+          await db.into(db.syncQueue).insert(SyncQueueCompanion.insert(
+            endpoint: '/tasks',
+            method: 'POST',
+            body: jsonEncode({
+              'id': taskData['id'],
+              'title': taskData['title'],
+              'description': taskData['description'],
+              'priority': taskData['priority'] ?? 'medium',
+              'status': taskData['status'] ?? 'pending',
+              'due_date': taskData['due_date'],
+              'category': taskData['category'] ?? 'other',
+            }),
+            queuedAt: DateTime.now(),
+          ));
+          throw Exception('Saved locally. Will sync when connection is restored.');
+        }
         if (e is DioException) {
           throw Exception(e.response?.data?['message'] ?? e.response?.data?['details'] ?? 'Failed to create task: ${e.message}');
         }

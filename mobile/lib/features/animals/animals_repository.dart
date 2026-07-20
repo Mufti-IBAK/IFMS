@@ -42,9 +42,23 @@ class AnimalsRepository {
         await apiClient.dio.post('/animals/$animalId/image', data: formData);
       }
 
-      // Update local cache on success
       await _updateLocalCache([response.data]);
     } catch (e) {
+      if (e is DioException && ApiClient.isNetworkError(e)) {
+        final localData = Map<String, dynamic>.from(animalData);
+        if (imagePath != null) {
+          localData['image_path'] = imagePath;
+        }
+        await _updateLocalCache([localData]);
+        
+        await db.into(db.syncQueue).insert(SyncQueueCompanion.insert(
+          endpoint: '/animals',
+          method: 'POST',
+          body: jsonEncode(animalData),
+          queuedAt: DateTime.now(),
+        ));
+        throw Exception('Saved locally. Will sync when connection is restored.');
+      }
       if (e is DioException) {
         throw Exception(e.response?.data?['message'] ?? e.response?.data?['details'] ?? 'Failed to add animal: ${e.message}');
       }
@@ -90,7 +104,7 @@ class AnimalsRepository {
     updateData.remove('image_path');
 
     try {
-      final response = await apiClient.dio.patch('/animals?id=eq.$id', data: updateData);
+      await apiClient.dio.patch('/animals?id=eq.$id', data: updateData);
       
       // If image exists, upload it
       if (imagePath != null) {
@@ -100,12 +114,35 @@ class AnimalsRepository {
         await apiClient.dio.post('/animals/$id/image', data: formData);
       }
       
-      // Fetch fresh animal data to update cache
       final freshResponse = await apiClient.dio.get('/animals?id=eq.$id');
       if (freshResponse.data is List && freshResponse.data.isNotEmpty) {
         await _updateLocalCache([freshResponse.data[0]]);
       }
     } catch (e) {
+      if (e is DioException && ApiClient.isNetworkError(e)) {
+        await (db.update(db.localAnimals)..where((t) => t.id.equals(id))).write(
+          LocalAnimalsCompanion(
+            tagId: updateData.containsKey('tag_id') ? Value(updateData['tag_id']) : const Value.absent(),
+            species: updateData.containsKey('species') ? Value(updateData['species']) : const Value.absent(),
+            breed: updateData.containsKey('breed') ? Value(updateData['breed']) : const Value.absent(),
+            sex: updateData.containsKey('sex') ? Value(updateData['sex']) : const Value.absent(),
+            status: updateData.containsKey('status') ? Value(updateData['status']) : const Value.absent(),
+            weight: updateData.containsKey('weight') ? Value(double.tryParse(updateData['weight'].toString())) : const Value.absent(),
+            color: updateData.containsKey('color') ? Value(updateData['color']) : const Value.absent(),
+            uniqueMarks: updateData.containsKey('unique_marks') ? Value(updateData['unique_marks']) : const Value.absent(),
+            purpose: updateData.containsKey('purpose') ? Value(updateData['purpose']) : const Value.absent(),
+            imagePath: imagePath != null ? Value(imagePath) : const Value.absent(),
+          )
+        );
+
+        await db.into(db.syncQueue).insert(SyncQueueCompanion.insert(
+          endpoint: '/animals/$id',
+          method: 'PATCH',
+          body: jsonEncode(updateData),
+          queuedAt: DateTime.now(),
+        ));
+        throw Exception('Saved locally. Will sync when connection is restored.');
+      }
       if (e is DioException) {
         throw Exception(e.response?.data?['message'] ?? e.response?.data?['details'] ?? 'Failed to update animal: ${e.message}');
       }
@@ -115,9 +152,19 @@ class AnimalsRepository {
 
   Future<void> deleteAnimal(String id) async {
     try {
-      await apiClient.dio.delete('/animals?id=eq.$id');
+      await apiClient.dio.delete('/animals/$id');
       await (db.delete(db.localAnimals)..where((t) => t.id.equals(id))).go();
     } catch (e) {
+      if (e is DioException && ApiClient.isNetworkError(e)) {
+        await (db.delete(db.localAnimals)..where((t) => t.id.equals(id))).go();
+        await db.into(db.syncQueue).insert(SyncQueueCompanion.insert(
+          endpoint: '/animals/$id',
+          method: 'DELETE',
+          body: jsonEncode({}),
+          queuedAt: DateTime.now(),
+        ));
+        throw Exception('Deleted locally. Will sync when connection is restored.');
+      }
       if (e is DioException) {
         throw Exception(e.response?.data?['message'] ?? e.response?.data?['details'] ?? 'Failed to delete animal: ${e.message}');
       }
@@ -129,15 +176,16 @@ class AnimalsRepository {
     final eventId = const Uuid().v4();
     final now = DateTime.now();
 
+    final data = {
+      'animal_id': animalId,
+      'event_type': eventType,
+      'event_category': 'health',
+      'event_timestamp': now.toIso8601String(),
+      'payload': payload,
+    };
+
     try {
       // Sync to Server first
-      final data = {
-        'animal_id': animalId,
-        'event_type': eventType,
-        'event_category': 'health',
-        'event_timestamp': now.toIso8601String(),
-        'payload': payload,
-      };
       await apiClient.dio.post('/animal_events', data: data); // Path rewritten by ApiClient interceptor for this anyway, but keeping standard
       
       if (eventType == 'medical_report') {
@@ -168,6 +216,36 @@ class AnimalsRepository {
         }
       }
     } catch (e) {
+      if (e is DioException && ApiClient.isNetworkError(e)) {
+        await db.into(db.localAnimalMedicalRecords).insert(LocalAnimalMedicalRecordsCompanion.insert(
+          id: eventId,
+          animalId: animalId,
+          medicationId: 'report',
+          administeredDose: 0.0,
+          cost: 0.0,
+          treatmentDate: now,
+          diagnosedCondition: ((payload['diagnostics'] as Map?)?['observations'] as String?) ?? 'Medical Report',
+          notes: Value(jsonEncode(payload)),
+        ));
+
+        if (eventType == 'medical_report') {
+          final outcome = payload['outcome'] as Map<String, dynamic>?;
+          if (outcome != null && outcome['is_deceased'] == true) {
+            await (db.update(db.localAnimals)..where((t) => t.id.equals(animalId))).write(
+              const LocalAnimalsCompanion(status: Value('deceased')),
+            );
+          }
+        }
+
+        await db.into(db.syncQueue).insert(SyncQueueCompanion.insert(
+          endpoint: '/animal_events',
+          method: 'POST',
+          body: jsonEncode(data),
+          queuedAt: DateTime.now(),
+        ));
+
+        throw Exception('Saved locally. Will sync when connection is restored.');
+      }
       if (e is DioException) {
         throw Exception(e.response?.data?['message'] ?? e.response?.data?['details'] ?? 'Failed to log event: ${e.message}');
       }

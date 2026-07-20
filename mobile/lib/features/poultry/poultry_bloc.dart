@@ -29,6 +29,17 @@ class LogBatchSale extends PoultryEvent {
   LogBatchSale(this.batchId, this.saleData);
 }
 
+class UpdateBatch extends PoultryEvent {
+  final String id;
+  final Map<String, dynamic> data;
+  UpdateBatch(this.id, this.data);
+}
+
+class DeleteBatch extends PoultryEvent {
+  final String id;
+  DeleteBatch(this.id);
+}
+
 abstract class PoultryState {}
 class PoultryLoading extends PoultryState {}
 class PoultryLoaded extends PoultryState {
@@ -60,42 +71,122 @@ class PoultryBloc extends Bloc<PoultryEvent, PoultryState> {
     });
 
     on<CreateBatch>((event, emit) async {
+      final currentState = state;
       try {
         await repository.createBatch(event.data);
         final batches = await repository.getBatches();
         emit(PoultryLoaded(batches));
       } catch (e) {
-        emit(PoultryError(e.toString()));
+        if (e.toString().contains('Saved locally')) {
+          final batches = await repository.getBatches();
+          emit(PoultryLoaded(batches));
+        } else {
+          if (currentState is PoultryLoaded) {
+            emit(PoultryLoaded(currentState.batches));
+          } else {
+            emit(PoultryError(e.toString()));
+          }
+        }
+      }
+    });
+
+    on<UpdateBatch>((event, emit) async {
+      final currentState = state;
+      try {
+        await repository.updateBatch(event.id, event.data);
+        final batches = await repository.getBatches();
+        emit(PoultryLoaded(batches));
+      } catch (e) {
+        if (e.toString().contains('Saved locally')) {
+          final batches = await repository.getBatches();
+          emit(PoultryLoaded(batches));
+        } else {
+          if (currentState is PoultryLoaded) {
+            emit(PoultryLoaded(currentState.batches));
+          } else {
+            emit(PoultryError(e.toString()));
+          }
+        }
+      }
+    });
+
+    on<DeleteBatch>((event, emit) async {
+      final currentState = state;
+      try {
+        await repository.deleteBatch(event.id);
+        final batches = await repository.getBatches();
+        emit(PoultryLoaded(batches));
+      } catch (e) {
+        if (e.toString().contains('Saved locally')) {
+          final batches = await repository.getBatches();
+          emit(PoultryLoaded(batches));
+        } else {
+          if (currentState is PoultryLoaded) {
+            emit(PoultryLoaded(currentState.batches));
+          } else {
+            emit(PoultryError(e.toString()));
+          }
+        }
       }
     });
 
     on<AddPoultryLog>((event, emit) async {
+      final currentState = state;
       try {
         await repository.addDailyLog(event.batchId, event.data);
         final batches = await repository.getBatches();
         emit(PoultryLoaded(batches));
       } catch (e) {
-        emit(PoultryError(e.toString()));
+        if (e.toString().contains('Saved locally')) {
+          final batches = await repository.getBatches();
+          emit(PoultryLoaded(batches));
+        } else {
+          if (currentState is PoultryLoaded) {
+            emit(PoultryLoaded(currentState.batches));
+          } else {
+            emit(PoultryError(e.toString()));
+          }
+        }
       }
     });
 
     on<LogBatchEvent>((event, emit) async {
+      final currentState = state;
       try {
         await repository.logBatchEvent(event.batchId, event.data);
         final batches = await repository.getBatches();
         emit(PoultryLoaded(batches));
       } catch (e) {
-        emit(PoultryError(e.toString()));
+        if (e.toString().contains('Saved locally')) {
+          final batches = await repository.getBatches();
+          emit(PoultryLoaded(batches));
+        } else {
+          if (currentState is PoultryLoaded) {
+            emit(PoultryLoaded(currentState.batches));
+          } else {
+            emit(PoultryError(e.toString()));
+          }
+        }
       }
     });
 
     on<LogBatchSale>((event, emit) async {
+      final currentState = state;
       try {
         await repository.logBatchSale(event.batchId, event.saleData);
         final batches = await repository.getBatches();
         emit(PoultryLoaded(batches));
       } catch (e) {
-        emit(PoultryError(e.toString()));
+        if (e.toString().contains('Saved locally')) {
+          final batches = await repository.getBatches();
+          emit(PoultryLoaded(batches));
+        } else {
+          if (currentState is PoultryLoaded) {
+            emit(PoultryLoaded(currentState.batches));
+          } else {
+            emit(PoultryError(e.toString()));
+          }
+        }
       }
     });
   }

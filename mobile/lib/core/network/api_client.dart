@@ -19,9 +19,11 @@ class ApiClient {
         } else {
           options.headers['Authorization'] = 'Bearer $anonKey';
         }
-        if (options.method == 'POST' || options.method == 'PATCH') {
+        if (options.method == 'POST') {
            options.headers['Prefer'] = 'return=representation';
            options.headers['Accept'] = 'application/vnd.pgrst.object+json';
+        } else if (options.method == 'PATCH') {
+           options.headers['Prefer'] = 'return=representation';
         }
 
         // Rewrite paths for Supabase
@@ -140,16 +142,59 @@ class ApiClient {
       },
       onResponse: (response, handler) {
         final method = response.requestOptions.method.toUpperCase();
+        
+        if (method == 'PATCH') {
+          if (response.data is List && (response.data as List).isEmpty) {
+            return handler.reject(DioException(
+              requestOptions: response.requestOptions,
+              response: Response(
+                requestOptions: response.requestOptions,
+                statusCode: 404,
+                data: {'message': 'Record not found on server. Please refresh your data.'},
+              ),
+              type: DioExceptionType.badResponse,
+            ));
+          }
+        }
+
         if ((method == 'POST' || method == 'PATCH' || method == 'DELETE') &&
             (response.statusCode == 200 || response.statusCode == 201)) {
           
-          // Generate human readable path (e.g. /staff -> Staff)
           final pathParts = response.requestOptions.path.split('/');
-          final target = pathParts.isNotEmpty ? pathParts.last.toUpperCase() : 'Data';
+          final rawTarget = pathParts.isNotEmpty ? pathParts.last.toUpperCase() : 'DATA';
+
+          // Human friendly translations
+          String targetName = 'Operations Database';
+          if (rawTarget.contains('STAFF')) {
+            targetName = 'Staff Registry';
+          } else if (rawTarget.contains('ANIMAL')) {
+            targetName = 'Livestock Portfolio';
+          } else if (rawTarget.contains('MILK') || rawTarget.contains('RECORD')) {
+            targetName = 'Milk Records';
+          } else if (rawTarget.contains('TRANSACTION')) {
+            targetName = 'Financial Ledger';
+          } else if (rawTarget.contains('FEED') || rawTarget.contains('ITEM')) {
+            targetName = 'Feed Stocks';
+          } else if (rawTarget.contains('POULTRY')) {
+            targetName = 'Poultry Flocks';
+          } else if (rawTarget.contains('HATCHERY')) {
+            targetName = 'Avian Incubation';
+          } else if (rawTarget.contains('TASK')) {
+            targetName = 'Task Logs';
+          } else if (rawTarget.contains('ALERT')) {
+            targetName = 'System Alerts';
+          }
+
+          String actionVerb = 'updated';
+          if (method == 'POST') {
+            actionVerb = 'added to';
+          } else if (method == 'DELETE') {
+            actionVerb = 'removed from';
+          }
 
           sl<NotificationService>().showLocalNotification(
-            'Action Successful',
-            'Successfully synced $method updates for $target.',
+            'Sync Successful',
+            'Successfully $actionVerb $targetName.',
           );
         }
         return handler.next(response);
@@ -185,5 +230,14 @@ class ApiClient {
   Future<void> clearTokens() async {
     await _storage.delete(key: 'access_token');
     await _storage.delete(key: 'refresh_token');
+  }
+
+  static bool isNetworkError(DioException e) {
+    return e.type == DioExceptionType.connectionTimeout ||
+        e.type == DioExceptionType.sendTimeout ||
+        e.type == DioExceptionType.receiveTimeout ||
+        e.type == DioExceptionType.connectionError ||
+        e.error.toString().contains('SocketException') ||
+        e.message?.contains('SocketException') == true;
   }
 }

@@ -63,17 +63,34 @@ class NotificationService {
   }
 
   Future<void> showLocalNotification(String title, String body, {String? payload}) async {
-    const android = AndroidNotificationDetails(
+    final android = AndroidNotificationDetails(
       'local_channel',
       'Local Notifications',
       importance: Importance.max,
       priority: Priority.high,
+      styleInformation: BigTextStyleInformation(
+        body,
+        contentTitle: title,
+        summaryText: 'RoyalHeritage Operations',
+      ),
+      actions: const <AndroidNotificationAction>[
+        AndroidNotificationAction(
+          'action_mark_read',
+          'Mark Read',
+          cancelNotification: true,
+        ),
+        AndroidNotificationAction(
+          'action_view',
+          'View',
+          showsUserInterface: true,
+        ),
+      ],
     );
     await _localNotifications.show(
       DateTime.now().millisecond,
       title,
       body,
-      const NotificationDetails(android: android),
+      NotificationDetails(android: android),
       payload: payload,
     );
   }
@@ -120,11 +137,32 @@ class NotificationService {
         if (morningTime.isAfter(tz.TZDateTime.now(tz.local))) {
           await _localNotifications.zonedSchedule(
             100 + i, // unique ID
-            'Morning Task Summary',
-            'Good morning! You have $taskCount pending task(s) scheduled for today.',
+            'Morning Operations Briefing',
+            'Good morning! You have $taskCount pending task(s) scheduled for today. Tap to check your log.',
             morningTime,
-            const NotificationDetails(
-              android: AndroidNotificationDetails('daily_summary', 'Daily Summaries', importance: Importance.high),
+            NotificationDetails(
+              android: AndroidNotificationDetails(
+                'daily_summary',
+                'Daily Summaries',
+                importance: Importance.high,
+                styleInformation: BigTextStyleInformation(
+                  'Good morning! You have $taskCount pending task(s) scheduled for today. Tap to check your log.',
+                  contentTitle: 'Morning Operations Briefing',
+                  summaryText: 'RoyalHeritage Briefing',
+                ),
+                actions: const <AndroidNotificationAction>[
+                  AndroidNotificationAction(
+                    'action_mark_read',
+                    'Mark Read',
+                    cancelNotification: true,
+                  ),
+                  AndroidNotificationAction(
+                    'action_view',
+                    'Open Tasks',
+                    showsUserInterface: true,
+                  ),
+                ],
+              ),
             ),
             uiLocalNotificationDateInterpretation: UILocalNotificationDateInterpretation.absoluteTime,
             androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
@@ -138,11 +176,32 @@ class NotificationService {
         if (eveningTime.isAfter(tz.TZDateTime.now(tz.local))) {
           await _localNotifications.zonedSchedule(
             107 + i, // unique ID offset by 7
-            'Evening Task Wrap-up',
-            'Reminder: You still have $taskCount task(s) for today. Please complete them!',
+            'Evening Operations Wrap-up',
+            'Reminder: You still have $taskCount task(s) remaining for today. Please check and complete them.',
             eveningTime,
-            const NotificationDetails(
-              android: AndroidNotificationDetails('daily_summary', 'Daily Summaries', importance: Importance.high),
+            NotificationDetails(
+              android: AndroidNotificationDetails(
+                'daily_summary',
+                'Daily Summaries',
+                importance: Importance.high,
+                styleInformation: BigTextStyleInformation(
+                  'Reminder: You still have $taskCount task(s) remaining for today. Please check and complete them.',
+                  contentTitle: 'Evening Operations Wrap-up',
+                  summaryText: 'RoyalHeritage Briefing',
+                ),
+                actions: const <AndroidNotificationAction>[
+                  AndroidNotificationAction(
+                    'action_mark_read',
+                    'Dismiss',
+                    cancelNotification: true,
+                  ),
+                  AndroidNotificationAction(
+                    'action_view',
+                    'View Tasks',
+                    showsUserInterface: true,
+                  ),
+                ],
+              ),
             ),
             uiLocalNotificationDateInterpretation: UILocalNotificationDateInterpretation.absoluteTime,
             androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,

@@ -62,7 +62,15 @@ class HatcheryBloc extends Bloc<HatcheryEvent, HatcheryState> {
         );
         add(LoadHatcheryBatches());
       } catch (e) {
-        emit(HatcheryError('Failed to create hatchery batch: ${e.toString()}'));
+        if (e.toString().contains('Saved locally')) {
+          sl<NotificationService>().showLocalNotification(
+            'Hatchery Batch Started (Offline)',
+            'Batch #${event.batchData['batch_number']} initialized locally. Will sync when online.',
+          );
+          add(LoadHatcheryBatches());
+        } else {
+          emit(HatcheryError('Failed to create hatchery batch: ${e.toString()}'));
+        }
       }
     });
 

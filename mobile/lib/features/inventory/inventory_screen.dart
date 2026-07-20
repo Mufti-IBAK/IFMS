@@ -98,7 +98,7 @@ class _InventoryScreenState extends State<InventoryScreen> with SingleTickerProv
 
         return Scaffold(
           appBar: AppBar(
-            title: const Text('FARM INVENTORY'),
+            title: const Text('FEED STOCK VAULT'),
             bottom: TabBar(
               controller: _tabController,
               labelColor: AppColors.primary,
@@ -322,7 +322,7 @@ class _InventoryScreenState extends State<InventoryScreen> with SingleTickerProv
                                         style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
                                       ),
                                       Text(
-                                        'Pack: ${weightPerUnit.toStringAsFixed(1)} kg/l at ${_currencyFmt.format(costPerUnit)} (${_currencyFmt.format(costKg)}/kg)',
+                                        'Pack: ${weightPerUnit.toStringAsFixed(1)} kg/l per ${item['unit'] != null ? item['unit'].toString().replaceAll('s', '') : 'unit'} at ${_currencyFmt.format(costPerUnit)} (${_currencyFmt.format(costKg)}/kg)',
                                         style: TextStyle(color: Colors.grey.shade600, fontSize: 13),
                                       ),
                                     ],
@@ -951,7 +951,7 @@ class _InventoryScreenState extends State<InventoryScreen> with SingleTickerProv
             final double stockUnits = double.tryParse(initialStockCtrl.text) ?? 0.0;
 
             final double computedCostPerKg = packSize > 0 ? unitCost / packSize : 0.0;
-            final double computedTotalStockKg = stockUnits * packSize;
+            final double computedTotalStockKg = stockUnits;
 
             return AlertDialog(
               title: const Text('Add Feed Stock Item'),
@@ -1030,8 +1030,8 @@ class _InventoryScreenState extends State<InventoryScreen> with SingleTickerProv
                           Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
-                              const Text('Total Stock Weight:', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w500)),
-                              Text('${computedTotalStockKg.toStringAsFixed(1)} kg', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                              const Text('Total Stock:', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w500)),
+                              Text('${computedTotalStockKg.toStringAsFixed(1)} $purchaseUnit', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
                             ],
                           ),
                         ],
@@ -1081,9 +1081,7 @@ class _InventoryScreenState extends State<InventoryScreen> with SingleTickerProv
     final unitCostCtrl = TextEditingController(text: (item['cost_per_unit'] ?? 0.0).toString());
     
     // For editing stock, let's allow updating stock directly or keeping current
-    final weightPerUnit = double.tryParse((item['weight_per_unit'] ?? 1.0).toString()) ?? 1.0;
-    final currentStockKg = double.tryParse((item['current_stock'] ?? 0.0).toString()) ?? 0.0;
-    final currentStockUnits = currentStockKg / weightPerUnit;
+    final currentStockUnits = double.tryParse((item['current_stock'] ?? 0.0).toString()) ?? 0.0;
 
     final initialStockCtrl = TextEditingController(text: currentStockUnits.toStringAsFixed(1));
     final thresholdCtrl = TextEditingController(text: (item['reorder_threshold'] ?? 100.0).toString());
@@ -1100,7 +1098,7 @@ class _InventoryScreenState extends State<InventoryScreen> with SingleTickerProv
             final double stockUnits = double.tryParse(initialStockCtrl.text) ?? 0.0;
 
             final double computedCostPerKg = packSize > 0 ? unitCost / packSize : 0.0;
-            final double computedTotalStockKg = stockUnits * packSize;
+            final double computedTotalStockKg = stockUnits;
 
             return AlertDialog(
               title: Text('Edit Feed Stock Item: ${item['name']}'),
@@ -1174,8 +1172,8 @@ class _InventoryScreenState extends State<InventoryScreen> with SingleTickerProv
                           Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
-                              const Text('Total Stock Weight:', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w500)),
-                              Text('${computedTotalStockKg.toStringAsFixed(1)} kg', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                              const Text('Total Stock:', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w500)),
+                              Text('${computedTotalStockKg.toStringAsFixed(1)} $purchaseUnit', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
                             ],
                           ),
                         ],

@@ -1,7 +1,5 @@
-import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:drift/drift.dart' as drift;
 import '../../../core/theme/app_colors.dart';
 import '../animals_bloc.dart';
 import '../../../core/di/service_locator.dart';

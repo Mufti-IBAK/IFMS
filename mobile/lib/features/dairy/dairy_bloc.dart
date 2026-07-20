@@ -15,6 +15,17 @@ class AddMilkEntry extends DairyEvent {
   AddMilkEntry(this.recordData);
 }
 
+class UpdateMilkEntry extends DairyEvent {
+  final String id;
+  final Map<String, dynamic> recordData;
+  UpdateMilkEntry(this.id, this.recordData);
+}
+
+class DeleteMilkEntry extends DairyEvent {
+  final String id;
+  DeleteMilkEntry(this.id);
+}
+
 class ChangeAnalyticsFilter extends DairyEvent {
   final AnalyticsFilter filter;
   ChangeAnalyticsFilter(this.filter);
@@ -127,6 +138,8 @@ class DairyBloc extends Bloc<DairyEvent, DairyState> {
     on<ChangeAnalyticsFilter>(_onChangeAnalyticsFilter);
     on<ChangeDashboardFilter>(_onChangeDashboardFilter);
     on<ChangeDashboardDate>(_onChangeDashboardDate);
+    on<UpdateMilkEntry>(_onUpdateMilkEntry);
+    on<DeleteMilkEntry>(_onDeleteMilkEntry);
   }
 
   Future<void> _onLoadDairyData(LoadDairyData event, Emitter<DairyState> emit) async {
@@ -334,6 +347,26 @@ class DairyBloc extends Bloc<DairyEvent, DairyState> {
   Future<void> _onAddMilkEntry(AddMilkEntry event, Emitter<DairyState> emit) async {
     try {
       await dairyRepo.addMilkRecord(event.recordData);
+      add(LoadDairyData()); // reload dashboard
+    } catch (e) {
+      emit(DairyError(e.toString().replaceAll('Exception:', '').trim()));
+      add(LoadDairyData());
+    }
+  }
+
+  Future<void> _onUpdateMilkEntry(UpdateMilkEntry event, Emitter<DairyState> emit) async {
+    try {
+      await dairyRepo.updateMilkRecord(event.id, event.recordData);
+      add(LoadDairyData()); // reload dashboard
+    } catch (e) {
+      emit(DairyError(e.toString().replaceAll('Exception:', '').trim()));
+      add(LoadDairyData());
+    }
+  }
+
+  Future<void> _onDeleteMilkEntry(DeleteMilkEntry event, Emitter<DairyState> emit) async {
+    try {
+      await dairyRepo.deleteMilkRecord(event.id);
       add(LoadDairyData()); // reload dashboard
     } catch (e) {
       emit(DairyError(e.toString().replaceAll('Exception:', '').trim()));

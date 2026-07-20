@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'app_colors.dart';
 
 class AppTheme {
@@ -37,15 +38,16 @@ class AppTheme {
           side: const BorderSide(color: AppColors.outlineVariant, width: 1),
         ),
       ),
-      appBarTheme: const AppBarTheme(
+      appBarTheme: AppBarTheme(
         backgroundColor: AppColors.surface,
         surfaceTintColor: Colors.transparent,
         elevation: 0,
         centerTitle: false,
-        titleTextStyle: TextStyle(
+        titleTextStyle: GoogleFonts.rajdhani(
           color: AppColors.onSurface,
           fontSize: 20,
-          fontWeight: FontWeight.w600,
+          fontWeight: FontWeight.bold,
+          letterSpacing: 0.5,
         ),
       ),
       bottomNavigationBarTheme: const BottomNavigationBarThemeData(
@@ -59,8 +61,8 @@ class AppTheme {
         filled: true,
         fillColor: AppColors.surfaceContainerLow,
         contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-        labelStyle: const TextStyle(fontSize: 14, color: AppColors.onSurfaceVariant),
-        hintStyle: const TextStyle(fontSize: 14, color: AppColors.outline),
+        labelStyle: GoogleFonts.sora(fontSize: 14, color: AppColors.onSurfaceVariant),
+        hintStyle: GoogleFonts.sora(fontSize: 14, color: AppColors.outline),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
           borderSide: BorderSide.none,
@@ -78,33 +80,34 @@ class AppTheme {
           borderSide: const BorderSide(color: AppColors.error),
         ),
       ),
-      textTheme: const TextTheme(
-        headlineLarge: TextStyle(
+      textTheme: GoogleFonts.soraTextTheme(TextTheme(
+        headlineLarge: GoogleFonts.rajdhani(
           fontSize: 32,
           fontWeight: FontWeight.bold,
           color: AppColors.onSurface,
           letterSpacing: -0.5,
         ),
-        titleMedium: TextStyle(
+        titleMedium: GoogleFonts.rajdhani(
           fontSize: 18,
-          fontWeight: FontWeight.w600,
+          fontWeight: FontWeight.bold,
           color: AppColors.onSurface,
+          letterSpacing: 0.2,
         ),
-        bodyLarge: TextStyle(
+        bodyLarge: const TextStyle(
           fontSize: 16,
           color: AppColors.onSurface,
         ),
-        bodyMedium: TextStyle(
+        bodyMedium: const TextStyle(
           fontSize: 14,
           color: AppColors.onSurfaceVariant,
         ),
-        labelLarge: TextStyle(
+        labelLarge: GoogleFonts.rajdhani(
           fontSize: 12,
-          fontWeight: FontWeight.w500,
+          fontWeight: FontWeight.bold,
           color: AppColors.onSurfaceVariant,
-          letterSpacing: 0.5,
+          letterSpacing: 1.0,
         ),
-      ),
+      )),
     );
   }
 }

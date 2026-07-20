@@ -4,6 +4,10 @@ import 'alert_repository.dart';
 
 abstract class AlertEvent {}
 class LoadAlerts extends AlertEvent {}
+class ResolveAlert extends AlertEvent {
+  final String alertId;
+  ResolveAlert(this.alertId);
+}
 
 abstract class AlertState {}
 class AlertLoading extends AlertState {}
@@ -32,6 +36,16 @@ class AlertBloc extends Bloc<AlertEvent, AlertState> {
         if (currentState is! AlertLoaded) {
           emit(AlertError(e.toString()));
         }
+      }
+    });
+
+    on<ResolveAlert>((event, emit) async {
+      try {
+        await repository.resolveAlert(event.alertId);
+        final alerts = await repository.getAlerts();
+        emit(AlertLoaded(alerts));
+      } catch (e) {
+        emit(AlertError(e.toString()));
       }
     });
   }

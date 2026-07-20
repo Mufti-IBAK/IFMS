@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 class UserProfile {
@@ -73,10 +74,12 @@ class SettingsController extends ChangeNotifier {
 
   ThemeMode _themeMode = ThemeMode.system;
   double _fontScale = 0.5;
+  bool _fullScreen = false;
   UserProfile? _profile;
 
   ThemeMode get themeMode => _themeMode;
   double get fontScale => _fontScale;
+  bool get fullScreen => _fullScreen;
   UserProfile? get profile => _profile;
 
   Future<void> loadSettings() async {
@@ -93,6 +96,14 @@ class SettingsController extends ChangeNotifier {
       if (scaleStr != null) {
         _fontScale = double.tryParse(scaleStr) ?? 0.5;
       }
+
+      final fullScreenStr = await _storage.read(key: 'settings_full_screen');
+      if (fullScreenStr != null) {
+        _fullScreen = fullScreenStr == 'true';
+      } else {
+        _fullScreen = false;
+      }
+      _applySystemUiMode();
 
       final profileStr = await _storage.read(key: 'settings_user_profile');
       if (profileStr != null) {
@@ -114,6 +125,21 @@ class SettingsController extends ChangeNotifier {
     _fontScale = newScale;
     await _storage.write(key: 'settings_font_scale', value: newScale.toString());
     notifyListeners();
+  }
+
+  Future<void> updateFullScreen(bool val) async {
+    _fullScreen = val;
+    await _storage.write(key: 'settings_full_screen', value: val.toString());
+    _applySystemUiMode();
+    notifyListeners();
+  }
+
+  void _applySystemUiMode() {
+    if (_fullScreen) {
+      SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
+    } else {
+      SystemChrome.setEnabledSystemUIMode(SystemUiMode.manual, overlays: SystemUiOverlay.values);
+    }
   }
 
   Future<void> updateProfile(UserProfile newProfile) async {

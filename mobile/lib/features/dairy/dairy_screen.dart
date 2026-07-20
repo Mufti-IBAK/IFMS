@@ -33,7 +33,7 @@ class _DairyScreenState extends State<DairyScreen> with SingleTickerProviderStat
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Dairy Management'),
+        title: const Text('MILK PRODUCTION REGISTRY'),
         backgroundColor: AppColors.primary,
         foregroundColor: Colors.white,
         bottom: TabBar(
@@ -188,13 +188,77 @@ class _DairyScreenState extends State<DairyScreen> with SingleTickerProviderStat
                   ),
                   title: Text('Cow ID: $tagId', style: const TextStyle(fontWeight: FontWeight.bold)),
                   subtitle: Text('Session: ${record.milkingSession} • ${DateFormat('MMM dd, HH:mm').format(record.recordDate)}'),
-                  trailing: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    crossAxisAlignment: CrossAxisAlignment.end,
+                  trailing: Row(
+                    mainAxisSize: MainAxisSize.min,
                     children: [
-                      Text('${record.quantityLiters.toStringAsFixed(1)} L', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-                      if (record.isWithdrawn)
-                        const Text('WITHDRAWN', style: TextStyle(color: Colors.red, fontSize: 10, fontWeight: FontWeight.bold))
+                      Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        crossAxisAlignment: CrossAxisAlignment.end,
+                        children: [
+                          Text('${record.quantityLiters.toStringAsFixed(1)} L', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                          if (record.isWithdrawn)
+                            const Text('WITHDRAWN', style: TextStyle(color: Colors.red, fontSize: 10, fontWeight: FontWeight.bold))
+                        ],
+                      ),
+                      PopupMenuButton<String>(
+                        icon: const Icon(Icons.more_vert),
+                        onSelected: (value) {
+                          if (value == 'edit') {
+                            showModalBottomSheet(
+                              context: context,
+                              isScrollControlled: true,
+                              backgroundColor: Colors.transparent,
+                              builder: (ctx) => BlocProvider.value(
+                                value: context.read<DairyBloc>(),
+                                child: AddMilkEntrySheet(record: record),
+                              ),
+                            );
+                          } else if (value == 'delete') {
+                            showDialog(
+                              context: context,
+                              builder: (ctx) => AlertDialog(
+                                title: const Text('Delete Record'),
+                                content: const Text('Are you sure you want to delete this milk record?'),
+                                actions: [
+                                  TextButton(
+                                    onPressed: () => Navigator.pop(ctx),
+                                    child: const Text('Cancel'),
+                                  ),
+                                  TextButton(
+                                    onPressed: () {
+                                      context.read<DairyBloc>().add(DeleteMilkEntry(record.id));
+                                      Navigator.pop(ctx);
+                                    },
+                                    child: const Text('Delete', style: TextStyle(color: Colors.red)),
+                                  ),
+                                ],
+                              ),
+                            );
+                          }
+                        },
+                        itemBuilder: (context) => [
+                          const PopupMenuItem(
+                            value: 'edit',
+                            child: Row(
+                              children: [
+                                Icon(Icons.edit, size: 20),
+                                SizedBox(width: 8),
+                                Text('Edit'),
+                              ],
+                            ),
+                          ),
+                          const PopupMenuItem(
+                            value: 'delete',
+                            child: Row(
+                              children: [
+                                Icon(Icons.delete, color: Colors.red, size: 20),
+                                SizedBox(width: 8),
+                                Text('Delete', style: TextStyle(color: Colors.red)),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
                     ],
                   ),
                 ),
