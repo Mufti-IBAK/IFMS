@@ -36,6 +36,7 @@ class StaffRepository {
             profilePic: Value(s['profile_pic']),
             gender: Value(s['gender']),
             dateOfBirth: Value(s['date_of_birth'] != null ? DateTime.tryParse(s['date_of_birth']) : null),
+            startDate: Value(s['start_date'] != null ? DateTime.tryParse(s['start_date']) : null),
             address: Value(s['address']),
             emergencyContact: Value(s['emergency_contact']),
             employmentType: Value(s['employment_type']),
@@ -62,6 +63,7 @@ class StaffRepository {
       'profile_pic': null, // PostgREST has no multipart support
       'gender': data['gender'],
       'date_of_birth': data['date_of_birth'],
+      'start_date': data['start_date'],
       'address': data['address'],
       'emergency_contact': data['emergency_contact'],
       'employment_type': data['employment_type'],
@@ -81,6 +83,7 @@ class StaffRepository {
         profilePic: Value(data['profile_pic']),
         gender: Value(data['gender']),
         dateOfBirth: Value(data['date_of_birth'] != null ? DateTime.tryParse(data['date_of_birth']) : null),
+        startDate: Value(data['start_date'] != null ? DateTime.tryParse(data['start_date']) : null),
         address: Value(data['address']),
         emergencyContact: Value(data['emergency_contact']),
         employmentType: Value(data['employment_type']),
@@ -97,6 +100,7 @@ class StaffRepository {
           profilePic: Value(data['profile_pic']),
           gender: Value(data['gender']),
           dateOfBirth: Value(data['date_of_birth'] != null ? DateTime.tryParse(data['date_of_birth']) : null),
+          startDate: Value(data['start_date'] != null ? DateTime.tryParse(data['start_date']) : null),
           address: Value(data['address']),
           emergencyContact: Value(data['emergency_contact']),
           employmentType: Value(data['employment_type']),
@@ -133,6 +137,7 @@ class StaffRepository {
           profilePic: data.containsKey('profile_pic') ? Value(data['profile_pic']?.toString()) : const Value.absent(),
           gender: data.containsKey('gender') ? Value(data['gender']?.toString()) : const Value.absent(),
           dateOfBirth: data.containsKey('date_of_birth') ? Value(data['date_of_birth'] != null ? DateTime.tryParse(data['date_of_birth'].toString()) : null) : const Value.absent(),
+          startDate: data.containsKey('start_date') ? Value(data['start_date'] != null ? DateTime.tryParse(data['start_date'].toString()) : null) : const Value.absent(),
           address: data.containsKey('address') ? Value(data['address']?.toString()) : const Value.absent(),
           emergencyContact: data.containsKey('emergency_contact') ? Value(data['emergency_contact']?.toString()) : const Value.absent(),
           employmentType: data.containsKey('employment_type') ? Value(data['employment_type'].toString()) : const Value.absent(),
@@ -151,6 +156,7 @@ class StaffRepository {
             profilePic: data.containsKey('profile_pic') ? Value(data['profile_pic']?.toString()) : const Value.absent(),
             gender: data.containsKey('gender') ? Value(data['gender']?.toString()) : const Value.absent(),
             dateOfBirth: data.containsKey('date_of_birth') ? Value(data['date_of_birth'] != null ? DateTime.tryParse(data['date_of_birth'].toString()) : null) : const Value.absent(),
+            startDate: data.containsKey('start_date') ? Value(data['start_date'] != null ? DateTime.tryParse(data['start_date'].toString()) : null) : const Value.absent(),
             address: data.containsKey('address') ? Value(data['address']?.toString()) : const Value.absent(),
             emergencyContact: data.containsKey('emergency_contact') ? Value(data['emergency_contact']?.toString()) : const Value.absent(),
             employmentType: data.containsKey('employment_type') ? Value(data['employment_type'].toString()) : const Value.absent(),
@@ -326,6 +332,73 @@ class StaffRepository {
     }
   }
 
+  Future<void> createAdvance(Map<String, dynamic> data) async {
+    final uuid = const Uuid().v4();
+    final apiData = {
+      'id': uuid,
+      'staff_id': data['staff_id'],
+      'advance_amount': double.parse((data['advance_amount'] ?? 0.0).toString()),
+      'monthly_deduction': double.parse((data['monthly_deduction'] ?? 0.0).toString()),
+      'total_repaid': 0.0,
+      'collection_date': data['collection_date'] ?? DateTime.now().toIso8601String(),
+      'is_fully_repaid': false,
+      'notes': data['notes'],
+    };
+
+    try {
+      await apiClient.dio.post('/salary_advances', data: apiData);
+      
+      await db.into(db.localSalaryAdvances).insert(LocalSalaryAdvancesCompanion.insert(
+        id: uuid,
+        staffId: data['staff_id'],
+        advanceAmount: double.parse((data['advance_amount'] ?? 0.0).toString()),
+        monthlyDeduction: double.parse((data['monthly_deduction'] ?? 0.0).toString()),
+        totalRepaid: const Value(0.0),
+        collectionDate: DateTime.parse(apiData['collection_date']!),
+        isFullyRepaid: const Value(false),
+        notes: Value(data['notes']),
+      ));
+    } catch (e) {
+      if (e is DioException && ApiClient.isNetworkError(e)) {
+        await db.into(db.localSalaryAdvances).insert(LocalSalaryAdvancesCompanion.insert(
+          id: uuid,
+          staffId: data['staff_id'],
+          advanceAmount: double.parse((data['advance_amount'] ?? 0.0).toString()),
+          monthlyDeduction: double.parse((data['monthly_deduction'] ?? 0.0).toString()),
+          totalRepaid: const Value(0.0),
+          collectionDate: DateTime.parse(apiData['collection_date']!),
+          isFullyRepaid: const Value(false),
+          notes: Value(data['notes']),
+        ));
+
+        await db.into(db.syncQueue).insert(SyncQueueCompanion.insert(
+          endpoint: '/salary_advances',
+          method: 'POST',
+          body: jsonEncode(apiData),
+          queuedAt: DateTime.now(),
+        ));
+        throw Exception('Saved locally. Will sync when connection is restored.');
+      }
+      if (e is DioException) {
+        throw Exception(e.response?.data?['message'] ?? e.response?.data?['details'] ?? 'Failed to create advance: ${e.message}');
+      }
+      throw Exception('Failed to create advance: $e');
+    }
+  }
+
+  Future<List<LocalSalaryAdvance>> getActiveAdvances(String staffId) async {
+    return (db.select(db.localSalaryAdvances)..where((t) => t.staffId.equals(staffId) & t.isFullyRepaid.equals(false))).get();
+  }
+
+  Future<double> getTotalActiveMonthlyDeductions(String staffId) async {
+    final advances = await getActiveAdvances(staffId);
+    double total = 0.0;
+    for (final adv in advances) {
+      total += adv.monthlyDeduction;
+    }
+    return total;
+  }
+
   Future<Map<String, dynamic>> getBudgetSummary() async {
     try {
       final response = await apiClient.dio.get('/staff/salary-budget');
@@ -347,6 +420,11 @@ class StaffRepository {
       double totalDeductions = 0;
       for (final q in unresolvedQueries) {
         totalDeductions += q.deductionAmount;
+      }
+      
+      final activeAdvances = await (db.select(db.localSalaryAdvances)..where((t) => t.isFullyRepaid.equals(false))).get();
+      for (final adv in activeAdvances) {
+        totalDeductions += adv.monthlyDeduction;
       }
       
       return {
@@ -372,13 +450,25 @@ class StaffRepository {
       queriesByStaff.putIfAbsent(q.staffId, () => []).add(q);
     }
     
+    // Fetch active salary advances
+    final activeAdvances = await (db.select(db.localSalaryAdvances)..where((t) => t.isFullyRepaid.equals(false))).get();
+    final Map<String, List<LocalSalaryAdvance>> advancesByStaff = {};
+    for (final a in activeAdvances) {
+      advancesByStaff.putIfAbsent(a.staffId, () => []).add(a);
+    }
+
     // 3. Process in a batch transaction
     await db.transaction(() async {
       for (final staff in staffList) {
         final staffQueries = queriesByStaff[staff.id] ?? [];
+        final staffAdvances = advancesByStaff[staff.id] ?? [];
+        
         double deductions = 0.0;
         for (final q in staffQueries) {
           deductions += q.deductionAmount;
+        }
+        for (final a in staffAdvances) {
+          deductions += a.monthlyDeduction;
         }
         
         final netSalary = staff.baseSalary - deductions;
@@ -408,6 +498,22 @@ class StaffRepository {
                 isResolved: const Value(true),
                 resolutionNotes: const Value('Deducted during payroll'),
                 resolvedAt: Value(DateTime.now()),
+              )
+            );
+          }
+
+          // Process salary advances
+          for (final a in staffAdvances) {
+            double newRepaid = a.totalRepaid + a.monthlyDeduction;
+            bool isFullyRepaid = newRepaid >= a.advanceAmount;
+            if (newRepaid > a.advanceAmount) {
+              newRepaid = a.advanceAmount;
+            }
+            
+            await (db.update(db.localSalaryAdvances)..where((t) => t.id.equals(a.id))).write(
+              LocalSalaryAdvancesCompanion(
+                totalRepaid: Value(newRepaid),
+                isFullyRepaid: Value(isFullyRepaid),
               )
             );
           }

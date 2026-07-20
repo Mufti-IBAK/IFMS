@@ -5,6 +5,7 @@ import '../../core/theme/app_colors.dart';
 import '../../core/di/service_locator.dart';
 import '../../core/sync/sync_manager.dart';
 import 'package:ifms_mobile/core/widgets/custom_charts.dart';
+import '../../core/widgets/app_dropdown.dart';
 import 'hatchery_bloc.dart';
 import 'hatchery_repository.dart';
 
@@ -130,6 +131,7 @@ class _HatcheryScreenState extends State<HatcheryScreen> {
                     final status = batch['status'] ?? 'incubating';
                     final fertile = batch['fertile_eggs'];
                     final hatched = batch['hatched_chicks'];
+                    final crateNumber = batch['crate_number'];
 
                     final isIncubating = status == 'incubating';
 
@@ -164,9 +166,24 @@ class _HatcheryScreenState extends State<HatcheryScreen> {
                                   Column(
                                     crossAxisAlignment: CrossAxisAlignment.start,
                                     children: [
-                                      Text(
-                                        breed,
-                                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+                                      Row(
+                                        children: [
+                                          Text(
+                                            breed,
+                                            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+                                          ),
+                                          if (crateNumber != null) ...[
+                                            const SizedBox(width: 8),
+                                            Container(
+                                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                              decoration: BoxDecoration(
+                                                color: Colors.blue.shade100,
+                                                borderRadius: BorderRadius.circular(4),
+                                              ),
+                                              child: Text('Crate $crateNumber', style: TextStyle(fontSize: 10, color: Colors.blue.shade800, fontWeight: FontWeight.bold)),
+                                            ),
+                                          ],
+                                        ],
                                       ),
                                       Text(
                                         'Source: $eggSource  •  Species: $species',
@@ -268,6 +285,12 @@ class _HatcheryScreenState extends State<HatcheryScreen> {
     DateTime collectionDate = DateTime.now();
     DateTime placementDate = DateTime.now();
 
+    String? selectedCrate;
+    int rowStart = 1;
+    int rowEnd = 8;
+    int colStart = 1;
+    int colEnd = 11;
+
     showDialog(
       context: context,
       builder: (dialogContext) {
@@ -294,9 +317,9 @@ class _HatcheryScreenState extends State<HatcheryScreen> {
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      DropdownButtonFormField<String>(
+                      AppDropdownFormField<String>(
                         value: species,
-                        decoration: const InputDecoration(labelText: 'Species of Bird Egg *'),
+                        labelText: 'Species of Bird Egg *',
                         items: speciesIncubationDays.keys.map((String val) {
                           return DropdownMenuItem<String>(
                             value: val,
@@ -348,6 +371,168 @@ class _HatcheryScreenState extends State<HatcheryScreen> {
                         textCapitalization: TextCapitalization.sentences,
                         decoration: const InputDecoration(labelText: 'Breed / Variety (e.g. Noiler)'),
                         onSaved: (v) => breed = v?.isNotEmpty == true ? v! : 'General',
+                      ),
+                      const SizedBox(height: 16),
+                      AppDropdownFormField<String>(
+                        value: selectedCrate,
+                        labelText: 'Assign to Crate',
+                        items: ['A1', 'A2', 'A3', 'A4', 'B1', 'B2', 'B3', 'B4', 'C1', 'C2', 'C3', 'C4', 'D1', 'D2', 'D3'].map((String val) {
+                          return DropdownMenuItem<String>(
+                            value: val,
+                            child: Text(val),
+                          );
+                        }).toList(),
+                        onChanged: (val) {
+                          setState(() {
+                            selectedCrate = val;
+                          });
+                        },
+                      ),
+                      const SizedBox(height: 12),
+                      Card(
+                        color: Colors.grey.shade50,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                          side: BorderSide(color: Colors.grey.shade200),
+                        ),
+                        child: Padding(
+                          padding: const EdgeInsets.all(12),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text('CRATE SECTION SELECTOR', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 11, color: AppColors.primary)),
+                              const SizedBox(height: 12),
+                              Row(
+                                children: [
+                                  Expanded(
+                                    child: TextFormField(
+                                      initialValue: rowStart.toString(),
+                                      decoration: const InputDecoration(labelText: 'Row Start (1-8)', isDense: true),
+                                      keyboardType: TextInputType.number,
+                                      onChanged: (v) {
+                                        final val = int.tryParse(v);
+                                        if (val != null && val >= 1 && val <= 8) setState(() => rowStart = val);
+                                      },
+                                    ),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Expanded(
+                                    child: TextFormField(
+                                      initialValue: rowEnd.toString(),
+                                      decoration: const InputDecoration(labelText: 'Row End (1-8)', isDense: true),
+                                      keyboardType: TextInputType.number,
+                                      onChanged: (v) {
+                                        final val = int.tryParse(v);
+                                        if (val != null && val >= 1 && val <= 8) setState(() => rowEnd = val);
+                                      },
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 8),
+                              Row(
+                                children: [
+                                  Expanded(
+                                    child: TextFormField(
+                                      initialValue: colStart.toString(),
+                                      decoration: const InputDecoration(labelText: 'Col Start (1-11)', isDense: true),
+                                      keyboardType: TextInputType.number,
+                                      onChanged: (v) {
+                                        final val = int.tryParse(v);
+                                        if (val != null && val >= 1 && val <= 11) setState(() => colStart = val);
+                                      },
+                                    ),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Expanded(
+                                    child: TextFormField(
+                                      initialValue: colEnd.toString(),
+                                      decoration: const InputDecoration(labelText: 'Col End (1-11)', isDense: true),
+                                      keyboardType: TextInputType.number,
+                                      onChanged: (v) {
+                                        final val = int.tryParse(v);
+                                        if (val != null && val >= 1 && val <= 11) setState(() => colEnd = val);
+                                      },
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 12),
+                              Text('Section: rows $rowStart–$rowEnd, cols $colStart–$colEnd = ${((rowEnd - rowStart + 1).clamp(0, 8) * (colEnd - colStart + 1).clamp(0, 11))} eggs', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Colors.black87)),
+                            ],
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      Card(
+                        color: Colors.white,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                          side: BorderSide(color: Colors.grey.shade200),
+                        ),
+                        child: Padding(
+                          padding: const EdgeInsets.all(12),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text('CRATE GRID PREVIEW', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 11, color: AppColors.primary)),
+                              const SizedBox(height: 12),
+                              SingleChildScrollView(
+                                scrollDirection: Axis.horizontal,
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Row(
+                                      children: [
+                                        const SizedBox(width: 24),
+                                        ...List.generate(11, (c) => SizedBox(
+                                          width: 28, 
+                                          child: Center(child: Text('${c + 1}', style: const TextStyle(fontSize: 10, color: Colors.grey))),
+                                        )),
+                                      ],
+                                    ),
+                                    const SizedBox(height: 4),
+                                    ...List.generate(8, (r) {
+                                      final rowNum = r + 1;
+                                      return Padding(
+                                        padding: const EdgeInsets.only(bottom: 4),
+                                        child: Row(
+                                          children: [
+                                            SizedBox(
+                                              width: 24,
+                                              child: Text('$rowNum', style: const TextStyle(fontSize: 10, color: Colors.grey)),
+                                            ),
+                                            ...List.generate(11, (c) {
+                                              final colNum = c + 1;
+                                              final isSelected = rowNum >= rowStart && rowNum <= rowEnd && colNum >= colStart && colNum <= colEnd;
+                                              return AnimatedContainer(
+                                                duration: const Duration(milliseconds: 200),
+                                                margin: const EdgeInsets.only(right: 4),
+                                                width: 24,
+                                                height: 24,
+                                                decoration: BoxDecoration(
+                                                  color: isSelected ? AppColors.primary : Colors.grey.shade100,
+                                                  borderRadius: BorderRadius.circular(4),
+                                                  border: Border.all(color: isSelected ? AppColors.primary : Colors.grey.shade300, width: 0.5),
+                                                  boxShadow: isSelected ? [BoxShadow(color: AppColors.primary.withOpacity(0.3), blurRadius: 2, offset: const Offset(0, 1))] : null,
+                                                ),
+                                                child: isSelected ? const Icon(Icons.egg, size: 14, color: Colors.white) : null,
+                                              );
+                                            }),
+                                          ],
+                                        ),
+                                      );
+                                    }),
+                                  ],
+                                ),
+                              ),
+                              const SizedBox(height: 12),
+                              Center(
+                                child: Text('${((rowEnd - rowStart + 1).clamp(0, 8) * (colEnd - colStart + 1).clamp(0, 11))} eggs selected', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                              ),
+                            ],
+                          ),
+                        ),
                       ),
                       const SizedBox(height: 16),
                       Card(
@@ -447,6 +632,13 @@ class _HatcheryScreenState extends State<HatcheryScreen> {
                         'initial_egg_cost': 0.0,
                         'set_date': formatDate(placementDate),
                         'expected_hatch_date': formatDate(expectedHatchDate),
+                        'crate_number': selectedCrate,
+                        'crate_section': selectedCrate != null ? jsonEncode({
+                          'row_start': rowStart,
+                          'row_end': rowEnd,
+                          'col_start': colStart,
+                          'col_end': colEnd,
+                        }) : null,
                       }));
                       Navigator.pop(dialogContext);
                     }
@@ -725,9 +917,9 @@ class _HatcheryScreenState extends State<HatcheryScreen> {
                   children: [
                     const Text('Log Incubation Event', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
                     const SizedBox(height: 12),
-                    DropdownButtonFormField<String>(
-                      initialValue: eventType,
-                      decoration: const InputDecoration(labelText: 'Event Type'),
+                    AppDropdownFormField<String>(
+                      value: eventType,
+                      labelText: 'Event Type',
                       items: const [
                         DropdownMenuItem(value: 'temperature_check', child: Text('Temperature Check')),
                         DropdownMenuItem(value: 'humidity_check', child: Text('Humidity Check')),
@@ -736,7 +928,7 @@ class _HatcheryScreenState extends State<HatcheryScreen> {
                         DropdownMenuItem(value: 'hatch_complete', child: Text('Hatching Completed')),
                       ],
                       onChanged: (v) {
-                        setSheetState(() => eventType = v!);
+                        if (v != null) setSheetState(() => eventType = v);
                       },
                     ),
                     const SizedBox(height: 12),

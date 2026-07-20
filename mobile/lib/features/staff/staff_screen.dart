@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 import 'package:image_picker/image_picker.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/services/payroll_pdf_service.dart';
+import '../../core/widgets/app_dropdown.dart';
 import 'staff_bloc.dart';
 
 class StaffScreen extends StatefulWidget {
@@ -98,6 +99,9 @@ class _StaffScreenState extends State<StaffScreen> with SingleTickerProviderStat
         final rating = isMap ? worker['performance_rating'] : worker.performanceRating;
         final payout = isMap ? (worker['final_payout'] ?? salary) : salary;
         final profilePic = isMap ? worker['profile_pic'] : (worker as dynamic).profilePic;
+        final startDate = isMap ? (worker['start_date'] != null ? DateTime.tryParse(worker['start_date'].toString()) : null) : (worker as dynamic).startDate;
+        
+        final tenureText = startDate != null ? _formatTenure(startDate) : 'N/A';
 
         return Card(
           margin: const EdgeInsets.only(bottom: 12),
@@ -112,6 +116,7 @@ class _StaffScreenState extends State<StaffScreen> with SingleTickerProviderStat
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(role),
+                Text('Tenure: $tenureText', style: const TextStyle(fontSize: 12, color: Colors.grey)),
                 const SizedBox(height: 4),
                 Row(
                   children: List.generate(5, (i) => Icon(
@@ -323,6 +328,7 @@ class _StaffScreenState extends State<StaffScreen> with SingleTickerProviderStat
     String? selectedGender;
     String? selectedType = 'Full-time';
     DateTime? selectedDob;
+    DateTime? selectedStartDate = DateTime.now();
     File? selectedImage;
 
     showModalBottomSheet(
@@ -396,9 +402,9 @@ class _StaffScreenState extends State<StaffScreen> with SingleTickerProviderStat
                 const SizedBox(height: 12),
                 Row(
                   children: [
-                    Expanded(child: DropdownButtonFormField<String>(
-                      isExpanded: true,
-                      decoration: const InputDecoration(labelText: 'Gender', prefixIcon: Icon(Icons.people)),
+                    Expanded(child: AppDropdownFormField<String>(
+                      labelText: 'Gender',
+                      prefixIcon: const Icon(Icons.people),
                       items: const [
                         DropdownMenuItem(value: 'Male', child: Text('Male')),
                         DropdownMenuItem(value: 'Female', child: Text('Female')),
@@ -418,18 +424,18 @@ class _StaffScreenState extends State<StaffScreen> with SingleTickerProviderStat
                               builder: (ctx, setDialogState) => Row(
                                 children: [
                                   Expanded(
-                                    child: DropdownButtonFormField<int>(
-                                      decoration: const InputDecoration(labelText: 'Month'),
-                                      initialValue: tempMonth,
+                                    child: AppDropdownFormField<int>(
+                                      labelText: 'Month',
+                                      value: tempMonth,
                                       items: List.generate(12, (i) => DropdownMenuItem(value: i + 1, child: Text(DateFormat('MMM').format(DateTime(2000, i + 1))))),
                                       onChanged: (v) => setDialogState(() => tempMonth = v!),
                                     ),
                                   ),
                                   const SizedBox(width: 16),
                                   Expanded(
-                                    child: DropdownButtonFormField<int>(
-                                      decoration: const InputDecoration(labelText: 'Day'),
-                                      initialValue: tempDay,
+                                    child: AppDropdownFormField<int>(
+                                      labelText: 'Day',
+                                      value: tempDay,
                                       items: List.generate(31, (i) => DropdownMenuItem(value: i + 1, child: Text('${i + 1}'))),
                                       onChanged: (v) => setDialogState(() => tempDay = v!),
                                     ),
@@ -464,16 +470,39 @@ class _StaffScreenState extends State<StaffScreen> with SingleTickerProviderStat
                 const Divider(),
                 TextField(textCapitalization: TextCapitalization.sentences, controller: roleCtrl, decoration: const InputDecoration(labelText: 'Role (e.g. Herder)', prefixIcon: Icon(Icons.work))),
                 const SizedBox(height: 12),                
-                DropdownButtonFormField<String>(
-                  isExpanded: true,
-                  decoration: const InputDecoration(labelText: 'Employment Type', prefixIcon: Icon(Icons.access_time)),
-                  initialValue: selectedType,
+                AppDropdownFormField<String>(
+                  labelText: 'Employment Type',
+                  prefixIcon: const Icon(Icons.access_time),
+                  value: selectedType,
                   items: const [
                     DropdownMenuItem(value: 'Full-time', child: Text('Full-time')),
                     DropdownMenuItem(value: 'Part-time', child: Text('Part-time')),
                     DropdownMenuItem(value: 'Contract', child: Text('Contract')),
                   ],
                   onChanged: (v) => selectedType = v,
+                ),
+                const SizedBox(height: 12),
+                GestureDetector(
+                  onTap: () async {
+                    final date = await showDatePicker(
+                      context: context,
+                      initialDate: selectedStartDate ?? DateTime.now(),
+                      firstDate: DateTime(2000),
+                      lastDate: DateTime(2100),
+                    );
+                    if (date != null) setDiagState(() => selectedStartDate = date);
+                  },
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
+                    decoration: BoxDecoration(border: Border.all(color: Colors.grey.shade400), borderRadius: BorderRadius.circular(4)),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.calendar_today, color: Colors.grey),
+                        const SizedBox(width: 12),
+                        Text(selectedStartDate != null ? DateFormat('MMM dd, yyyy').format(selectedStartDate!) : 'Employment Start Date'),
+                      ],
+                    ),
+                  ),
                 ),
                 const SizedBox(height: 12),
                 TextField(controller: salaryCtrl, decoration: const InputDecoration(labelText: 'Base Salary', prefixIcon: Icon(Icons.payments)), keyboardType: TextInputType.number),
@@ -515,6 +544,7 @@ class _StaffScreenState extends State<StaffScreen> with SingleTickerProviderStat
                         'gender': selectedGender,
                         'employment_type': selectedType,
                         'date_of_birth': selectedDob?.toIso8601String(),
+                        'start_date': selectedStartDate?.toIso8601String(),
                         'profile_pic': selectedImage?.path,
                       }));
                       Navigator.pop(ctx);
@@ -559,21 +589,14 @@ class _StaffScreenState extends State<StaffScreen> with SingleTickerProviderStat
               const SizedBox(height: 8),
               const Text('Record an infraction and set a pending deduction amount.', style: TextStyle(color: Colors.grey)),
               const SizedBox(height: 24),
-              DropdownButtonFormField<String>(
-                decoration: const InputDecoration(
-                  labelText: 'Select Staff Member *',
-                  prefixIcon: Icon(Icons.person),
-                  border: OutlineInputBorder(),
-                ),
+              AppDropdownFormField<String>(
+                labelText: 'Select Staff Member *',
+                prefixIcon: const Icon(Icons.person),
                 value: selectedStaffId,
                 items: state.staff.map((s) {
                   final id = s is Map ? s['id'] : (s as dynamic).id;
                   final name = s is Map ? s['name'] : (s as dynamic).name;
-                  final role = s is Map ? s['role'] : (s as dynamic).role;
-                  return DropdownMenuItem<String>(
-                    value: id.toString(),
-                    child: Text('$name ($role)'),
-                  );
+                  return DropdownMenuItem<String>(value: id.toString(), child: Text(name));
                 }).toList(),
                 onChanged: (val) => setDiagState(() => selectedStaffId = val),
               ),
@@ -650,48 +673,217 @@ class _StaffScreenState extends State<StaffScreen> with SingleTickerProviderStat
       context: context,
       isScrollControlled: true,
       builder: (ctx) => Padding(
-        padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom, left: 16, right: 16, top: 16),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Expanded(child: Text('Manage Worker: $name', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold))),
-                IconButton(
-                  icon: const Icon(Icons.delete, color: Colors.red),
-                  onPressed: () {
-                    context.read<StaffBloc>().add(DeleteStaffMember(staffId));
-                    Navigator.pop(ctx);
-                    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('$name deleted')));
-                  },
-                )
-              ],
-            ),
-            const SizedBox(height: 16),
-            TextField(textCapitalization: TextCapitalization.words, controller: roleCtrl, decoration: const InputDecoration(labelText: 'Role (e.g. Herder)')),
-            TextField(textCapitalization: TextCapitalization.sentences, controller: salaryCtrl, decoration: const InputDecoration(labelText: 'Monthly Salary'), keyboardType: TextInputType.number),
-            TextField(textCapitalization: TextCapitalization.sentences, controller: ratingCtrl, decoration: const InputDecoration(labelText: 'Performance Rating (1-5)'), keyboardType: TextInputType.number),
-            const SizedBox(height: 16),
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                onPressed: () {
-                  context.read<StaffBloc>().add(UpdateStaffMember(staffId, {
-                    'role': roleCtrl.text,
-                    'base_salary': double.tryParse(salaryCtrl.text) ?? 0.0,
-                    'performance_rating': double.tryParse(ratingCtrl.text) ?? 5.0,
-                  }));
-                  Navigator.pop(ctx);
-                },
-                child: const Text('Update Worker'),
+        padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom, left: 24, right: 24, top: 24),
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Expanded(child: Text('Manage Worker: $name', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold))),
+                  IconButton(
+                    icon: const Icon(Icons.delete, color: Colors.red),
+                    onPressed: () {
+                      context.read<StaffBloc>().add(DeleteStaffMember(staffId));
+                      Navigator.pop(ctx);
+                      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('$name deleted')));
+                    },
+                  )
+                ],
               ),
-            ),
-            const SizedBox(height: 16),
-          ],
+              const SizedBox(height: 16),
+              const Text('Job Details', style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.primary)),
+              const Divider(),
+              TextField(
+                textCapitalization: TextCapitalization.words, 
+                controller: roleCtrl, 
+                decoration: InputDecoration(labelText: 'Role (e.g. Herder)', prefixIcon: const Icon(Icons.work), border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)))
+              ),
+              const SizedBox(height: 16),
+              const Text('Compensation & Performance', style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.primary)),
+              const Divider(),
+              TextField(
+                textCapitalization: TextCapitalization.sentences, 
+                controller: salaryCtrl, 
+                decoration: InputDecoration(labelText: 'Monthly Salary', prefixIcon: const Icon(Icons.payments), border: OutlineInputBorder(borderRadius: BorderRadius.circular(12))), 
+                keyboardType: TextInputType.number
+              ),
+              const SizedBox(height: 16),
+              TextField(
+                textCapitalization: TextCapitalization.sentences, 
+                controller: ratingCtrl, 
+                decoration: InputDecoration(labelText: 'Performance Rating (1-5)', prefixIcon: const Icon(Icons.star), border: OutlineInputBorder(borderRadius: BorderRadius.circular(12))), 
+                keyboardType: TextInputType.number
+              ),
+              const SizedBox(height: 24),
+              SizedBox(
+                width: double.infinity,
+                child: OutlinedButton.icon(
+                  onPressed: () {
+                    Navigator.pop(ctx);
+                    _showSalaryAdvanceDialog(context, staffId, name);
+                  },
+                  icon: const Icon(Icons.money),
+                  label: const Text('Request Salary Advance'),
+                  style: OutlinedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    foregroundColor: AppColors.primary,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: () {
+                    context.read<StaffBloc>().add(UpdateStaffMember(staffId, {
+                      'role': roleCtrl.text,
+                      'base_salary': double.tryParse(salaryCtrl.text) ?? 0.0,
+                      'performance_rating': double.tryParse(ratingCtrl.text) ?? 5.0,
+                    }));
+                    Navigator.pop(ctx);
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.primary,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                  ),
+                  child: const Text('Update Worker'),
+                ),
+              ),
+              const SizedBox(height: 24),
+            ],
+          ),
         ),
       ),
     );
+  }
+
+  void _showSalaryAdvanceDialog(BuildContext context, String staffId, String staffName) {
+    final amountCtrl = TextEditingController();
+    final deductionCtrl = TextEditingController();
+    final notesCtrl = TextEditingController();
+    DateTime collectionDate = DateTime.now();
+    int repaymentMonths = 0;
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setDiagState) {
+          void calculateRepayment() {
+            final amt = double.tryParse(amountCtrl.text) ?? 0.0;
+            final ded = double.tryParse(deductionCtrl.text) ?? 0.0;
+            if (amt > 0 && ded > 0) {
+              setDiagState(() {
+                repaymentMonths = (amt / ded).ceil();
+              });
+            } else {
+              setDiagState(() {
+                repaymentMonths = 0;
+              });
+            }
+          }
+
+          return Padding(
+            padding: EdgeInsets.only(bottom: MediaQuery.of(ctx).viewInsets.bottom, left: 24, right: 24, top: 24),
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('Record Salary Advance for $staffName', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                  const SizedBox(height: 24),
+                  TextField(
+                    controller: amountCtrl,
+                    decoration: InputDecoration(labelText: 'Advance Amount (₦)', prefixIcon: const Icon(Icons.money), border: OutlineInputBorder(borderRadius: BorderRadius.circular(12))),
+                    keyboardType: TextInputType.number,
+                    onChanged: (_) => calculateRepayment(),
+                  ),
+                  const SizedBox(height: 16),
+                  TextField(
+                    controller: deductionCtrl,
+                    decoration: InputDecoration(labelText: 'Monthly Deduction (₦)', prefixIcon: const Icon(Icons.money_off), border: OutlineInputBorder(borderRadius: BorderRadius.circular(12))),
+                    keyboardType: TextInputType.number,
+                    onChanged: (_) => calculateRepayment(),
+                  ),
+                  const SizedBox(height: 8),
+                  if (repaymentMonths > 0)
+                    Text('Repayment: $repaymentMonths months', style: const TextStyle(color: Colors.green, fontWeight: FontWeight.bold)),
+                  const SizedBox(height: 16),
+                  GestureDetector(
+                    onTap: () async {
+                      final date = await showDatePicker(
+                        context: context,
+                        initialDate: collectionDate,
+                        firstDate: DateTime(2000),
+                        lastDate: DateTime(2100),
+                      );
+                      if (date != null) setDiagState(() => collectionDate = date);
+                    },
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
+                      decoration: BoxDecoration(border: Border.all(color: Colors.grey.shade400), borderRadius: BorderRadius.circular(12)),
+                      child: Row(
+                        children: [
+                          const Icon(Icons.calendar_today, color: Colors.grey),
+                          const SizedBox(width: 12),
+                          Text(DateFormat('MMM dd, yyyy').format(collectionDate)),
+                        ],
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  TextField(
+                    controller: notesCtrl,
+                    decoration: InputDecoration(labelText: 'Notes (Optional)', prefixIcon: const Icon(Icons.note), border: OutlineInputBorder(borderRadius: BorderRadius.circular(12))),
+                    textCapitalization: TextCapitalization.sentences,
+                  ),
+                  const SizedBox(height: 24),
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      onPressed: () {
+                        if (amountCtrl.text.isEmpty || deductionCtrl.text.isEmpty) {
+                          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Please fill all required fields.')));
+                          return;
+                        }
+                        context.read<StaffBloc>().add(CreateSalaryAdvance(staffId, {
+                          'advance_amount': double.tryParse(amountCtrl.text) ?? 0.0,
+                          'monthly_deduction': double.tryParse(deductionCtrl.text) ?? 0.0,
+                          'collection_date': collectionDate.toIso8601String(),
+                          'notes': notesCtrl.text,
+                        }));
+                        Navigator.pop(ctx);
+                        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Salary advance recorded successfully.')));
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.primary,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                      ),
+                      child: const Text('Record Advance'),
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                ],
+              ),
+            ),
+          );
+        }
+      ),
+    );
+  }
+
+  String _formatTenure(DateTime startDate) {
+    final now = DateTime.now();
+    int years = now.year - startDate.year;
+    int months = now.month - startDate.month;
+    int days = now.day - startDate.day;
+    if (days < 0) { months--; days += DateTime(now.year, now.month, 0).day; }
+    if (months < 0) { years--; months += 12; }
+    return '${years}yr ${months}mo ${days}d';
   }
 }

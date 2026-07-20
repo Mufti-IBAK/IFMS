@@ -334,94 +334,72 @@ class InventoryRepository {
       'log_date': logDateStr,
     };
 
+    // ── OFFLINE-FIRST: Always update local DB immediately ──
+    await db.into(db.localInventoryLogs).insertOnConflictUpdate(LocalInventoryLogsCompanion.insert(
+      id: uuid,
+      itemId: itemId,
+      changeType: changeType,
+      quantityChange: changeVal,
+      balanceAfter: newBal,
+      relatedEntityType: Value(logData['related_entity_type']),
+      relatedEntityId: Value(logData['related_entity_id']),
+      notes: Value(logData['notes']),
+      logDate: DateTime.now(),
+    ));
+
+    if (itemQuery != null) {
+      await (db.update(db.localFeedItems)..where((t) => t.id.equals(itemId))).write(
+        LocalFeedItemsCompanion(currentStock: Value(newBal))
+      );
+    }
+
+    // Add informational notification task
+    final String itemName = itemQuery?.name ?? 'Item';
+    final String actionText = changeType == 'purchase' ? 'Restocked' 
+        : changeType == 'consumption' ? 'Consumed' 
+        : changeType == 'waste' ? 'Wasted' 
+        : 'Adjusted';
+        
+    await db.into(db.localTasks).insert(LocalTasksCompanion.insert(
+      id: 'task_inv_$uuid',
+      title: 'Feed Inventory $actionText',
+      description: Value('$actionText $changeVal units of $itemName. New balance: $newBal.'),
+      priority: 'medium',
+      status: 'completed',
+      dueDate: Value(DateTime.now()),
+      category: const Value('feed'),
+      isActionable: const Value(false),
+    ));
+
+    // Auto-log financial expense on feed purchase
+    if (changeType == 'purchase' && itemQuery != null && itemQuery.costPerKg > 0) {
+      final totalCost = changeVal.abs() * itemQuery.costPerKg;
+      final txUuid = const Uuid().v4();
+      await db.into(db.localTransactions).insertOnConflictUpdate(LocalTransactionsCompanion.insert(
+        id: txUuid,
+        transactionType: 'expense',
+        category: 'feed_purchase',
+        amount: totalCost,
+        currency: const Value('NGN'),
+        relatedEntityType: const Value('inventory'),
+        relatedEntityId: Value(itemId),
+        description: Value('Restocked $changeVal units of ${itemQuery.name}'),
+        transactionDate: DateTime.now(),
+        isReconciled: const Value(false),
+      ));
+    }
+
+    // ── THEN attempt remote sync (non-blocking) ──
     try {
       await apiClient.dio.post('/inventory/log', data: apiData);
-
-      // On success, save locally
-      await db.into(db.localInventoryLogs).insertOnConflictUpdate(LocalInventoryLogsCompanion.insert(
-        id: uuid,
-        itemId: itemId,
-        changeType: changeType,
-        quantityChange: changeVal,
-        balanceAfter: newBal,
-        relatedEntityType: Value(logData['related_entity_type']),
-        relatedEntityId: Value(logData['related_entity_id']),
-        notes: Value(logData['notes']),
-        logDate: DateTime.now(),
-      ));
-
-      if (itemQuery != null) {
-        await (db.update(db.localFeedItems)..where((t) => t.id.equals(itemId))).write(
-          LocalFeedItemsCompanion(currentStock: Value(newBal))
-        );
-      }
-
-      // Add informational notification
-      final String itemName = itemQuery?.name ?? 'Item';
-      final String actionText = changeType == 'purchase' ? 'Restocked' 
-          : changeType == 'consumption' ? 'Consumed' 
-          : changeType == 'waste' ? 'Wasted' 
-          : 'Adjusted';
-          
-      await db.into(db.localTasks).insert(LocalTasksCompanion.insert(
-        id: 'task_inv_$uuid',
-        title: 'Feed Inventory $actionText',
-        description: Value('$actionText $changeVal units of $itemName. New balance: $newBal.'),
-        priority: 'medium',
-        status: 'completed',
-        dueDate: Value(DateTime.now()),
-        category: const Value('feed'),
-        isActionable: const Value(false),
-      ));
     } catch (e) {
-      if (e is DioException && ApiClient.isNetworkError(e)) {
-        await db.into(db.localInventoryLogs).insertOnConflictUpdate(LocalInventoryLogsCompanion.insert(
-          id: uuid,
-          itemId: itemId,
-          changeType: changeType,
-          quantityChange: changeVal,
-          balanceAfter: newBal,
-          relatedEntityType: Value(logData['related_entity_type']),
-          relatedEntityId: Value(logData['related_entity_id']),
-          notes: Value(logData['notes']),
-          logDate: DateTime.now(),
-        ));
-
-        if (itemQuery != null) {
-          await (db.update(db.localFeedItems)..where((t) => t.id.equals(itemId))).write(
-            LocalFeedItemsCompanion(currentStock: Value(newBal))
-          );
-        }
-
-        await db.into(db.syncQueue).insert(SyncQueueCompanion.insert(
-          endpoint: '/inventory/log',
-          method: 'POST',
-          body: jsonEncode(apiData),
-          queuedAt: DateTime.now(),
-        ));
-        
-        final String itemName = itemQuery?.name ?? 'Item';
-        final String actionText = changeType == 'purchase' ? 'Restocked' 
-            : changeType == 'consumption' ? 'Consumed' 
-            : changeType == 'waste' ? 'Wasted' 
-            : 'Adjusted';
-            
-        await db.into(db.localTasks).insert(LocalTasksCompanion.insert(
-          id: 'task_inv_$uuid',
-          title: 'Feed Inventory $actionText',
-          description: Value('$actionText $changeVal units of $itemName. New balance: $newBal.'),
-          priority: 'medium',
-          status: 'completed',
-          dueDate: Value(DateTime.now()),
-          category: const Value('feed'),
-          isActionable: const Value(false),
-        ));
-        return;
-      }
-      if (e is DioException) {
-        throw Exception(e.response?.data?['message'] ?? e.response?.data?['details'] ?? 'Failed to log inventory change: ${e.message}');
-      }
-      throw Exception('Failed to log inventory change: $e');
+      // Queue for later sync regardless of error type
+      await db.into(db.syncQueue).insert(SyncQueueCompanion.insert(
+        endpoint: '/inventory/log',
+        method: 'POST',
+        body: jsonEncode(apiData),
+        queuedAt: DateTime.now(),
+      ));
     }
   }
 

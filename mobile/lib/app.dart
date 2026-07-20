@@ -36,6 +36,7 @@ import 'features/staff/staff_screen.dart';
 import 'features/breeding/breeding_bloc.dart';
 import 'features/breeding/breeding_repository.dart';
 import 'features/breeding/breeding_screen.dart';
+import 'features/history/history_tracking_screen.dart';
 import 'core/network/notification_service.dart';
 import 'core/sync/sync_manager.dart';
 import 'core/updater/app_updater.dart';
@@ -219,6 +220,7 @@ class _IFMSAppState extends State<IFMSApp> {
               '/pharmacy': (context) => const PharmacyScreen(),
               '/staff': (context) => const StaffScreen(),
               '/breeding': (context) => const BreedingScreen(),
+              '/history': (context) => const HistoryTrackingScreen(),
               '/settings': (context) => SettingsScreen(controller: settingsController),
               '/auth': (context) => AuthScreen(controller: settingsController),
             },
@@ -343,6 +345,7 @@ class HomeScreen extends StatelessWidget {
             _buildDrawerItem(context, 'Avian Incubation Hub', Icons.bubble_chart, '/hatchery'),
             _buildDrawerItem(context, 'Veterinary Apothecary', Icons.local_pharmacy, '/pharmacy'),
             _buildDrawerItem(context, 'Labor & Operations Management', Icons.groups, '/staff'),
+            _buildDrawerItem(context, 'History & Audit Trail', Icons.history, '/history'),
             
             const Divider(),
             
@@ -416,7 +419,7 @@ class HomeScreen extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       const Text(
-                        'ROYALHERITAGE ESTATES',
+                        'ROYAL HERITAGE FARMS',
                         style: TextStyle(
                           color: AppColors.secondary,
                           fontWeight: FontWeight.bold,

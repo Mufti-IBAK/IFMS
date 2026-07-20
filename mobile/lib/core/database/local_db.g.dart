@@ -5235,6 +5235,18 @@ class $LocalHatcheryBatchesTable extends LocalHatcheryBatches
       type: DriftSqlType.string,
       requiredDuringInsert: false,
       defaultValue: const Constant('incubating'));
+  static const VerificationMeta _crateNumberMeta =
+      const VerificationMeta('crateNumber');
+  @override
+  late final GeneratedColumn<String> crateNumber = GeneratedColumn<String>(
+      'crate_number', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _crateSectionMeta =
+      const VerificationMeta('crateSection');
+  @override
+  late final GeneratedColumn<String> crateSection = GeneratedColumn<String>(
+      'crate_section', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
   @override
   List<GeneratedColumn> get $columns => [
         id,
@@ -5247,7 +5259,9 @@ class $LocalHatcheryBatchesTable extends LocalHatcheryBatches
         hatchedChicks,
         failedEggs,
         initialEggCost,
-        status
+        status,
+        crateNumber,
+        crateSection
       ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -5323,6 +5337,18 @@ class $LocalHatcheryBatchesTable extends LocalHatcheryBatches
       context.handle(_statusMeta,
           status.isAcceptableOrUnknown(data['status']!, _statusMeta));
     }
+    if (data.containsKey('crate_number')) {
+      context.handle(
+          _crateNumberMeta,
+          crateNumber.isAcceptableOrUnknown(
+              data['crate_number']!, _crateNumberMeta));
+    }
+    if (data.containsKey('crate_section')) {
+      context.handle(
+          _crateSectionMeta,
+          crateSection.isAcceptableOrUnknown(
+              data['crate_section']!, _crateSectionMeta));
+    }
     return context;
   }
 
@@ -5355,6 +5381,10 @@ class $LocalHatcheryBatchesTable extends LocalHatcheryBatches
           DriftSqlType.double, data['${effectivePrefix}initial_egg_cost'])!,
       status: attachedDatabase.typeMapping
           .read(DriftSqlType.string, data['${effectivePrefix}status'])!,
+      crateNumber: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}crate_number']),
+      crateSection: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}crate_section']),
     );
   }
 
@@ -5377,6 +5407,8 @@ class LocalHatcheryBatche extends DataClass
   final int? failedEggs;
   final double initialEggCost;
   final String status;
+  final String? crateNumber;
+  final String? crateSection;
   const LocalHatcheryBatche(
       {required this.id,
       required this.eggSource,
@@ -5388,7 +5420,9 @@ class LocalHatcheryBatche extends DataClass
       this.hatchedChicks,
       this.failedEggs,
       required this.initialEggCost,
-      required this.status});
+      required this.status,
+      this.crateNumber,
+      this.crateSection});
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
@@ -5411,6 +5445,12 @@ class LocalHatcheryBatche extends DataClass
     }
     map['initial_egg_cost'] = Variable<double>(initialEggCost);
     map['status'] = Variable<String>(status);
+    if (!nullToAbsent || crateNumber != null) {
+      map['crate_number'] = Variable<String>(crateNumber);
+    }
+    if (!nullToAbsent || crateSection != null) {
+      map['crate_section'] = Variable<String>(crateSection);
+    }
     return map;
   }
 
@@ -5434,6 +5474,12 @@ class LocalHatcheryBatche extends DataClass
           : Value(failedEggs),
       initialEggCost: Value(initialEggCost),
       status: Value(status),
+      crateNumber: crateNumber == null && nullToAbsent
+          ? const Value.absent()
+          : Value(crateNumber),
+      crateSection: crateSection == null && nullToAbsent
+          ? const Value.absent()
+          : Value(crateSection),
     );
   }
 
@@ -5453,6 +5499,8 @@ class LocalHatcheryBatche extends DataClass
       failedEggs: serializer.fromJson<int?>(json['failedEggs']),
       initialEggCost: serializer.fromJson<double>(json['initialEggCost']),
       status: serializer.fromJson<String>(json['status']),
+      crateNumber: serializer.fromJson<String?>(json['crateNumber']),
+      crateSection: serializer.fromJson<String?>(json['crateSection']),
     );
   }
   @override
@@ -5470,6 +5518,8 @@ class LocalHatcheryBatche extends DataClass
       'failedEggs': serializer.toJson<int?>(failedEggs),
       'initialEggCost': serializer.toJson<double>(initialEggCost),
       'status': serializer.toJson<String>(status),
+      'crateNumber': serializer.toJson<String?>(crateNumber),
+      'crateSection': serializer.toJson<String?>(crateSection),
     };
   }
 
@@ -5484,7 +5534,9 @@ class LocalHatcheryBatche extends DataClass
           Value<int?> hatchedChicks = const Value.absent(),
           Value<int?> failedEggs = const Value.absent(),
           double? initialEggCost,
-          String? status}) =>
+          String? status,
+          Value<String?> crateNumber = const Value.absent(),
+          Value<String?> crateSection = const Value.absent()}) =>
       LocalHatcheryBatche(
         id: id ?? this.id,
         eggSource: eggSource ?? this.eggSource,
@@ -5498,6 +5550,9 @@ class LocalHatcheryBatche extends DataClass
         failedEggs: failedEggs.present ? failedEggs.value : this.failedEggs,
         initialEggCost: initialEggCost ?? this.initialEggCost,
         status: status ?? this.status,
+        crateNumber: crateNumber.present ? crateNumber.value : this.crateNumber,
+        crateSection:
+            crateSection.present ? crateSection.value : this.crateSection,
       );
   LocalHatcheryBatche copyWithCompanion(LocalHatcheryBatchesCompanion data) {
     return LocalHatcheryBatche(
@@ -5520,6 +5575,11 @@ class LocalHatcheryBatche extends DataClass
           ? data.initialEggCost.value
           : this.initialEggCost,
       status: data.status.present ? data.status.value : this.status,
+      crateNumber:
+          data.crateNumber.present ? data.crateNumber.value : this.crateNumber,
+      crateSection: data.crateSection.present
+          ? data.crateSection.value
+          : this.crateSection,
     );
   }
 
@@ -5536,7 +5596,9 @@ class LocalHatcheryBatche extends DataClass
           ..write('hatchedChicks: $hatchedChicks, ')
           ..write('failedEggs: $failedEggs, ')
           ..write('initialEggCost: $initialEggCost, ')
-          ..write('status: $status')
+          ..write('status: $status, ')
+          ..write('crateNumber: $crateNumber, ')
+          ..write('crateSection: $crateSection')
           ..write(')'))
         .toString();
   }
@@ -5553,7 +5615,9 @@ class LocalHatcheryBatche extends DataClass
       hatchedChicks,
       failedEggs,
       initialEggCost,
-      status);
+      status,
+      crateNumber,
+      crateSection);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -5568,7 +5632,9 @@ class LocalHatcheryBatche extends DataClass
           other.hatchedChicks == this.hatchedChicks &&
           other.failedEggs == this.failedEggs &&
           other.initialEggCost == this.initialEggCost &&
-          other.status == this.status);
+          other.status == this.status &&
+          other.crateNumber == this.crateNumber &&
+          other.crateSection == this.crateSection);
 }
 
 class LocalHatcheryBatchesCompanion
@@ -5584,6 +5650,8 @@ class LocalHatcheryBatchesCompanion
   final Value<int?> failedEggs;
   final Value<double> initialEggCost;
   final Value<String> status;
+  final Value<String?> crateNumber;
+  final Value<String?> crateSection;
   final Value<int> rowid;
   const LocalHatcheryBatchesCompanion({
     this.id = const Value.absent(),
@@ -5597,6 +5665,8 @@ class LocalHatcheryBatchesCompanion
     this.failedEggs = const Value.absent(),
     this.initialEggCost = const Value.absent(),
     this.status = const Value.absent(),
+    this.crateNumber = const Value.absent(),
+    this.crateSection = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   LocalHatcheryBatchesCompanion.insert({
@@ -5611,6 +5681,8 @@ class LocalHatcheryBatchesCompanion
     this.failedEggs = const Value.absent(),
     this.initialEggCost = const Value.absent(),
     this.status = const Value.absent(),
+    this.crateNumber = const Value.absent(),
+    this.crateSection = const Value.absent(),
     this.rowid = const Value.absent(),
   })  : id = Value(id),
         eggSource = Value(eggSource),
@@ -5629,6 +5701,8 @@ class LocalHatcheryBatchesCompanion
     Expression<int>? failedEggs,
     Expression<double>? initialEggCost,
     Expression<String>? status,
+    Expression<String>? crateNumber,
+    Expression<String>? crateSection,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
@@ -5643,6 +5717,8 @@ class LocalHatcheryBatchesCompanion
       if (failedEggs != null) 'failed_eggs': failedEggs,
       if (initialEggCost != null) 'initial_egg_cost': initialEggCost,
       if (status != null) 'status': status,
+      if (crateNumber != null) 'crate_number': crateNumber,
+      if (crateSection != null) 'crate_section': crateSection,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -5659,6 +5735,8 @@ class LocalHatcheryBatchesCompanion
       Value<int?>? failedEggs,
       Value<double>? initialEggCost,
       Value<String>? status,
+      Value<String?>? crateNumber,
+      Value<String?>? crateSection,
       Value<int>? rowid}) {
     return LocalHatcheryBatchesCompanion(
       id: id ?? this.id,
@@ -5672,6 +5750,8 @@ class LocalHatcheryBatchesCompanion
       failedEggs: failedEggs ?? this.failedEggs,
       initialEggCost: initialEggCost ?? this.initialEggCost,
       status: status ?? this.status,
+      crateNumber: crateNumber ?? this.crateNumber,
+      crateSection: crateSection ?? this.crateSection,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -5712,6 +5792,12 @@ class LocalHatcheryBatchesCompanion
     if (status.present) {
       map['status'] = Variable<String>(status.value);
     }
+    if (crateNumber.present) {
+      map['crate_number'] = Variable<String>(crateNumber.value);
+    }
+    if (crateSection.present) {
+      map['crate_section'] = Variable<String>(crateSection.value);
+    }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
     }
@@ -5732,6 +5818,8 @@ class LocalHatcheryBatchesCompanion
           ..write('failedEggs: $failedEggs, ')
           ..write('initialEggCost: $initialEggCost, ')
           ..write('status: $status, ')
+          ..write('crateNumber: $crateNumber, ')
+          ..write('crateSection: $crateSection, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -9091,6 +9179,12 @@ class $LocalStaffTable extends LocalStaff
   late final GeneratedColumn<String> employmentType = GeneratedColumn<String>(
       'employment_type', aliasedName, true,
       type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _startDateMeta =
+      const VerificationMeta('startDate');
+  @override
+  late final GeneratedColumn<DateTime> startDate = GeneratedColumn<DateTime>(
+      'start_date', aliasedName, true,
+      type: DriftSqlType.dateTime, requiredDuringInsert: false);
   @override
   List<GeneratedColumn> get $columns => [
         id,
@@ -9105,7 +9199,8 @@ class $LocalStaffTable extends LocalStaff
         dateOfBirth,
         address,
         emergencyContact,
-        employmentType
+        employmentType,
+        startDate
       ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -9186,6 +9281,10 @@ class $LocalStaffTable extends LocalStaff
           employmentType.isAcceptableOrUnknown(
               data['employment_type']!, _employmentTypeMeta));
     }
+    if (data.containsKey('start_date')) {
+      context.handle(_startDateMeta,
+          startDate.isAcceptableOrUnknown(data['start_date']!, _startDateMeta));
+    }
     return context;
   }
 
@@ -9221,6 +9320,8 @@ class $LocalStaffTable extends LocalStaff
           DriftSqlType.string, data['${effectivePrefix}emergency_contact']),
       employmentType: attachedDatabase.typeMapping
           .read(DriftSqlType.string, data['${effectivePrefix}employment_type']),
+      startDate: attachedDatabase.typeMapping
+          .read(DriftSqlType.dateTime, data['${effectivePrefix}start_date']),
     );
   }
 
@@ -9244,6 +9345,7 @@ class LocalStaffData extends DataClass implements Insertable<LocalStaffData> {
   final String? address;
   final String? emergencyContact;
   final String? employmentType;
+  final DateTime? startDate;
   const LocalStaffData(
       {required this.id,
       required this.name,
@@ -9257,7 +9359,8 @@ class LocalStaffData extends DataClass implements Insertable<LocalStaffData> {
       this.dateOfBirth,
       this.address,
       this.emergencyContact,
-      this.employmentType});
+      this.employmentType,
+      this.startDate});
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
@@ -9287,6 +9390,9 @@ class LocalStaffData extends DataClass implements Insertable<LocalStaffData> {
     }
     if (!nullToAbsent || employmentType != null) {
       map['employment_type'] = Variable<String>(employmentType);
+    }
+    if (!nullToAbsent || startDate != null) {
+      map['start_date'] = Variable<DateTime>(startDate);
     }
     return map;
   }
@@ -9318,6 +9424,9 @@ class LocalStaffData extends DataClass implements Insertable<LocalStaffData> {
       employmentType: employmentType == null && nullToAbsent
           ? const Value.absent()
           : Value(employmentType),
+      startDate: startDate == null && nullToAbsent
+          ? const Value.absent()
+          : Value(startDate),
     );
   }
 
@@ -9338,6 +9447,7 @@ class LocalStaffData extends DataClass implements Insertable<LocalStaffData> {
       address: serializer.fromJson<String?>(json['address']),
       emergencyContact: serializer.fromJson<String?>(json['emergencyContact']),
       employmentType: serializer.fromJson<String?>(json['employmentType']),
+      startDate: serializer.fromJson<DateTime?>(json['startDate']),
     );
   }
   @override
@@ -9357,6 +9467,7 @@ class LocalStaffData extends DataClass implements Insertable<LocalStaffData> {
       'address': serializer.toJson<String?>(address),
       'emergencyContact': serializer.toJson<String?>(emergencyContact),
       'employmentType': serializer.toJson<String?>(employmentType),
+      'startDate': serializer.toJson<DateTime?>(startDate),
     };
   }
 
@@ -9373,7 +9484,8 @@ class LocalStaffData extends DataClass implements Insertable<LocalStaffData> {
           Value<DateTime?> dateOfBirth = const Value.absent(),
           Value<String?> address = const Value.absent(),
           Value<String?> emergencyContact = const Value.absent(),
-          Value<String?> employmentType = const Value.absent()}) =>
+          Value<String?> employmentType = const Value.absent(),
+          Value<DateTime?> startDate = const Value.absent()}) =>
       LocalStaffData(
         id: id ?? this.id,
         name: name ?? this.name,
@@ -9391,6 +9503,7 @@ class LocalStaffData extends DataClass implements Insertable<LocalStaffData> {
             : this.emergencyContact,
         employmentType:
             employmentType.present ? employmentType.value : this.employmentType,
+        startDate: startDate.present ? startDate.value : this.startDate,
       );
   LocalStaffData copyWithCompanion(LocalStaffCompanion data) {
     return LocalStaffData(
@@ -9416,6 +9529,7 @@ class LocalStaffData extends DataClass implements Insertable<LocalStaffData> {
       employmentType: data.employmentType.present
           ? data.employmentType.value
           : this.employmentType,
+      startDate: data.startDate.present ? data.startDate.value : this.startDate,
     );
   }
 
@@ -9434,7 +9548,8 @@ class LocalStaffData extends DataClass implements Insertable<LocalStaffData> {
           ..write('dateOfBirth: $dateOfBirth, ')
           ..write('address: $address, ')
           ..write('emergencyContact: $emergencyContact, ')
-          ..write('employmentType: $employmentType')
+          ..write('employmentType: $employmentType, ')
+          ..write('startDate: $startDate')
           ..write(')'))
         .toString();
   }
@@ -9453,7 +9568,8 @@ class LocalStaffData extends DataClass implements Insertable<LocalStaffData> {
       dateOfBirth,
       address,
       emergencyContact,
-      employmentType);
+      employmentType,
+      startDate);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -9470,7 +9586,8 @@ class LocalStaffData extends DataClass implements Insertable<LocalStaffData> {
           other.dateOfBirth == this.dateOfBirth &&
           other.address == this.address &&
           other.emergencyContact == this.emergencyContact &&
-          other.employmentType == this.employmentType);
+          other.employmentType == this.employmentType &&
+          other.startDate == this.startDate);
 }
 
 class LocalStaffCompanion extends UpdateCompanion<LocalStaffData> {
@@ -9487,6 +9604,7 @@ class LocalStaffCompanion extends UpdateCompanion<LocalStaffData> {
   final Value<String?> address;
   final Value<String?> emergencyContact;
   final Value<String?> employmentType;
+  final Value<DateTime?> startDate;
   final Value<int> rowid;
   const LocalStaffCompanion({
     this.id = const Value.absent(),
@@ -9502,6 +9620,7 @@ class LocalStaffCompanion extends UpdateCompanion<LocalStaffData> {
     this.address = const Value.absent(),
     this.emergencyContact = const Value.absent(),
     this.employmentType = const Value.absent(),
+    this.startDate = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   LocalStaffCompanion.insert({
@@ -9518,6 +9637,7 @@ class LocalStaffCompanion extends UpdateCompanion<LocalStaffData> {
     this.address = const Value.absent(),
     this.emergencyContact = const Value.absent(),
     this.employmentType = const Value.absent(),
+    this.startDate = const Value.absent(),
     this.rowid = const Value.absent(),
   })  : id = Value(id),
         name = Value(name),
@@ -9536,6 +9656,7 @@ class LocalStaffCompanion extends UpdateCompanion<LocalStaffData> {
     Expression<String>? address,
     Expression<String>? emergencyContact,
     Expression<String>? employmentType,
+    Expression<DateTime>? startDate,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
@@ -9552,6 +9673,7 @@ class LocalStaffCompanion extends UpdateCompanion<LocalStaffData> {
       if (address != null) 'address': address,
       if (emergencyContact != null) 'emergency_contact': emergencyContact,
       if (employmentType != null) 'employment_type': employmentType,
+      if (startDate != null) 'start_date': startDate,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -9570,6 +9692,7 @@ class LocalStaffCompanion extends UpdateCompanion<LocalStaffData> {
       Value<String?>? address,
       Value<String?>? emergencyContact,
       Value<String?>? employmentType,
+      Value<DateTime?>? startDate,
       Value<int>? rowid}) {
     return LocalStaffCompanion(
       id: id ?? this.id,
@@ -9585,6 +9708,7 @@ class LocalStaffCompanion extends UpdateCompanion<LocalStaffData> {
       address: address ?? this.address,
       emergencyContact: emergencyContact ?? this.emergencyContact,
       employmentType: employmentType ?? this.employmentType,
+      startDate: startDate ?? this.startDate,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -9631,6 +9755,9 @@ class LocalStaffCompanion extends UpdateCompanion<LocalStaffData> {
     if (employmentType.present) {
       map['employment_type'] = Variable<String>(employmentType.value);
     }
+    if (startDate.present) {
+      map['start_date'] = Variable<DateTime>(startDate.value);
+    }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
     }
@@ -9653,6 +9780,7 @@ class LocalStaffCompanion extends UpdateCompanion<LocalStaffData> {
           ..write('address: $address, ')
           ..write('emergencyContact: $emergencyContact, ')
           ..write('employmentType: $employmentType, ')
+          ..write('startDate: $startDate, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -10141,6 +10269,454 @@ class LocalStaffQueriesCompanion extends UpdateCompanion<LocalStaffQuery> {
           ..write('resolutionNotes: $resolutionNotes, ')
           ..write('resolvedAt: $resolvedAt, ')
           ..write('issueDate: $issueDate, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $LocalSalaryAdvancesTable extends LocalSalaryAdvances
+    with TableInfo<$LocalSalaryAdvancesTable, LocalSalaryAdvance> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $LocalSalaryAdvancesTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+      'id', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _staffIdMeta =
+      const VerificationMeta('staffId');
+  @override
+  late final GeneratedColumn<String> staffId = GeneratedColumn<String>(
+      'staff_id', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _advanceAmountMeta =
+      const VerificationMeta('advanceAmount');
+  @override
+  late final GeneratedColumn<double> advanceAmount = GeneratedColumn<double>(
+      'advance_amount', aliasedName, false,
+      type: DriftSqlType.double, requiredDuringInsert: true);
+  static const VerificationMeta _monthlyDeductionMeta =
+      const VerificationMeta('monthlyDeduction');
+  @override
+  late final GeneratedColumn<double> monthlyDeduction = GeneratedColumn<double>(
+      'monthly_deduction', aliasedName, false,
+      type: DriftSqlType.double, requiredDuringInsert: true);
+  static const VerificationMeta _totalRepaidMeta =
+      const VerificationMeta('totalRepaid');
+  @override
+  late final GeneratedColumn<double> totalRepaid = GeneratedColumn<double>(
+      'total_repaid', aliasedName, false,
+      type: DriftSqlType.double,
+      requiredDuringInsert: false,
+      defaultValue: const Constant(0.0));
+  static const VerificationMeta _collectionDateMeta =
+      const VerificationMeta('collectionDate');
+  @override
+  late final GeneratedColumn<DateTime> collectionDate =
+      GeneratedColumn<DateTime>('collection_date', aliasedName, false,
+          type: DriftSqlType.dateTime, requiredDuringInsert: true);
+  static const VerificationMeta _isFullyRepaidMeta =
+      const VerificationMeta('isFullyRepaid');
+  @override
+  late final GeneratedColumn<bool> isFullyRepaid = GeneratedColumn<bool>(
+      'is_fully_repaid', aliasedName, false,
+      type: DriftSqlType.bool,
+      requiredDuringInsert: false,
+      defaultConstraints: GeneratedColumn.constraintIsAlways(
+          'CHECK ("is_fully_repaid" IN (0, 1))'),
+      defaultValue: const Constant(false));
+  static const VerificationMeta _notesMeta = const VerificationMeta('notes');
+  @override
+  late final GeneratedColumn<String> notes = GeneratedColumn<String>(
+      'notes', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  @override
+  List<GeneratedColumn> get $columns => [
+        id,
+        staffId,
+        advanceAmount,
+        monthlyDeduction,
+        totalRepaid,
+        collectionDate,
+        isFullyRepaid,
+        notes
+      ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'local_salary_advances';
+  @override
+  VerificationContext validateIntegrity(Insertable<LocalSalaryAdvance> instance,
+      {bool isInserting = false}) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('staff_id')) {
+      context.handle(_staffIdMeta,
+          staffId.isAcceptableOrUnknown(data['staff_id']!, _staffIdMeta));
+    } else if (isInserting) {
+      context.missing(_staffIdMeta);
+    }
+    if (data.containsKey('advance_amount')) {
+      context.handle(
+          _advanceAmountMeta,
+          advanceAmount.isAcceptableOrUnknown(
+              data['advance_amount']!, _advanceAmountMeta));
+    } else if (isInserting) {
+      context.missing(_advanceAmountMeta);
+    }
+    if (data.containsKey('monthly_deduction')) {
+      context.handle(
+          _monthlyDeductionMeta,
+          monthlyDeduction.isAcceptableOrUnknown(
+              data['monthly_deduction']!, _monthlyDeductionMeta));
+    } else if (isInserting) {
+      context.missing(_monthlyDeductionMeta);
+    }
+    if (data.containsKey('total_repaid')) {
+      context.handle(
+          _totalRepaidMeta,
+          totalRepaid.isAcceptableOrUnknown(
+              data['total_repaid']!, _totalRepaidMeta));
+    }
+    if (data.containsKey('collection_date')) {
+      context.handle(
+          _collectionDateMeta,
+          collectionDate.isAcceptableOrUnknown(
+              data['collection_date']!, _collectionDateMeta));
+    } else if (isInserting) {
+      context.missing(_collectionDateMeta);
+    }
+    if (data.containsKey('is_fully_repaid')) {
+      context.handle(
+          _isFullyRepaidMeta,
+          isFullyRepaid.isAcceptableOrUnknown(
+              data['is_fully_repaid']!, _isFullyRepaidMeta));
+    }
+    if (data.containsKey('notes')) {
+      context.handle(
+          _notesMeta, notes.isAcceptableOrUnknown(data['notes']!, _notesMeta));
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  LocalSalaryAdvance map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return LocalSalaryAdvance(
+      id: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}id'])!,
+      staffId: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}staff_id'])!,
+      advanceAmount: attachedDatabase.typeMapping
+          .read(DriftSqlType.double, data['${effectivePrefix}advance_amount'])!,
+      monthlyDeduction: attachedDatabase.typeMapping.read(
+          DriftSqlType.double, data['${effectivePrefix}monthly_deduction'])!,
+      totalRepaid: attachedDatabase.typeMapping
+          .read(DriftSqlType.double, data['${effectivePrefix}total_repaid'])!,
+      collectionDate: attachedDatabase.typeMapping.read(
+          DriftSqlType.dateTime, data['${effectivePrefix}collection_date'])!,
+      isFullyRepaid: attachedDatabase.typeMapping
+          .read(DriftSqlType.bool, data['${effectivePrefix}is_fully_repaid'])!,
+      notes: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}notes']),
+    );
+  }
+
+  @override
+  $LocalSalaryAdvancesTable createAlias(String alias) {
+    return $LocalSalaryAdvancesTable(attachedDatabase, alias);
+  }
+}
+
+class LocalSalaryAdvance extends DataClass
+    implements Insertable<LocalSalaryAdvance> {
+  final String id;
+  final String staffId;
+  final double advanceAmount;
+  final double monthlyDeduction;
+  final double totalRepaid;
+  final DateTime collectionDate;
+  final bool isFullyRepaid;
+  final String? notes;
+  const LocalSalaryAdvance(
+      {required this.id,
+      required this.staffId,
+      required this.advanceAmount,
+      required this.monthlyDeduction,
+      required this.totalRepaid,
+      required this.collectionDate,
+      required this.isFullyRepaid,
+      this.notes});
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['staff_id'] = Variable<String>(staffId);
+    map['advance_amount'] = Variable<double>(advanceAmount);
+    map['monthly_deduction'] = Variable<double>(monthlyDeduction);
+    map['total_repaid'] = Variable<double>(totalRepaid);
+    map['collection_date'] = Variable<DateTime>(collectionDate);
+    map['is_fully_repaid'] = Variable<bool>(isFullyRepaid);
+    if (!nullToAbsent || notes != null) {
+      map['notes'] = Variable<String>(notes);
+    }
+    return map;
+  }
+
+  LocalSalaryAdvancesCompanion toCompanion(bool nullToAbsent) {
+    return LocalSalaryAdvancesCompanion(
+      id: Value(id),
+      staffId: Value(staffId),
+      advanceAmount: Value(advanceAmount),
+      monthlyDeduction: Value(monthlyDeduction),
+      totalRepaid: Value(totalRepaid),
+      collectionDate: Value(collectionDate),
+      isFullyRepaid: Value(isFullyRepaid),
+      notes:
+          notes == null && nullToAbsent ? const Value.absent() : Value(notes),
+    );
+  }
+
+  factory LocalSalaryAdvance.fromJson(Map<String, dynamic> json,
+      {ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return LocalSalaryAdvance(
+      id: serializer.fromJson<String>(json['id']),
+      staffId: serializer.fromJson<String>(json['staffId']),
+      advanceAmount: serializer.fromJson<double>(json['advanceAmount']),
+      monthlyDeduction: serializer.fromJson<double>(json['monthlyDeduction']),
+      totalRepaid: serializer.fromJson<double>(json['totalRepaid']),
+      collectionDate: serializer.fromJson<DateTime>(json['collectionDate']),
+      isFullyRepaid: serializer.fromJson<bool>(json['isFullyRepaid']),
+      notes: serializer.fromJson<String?>(json['notes']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'staffId': serializer.toJson<String>(staffId),
+      'advanceAmount': serializer.toJson<double>(advanceAmount),
+      'monthlyDeduction': serializer.toJson<double>(monthlyDeduction),
+      'totalRepaid': serializer.toJson<double>(totalRepaid),
+      'collectionDate': serializer.toJson<DateTime>(collectionDate),
+      'isFullyRepaid': serializer.toJson<bool>(isFullyRepaid),
+      'notes': serializer.toJson<String?>(notes),
+    };
+  }
+
+  LocalSalaryAdvance copyWith(
+          {String? id,
+          String? staffId,
+          double? advanceAmount,
+          double? monthlyDeduction,
+          double? totalRepaid,
+          DateTime? collectionDate,
+          bool? isFullyRepaid,
+          Value<String?> notes = const Value.absent()}) =>
+      LocalSalaryAdvance(
+        id: id ?? this.id,
+        staffId: staffId ?? this.staffId,
+        advanceAmount: advanceAmount ?? this.advanceAmount,
+        monthlyDeduction: monthlyDeduction ?? this.monthlyDeduction,
+        totalRepaid: totalRepaid ?? this.totalRepaid,
+        collectionDate: collectionDate ?? this.collectionDate,
+        isFullyRepaid: isFullyRepaid ?? this.isFullyRepaid,
+        notes: notes.present ? notes.value : this.notes,
+      );
+  LocalSalaryAdvance copyWithCompanion(LocalSalaryAdvancesCompanion data) {
+    return LocalSalaryAdvance(
+      id: data.id.present ? data.id.value : this.id,
+      staffId: data.staffId.present ? data.staffId.value : this.staffId,
+      advanceAmount: data.advanceAmount.present
+          ? data.advanceAmount.value
+          : this.advanceAmount,
+      monthlyDeduction: data.monthlyDeduction.present
+          ? data.monthlyDeduction.value
+          : this.monthlyDeduction,
+      totalRepaid:
+          data.totalRepaid.present ? data.totalRepaid.value : this.totalRepaid,
+      collectionDate: data.collectionDate.present
+          ? data.collectionDate.value
+          : this.collectionDate,
+      isFullyRepaid: data.isFullyRepaid.present
+          ? data.isFullyRepaid.value
+          : this.isFullyRepaid,
+      notes: data.notes.present ? data.notes.value : this.notes,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('LocalSalaryAdvance(')
+          ..write('id: $id, ')
+          ..write('staffId: $staffId, ')
+          ..write('advanceAmount: $advanceAmount, ')
+          ..write('monthlyDeduction: $monthlyDeduction, ')
+          ..write('totalRepaid: $totalRepaid, ')
+          ..write('collectionDate: $collectionDate, ')
+          ..write('isFullyRepaid: $isFullyRepaid, ')
+          ..write('notes: $notes')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(id, staffId, advanceAmount, monthlyDeduction,
+      totalRepaid, collectionDate, isFullyRepaid, notes);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is LocalSalaryAdvance &&
+          other.id == this.id &&
+          other.staffId == this.staffId &&
+          other.advanceAmount == this.advanceAmount &&
+          other.monthlyDeduction == this.monthlyDeduction &&
+          other.totalRepaid == this.totalRepaid &&
+          other.collectionDate == this.collectionDate &&
+          other.isFullyRepaid == this.isFullyRepaid &&
+          other.notes == this.notes);
+}
+
+class LocalSalaryAdvancesCompanion extends UpdateCompanion<LocalSalaryAdvance> {
+  final Value<String> id;
+  final Value<String> staffId;
+  final Value<double> advanceAmount;
+  final Value<double> monthlyDeduction;
+  final Value<double> totalRepaid;
+  final Value<DateTime> collectionDate;
+  final Value<bool> isFullyRepaid;
+  final Value<String?> notes;
+  final Value<int> rowid;
+  const LocalSalaryAdvancesCompanion({
+    this.id = const Value.absent(),
+    this.staffId = const Value.absent(),
+    this.advanceAmount = const Value.absent(),
+    this.monthlyDeduction = const Value.absent(),
+    this.totalRepaid = const Value.absent(),
+    this.collectionDate = const Value.absent(),
+    this.isFullyRepaid = const Value.absent(),
+    this.notes = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  LocalSalaryAdvancesCompanion.insert({
+    required String id,
+    required String staffId,
+    required double advanceAmount,
+    required double monthlyDeduction,
+    this.totalRepaid = const Value.absent(),
+    required DateTime collectionDate,
+    this.isFullyRepaid = const Value.absent(),
+    this.notes = const Value.absent(),
+    this.rowid = const Value.absent(),
+  })  : id = Value(id),
+        staffId = Value(staffId),
+        advanceAmount = Value(advanceAmount),
+        monthlyDeduction = Value(monthlyDeduction),
+        collectionDate = Value(collectionDate);
+  static Insertable<LocalSalaryAdvance> custom({
+    Expression<String>? id,
+    Expression<String>? staffId,
+    Expression<double>? advanceAmount,
+    Expression<double>? monthlyDeduction,
+    Expression<double>? totalRepaid,
+    Expression<DateTime>? collectionDate,
+    Expression<bool>? isFullyRepaid,
+    Expression<String>? notes,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (staffId != null) 'staff_id': staffId,
+      if (advanceAmount != null) 'advance_amount': advanceAmount,
+      if (monthlyDeduction != null) 'monthly_deduction': monthlyDeduction,
+      if (totalRepaid != null) 'total_repaid': totalRepaid,
+      if (collectionDate != null) 'collection_date': collectionDate,
+      if (isFullyRepaid != null) 'is_fully_repaid': isFullyRepaid,
+      if (notes != null) 'notes': notes,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  LocalSalaryAdvancesCompanion copyWith(
+      {Value<String>? id,
+      Value<String>? staffId,
+      Value<double>? advanceAmount,
+      Value<double>? monthlyDeduction,
+      Value<double>? totalRepaid,
+      Value<DateTime>? collectionDate,
+      Value<bool>? isFullyRepaid,
+      Value<String?>? notes,
+      Value<int>? rowid}) {
+    return LocalSalaryAdvancesCompanion(
+      id: id ?? this.id,
+      staffId: staffId ?? this.staffId,
+      advanceAmount: advanceAmount ?? this.advanceAmount,
+      monthlyDeduction: monthlyDeduction ?? this.monthlyDeduction,
+      totalRepaid: totalRepaid ?? this.totalRepaid,
+      collectionDate: collectionDate ?? this.collectionDate,
+      isFullyRepaid: isFullyRepaid ?? this.isFullyRepaid,
+      notes: notes ?? this.notes,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (staffId.present) {
+      map['staff_id'] = Variable<String>(staffId.value);
+    }
+    if (advanceAmount.present) {
+      map['advance_amount'] = Variable<double>(advanceAmount.value);
+    }
+    if (monthlyDeduction.present) {
+      map['monthly_deduction'] = Variable<double>(monthlyDeduction.value);
+    }
+    if (totalRepaid.present) {
+      map['total_repaid'] = Variable<double>(totalRepaid.value);
+    }
+    if (collectionDate.present) {
+      map['collection_date'] = Variable<DateTime>(collectionDate.value);
+    }
+    if (isFullyRepaid.present) {
+      map['is_fully_repaid'] = Variable<bool>(isFullyRepaid.value);
+    }
+    if (notes.present) {
+      map['notes'] = Variable<String>(notes.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('LocalSalaryAdvancesCompanion(')
+          ..write('id: $id, ')
+          ..write('staffId: $staffId, ')
+          ..write('advanceAmount: $advanceAmount, ')
+          ..write('monthlyDeduction: $monthlyDeduction, ')
+          ..write('totalRepaid: $totalRepaid, ')
+          ..write('collectionDate: $collectionDate, ')
+          ..write('isFullyRepaid: $isFullyRepaid, ')
+          ..write('notes: $notes, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -11054,6 +11630,490 @@ class LocalBreedingEventsCompanion extends UpdateCompanion<LocalBreedingEvent> {
   }
 }
 
+class $LocalAuditLogsTable extends LocalAuditLogs
+    with TableInfo<$LocalAuditLogsTable, LocalAuditLog> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $LocalAuditLogsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+      'id', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _userNameMeta =
+      const VerificationMeta('userName');
+  @override
+  late final GeneratedColumn<String> userName = GeneratedColumn<String>(
+      'user_name', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _actionTypeMeta =
+      const VerificationMeta('actionType');
+  @override
+  late final GeneratedColumn<String> actionType = GeneratedColumn<String>(
+      'action_type', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _moduleNameMeta =
+      const VerificationMeta('moduleName');
+  @override
+  late final GeneratedColumn<String> moduleName = GeneratedColumn<String>(
+      'module_name', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _entityIdMeta =
+      const VerificationMeta('entityId');
+  @override
+  late final GeneratedColumn<String> entityId = GeneratedColumn<String>(
+      'entity_id', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _entityLabelMeta =
+      const VerificationMeta('entityLabel');
+  @override
+  late final GeneratedColumn<String> entityLabel = GeneratedColumn<String>(
+      'entity_label', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _descriptionMeta =
+      const VerificationMeta('description');
+  @override
+  late final GeneratedColumn<String> description = GeneratedColumn<String>(
+      'description', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _detailsJsonMeta =
+      const VerificationMeta('detailsJson');
+  @override
+  late final GeneratedColumn<String> detailsJson = GeneratedColumn<String>(
+      'details_json', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _timestampMeta =
+      const VerificationMeta('timestamp');
+  @override
+  late final GeneratedColumn<DateTime> timestamp = GeneratedColumn<DateTime>(
+      'timestamp', aliasedName, false,
+      type: DriftSqlType.dateTime,
+      requiredDuringInsert: false,
+      defaultValue: currentDateAndTime);
+  @override
+  List<GeneratedColumn> get $columns => [
+        id,
+        userName,
+        actionType,
+        moduleName,
+        entityId,
+        entityLabel,
+        description,
+        detailsJson,
+        timestamp
+      ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'local_audit_logs';
+  @override
+  VerificationContext validateIntegrity(Insertable<LocalAuditLog> instance,
+      {bool isInserting = false}) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('user_name')) {
+      context.handle(_userNameMeta,
+          userName.isAcceptableOrUnknown(data['user_name']!, _userNameMeta));
+    } else if (isInserting) {
+      context.missing(_userNameMeta);
+    }
+    if (data.containsKey('action_type')) {
+      context.handle(
+          _actionTypeMeta,
+          actionType.isAcceptableOrUnknown(
+              data['action_type']!, _actionTypeMeta));
+    } else if (isInserting) {
+      context.missing(_actionTypeMeta);
+    }
+    if (data.containsKey('module_name')) {
+      context.handle(
+          _moduleNameMeta,
+          moduleName.isAcceptableOrUnknown(
+              data['module_name']!, _moduleNameMeta));
+    } else if (isInserting) {
+      context.missing(_moduleNameMeta);
+    }
+    if (data.containsKey('entity_id')) {
+      context.handle(_entityIdMeta,
+          entityId.isAcceptableOrUnknown(data['entity_id']!, _entityIdMeta));
+    }
+    if (data.containsKey('entity_label')) {
+      context.handle(
+          _entityLabelMeta,
+          entityLabel.isAcceptableOrUnknown(
+              data['entity_label']!, _entityLabelMeta));
+    }
+    if (data.containsKey('description')) {
+      context.handle(
+          _descriptionMeta,
+          description.isAcceptableOrUnknown(
+              data['description']!, _descriptionMeta));
+    } else if (isInserting) {
+      context.missing(_descriptionMeta);
+    }
+    if (data.containsKey('details_json')) {
+      context.handle(
+          _detailsJsonMeta,
+          detailsJson.isAcceptableOrUnknown(
+              data['details_json']!, _detailsJsonMeta));
+    }
+    if (data.containsKey('timestamp')) {
+      context.handle(_timestampMeta,
+          timestamp.isAcceptableOrUnknown(data['timestamp']!, _timestampMeta));
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  LocalAuditLog map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return LocalAuditLog(
+      id: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}id'])!,
+      userName: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}user_name'])!,
+      actionType: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}action_type'])!,
+      moduleName: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}module_name'])!,
+      entityId: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}entity_id']),
+      entityLabel: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}entity_label']),
+      description: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}description'])!,
+      detailsJson: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}details_json']),
+      timestamp: attachedDatabase.typeMapping
+          .read(DriftSqlType.dateTime, data['${effectivePrefix}timestamp'])!,
+    );
+  }
+
+  @override
+  $LocalAuditLogsTable createAlias(String alias) {
+    return $LocalAuditLogsTable(attachedDatabase, alias);
+  }
+}
+
+class LocalAuditLog extends DataClass implements Insertable<LocalAuditLog> {
+  final String id;
+  final String userName;
+  final String actionType;
+  final String moduleName;
+  final String? entityId;
+  final String? entityLabel;
+  final String description;
+  final String? detailsJson;
+  final DateTime timestamp;
+  const LocalAuditLog(
+      {required this.id,
+      required this.userName,
+      required this.actionType,
+      required this.moduleName,
+      this.entityId,
+      this.entityLabel,
+      required this.description,
+      this.detailsJson,
+      required this.timestamp});
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['user_name'] = Variable<String>(userName);
+    map['action_type'] = Variable<String>(actionType);
+    map['module_name'] = Variable<String>(moduleName);
+    if (!nullToAbsent || entityId != null) {
+      map['entity_id'] = Variable<String>(entityId);
+    }
+    if (!nullToAbsent || entityLabel != null) {
+      map['entity_label'] = Variable<String>(entityLabel);
+    }
+    map['description'] = Variable<String>(description);
+    if (!nullToAbsent || detailsJson != null) {
+      map['details_json'] = Variable<String>(detailsJson);
+    }
+    map['timestamp'] = Variable<DateTime>(timestamp);
+    return map;
+  }
+
+  LocalAuditLogsCompanion toCompanion(bool nullToAbsent) {
+    return LocalAuditLogsCompanion(
+      id: Value(id),
+      userName: Value(userName),
+      actionType: Value(actionType),
+      moduleName: Value(moduleName),
+      entityId: entityId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(entityId),
+      entityLabel: entityLabel == null && nullToAbsent
+          ? const Value.absent()
+          : Value(entityLabel),
+      description: Value(description),
+      detailsJson: detailsJson == null && nullToAbsent
+          ? const Value.absent()
+          : Value(detailsJson),
+      timestamp: Value(timestamp),
+    );
+  }
+
+  factory LocalAuditLog.fromJson(Map<String, dynamic> json,
+      {ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return LocalAuditLog(
+      id: serializer.fromJson<String>(json['id']),
+      userName: serializer.fromJson<String>(json['userName']),
+      actionType: serializer.fromJson<String>(json['actionType']),
+      moduleName: serializer.fromJson<String>(json['moduleName']),
+      entityId: serializer.fromJson<String?>(json['entityId']),
+      entityLabel: serializer.fromJson<String?>(json['entityLabel']),
+      description: serializer.fromJson<String>(json['description']),
+      detailsJson: serializer.fromJson<String?>(json['detailsJson']),
+      timestamp: serializer.fromJson<DateTime>(json['timestamp']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'userName': serializer.toJson<String>(userName),
+      'actionType': serializer.toJson<String>(actionType),
+      'moduleName': serializer.toJson<String>(moduleName),
+      'entityId': serializer.toJson<String?>(entityId),
+      'entityLabel': serializer.toJson<String?>(entityLabel),
+      'description': serializer.toJson<String>(description),
+      'detailsJson': serializer.toJson<String?>(detailsJson),
+      'timestamp': serializer.toJson<DateTime>(timestamp),
+    };
+  }
+
+  LocalAuditLog copyWith(
+          {String? id,
+          String? userName,
+          String? actionType,
+          String? moduleName,
+          Value<String?> entityId = const Value.absent(),
+          Value<String?> entityLabel = const Value.absent(),
+          String? description,
+          Value<String?> detailsJson = const Value.absent(),
+          DateTime? timestamp}) =>
+      LocalAuditLog(
+        id: id ?? this.id,
+        userName: userName ?? this.userName,
+        actionType: actionType ?? this.actionType,
+        moduleName: moduleName ?? this.moduleName,
+        entityId: entityId.present ? entityId.value : this.entityId,
+        entityLabel: entityLabel.present ? entityLabel.value : this.entityLabel,
+        description: description ?? this.description,
+        detailsJson: detailsJson.present ? detailsJson.value : this.detailsJson,
+        timestamp: timestamp ?? this.timestamp,
+      );
+  LocalAuditLog copyWithCompanion(LocalAuditLogsCompanion data) {
+    return LocalAuditLog(
+      id: data.id.present ? data.id.value : this.id,
+      userName: data.userName.present ? data.userName.value : this.userName,
+      actionType:
+          data.actionType.present ? data.actionType.value : this.actionType,
+      moduleName:
+          data.moduleName.present ? data.moduleName.value : this.moduleName,
+      entityId: data.entityId.present ? data.entityId.value : this.entityId,
+      entityLabel:
+          data.entityLabel.present ? data.entityLabel.value : this.entityLabel,
+      description:
+          data.description.present ? data.description.value : this.description,
+      detailsJson:
+          data.detailsJson.present ? data.detailsJson.value : this.detailsJson,
+      timestamp: data.timestamp.present ? data.timestamp.value : this.timestamp,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('LocalAuditLog(')
+          ..write('id: $id, ')
+          ..write('userName: $userName, ')
+          ..write('actionType: $actionType, ')
+          ..write('moduleName: $moduleName, ')
+          ..write('entityId: $entityId, ')
+          ..write('entityLabel: $entityLabel, ')
+          ..write('description: $description, ')
+          ..write('detailsJson: $detailsJson, ')
+          ..write('timestamp: $timestamp')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(id, userName, actionType, moduleName,
+      entityId, entityLabel, description, detailsJson, timestamp);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is LocalAuditLog &&
+          other.id == this.id &&
+          other.userName == this.userName &&
+          other.actionType == this.actionType &&
+          other.moduleName == this.moduleName &&
+          other.entityId == this.entityId &&
+          other.entityLabel == this.entityLabel &&
+          other.description == this.description &&
+          other.detailsJson == this.detailsJson &&
+          other.timestamp == this.timestamp);
+}
+
+class LocalAuditLogsCompanion extends UpdateCompanion<LocalAuditLog> {
+  final Value<String> id;
+  final Value<String> userName;
+  final Value<String> actionType;
+  final Value<String> moduleName;
+  final Value<String?> entityId;
+  final Value<String?> entityLabel;
+  final Value<String> description;
+  final Value<String?> detailsJson;
+  final Value<DateTime> timestamp;
+  final Value<int> rowid;
+  const LocalAuditLogsCompanion({
+    this.id = const Value.absent(),
+    this.userName = const Value.absent(),
+    this.actionType = const Value.absent(),
+    this.moduleName = const Value.absent(),
+    this.entityId = const Value.absent(),
+    this.entityLabel = const Value.absent(),
+    this.description = const Value.absent(),
+    this.detailsJson = const Value.absent(),
+    this.timestamp = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  LocalAuditLogsCompanion.insert({
+    required String id,
+    required String userName,
+    required String actionType,
+    required String moduleName,
+    this.entityId = const Value.absent(),
+    this.entityLabel = const Value.absent(),
+    required String description,
+    this.detailsJson = const Value.absent(),
+    this.timestamp = const Value.absent(),
+    this.rowid = const Value.absent(),
+  })  : id = Value(id),
+        userName = Value(userName),
+        actionType = Value(actionType),
+        moduleName = Value(moduleName),
+        description = Value(description);
+  static Insertable<LocalAuditLog> custom({
+    Expression<String>? id,
+    Expression<String>? userName,
+    Expression<String>? actionType,
+    Expression<String>? moduleName,
+    Expression<String>? entityId,
+    Expression<String>? entityLabel,
+    Expression<String>? description,
+    Expression<String>? detailsJson,
+    Expression<DateTime>? timestamp,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (userName != null) 'user_name': userName,
+      if (actionType != null) 'action_type': actionType,
+      if (moduleName != null) 'module_name': moduleName,
+      if (entityId != null) 'entity_id': entityId,
+      if (entityLabel != null) 'entity_label': entityLabel,
+      if (description != null) 'description': description,
+      if (detailsJson != null) 'details_json': detailsJson,
+      if (timestamp != null) 'timestamp': timestamp,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  LocalAuditLogsCompanion copyWith(
+      {Value<String>? id,
+      Value<String>? userName,
+      Value<String>? actionType,
+      Value<String>? moduleName,
+      Value<String?>? entityId,
+      Value<String?>? entityLabel,
+      Value<String>? description,
+      Value<String?>? detailsJson,
+      Value<DateTime>? timestamp,
+      Value<int>? rowid}) {
+    return LocalAuditLogsCompanion(
+      id: id ?? this.id,
+      userName: userName ?? this.userName,
+      actionType: actionType ?? this.actionType,
+      moduleName: moduleName ?? this.moduleName,
+      entityId: entityId ?? this.entityId,
+      entityLabel: entityLabel ?? this.entityLabel,
+      description: description ?? this.description,
+      detailsJson: detailsJson ?? this.detailsJson,
+      timestamp: timestamp ?? this.timestamp,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (userName.present) {
+      map['user_name'] = Variable<String>(userName.value);
+    }
+    if (actionType.present) {
+      map['action_type'] = Variable<String>(actionType.value);
+    }
+    if (moduleName.present) {
+      map['module_name'] = Variable<String>(moduleName.value);
+    }
+    if (entityId.present) {
+      map['entity_id'] = Variable<String>(entityId.value);
+    }
+    if (entityLabel.present) {
+      map['entity_label'] = Variable<String>(entityLabel.value);
+    }
+    if (description.present) {
+      map['description'] = Variable<String>(description.value);
+    }
+    if (detailsJson.present) {
+      map['details_json'] = Variable<String>(detailsJson.value);
+    }
+    if (timestamp.present) {
+      map['timestamp'] = Variable<DateTime>(timestamp.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('LocalAuditLogsCompanion(')
+          ..write('id: $id, ')
+          ..write('userName: $userName, ')
+          ..write('actionType: $actionType, ')
+          ..write('moduleName: $moduleName, ')
+          ..write('entityId: $entityId, ')
+          ..write('entityLabel: $entityLabel, ')
+          ..write('description: $description, ')
+          ..write('detailsJson: $detailsJson, ')
+          ..write('timestamp: $timestamp, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$LocalDatabase extends GeneratedDatabase {
   _$LocalDatabase(QueryExecutor e) : super(e);
   $LocalDatabaseManager get managers => $LocalDatabaseManager(this);
@@ -11093,10 +12153,13 @@ abstract class _$LocalDatabase extends GeneratedDatabase {
   late final $LocalStaffTable localStaff = $LocalStaffTable(this);
   late final $LocalStaffQueriesTable localStaffQueries =
       $LocalStaffQueriesTable(this);
+  late final $LocalSalaryAdvancesTable localSalaryAdvances =
+      $LocalSalaryAdvancesTable(this);
   late final $LocalFarmEventsTable localFarmEvents =
       $LocalFarmEventsTable(this);
   late final $LocalBreedingEventsTable localBreedingEvents =
       $LocalBreedingEventsTable(this);
+  late final $LocalAuditLogsTable localAuditLogs = $LocalAuditLogsTable(this);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -11123,8 +12186,10 @@ abstract class _$LocalDatabase extends GeneratedDatabase {
         localAnimalMedicalRecords,
         localStaff,
         localStaffQueries,
+        localSalaryAdvances,
         localFarmEvents,
-        localBreedingEvents
+        localBreedingEvents,
+        localAuditLogs
       ];
 }
 
@@ -13624,6 +14689,8 @@ typedef $$LocalHatcheryBatchesTableCreateCompanionBuilder
   Value<int?> failedEggs,
   Value<double> initialEggCost,
   Value<String> status,
+  Value<String?> crateNumber,
+  Value<String?> crateSection,
   Value<int> rowid,
 });
 typedef $$LocalHatcheryBatchesTableUpdateCompanionBuilder
@@ -13639,6 +14706,8 @@ typedef $$LocalHatcheryBatchesTableUpdateCompanionBuilder
   Value<int?> failedEggs,
   Value<double> initialEggCost,
   Value<String> status,
+  Value<String?> crateNumber,
+  Value<String?> crateSection,
   Value<int> rowid,
 });
 
@@ -13685,6 +14754,12 @@ class $$LocalHatcheryBatchesTableFilterComposer
 
   ColumnFilters<String> get status => $composableBuilder(
       column: $table.status, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get crateNumber => $composableBuilder(
+      column: $table.crateNumber, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get crateSection => $composableBuilder(
+      column: $table.crateSection, builder: (column) => ColumnFilters(column));
 }
 
 class $$LocalHatcheryBatchesTableOrderingComposer
@@ -13731,6 +14806,13 @@ class $$LocalHatcheryBatchesTableOrderingComposer
 
   ColumnOrderings<String> get status => $composableBuilder(
       column: $table.status, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get crateNumber => $composableBuilder(
+      column: $table.crateNumber, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get crateSection => $composableBuilder(
+      column: $table.crateSection,
+      builder: (column) => ColumnOrderings(column));
 }
 
 class $$LocalHatcheryBatchesTableAnnotationComposer
@@ -13774,6 +14856,12 @@ class $$LocalHatcheryBatchesTableAnnotationComposer
 
   GeneratedColumn<String> get status =>
       $composableBuilder(column: $table.status, builder: (column) => column);
+
+  GeneratedColumn<String> get crateNumber => $composableBuilder(
+      column: $table.crateNumber, builder: (column) => column);
+
+  GeneratedColumn<String> get crateSection => $composableBuilder(
+      column: $table.crateSection, builder: (column) => column);
 }
 
 class $$LocalHatcheryBatchesTableTableManager extends RootTableManager<
@@ -13817,6 +14905,8 @@ class $$LocalHatcheryBatchesTableTableManager extends RootTableManager<
             Value<int?> failedEggs = const Value.absent(),
             Value<double> initialEggCost = const Value.absent(),
             Value<String> status = const Value.absent(),
+            Value<String?> crateNumber = const Value.absent(),
+            Value<String?> crateSection = const Value.absent(),
             Value<int> rowid = const Value.absent(),
           }) =>
               LocalHatcheryBatchesCompanion(
@@ -13831,6 +14921,8 @@ class $$LocalHatcheryBatchesTableTableManager extends RootTableManager<
             failedEggs: failedEggs,
             initialEggCost: initialEggCost,
             status: status,
+            crateNumber: crateNumber,
+            crateSection: crateSection,
             rowid: rowid,
           ),
           createCompanionCallback: ({
@@ -13845,6 +14937,8 @@ class $$LocalHatcheryBatchesTableTableManager extends RootTableManager<
             Value<int?> failedEggs = const Value.absent(),
             Value<double> initialEggCost = const Value.absent(),
             Value<String> status = const Value.absent(),
+            Value<String?> crateNumber = const Value.absent(),
+            Value<String?> crateSection = const Value.absent(),
             Value<int> rowid = const Value.absent(),
           }) =>
               LocalHatcheryBatchesCompanion.insert(
@@ -13859,6 +14953,8 @@ class $$LocalHatcheryBatchesTableTableManager extends RootTableManager<
             failedEggs: failedEggs,
             initialEggCost: initialEggCost,
             status: status,
+            crateNumber: crateNumber,
+            crateSection: crateSection,
             rowid: rowid,
           ),
           withReferenceMapper: (p0) => p0
@@ -15596,6 +16692,7 @@ typedef $$LocalStaffTableCreateCompanionBuilder = LocalStaffCompanion Function({
   Value<String?> address,
   Value<String?> emergencyContact,
   Value<String?> employmentType,
+  Value<DateTime?> startDate,
   Value<int> rowid,
 });
 typedef $$LocalStaffTableUpdateCompanionBuilder = LocalStaffCompanion Function({
@@ -15612,6 +16709,7 @@ typedef $$LocalStaffTableUpdateCompanionBuilder = LocalStaffCompanion Function({
   Value<String?> address,
   Value<String?> emergencyContact,
   Value<String?> employmentType,
+  Value<DateTime?> startDate,
   Value<int> rowid,
 });
 
@@ -15665,6 +16763,9 @@ class $$LocalStaffTableFilterComposer
   ColumnFilters<String> get employmentType => $composableBuilder(
       column: $table.employmentType,
       builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<DateTime> get startDate => $composableBuilder(
+      column: $table.startDate, builder: (column) => ColumnFilters(column));
 }
 
 class $$LocalStaffTableOrderingComposer
@@ -15717,6 +16818,9 @@ class $$LocalStaffTableOrderingComposer
   ColumnOrderings<String> get employmentType => $composableBuilder(
       column: $table.employmentType,
       builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<DateTime> get startDate => $composableBuilder(
+      column: $table.startDate, builder: (column) => ColumnOrderings(column));
 }
 
 class $$LocalStaffTableAnnotationComposer
@@ -15766,6 +16870,9 @@ class $$LocalStaffTableAnnotationComposer
 
   GeneratedColumn<String> get employmentType => $composableBuilder(
       column: $table.employmentType, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get startDate =>
+      $composableBuilder(column: $table.startDate, builder: (column) => column);
 }
 
 class $$LocalStaffTableTableManager extends RootTableManager<
@@ -15807,6 +16914,7 @@ class $$LocalStaffTableTableManager extends RootTableManager<
             Value<String?> address = const Value.absent(),
             Value<String?> emergencyContact = const Value.absent(),
             Value<String?> employmentType = const Value.absent(),
+            Value<DateTime?> startDate = const Value.absent(),
             Value<int> rowid = const Value.absent(),
           }) =>
               LocalStaffCompanion(
@@ -15823,6 +16931,7 @@ class $$LocalStaffTableTableManager extends RootTableManager<
             address: address,
             emergencyContact: emergencyContact,
             employmentType: employmentType,
+            startDate: startDate,
             rowid: rowid,
           ),
           createCompanionCallback: ({
@@ -15839,6 +16948,7 @@ class $$LocalStaffTableTableManager extends RootTableManager<
             Value<String?> address = const Value.absent(),
             Value<String?> emergencyContact = const Value.absent(),
             Value<String?> employmentType = const Value.absent(),
+            Value<DateTime?> startDate = const Value.absent(),
             Value<int> rowid = const Value.absent(),
           }) =>
               LocalStaffCompanion.insert(
@@ -15855,6 +16965,7 @@ class $$LocalStaffTableTableManager extends RootTableManager<
             address: address,
             emergencyContact: emergencyContact,
             employmentType: employmentType,
+            startDate: startDate,
             rowid: rowid,
           ),
           withReferenceMapper: (p0) => p0
@@ -16117,6 +17228,235 @@ typedef $$LocalStaffQueriesTableProcessedTableManager = ProcessedTableManager<
       BaseReferences<_$LocalDatabase, $LocalStaffQueriesTable, LocalStaffQuery>
     ),
     LocalStaffQuery,
+    PrefetchHooks Function()>;
+typedef $$LocalSalaryAdvancesTableCreateCompanionBuilder
+    = LocalSalaryAdvancesCompanion Function({
+  required String id,
+  required String staffId,
+  required double advanceAmount,
+  required double monthlyDeduction,
+  Value<double> totalRepaid,
+  required DateTime collectionDate,
+  Value<bool> isFullyRepaid,
+  Value<String?> notes,
+  Value<int> rowid,
+});
+typedef $$LocalSalaryAdvancesTableUpdateCompanionBuilder
+    = LocalSalaryAdvancesCompanion Function({
+  Value<String> id,
+  Value<String> staffId,
+  Value<double> advanceAmount,
+  Value<double> monthlyDeduction,
+  Value<double> totalRepaid,
+  Value<DateTime> collectionDate,
+  Value<bool> isFullyRepaid,
+  Value<String?> notes,
+  Value<int> rowid,
+});
+
+class $$LocalSalaryAdvancesTableFilterComposer
+    extends Composer<_$LocalDatabase, $LocalSalaryAdvancesTable> {
+  $$LocalSalaryAdvancesTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get id => $composableBuilder(
+      column: $table.id, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get staffId => $composableBuilder(
+      column: $table.staffId, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<double> get advanceAmount => $composableBuilder(
+      column: $table.advanceAmount, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<double> get monthlyDeduction => $composableBuilder(
+      column: $table.monthlyDeduction,
+      builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<double> get totalRepaid => $composableBuilder(
+      column: $table.totalRepaid, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<DateTime> get collectionDate => $composableBuilder(
+      column: $table.collectionDate,
+      builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<bool> get isFullyRepaid => $composableBuilder(
+      column: $table.isFullyRepaid, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get notes => $composableBuilder(
+      column: $table.notes, builder: (column) => ColumnFilters(column));
+}
+
+class $$LocalSalaryAdvancesTableOrderingComposer
+    extends Composer<_$LocalDatabase, $LocalSalaryAdvancesTable> {
+  $$LocalSalaryAdvancesTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get id => $composableBuilder(
+      column: $table.id, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get staffId => $composableBuilder(
+      column: $table.staffId, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<double> get advanceAmount => $composableBuilder(
+      column: $table.advanceAmount,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<double> get monthlyDeduction => $composableBuilder(
+      column: $table.monthlyDeduction,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<double> get totalRepaid => $composableBuilder(
+      column: $table.totalRepaid, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<DateTime> get collectionDate => $composableBuilder(
+      column: $table.collectionDate,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<bool> get isFullyRepaid => $composableBuilder(
+      column: $table.isFullyRepaid,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get notes => $composableBuilder(
+      column: $table.notes, builder: (column) => ColumnOrderings(column));
+}
+
+class $$LocalSalaryAdvancesTableAnnotationComposer
+    extends Composer<_$LocalDatabase, $LocalSalaryAdvancesTable> {
+  $$LocalSalaryAdvancesTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get staffId =>
+      $composableBuilder(column: $table.staffId, builder: (column) => column);
+
+  GeneratedColumn<double> get advanceAmount => $composableBuilder(
+      column: $table.advanceAmount, builder: (column) => column);
+
+  GeneratedColumn<double> get monthlyDeduction => $composableBuilder(
+      column: $table.monthlyDeduction, builder: (column) => column);
+
+  GeneratedColumn<double> get totalRepaid => $composableBuilder(
+      column: $table.totalRepaid, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get collectionDate => $composableBuilder(
+      column: $table.collectionDate, builder: (column) => column);
+
+  GeneratedColumn<bool> get isFullyRepaid => $composableBuilder(
+      column: $table.isFullyRepaid, builder: (column) => column);
+
+  GeneratedColumn<String> get notes =>
+      $composableBuilder(column: $table.notes, builder: (column) => column);
+}
+
+class $$LocalSalaryAdvancesTableTableManager extends RootTableManager<
+    _$LocalDatabase,
+    $LocalSalaryAdvancesTable,
+    LocalSalaryAdvance,
+    $$LocalSalaryAdvancesTableFilterComposer,
+    $$LocalSalaryAdvancesTableOrderingComposer,
+    $$LocalSalaryAdvancesTableAnnotationComposer,
+    $$LocalSalaryAdvancesTableCreateCompanionBuilder,
+    $$LocalSalaryAdvancesTableUpdateCompanionBuilder,
+    (
+      LocalSalaryAdvance,
+      BaseReferences<_$LocalDatabase, $LocalSalaryAdvancesTable,
+          LocalSalaryAdvance>
+    ),
+    LocalSalaryAdvance,
+    PrefetchHooks Function()> {
+  $$LocalSalaryAdvancesTableTableManager(
+      _$LocalDatabase db, $LocalSalaryAdvancesTable table)
+      : super(TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$LocalSalaryAdvancesTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$LocalSalaryAdvancesTableOrderingComposer(
+                  $db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$LocalSalaryAdvancesTableAnnotationComposer(
+                  $db: db, $table: table),
+          updateCompanionCallback: ({
+            Value<String> id = const Value.absent(),
+            Value<String> staffId = const Value.absent(),
+            Value<double> advanceAmount = const Value.absent(),
+            Value<double> monthlyDeduction = const Value.absent(),
+            Value<double> totalRepaid = const Value.absent(),
+            Value<DateTime> collectionDate = const Value.absent(),
+            Value<bool> isFullyRepaid = const Value.absent(),
+            Value<String?> notes = const Value.absent(),
+            Value<int> rowid = const Value.absent(),
+          }) =>
+              LocalSalaryAdvancesCompanion(
+            id: id,
+            staffId: staffId,
+            advanceAmount: advanceAmount,
+            monthlyDeduction: monthlyDeduction,
+            totalRepaid: totalRepaid,
+            collectionDate: collectionDate,
+            isFullyRepaid: isFullyRepaid,
+            notes: notes,
+            rowid: rowid,
+          ),
+          createCompanionCallback: ({
+            required String id,
+            required String staffId,
+            required double advanceAmount,
+            required double monthlyDeduction,
+            Value<double> totalRepaid = const Value.absent(),
+            required DateTime collectionDate,
+            Value<bool> isFullyRepaid = const Value.absent(),
+            Value<String?> notes = const Value.absent(),
+            Value<int> rowid = const Value.absent(),
+          }) =>
+              LocalSalaryAdvancesCompanion.insert(
+            id: id,
+            staffId: staffId,
+            advanceAmount: advanceAmount,
+            monthlyDeduction: monthlyDeduction,
+            totalRepaid: totalRepaid,
+            collectionDate: collectionDate,
+            isFullyRepaid: isFullyRepaid,
+            notes: notes,
+            rowid: rowid,
+          ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ));
+}
+
+typedef $$LocalSalaryAdvancesTableProcessedTableManager = ProcessedTableManager<
+    _$LocalDatabase,
+    $LocalSalaryAdvancesTable,
+    LocalSalaryAdvance,
+    $$LocalSalaryAdvancesTableFilterComposer,
+    $$LocalSalaryAdvancesTableOrderingComposer,
+    $$LocalSalaryAdvancesTableAnnotationComposer,
+    $$LocalSalaryAdvancesTableCreateCompanionBuilder,
+    $$LocalSalaryAdvancesTableUpdateCompanionBuilder,
+    (
+      LocalSalaryAdvance,
+      BaseReferences<_$LocalDatabase, $LocalSalaryAdvancesTable,
+          LocalSalaryAdvance>
+    ),
+    LocalSalaryAdvance,
     PrefetchHooks Function()>;
 typedef $$LocalFarmEventsTableCreateCompanionBuilder = LocalFarmEventsCompanion
     Function({
@@ -16578,6 +17918,240 @@ typedef $$LocalBreedingEventsTableProcessedTableManager = ProcessedTableManager<
     ),
     LocalBreedingEvent,
     PrefetchHooks Function()>;
+typedef $$LocalAuditLogsTableCreateCompanionBuilder = LocalAuditLogsCompanion
+    Function({
+  required String id,
+  required String userName,
+  required String actionType,
+  required String moduleName,
+  Value<String?> entityId,
+  Value<String?> entityLabel,
+  required String description,
+  Value<String?> detailsJson,
+  Value<DateTime> timestamp,
+  Value<int> rowid,
+});
+typedef $$LocalAuditLogsTableUpdateCompanionBuilder = LocalAuditLogsCompanion
+    Function({
+  Value<String> id,
+  Value<String> userName,
+  Value<String> actionType,
+  Value<String> moduleName,
+  Value<String?> entityId,
+  Value<String?> entityLabel,
+  Value<String> description,
+  Value<String?> detailsJson,
+  Value<DateTime> timestamp,
+  Value<int> rowid,
+});
+
+class $$LocalAuditLogsTableFilterComposer
+    extends Composer<_$LocalDatabase, $LocalAuditLogsTable> {
+  $$LocalAuditLogsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get id => $composableBuilder(
+      column: $table.id, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get userName => $composableBuilder(
+      column: $table.userName, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get actionType => $composableBuilder(
+      column: $table.actionType, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get moduleName => $composableBuilder(
+      column: $table.moduleName, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get entityId => $composableBuilder(
+      column: $table.entityId, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get entityLabel => $composableBuilder(
+      column: $table.entityLabel, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get description => $composableBuilder(
+      column: $table.description, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get detailsJson => $composableBuilder(
+      column: $table.detailsJson, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<DateTime> get timestamp => $composableBuilder(
+      column: $table.timestamp, builder: (column) => ColumnFilters(column));
+}
+
+class $$LocalAuditLogsTableOrderingComposer
+    extends Composer<_$LocalDatabase, $LocalAuditLogsTable> {
+  $$LocalAuditLogsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get id => $composableBuilder(
+      column: $table.id, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get userName => $composableBuilder(
+      column: $table.userName, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get actionType => $composableBuilder(
+      column: $table.actionType, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get moduleName => $composableBuilder(
+      column: $table.moduleName, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get entityId => $composableBuilder(
+      column: $table.entityId, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get entityLabel => $composableBuilder(
+      column: $table.entityLabel, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get description => $composableBuilder(
+      column: $table.description, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get detailsJson => $composableBuilder(
+      column: $table.detailsJson, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<DateTime> get timestamp => $composableBuilder(
+      column: $table.timestamp, builder: (column) => ColumnOrderings(column));
+}
+
+class $$LocalAuditLogsTableAnnotationComposer
+    extends Composer<_$LocalDatabase, $LocalAuditLogsTable> {
+  $$LocalAuditLogsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get userName =>
+      $composableBuilder(column: $table.userName, builder: (column) => column);
+
+  GeneratedColumn<String> get actionType => $composableBuilder(
+      column: $table.actionType, builder: (column) => column);
+
+  GeneratedColumn<String> get moduleName => $composableBuilder(
+      column: $table.moduleName, builder: (column) => column);
+
+  GeneratedColumn<String> get entityId =>
+      $composableBuilder(column: $table.entityId, builder: (column) => column);
+
+  GeneratedColumn<String> get entityLabel => $composableBuilder(
+      column: $table.entityLabel, builder: (column) => column);
+
+  GeneratedColumn<String> get description => $composableBuilder(
+      column: $table.description, builder: (column) => column);
+
+  GeneratedColumn<String> get detailsJson => $composableBuilder(
+      column: $table.detailsJson, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get timestamp =>
+      $composableBuilder(column: $table.timestamp, builder: (column) => column);
+}
+
+class $$LocalAuditLogsTableTableManager extends RootTableManager<
+    _$LocalDatabase,
+    $LocalAuditLogsTable,
+    LocalAuditLog,
+    $$LocalAuditLogsTableFilterComposer,
+    $$LocalAuditLogsTableOrderingComposer,
+    $$LocalAuditLogsTableAnnotationComposer,
+    $$LocalAuditLogsTableCreateCompanionBuilder,
+    $$LocalAuditLogsTableUpdateCompanionBuilder,
+    (
+      LocalAuditLog,
+      BaseReferences<_$LocalDatabase, $LocalAuditLogsTable, LocalAuditLog>
+    ),
+    LocalAuditLog,
+    PrefetchHooks Function()> {
+  $$LocalAuditLogsTableTableManager(
+      _$LocalDatabase db, $LocalAuditLogsTable table)
+      : super(TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$LocalAuditLogsTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$LocalAuditLogsTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$LocalAuditLogsTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback: ({
+            Value<String> id = const Value.absent(),
+            Value<String> userName = const Value.absent(),
+            Value<String> actionType = const Value.absent(),
+            Value<String> moduleName = const Value.absent(),
+            Value<String?> entityId = const Value.absent(),
+            Value<String?> entityLabel = const Value.absent(),
+            Value<String> description = const Value.absent(),
+            Value<String?> detailsJson = const Value.absent(),
+            Value<DateTime> timestamp = const Value.absent(),
+            Value<int> rowid = const Value.absent(),
+          }) =>
+              LocalAuditLogsCompanion(
+            id: id,
+            userName: userName,
+            actionType: actionType,
+            moduleName: moduleName,
+            entityId: entityId,
+            entityLabel: entityLabel,
+            description: description,
+            detailsJson: detailsJson,
+            timestamp: timestamp,
+            rowid: rowid,
+          ),
+          createCompanionCallback: ({
+            required String id,
+            required String userName,
+            required String actionType,
+            required String moduleName,
+            Value<String?> entityId = const Value.absent(),
+            Value<String?> entityLabel = const Value.absent(),
+            required String description,
+            Value<String?> detailsJson = const Value.absent(),
+            Value<DateTime> timestamp = const Value.absent(),
+            Value<int> rowid = const Value.absent(),
+          }) =>
+              LocalAuditLogsCompanion.insert(
+            id: id,
+            userName: userName,
+            actionType: actionType,
+            moduleName: moduleName,
+            entityId: entityId,
+            entityLabel: entityLabel,
+            description: description,
+            detailsJson: detailsJson,
+            timestamp: timestamp,
+            rowid: rowid,
+          ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ));
+}
+
+typedef $$LocalAuditLogsTableProcessedTableManager = ProcessedTableManager<
+    _$LocalDatabase,
+    $LocalAuditLogsTable,
+    LocalAuditLog,
+    $$LocalAuditLogsTableFilterComposer,
+    $$LocalAuditLogsTableOrderingComposer,
+    $$LocalAuditLogsTableAnnotationComposer,
+    $$LocalAuditLogsTableCreateCompanionBuilder,
+    $$LocalAuditLogsTableUpdateCompanionBuilder,
+    (
+      LocalAuditLog,
+      BaseReferences<_$LocalDatabase, $LocalAuditLogsTable, LocalAuditLog>
+    ),
+    LocalAuditLog,
+    PrefetchHooks Function()>;
 
 class $LocalDatabaseManager {
   final _$LocalDatabase _db;
@@ -16627,8 +18201,12 @@ class $LocalDatabaseManager {
       $$LocalStaffTableTableManager(_db, _db.localStaff);
   $$LocalStaffQueriesTableTableManager get localStaffQueries =>
       $$LocalStaffQueriesTableTableManager(_db, _db.localStaffQueries);
+  $$LocalSalaryAdvancesTableTableManager get localSalaryAdvances =>
+      $$LocalSalaryAdvancesTableTableManager(_db, _db.localSalaryAdvances);
   $$LocalFarmEventsTableTableManager get localFarmEvents =>
       $$LocalFarmEventsTableTableManager(_db, _db.localFarmEvents);
   $$LocalBreedingEventsTableTableManager get localBreedingEvents =>
       $$LocalBreedingEventsTableTableManager(_db, _db.localBreedingEvents);
+  $$LocalAuditLogsTableTableManager get localAuditLogs =>
+      $$LocalAuditLogsTableTableManager(_db, _db.localAuditLogs);
 }

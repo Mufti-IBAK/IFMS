@@ -40,6 +40,12 @@ class ResolveStaffQuery extends StaffEvent {
   ResolveStaffQuery(this.queryId, this.notes);
 }
 
+class CreateSalaryAdvance extends StaffEvent {
+  final String staffId;
+  final Map<String, dynamic> data;
+  CreateSalaryAdvance(this.staffId, this.data);
+}
+
 // STATES
 abstract class StaffState {}
 
@@ -137,6 +143,16 @@ class StaffBloc extends Bloc<StaffEvent, StaffState> {
     on<ProcessPayroll>((event, emit) async {
       try {
         await repository.processPayroll(event.month);
+        add(LoadStaffData());
+      } catch (e) {
+        emit(StaffError(e.toString()));
+      }
+    });
+
+    on<CreateSalaryAdvance>((event, emit) async {
+      try {
+        event.data['staff_id'] = event.staffId;
+        await repository.createAdvance(event.data);
         add(LoadStaffData());
       } catch (e) {
         emit(StaffError(e.toString()));

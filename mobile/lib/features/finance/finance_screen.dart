@@ -93,6 +93,14 @@ class _FinanceScreenState extends State<FinanceScreen> with SingleTickerProvider
           return Scaffold(
             appBar: AppBar(
               title: const Text('FINANCIAL LEDGER'),
+              actions: [
+                if (_tabController.index == 1)
+                  IconButton(
+                    icon: const Icon(Icons.delete_sweep_outlined, color: Colors.red),
+                    tooltip: 'Clear Ledger',
+                    onPressed: () => _confirmClearLedger(context),
+                  ),
+              ],
               bottom: TabBar(
                 controller: _tabController,
                 labelColor: AppColors.primary,
@@ -500,7 +508,7 @@ class _FinanceScreenState extends State<FinanceScreen> with SingleTickerProvider
             subtitle: Padding(
               padding: const EdgeInsets.only(top: 4),
               child: Text(
-                '${tx.category.replaceAll('_', ' ').toUpperCase()} • ${DateFormat('yyyy-MM-dd').format(tx.transactionDate)}',
+                '${tx.category.replaceAll('_', ' ').toUpperCase()} • ${DateFormat('yyyy-MM-dd HH:mm').format(tx.transactionDate)}',
                 style: TextStyle(fontSize: 11, color: Colors.grey.shade600),
               ),
             ),
@@ -570,7 +578,7 @@ class _FinanceScreenState extends State<FinanceScreen> with SingleTickerProvider
                 const SizedBox(height: 12),
                 Text('Category: ${tx.category.replaceAll('_', ' ').toUpperCase()}', style: const TextStyle(fontSize: 13)),
                 const SizedBox(height: 4),
-                Text('Date: ${DateFormat('yyyy-MM-dd').format(tx.transactionDate)}', style: const TextStyle(fontSize: 13)),
+                Text('Date: ${DateFormat('yyyy-MM-dd HH:mm').format(tx.transactionDate)}', style: const TextStyle(fontSize: 13)),
                 const SizedBox(height: 4),
                 Text('Linked Asset: $displayLink', style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: AppColors.primary)),
                 const SizedBox(height: 20),
@@ -578,6 +586,21 @@ class _FinanceScreenState extends State<FinanceScreen> with SingleTickerProvider
                 const SizedBox(height: 10),
                 Row(
                   children: [
+                    Expanded(
+                      child: OutlinedButton.icon(
+                        onPressed: () {
+                          Navigator.pop(sheetCtx);
+                          _showEditTransactionDialog(context, tx);
+                        },
+                        icon: const Icon(Icons.edit_outlined, color: AppColors.primary),
+                        label: const Text('Edit', style: TextStyle(color: AppColors.primary)),
+                        style: OutlinedButton.styleFrom(
+                          side: const BorderSide(color: AppColors.primary),
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
                     if (!isReconciled) ...[
                       Expanded(
                         child: OutlinedButton.icon(
@@ -596,16 +619,16 @@ class _FinanceScreenState extends State<FinanceScreen> with SingleTickerProvider
                           ),
                         ),
                       ),
-                      const SizedBox(width: 12),
+                      const SizedBox(width: 8),
                     ],
                     Expanded(
                       child: ElevatedButton.icon(
                         onPressed: () {
                           Navigator.pop(sheetCtx);
-                          _confirmReverseTransaction(context, tx);
+                          _confirmDeleteTransaction(context, tx);
                         },
-                        icon: const Icon(Icons.settings_backup_restore, color: Colors.white),
-                        label: const Text('Reverse Tx', style: TextStyle(color: Colors.white)),
+                        icon: const Icon(Icons.delete_outline, color: Colors.white),
+                        label: const Text('Delete', style: TextStyle(color: Colors.white)),
                         style: ElevatedButton.styleFrom(
                           backgroundColor: Colors.red,
                           padding: const EdgeInsets.symmetric(vertical: 12),
@@ -622,12 +645,12 @@ class _FinanceScreenState extends State<FinanceScreen> with SingleTickerProvider
     );
   }
 
-  void _confirmReverseTransaction(BuildContext context, LocalTransaction tx) {
+  void _confirmDeleteTransaction(BuildContext context, LocalTransaction tx) {
     showDialog(
       context: context,
       builder: (dialogCtx) => AlertDialog(
-        title: const Text('Confirm Transaction Reversal'),
-        content: Text('This will post an opposite entry to balance out the ₦${tx.amount.toStringAsFixed(2)} transaction. Proceed?'),
+        title: const Text('Delete Transaction'),
+        content: Text('Are you sure you want to delete "${tx.description ?? tx.category}" (₦${tx.amount.toStringAsFixed(2)})? This cannot be undone.'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(dialogCtx),
@@ -636,16 +659,201 @@ class _FinanceScreenState extends State<FinanceScreen> with SingleTickerProvider
           ElevatedButton(
             onPressed: () {
               Navigator.pop(dialogCtx);
-              BlocProvider.of<FinanceBloc>(context).add(ReverseTransactionEvent(tx.id));
+              BlocProvider.of<FinanceBloc>(context).add(DeleteTransactionEvent(tx.id));
               ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Reversal transaction recorded.')),
+                const SnackBar(content: Text('Transaction deleted.')),
               );
             },
             style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-            child: const Text('REVERSE ENTRY', style: TextStyle(color: Colors.white)),
+            child: const Text('DELETE', style: TextStyle(color: Colors.white)),
           ),
         ],
       ),
+    );
+  }
+
+  void _confirmClearLedger(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (dialogCtx) => AlertDialog(
+        title: const Text('Clear All Ledger Entries'),
+        content: const Text('This will permanently delete ALL recorded financial transactions from local storage and cloud database. Proceed with caution!'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogCtx),
+            child: const Text('CANCEL'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(dialogCtx);
+              BlocProvider.of<FinanceBloc>(context).add(ClearAllTransactionsEvent());
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('All financial transactions cleared.')),
+              );
+            },
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+            child: const Text('CLEAR ALL', style: TextStyle(color: Colors.white)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showEditTransactionDialog(BuildContext context, LocalTransaction tx) {
+    String type = tx.transactionType;
+    String category = tx.category;
+    final amountCtrl = TextEditingController(text: tx.amount.toString());
+    final descCtrl = TextEditingController(text: tx.description ?? '');
+    DateTime selectedDate = tx.transactionDate;
+
+    bool linkToEntity = tx.relatedEntityType != null && tx.relatedEntityId != null;
+    String entityType = tx.relatedEntityType ?? 'animal';
+    String? selectedEntityId = tx.relatedEntityId;
+
+    showDialog(
+      context: context,
+      builder: (dialogCtx) {
+        return StatefulBuilder(
+          builder: (ctx, setDialogState) {
+            final categoryOptions = type == 'income'
+                ? ['milk_sales', 'animal_sales', 'poultry_sales', 'hatchery_sales', 'misc']
+                : ['feed', 'medication', 'labor', 'equipment', 'utilities', 'misc'];
+
+            if (!categoryOptions.contains(category)) {
+              category = categoryOptions.first;
+            }
+
+            final entityListOptions = entityType == 'animal' ? _animalsList : _flocksList;
+            if (selectedEntityId == null && entityListOptions.isNotEmpty) {
+              selectedEntityId = entityListOptions.first.id;
+            }
+
+            return AlertDialog(
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+              title: const Text('Edit Transaction'),
+              content: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Row(
+                      children: [
+                        Expanded(
+                          child: ChoiceChip(
+                            label: const Center(child: Text('EXPENSE')),
+                            selected: type == 'expense',
+                            selectedColor: Colors.red.shade100,
+                            labelStyle: TextStyle(color: type == 'expense' ? Colors.red.shade900 : Colors.black),
+                            onSelected: (val) {
+                              if (val) {
+                                setDialogState(() {
+                                  type = 'expense';
+                                  category = 'feed';
+                                });
+                              }
+                            },
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: ChoiceChip(
+                            label: const Center(child: Text('INCOME')),
+                            selected: type == 'income',
+                            selectedColor: Colors.green.shade100,
+                            labelStyle: TextStyle(color: type == 'income' ? Colors.green.shade900 : Colors.black),
+                            onSelected: (val) {
+                              if (val) {
+                                setDialogState(() {
+                                  type = 'income';
+                                  category = 'milk_sales';
+                                });
+                              }
+                            },
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    TextField(
+                      controller: amountCtrl,
+                      keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                      decoration: const InputDecoration(
+                        labelText: 'Amount (₦) *',
+                        border: OutlineInputBorder(),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    DropdownButtonFormField<String>(
+                      value: category,
+                      decoration: const InputDecoration(labelText: 'Category *', border: OutlineInputBorder()),
+                      items: categoryOptions.map((c) {
+                        return DropdownMenuItem(
+                          value: c,
+                          child: Text(c.replaceAll('_', ' ').toUpperCase()),
+                        );
+                      }).toList(),
+                      onChanged: (v) {
+                        if (v != null) setDialogState(() => category = v);
+                      },
+                    ),
+                    const SizedBox(height: 12),
+                    InputDatePickerFormField(
+                      firstDate: DateTime(2020),
+                      lastDate: DateTime(2030),
+                      initialDate: selectedDate,
+                      onDateSubmitted: (d) => setDialogState(() => selectedDate = d),
+                    ),
+                    const SizedBox(height: 12),
+                    TextField(
+                      controller: descCtrl,
+                      decoration: const InputDecoration(
+                        labelText: 'Description',
+                        border: OutlineInputBorder(),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(dialogCtx),
+                  child: const Text('CANCEL'),
+                ),
+                ElevatedButton(
+                  onPressed: () {
+                    final amt = double.tryParse(amountCtrl.text) ?? 0.0;
+                    if (amt <= 0) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('Please enter a valid amount')),
+                      );
+                      return;
+                    }
+                    Navigator.pop(dialogCtx);
+
+                    final payload = {
+                      'transaction_type': type,
+                      'category': category,
+                      'amount': amt,
+                      'description': descCtrl.text.trim(),
+                      'transaction_date': DateFormat('yyyy-MM-dd HH:mm:ss').format(selectedDate),
+                      if (linkToEntity && selectedEntityId != null) ...{
+                        'related_entity_type': entityType,
+                        'related_entity_id': selectedEntityId,
+                      }
+                    };
+
+                    BlocProvider.of<FinanceBloc>(context).add(UpdateTransactionEvent(tx.id, payload));
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Transaction updated successfully.')),
+                    );
+                  },
+                  style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary),
+                  child: const Text('UPDATE', style: TextStyle(color: Colors.white)),
+                ),
+              ],
+            );
+          },
+        );
+      },
     );
   }
 

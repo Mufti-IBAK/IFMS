@@ -3,6 +3,7 @@ import '../database/local_db.dart';
 import '../network/api_client.dart';
 import '../network/notification_service.dart';
 import '../sync/sync_manager.dart';
+import '../audit/audit_repository.dart';
 import '../../features/animals/animals_repository.dart';
 import '../../features/tasks/tasks_repository.dart';
 import '../../features/dairy/dairy_repository.dart';
@@ -34,6 +35,9 @@ Future<void> setupLocator() async {
 
   sl.registerSingleton<NotificationService>(NotificationService());
 
+  // Audit
+  sl.registerLazySingleton<AuditRepository>(() => AuditRepository(sl(), sl()));
+
   // Repositories
   sl.registerLazySingleton<AnimalsRepository>(() => AnimalsRepository(sl(), sl()));
   sl.registerLazySingleton<TasksRepository>(() => TasksRepository(sl(), sl()));
@@ -47,3 +51,4 @@ Future<void> setupLocator() async {
   sl.registerLazySingleton<StaffRepository>(() => StaffRepository(sl(), sl()));
   sl.registerLazySingleton<BreedingRepository>(() => BreedingRepository(sl(), sl()));
 }
+

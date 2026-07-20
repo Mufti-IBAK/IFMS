@@ -178,6 +178,8 @@ class LocalHatcheryBatches extends Table {
   IntColumn get failedEggs => integer().nullable()();
   RealColumn get initialEggCost => real().withDefault(const Constant(0.0))();
   TextColumn get status => text().withDefault(const Constant('incubating'))(); // "incubating", "completed"
+  TextColumn get crateNumber => text().nullable()(); // e.g. "A2"
+  TextColumn get crateSection => text().nullable()(); // JSON: {"row_start":1,"row_end":4,"col_start":1,"col_end":7}
 
   @override
   Set<Column> get primaryKey => {id};
@@ -302,6 +304,21 @@ class LocalStaff extends Table {
   TextColumn get address => text().nullable()();
   TextColumn get emergencyContact => text().nullable()();
   TextColumn get employmentType => text().nullable()();
+  DateTimeColumn get startDate => dateTime().nullable()(); // hire date for tenure calculation
+
+  @override
+  Set<Column> get primaryKey => {id};
+}
+
+class LocalSalaryAdvances extends Table {
+  TextColumn get id => text()();
+  TextColumn get staffId => text()();
+  RealColumn get advanceAmount => real()();           // total advance collected
+  RealColumn get monthlyDeduction => real()();        // amount deducted per month
+  RealColumn get totalRepaid => real().withDefault(const Constant(0.0))();
+  DateTimeColumn get collectionDate => dateTime()();  // when advance was collected
+  BoolColumn get isFullyRepaid => boolean().withDefault(const Constant(false))();
+  TextColumn get notes => text().nullable()();
 
   @override
   Set<Column> get primaryKey => {id};
@@ -351,6 +368,21 @@ class LocalBreedingEvents extends Table {
   Set<Column> get primaryKey => {id};
 }
 
+class LocalAuditLogs extends Table {
+  TextColumn get id => text()();
+  TextColumn get userName => text()();
+  TextColumn get actionType => text()();          // "CREATE", "UPDATE", "DELETE"
+  TextColumn get moduleName => text()();          // "animals", "poultry", "hatchery", "finance", "staff", "inventory", "pharmacy"
+  TextColumn get entityId => text().nullable()();
+  TextColumn get entityLabel => text().nullable()(); // human-readable label
+  TextColumn get description => text()();
+  TextColumn get detailsJson => text().nullable()(); // JSON diff of old→new values
+  DateTimeColumn get timestamp => dateTime().withDefault(currentDateAndTime)();
+
+  @override
+  Set<Column> get primaryKey => {id};
+}
+
 @DriftDatabase(tables: [
   LocalAnimals,
   LocalMilkRecords,
@@ -373,14 +405,16 @@ class LocalBreedingEvents extends Table {
   LocalAnimalMedicalRecords,
   LocalStaff,
   LocalStaffQueries,
+  LocalSalaryAdvances,
   LocalFarmEvents,
-  LocalBreedingEvents
+  LocalBreedingEvents,
+  LocalAuditLogs,
 ])
 class LocalDatabase extends _$LocalDatabase {
   LocalDatabase([QueryExecutor? executor]) : super(executor ?? _openConnection());
 
   @override
-  int get schemaVersion => 18;
+  int get schemaVersion => 21;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -460,6 +494,20 @@ class LocalDatabase extends _$LocalDatabase {
         await m.createTable(localBreedingEvents);
         await m.addColumn(localAnimals, localAnimals.sireId);
         await m.addColumn(localAnimals, localAnimals.damId);
+      }
+      // --- V19: Hatchery crate grid ---
+      if (from < 19) {
+        await m.addColumn(localHatcheryBatches, localHatcheryBatches.crateNumber);
+        await m.addColumn(localHatcheryBatches, localHatcheryBatches.crateSection);
+      }
+      // --- V20: Staff start date + salary advances ---
+      if (from < 20) {
+        await m.addColumn(localStaff, localStaff.startDate);
+        await m.createTable(localSalaryAdvances);
+      }
+      // --- V21: Audit logs ---
+      if (from < 21) {
+        await m.createTable(localAuditLogs);
       }
     },
     beforeOpen: (details) async {

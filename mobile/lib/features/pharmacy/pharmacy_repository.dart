@@ -198,11 +198,31 @@ class PharmacyRepository {
       notes: Value('Administered to animal ID: $animalId for ${data['diagnosed_condition']}'),
     ));
 
-    // 7. Add informational notification for the medical record
+    // 7. Auto-post expense to financial ledger
+    final animal = await (db.select(db.localAnimals)..where((t) => t.id.equals(animalId))).getSingleOrNull();
+    final animalTag = animal?.tagId ?? animalId;
+    
+    if (cost > 0) {
+      final txUuid = const Uuid().v4();
+      await db.into(db.localTransactions).insertOnConflictUpdate(LocalTransactionsCompanion.insert(
+        id: txUuid,
+        transactionType: 'expense',
+        category: 'medical_treatment',
+        amount: cost,
+        currency: const Value('NGN'),
+        relatedEntityType: const Value('animal'),
+        relatedEntityId: Value(animalId),
+        description: Value('Treatment: ${med.name} for $animalTag (${data['diagnosed_condition']})'),
+        transactionDate: treatmentDate,
+        isReconciled: const Value(false),
+      ));
+    }
+
+    // 8. Add informational notification for the medical record
     await db.into(db.localTasks).insertOnConflictUpdate(LocalTasksCompanion.insert(
       id: 'task_med_$uuid',
       title: 'Medical Treatment Logged',
-      description: Value('Administered $dose units of ${med.name} to animal ID: $animalId for ${data['diagnosed_condition']}'),
+      description: Value('Administered $dose units of ${med.name} to animal ID: $animalTag for ${data['diagnosed_condition']}'),
       priority: 'high',
       status: 'completed',
       dueDate: Value(treatmentDate),

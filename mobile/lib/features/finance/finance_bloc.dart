@@ -25,6 +25,19 @@ class ReverseTransactionEvent extends FinanceEvent {
   ReverseTransactionEvent(this.id);
 }
 
+class UpdateTransactionEvent extends FinanceEvent {
+  final String id;
+  final Map<String, dynamic> data;
+  UpdateTransactionEvent(this.id, this.data);
+}
+
+class DeleteTransactionEvent extends FinanceEvent {
+  final String id;
+  DeleteTransactionEvent(this.id);
+}
+
+class ClearAllTransactionsEvent extends FinanceEvent {}
+
 // ──────────────────────────────────────────────
 // STATES
 // ──────────────────────────────────────────────
@@ -64,6 +77,9 @@ class FinanceBloc extends Bloc<FinanceEvent, FinanceState> {
     on<AddTransaction>(_onAddTransaction);
     on<ReconcileTransactionEvent>(_onReconcile);
     on<ReverseTransactionEvent>(_onReverse);
+    on<UpdateTransactionEvent>(_onUpdateTransaction);
+    on<DeleteTransactionEvent>(_onDeleteTransaction);
+    on<ClearAllTransactionsEvent>(_onClearAllTransactions);
   }
 
   Future<void> _onLoad(LoadFinanceData event, Emitter<FinanceState> emit) async {
@@ -133,6 +149,36 @@ class FinanceBloc extends Bloc<FinanceEvent, FinanceState> {
   Future<void> _onReverse(ReverseTransactionEvent event, Emitter<FinanceState> emit) async {
     try {
       await repository.reverseTransaction(event.id);
+      add(LoadFinanceData());
+    } catch (e) {
+      emit(FinanceError(e.toString().replaceAll('Exception:', '').trim()));
+      add(LoadFinanceData());
+    }
+  }
+
+  Future<void> _onUpdateTransaction(UpdateTransactionEvent event, Emitter<FinanceState> emit) async {
+    try {
+      await repository.updateTransaction(event.id, event.data);
+      add(LoadFinanceData());
+    } catch (e) {
+      emit(FinanceError(e.toString().replaceAll('Exception:', '').trim()));
+      add(LoadFinanceData());
+    }
+  }
+
+  Future<void> _onDeleteTransaction(DeleteTransactionEvent event, Emitter<FinanceState> emit) async {
+    try {
+      await repository.deleteTransaction(event.id);
+      add(LoadFinanceData());
+    } catch (e) {
+      emit(FinanceError(e.toString().replaceAll('Exception:', '').trim()));
+      add(LoadFinanceData());
+    }
+  }
+
+  Future<void> _onClearAllTransactions(ClearAllTransactionsEvent event, Emitter<FinanceState> emit) async {
+    try {
+      await repository.clearAllTransactions();
       add(LoadFinanceData());
     } catch (e) {
       emit(FinanceError(e.toString().replaceAll('Exception:', '').trim()));

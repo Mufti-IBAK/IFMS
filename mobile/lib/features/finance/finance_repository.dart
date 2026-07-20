@@ -4,6 +4,8 @@ import 'package:uuid/uuid.dart';
 import 'package:dio/dio.dart';
 import '../../core/database/local_db.dart';
 import '../../core/network/api_client.dart';
+import '../../core/audit/audit_repository.dart';
+import '../../core/di/service_locator.dart';
 
 class FinanceRepository {
   final ApiClient apiClient;
@@ -17,11 +19,13 @@ class FinanceRepository {
       final list = response.data as List;
       await _syncTransactions(list);
     } catch (_) {}
-    return await db.select(db.localTransactions).get();
+    return await (db.select(db.localTransactions)
+          ..orderBy([(t) => OrderingTerm.desc(t.transactionDate)]))
+        .get();
   }
 
   Future<void> addTransaction(Map<String, dynamic> data) async {
-    final uuid = const Uuid().v4();
+    final uuid = data['id'] ?? const Uuid().v4();
     data['id'] = uuid;
     data['currency'] = data['currency'] ?? 'NGN';
     data['is_reconciled'] = data['is_reconciled'] ?? false;
@@ -32,51 +36,118 @@ class FinanceRepository {
     final description = data['description'] ?? '';
     final dateVal = DateTime.parse(data['transaction_date'].toString());
 
+    // Local Insert first (offline-first)
+    await db.into(db.localTransactions).insertOnConflictUpdate(LocalTransactionsCompanion.insert(
+      id: uuid,
+      transactionType: type,
+      category: category,
+      amount: amount,
+      currency: const Value('NGN'),
+      relatedEntityType: Value(data['related_entity_type']),
+      relatedEntityId: Value(data['related_entity_id']),
+      description: Value(description),
+      transactionDate: dateVal,
+      isReconciled: Value(data['is_reconciled'] ?? false),
+    ));
+
+    // Audit log
+    sl<AuditRepository>().logAction(
+      userName: 'Farm Manager',
+      actionType: 'CREATE',
+      moduleName: 'finance',
+      entityId: uuid,
+      entityName: '$type: ₦$amount ($category)',
+      description: 'Recorded transaction "$description"',
+      details: data,
+    );
+
     try {
-      // Remote sync first
       await apiClient.dio.post('/finance/transaction', data: data);
-      
-      // Local Insert on success
-      await db.into(db.localTransactions).insert(LocalTransactionsCompanion.insert(
-        id: uuid,
-        transactionType: type,
-        category: category,
-        amount: amount,
-        currency: const Value('NGN'),
+    } catch (e) {
+      await db.into(db.syncQueue).insert(SyncQueueCompanion.insert(
+        endpoint: '/finance/transaction',
+        method: 'POST',
+        body: jsonEncode(data),
+        queuedAt: DateTime.now(),
+      ));
+    }
+  }
+
+  Future<void> updateTransaction(String id, Map<String, dynamic> data) async {
+    data['id'] = id;
+    final type = data['transaction_type'].toString();
+    final category = data['category'].toString();
+    final amount = double.parse(data['amount'].toString());
+    final description = data['description'] ?? '';
+    final dateVal = DateTime.parse(data['transaction_date'].toString());
+
+    await (db.update(db.localTransactions)..where((t) => t.id.equals(id))).write(
+      LocalTransactionsCompanion(
+        transactionType: Value(type),
+        category: Value(category),
+        amount: Value(amount),
         relatedEntityType: Value(data['related_entity_type']),
         relatedEntityId: Value(data['related_entity_id']),
         description: Value(description),
-        transactionDate: dateVal,
-        isReconciled: const Value(false),
-      ));
-    } catch (e) {
-      if (e is DioException && ApiClient.isNetworkError(e)) {
-        await db.into(db.localTransactions).insert(LocalTransactionsCompanion.insert(
-          id: uuid,
-          transactionType: type,
-          category: category,
-          amount: amount,
-          currency: const Value('NGN'),
-          relatedEntityType: Value(data['related_entity_type']),
-          relatedEntityId: Value(data['related_entity_id']),
-          description: Value(description),
-          transactionDate: dateVal,
-          isReconciled: const Value(false),
-        ));
+        transactionDate: Value(dateVal),
+      ),
+    );
 
-        await db.into(db.syncQueue).insert(SyncQueueCompanion.insert(
-          endpoint: '/finance/transaction',
-          method: 'POST',
-          body: jsonEncode(data),
-          queuedAt: DateTime.now(),
-        ));
-        throw Exception('Saved locally. Will sync when connection is restored.');
-      }
-      if (e is DioException) {
-        throw Exception(e.response?.data?['message'] ?? e.response?.data?['details'] ?? 'Failed to add transaction: ${e.message}');
-      }
-      throw Exception('Failed to add transaction: $e');
+    sl<AuditRepository>().logAction(
+      userName: 'Farm Manager',
+      actionType: 'UPDATE',
+      moduleName: 'finance',
+      entityId: id,
+      entityName: '$type: ₦$amount ($category)',
+      description: 'Updated transaction "$description"',
+      details: data,
+    );
+
+    try {
+      await apiClient.dio.put('/finance/transactions/$id', data: data);
+    } catch (e) {
+      await db.into(db.syncQueue).insert(SyncQueueCompanion.insert(
+        endpoint: '/finance/transactions/$id',
+        method: 'PUT',
+        body: jsonEncode(data),
+        queuedAt: DateTime.now(),
+      ));
     }
+  }
+
+  Future<void> deleteTransaction(String id) async {
+    final existing = await (db.select(db.localTransactions)..where((t) => t.id.equals(id))).getSingleOrNull();
+    
+    await (db.delete(db.localTransactions)..where((t) => t.id.equals(id))).go();
+
+    if (existing != null) {
+      sl<AuditRepository>().logAction(
+        userName: 'Farm Manager',
+        actionType: 'DELETE',
+        moduleName: 'finance',
+        entityId: id,
+        entityName: '${existing.transactionType}: ₦${existing.amount}',
+        description: 'Deleted transaction "${existing.description ?? existing.category}"',
+      );
+    }
+
+    try {
+      await apiClient.dio.delete('/finance/transactions/$id');
+    } catch (e) {
+      await db.into(db.syncQueue).insert(SyncQueueCompanion.insert(
+        endpoint: '/finance/transactions/$id',
+        method: 'DELETE',
+        body: '{}',
+        queuedAt: DateTime.now(),
+      ));
+    }
+  }
+
+  Future<void> clearAllTransactions() async {
+    await db.delete(db.localTransactions).go();
+    try {
+      await apiClient.dio.delete('/finance/transactions');
+    } catch (_) {}
   }
 
   Future<void> _syncTransactions(List<dynamic> remoteData) async {

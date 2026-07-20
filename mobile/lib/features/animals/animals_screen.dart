@@ -12,6 +12,7 @@ import '../../core/sync/sync_manager.dart';
 import '../../core/database/local_db.dart';
 import 'package:ifms_mobile/features/pharmacy/pharmacy_repository.dart';
 import 'package:ifms_mobile/core/widgets/animal_silhouette.dart';
+import '../../core/widgets/app_dropdown.dart';
 import 'animal_profile_screen.dart';
 import 'animals_bloc.dart';
 
@@ -1206,8 +1207,9 @@ class _AnimalsScreenState extends State<AnimalsScreen> {
                                     ),
                                     buildInputField(
                                       label: 'Operational Purpose',
-                                      child: DropdownButtonFormField<String>(
-                                        initialValue: selectedPurpose,
+                                      child: AppDropdownFormField<String>(
+                                        value: selectedPurpose,
+                                        labelText: 'Purpose',
                                         items: const [
                                           DropdownMenuItem(value: 'breeding', child: Text('Breeding')),
                                           DropdownMenuItem(value: 'milk', child: Text('Dairy (Milk)')),
@@ -1215,7 +1217,9 @@ class _AnimalsScreenState extends State<AnimalsScreen> {
                                           DropdownMenuItem(value: 'eggs', child: Text('Layers (Eggs)')),
                                           DropdownMenuItem(value: 'others', child: Text('Others')),
                                         ],
-                                        onChanged: (val) => setState(() => selectedPurpose = val!),
+                                        onChanged: (val) {
+                                          if (val != null) setState(() => selectedPurpose = val);
+                                        },
                                       ),
                                     ),
                                   ),

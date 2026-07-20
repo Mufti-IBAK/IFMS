@@ -6,6 +6,7 @@ import '../../core/di/service_locator.dart';
 import '../../core/sync/sync_manager.dart';
 import '../../core/database/local_db.dart';
 import '../../core/utils/feed_report_service.dart';
+import '../../core/widgets/app_dropdown.dart';
 import '../animals/animals_repository.dart';
 import 'inventory_bloc.dart';
 import 'inventory_repository.dart';
@@ -963,11 +964,13 @@ class _InventoryScreenState extends State<InventoryScreen> with SingleTickerProv
                   children: [
                     TextField(textCapitalization: TextCapitalization.sentences, controller: nameCtrl, decoration: const InputDecoration(labelText: 'Feed Ingredient Name *', hintText: 'e.g. Yellow Maize, GNC')),
                     const SizedBox(height: 12),
-                    DropdownButtonFormField<String>(
-                      initialValue: purchaseUnit,
-                      decoration: const InputDecoration(labelText: 'Purchase Unit (Unit Type) *'),
+                    AppDropdownFormField<String>(
+                      value: purchaseUnit,
+                      labelText: 'Purchase Unit (Unit Type) *',
                       items: ['bags', 'litres', 'kg', 'tonnes'].map((u) => DropdownMenuItem(value: u, child: Text(u))).toList(),
-                      onChanged: (v) => setDialogState(() => purchaseUnit = v!),
+                      onChanged: (v) {
+                        if (v != null) setDialogState(() => purchaseUnit = v);
+                      },
                     ),
                     const SizedBox(height: 12),
                     TextField(textCapitalization: TextCapitalization.sentences, controller: packSizeCtrl,
@@ -1110,11 +1113,13 @@ class _InventoryScreenState extends State<InventoryScreen> with SingleTickerProv
                   children: [
                     TextField(textCapitalization: TextCapitalization.sentences, controller: nameCtrl, decoration: const InputDecoration(labelText: 'Feed Ingredient Name *')),
                     const SizedBox(height: 12),
-                    DropdownButtonFormField<String>(
-                      initialValue: purchaseUnit,
-                      decoration: const InputDecoration(labelText: 'Purchase Unit (Unit Type) *'),
+                    AppDropdownFormField<String>(
+                      value: purchaseUnit,
+                      labelText: 'Purchase Unit (Unit Type) *',
                       items: ['bags', 'litres', 'kg', 'tonnes'].map((u) => DropdownMenuItem(value: u, child: Text(u))).toList(),
-                      onChanged: (v) => setDialogState(() => purchaseUnit = v!),
+                      onChanged: (v) {
+                        if (v != null) setDialogState(() => purchaseUnit = v);
+                      },
                     ),
                     const SizedBox(height: 12),
                     TextField(textCapitalization: TextCapitalization.sentences, controller: packSizeCtrl,

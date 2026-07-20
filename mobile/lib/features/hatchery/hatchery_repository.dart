@@ -31,6 +31,8 @@ class HatcheryRepository {
       'failed_eggs': b.failedEggs,
       'initial_egg_cost': b.initialEggCost,
       'status': b.status,
+      'crate_number': b.crateNumber,
+      'crate_section': b.crateSection,
     }).toList();
   }
 
@@ -51,6 +53,8 @@ class HatcheryRepository {
             failedEggs: Value(b['failed_eggs']),
             initialEggCost: Value(double.parse((b['initial_egg_cost'] ?? 0.0).toString())),
             status: Value(b['status'] ?? 'incubating'),
+            crateNumber: Value(b['crate_number']),
+            crateSection: Value(b['crate_section']),
           )).toList(),
           mode: InsertMode.insertOrReplace,
         );
@@ -85,6 +89,8 @@ class HatcheryRepository {
         expectedHatchDate: expectedDt,
         initialEggCost: Value(double.parse((batchData['initial_egg_cost'] ?? 0.0).toString())),
         status: const Value('incubating'),
+        crateNumber: Value(batchData['crate_number']),
+        crateSection: Value(batchData['crate_section']),
       ));
     } catch (e) {
       if (e is DioException && ApiClient.isNetworkError(e)) {
@@ -97,6 +103,8 @@ class HatcheryRepository {
           expectedHatchDate: expectedDt,
           initialEggCost: Value(double.parse((batchData['initial_egg_cost'] ?? 0.0).toString())),
           status: const Value('incubating'),
+          crateNumber: Value(batchData['crate_number']),
+          crateSection: Value(batchData['crate_section']),
         ));
 
         await db.into(db.syncQueue).insert(SyncQueueCompanion.insert(
