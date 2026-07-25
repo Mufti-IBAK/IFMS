@@ -1498,291 +1498,342 @@ class _AnimalProfileScreenState extends State<AnimalProfileScreen> with SingleTi
   }
 
 
-  void _showScheduleActionSheet(String actionType) {
+  void _showScheduleActionSheet(String actionType) async {
     final drugCtrl = TextEditingController();
     DateTime? selectedDate;
-    LocalMedication? selectedDrug;
+    String? selectedDrugId;
 
     final pharmacyRepo = sl<PharmacyRepository>();
+    List<LocalMedication> allMedications = [];
+    try {
+      allMedications = await pharmacyRepo.getMedications();
+    } catch (_) {}
+
+    final isVaccine = actionType == 'vaccination';
+    final keyword = isVaccine ? 'vaccin' : 'deworm';
+    
+    final matchingMeds = allMedications.where((m) => m.category.toLowerCase().contains(keyword) || m.name.toLowerCase().contains(keyword)).toList();
+    final availableMeds = matchingMeds.isNotEmpty ? matchingMeds : allMedications;
+
+    if (!mounted) return;
 
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (sheetCtx) => FutureBuilder<List<LocalMedication>>(
-        future: pharmacyRepo.getMedications(),
-        builder: (context, snapshot) {
-          final allMedications = snapshot.data ?? [];
-          final isVaccine = actionType == 'vaccination';
-          final targetCategory = isVaccine ? 'vaccine' : 'dewormer';
-          
-          final categoryMeds = allMedications.where((m) => m.category.toLowerCase() == targetCategory).toList();
-          final availableMeds = categoryMeds.isNotEmpty ? categoryMeds : allMedications;
+      builder: (sheetCtx) => StatefulBuilder(
+        builder: (context, setStateSheet) {
+          LocalMedication? selectedDrug;
+          if (selectedDrugId != null) {
+            try {
+              selectedDrug = availableMeds.firstWhere((m) => m.id == selectedDrugId);
+            } catch (_) {}
+          }
 
-          return StatefulBuilder(
-            builder: (context, setStateSheet) {
-              final double? animWeight = _weight != null ? double.tryParse(_weight.toString()) : null;
-              double? recDose;
-              if (animWeight != null && animWeight > 0 && selectedDrug?.dosageRatePerKg != null && selectedDrug!.dosageRatePerKg! > 0) {
-                recDose = animWeight * selectedDrug!.dosageRatePerKg!;
+          final double? animWeight = _weight != null ? double.tryParse(_weight.toString()) : null;
+          double? activeMg;
+          double? adminVol;
+
+          if (selectedDrug != null && animWeight != null && animWeight > 0 && selectedDrug.dosageRatePerKg != null && selectedDrug.dosageRatePerKg! > 0) {
+            final rateMgKg = selectedDrug.dosageRatePerKg!;
+            activeMg = animWeight * rateMgKg;
+
+            // Try to extract numeric concentration mg/ml or mg/tablet from concentration string
+            final concText = selectedDrug.concentration ?? '';
+            double? concMgPerUnit;
+            final match = RegExp(r'([0-9]+(?:\.[0-9]+)?)').firstMatch(concText);
+            if (match != null) {
+              final parsed = double.tryParse(match.group(1)!);
+              if (parsed != null && parsed > 0) {
+                concMgPerUnit = concText.contains('%') ? parsed * 10.0 : parsed;
               }
+            }
 
-              return Container(
-                decoration: const BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-                ),
-                padding: EdgeInsets.only(
-                  top: 24,
-                  left: 24,
-                  right: 24,
-                  bottom: MediaQuery.of(context).viewInsets.bottom + 24,
-                ),
-                child: SingleChildScrollView(
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Schedule Upcoming ${isVaccine ? 'Vaccination' : 'Dewormer'}',
-                        style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+            if (concMgPerUnit != null && concMgPerUnit > 0) {
+              adminVol = activeMg / concMgPerUnit;
+            }
+          }
+
+          return Container(
+            decoration: const BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+            ),
+            padding: EdgeInsets.only(
+              top: 24,
+              left: 24,
+              right: 24,
+              bottom: MediaQuery.of(context).viewInsets.bottom + 24,
+            ),
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Schedule Upcoming ${isVaccine ? 'Vaccination' : 'Dewormer'}',
+                    style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 16),
+                  if (availableMeds.isNotEmpty) ...[
+                    DropdownButtonFormField<String>(
+                      value: selectedDrugId,
+                      decoration: InputDecoration(
+                        labelText: 'Select Drug from Pharmacy Inventory *',
+                        hintText: 'Choose ${isVaccine ? "Vaccine" : "Dewormer"}',
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                       ),
-                      const SizedBox(height: 16),
-                      if (availableMeds.isNotEmpty) ...[
-                        DropdownButtonFormField<LocalMedication>(
-                          value: selectedDrug,
-                          decoration: InputDecoration(
-                            labelText: 'Select Drug from Pharmacy Inventory *',
-                            hintText: 'Choose ${isVaccine ? "Vaccine" : "Dewormer"}',
-                          ),
-                          isExpanded: true,
-                          items: availableMeds.map((m) {
-                            final conc = m.concentration != null && m.concentration!.isNotEmpty ? ' (${m.concentration})' : '';
-                            return DropdownMenuItem<LocalMedication>(
-                              value: m,
-                              child: Text('${m.name}$conc'),
-                            );
-                          }).toList(),
-                          onChanged: (med) {
-                            setStateSheet(() {
-                              selectedDrug = med;
-                              if (med != null) {
-                                drugCtrl.text = med.name;
-                              }
-                            });
-                          },
-                        ),
-                        const SizedBox(height: 8),
-                      ],
-                      TextField(
-                        controller: drugCtrl,
-                        textCapitalization: TextCapitalization.sentences,
-                        decoration: InputDecoration(
-                          labelText: isVaccine ? 'Vaccine Name / Disease' : 'Deworming Drug Name',
-                          hintText: isVaccine ? 'e.g., FMD Vaccine' : 'e.g., Ivermectin',
-                        ),
+                      isExpanded: true,
+                      items: availableMeds.map((m) {
+                        final conc = m.concentration != null && m.concentration!.isNotEmpty ? ' (${m.concentration})' : '';
+                        final rate = m.dosageRateText != null && m.dosageRateText!.isNotEmpty ? ' - ${m.dosageRateText}' : '';
+                        return DropdownMenuItem<String>(
+                          value: m.id,
+                          child: Text('${m.name}$conc$rate', overflow: TextOverflow.ellipsis),
+                        );
+                      }).toList(),
+                      onChanged: (id) {
+                        setStateSheet(() {
+                          selectedDrugId = id;
+                          if (id != null) {
+                            final matchMed = availableMeds.firstWhere((m) => m.id == id);
+                            drugCtrl.text = matchMed.name;
+                          }
+                        });
+                      },
+                    ),
+                    const SizedBox(height: 12),
+                  ],
+                  TextField(
+                    controller: drugCtrl,
+                    textCapitalization: TextCapitalization.sentences,
+                    decoration: InputDecoration(
+                      labelText: isVaccine ? 'Vaccine Name / Disease' : 'Deworming Drug Name',
+                      hintText: isVaccine ? 'e.g., FMD Vaccine' : 'e.g., Ivermectin',
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                    ),
+                  ),
+                  if (selectedDrug != null) ...[
+                    const SizedBox(height: 12),
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: Colors.teal.withValues(alpha: 0.08),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: Colors.teal.withValues(alpha: 0.25)),
                       ),
-                      if (selectedDrug != null || recDose != null) ...[
-                        const SizedBox(height: 12),
-                        Container(
-                          width: double.infinity,
-                          padding: const EdgeInsets.all(12),
-                          decoration: BoxDecoration(
-                            color: Colors.teal.withValues(alpha: 0.08),
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(color: Colors.teal.withValues(alpha: 0.25)),
-                          ),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Row(
                             children: [
-                              Row(
-                                children: [
-                                  const Icon(Icons.medication_outlined, color: Colors.teal, size: 20),
-                                  const SizedBox(width: 8),
-                                  Expanded(
-                                    child: Text(
-                                      'Pharmacy Inventory Details',
-                                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: Colors.teal),
-                                    ),
-                                  ),
-                                ],
+                              Icon(Icons.medication_outlined, color: Colors.teal, size: 20),
+                              SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  'Pharmacy Inventory Specifications',
+                                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: Colors.teal),
+                                ),
                               ),
-                              if (selectedDrug?.concentration != null) ...[
-                                const SizedBox(height: 4),
-                                Text('Concentration: ${selectedDrug!.concentration}', style: const TextStyle(fontSize: 11)),
-                              ],
-                              if (selectedDrug?.dosageRateText != null) ...[
-                                const SizedBox(height: 2),
-                                Text('Dosage Rate: ${selectedDrug!.dosageRateText}', style: const TextStyle(fontSize: 11)),
-                              ],
-                              if (recDose != null && recDose > 0) ...[
-                                const SizedBox(height: 6),
-                                Container(
-                                  padding: const EdgeInsets.all(8),
-                                  decoration: BoxDecoration(
-                                    color: AppColors.primary.withValues(alpha: 0.1),
-                                    borderRadius: BorderRadius.circular(8),
-                                  ),
-                                  child: Row(
+                            ],
+                          ),
+                          if (selectedDrug.concentration != null && selectedDrug.concentration!.isNotEmpty) ...[
+                            const SizedBox(height: 4),
+                            Text('Concentration: ${selectedDrug.concentration}', style: const TextStyle(fontSize: 11)),
+                          ],
+                          if (selectedDrug.dosageRateText != null && selectedDrug.dosageRateText!.isNotEmpty) ...[
+                            const SizedBox(height: 2),
+                            Text('Dosage Rate: ${selectedDrug.dosageRateText}', style: const TextStyle(fontSize: 11)),
+                          ],
+                          if (activeMg != null && activeMg > 0) ...[
+                            const SizedBox(height: 8),
+                            Container(
+                              padding: const EdgeInsets.all(10),
+                              decoration: BoxDecoration(
+                                color: AppColors.primary.withValues(alpha: 0.1),
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Row(
                                     children: [
                                       const Icon(Icons.calculate_outlined, color: AppColors.primary, size: 18),
                                       const SizedBox(width: 6),
                                       Expanded(
                                         child: Text(
-                                          '💡 Calculated Admin Dose for #${_tagId} (${animWeight}kg): ${recDose.toStringAsFixed(1)} ${selectedDrug?.unit ?? "units"}',
-                                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 11, color: AppColors.primary),
+                                          '💡 Calculated Dosage for #$_tagId (${animWeight}kg):',
+                                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: AppColors.primary),
                                         ),
                                       ),
                                     ],
                                   ),
-                                ),
-                              ],
-                            ],
-                          ),
-                        ),
-                      ],
-                      const SizedBox(height: 16),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: Text(
-                              selectedDate == null
-                                  ? 'No Date Selected'
-                                  : 'Due: ${DateFormat('yyyy-MM-dd').format(selectedDate!)}',
-                              style: const TextStyle(fontSize: 14),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    '• Active Ingredient Needed: ${activeMg.toStringAsFixed(1)} mg',
+                                    style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600),
+                                  ),
+                                  if (adminVol != null && adminVol > 0) ...[
+                                    const SizedBox(height: 2),
+                                    Text(
+                                      '• Volume/Amount to Administer: ${adminVol.toStringAsFixed(1)} ${selectedDrug.unit}',
+                                      style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.teal),
+                                    ),
+                                  ],
+                                ],
+                              ),
                             ),
-                          ),
-                          TextButton.icon(
-                            icon: const Icon(Icons.calendar_month),
-                            label: const Text('Pick Date'),
-                            onPressed: () async {
-                              final picked = await showDatePicker(
-                                builder: (context, child) => Theme(
-                                  data: Theme.of(context).copyWith(useMaterial3: false),
-                                  child: MediaQuery(data: MediaQuery.of(context).copyWith(textScaleFactor: 1.0), child: child!),
-                                ),
-                                context: context,
-                                initialDate: DateTime.now().add(const Duration(days: 1)),
-                                firstDate: DateTime.now(),
-                                lastDate: DateTime.now().add(const Duration(days: 3650)),
-                              );
-                              if (picked != null) {
-                                setStateSheet(() => selectedDate = picked);
-                              }
-                            },
-                          ),
+                          ],
                         ],
                       ),
-                      const SizedBox(height: 24),
-                      SizedBox(
-                        width: double.infinity,
-                        child: ElevatedButton(
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: isVaccine ? AppColors.primary : Colors.teal,
-                            foregroundColor: Colors.white,
-                            padding: const EdgeInsets.symmetric(vertical: 16),
-                          ),
-                          onPressed: () async {
-                            if (drugCtrl.text.isEmpty || selectedDate == null) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(content: Text('Please enter a drug name and select a date.')),
-                              );
-                              return;
-                            }
-
-                            final doseVal = recDose != null ? recDose.toStringAsFixed(1) : null;
-                            final unitVal = selectedDrug?.unit ?? 'units';
-                            final concVal = selectedDrug?.concentration;
-                            final rateVal = selectedDrug?.dosageRateText;
-
-                            // Retrieve existing and merge
-                            if (isVaccine) {
-                              final vacRaw = _vaccinationStatus ?? '';
-                              List<String> given = [];
-                              if (vacRaw.startsWith('{')) {
-                                try {
-                                  final Map<String, dynamic> data = jsonDecode(vacRaw);
-                                  if (data['given'] is List) {
-                                    given = (data['given'] as List).map((e) => e.toString()).toList();
-                                  }
-                                } catch (_) {}
-                              } else if (vacRaw.isNotEmpty) {
-                                given.add(vacRaw);
-                              }
-
-                              context.read<AnimalsBloc>().add(UpdateAnimal(
-                                _id,
-                                {
-                                  'vaccination_status': jsonEncode({
-                                    'given': given,
-                                    'next_vaccine': drugCtrl.text.trim(),
-                                    'next_date': selectedDate!.toIso8601String(),
-                                    'recommended_dose': doseVal,
-                                    'unit': unitVal,
-                                    'concentration': concVal,
-                                    'dosage_rate_text': rateVal,
-                                  }),
-                                },
-                              ));
-                            } else {
-                              // Dewormer
-                              final dewormRaw = _dewormingStatus ?? '';
-                              DateTime? lastDeworm;
-                              if (dewormRaw.startsWith('{')) {
-                                try {
-                                  final Map<String, dynamic> data = jsonDecode(dewormRaw);
-                                  if (data['last_date'] != null) {
-                                    lastDeworm = DateTime.tryParse(data['last_date'].toString());
-                                  }
-                                } catch (_) {}
-                              }
-                              
-                              context.read<AnimalsBloc>().add(UpdateAnimal(
-                                _id,
-                                {
-                                  'deworming_status': jsonEncode({
-                                    'drug': drugCtrl.text.trim(),
-                                    'last_date': lastDeworm?.toIso8601String(),
-                                    'next_date': selectedDate!.toIso8601String(),
-                                    'recommended_dose': doseVal,
-                                    'unit': unitVal,
-                                    'concentration': concVal,
-                                    'dosage_rate_text': rateVal,
-                                  }),
-                                },
-                              ));
-                            }
-
-                            // Also create actionable task in LocalTasks table so task list displays drug & dose
-                            try {
-                              final db = sl<LocalDatabase>();
-                              final taskId = 'task_sched_${actionType}_${_id}_${DateTime.now().millisecondsSinceEpoch}';
-                              final doseDisplay = doseVal != null ? '$doseVal $unitVal' : '';
-                              final taskTitle = '${isVaccine ? "Vaccination" : "Deworming"} Due: #$_tagId${doseDisplay.isNotEmpty ? " ($doseDisplay)" : ""}';
-                              final taskDesc = 'Administer ${doseDisplay.isNotEmpty ? doseDisplay : "scheduled dose"} of ${drugCtrl.text.trim()}${concVal != null ? " ($concVal)" : ""} to animal #$_tagId (${_weight ?? "N/A"}kg).';
-
-                              await db.into(db.localTasks).insertOnConflictUpdate(LocalTasksCompanion.insert(
-                                id: taskId,
-                                title: taskTitle,
-                                description: drift.Value(taskDesc),
-                                priority: 'high',
-                                status: 'pending',
-                                dueDate: drift.Value(selectedDate!),
-                                category: drift.Value(isVaccine ? 'vaccination' : 'deworming'),
-                                isActionable: const drift.Value(true),
-                              ));
-                            } catch (_) {}
-
-                            Navigator.pop(context);
-                          },
-                          child: const Text('Save Schedule'),
+                    ),
+                  ],
+                  const SizedBox(height: 16),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          selectedDate == null
+                              ? 'No Date Selected'
+                              : 'Due Date: ${DateFormat('yyyy-MM-dd').format(selectedDate!)}',
+                          style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
                         ),
+                      ),
+                      TextButton.icon(
+                        icon: const Icon(Icons.calendar_month),
+                        label: const Text('Pick Date'),
+                        onPressed: () async {
+                          final picked = await showDatePicker(
+                            builder: (context, child) => Theme(
+                              data: Theme.of(context).copyWith(useMaterial3: false),
+                              child: MediaQuery(data: MediaQuery.of(context).copyWith(textScaleFactor: 1.0), child: child!),
+                            ),
+                            context: context,
+                            initialDate: DateTime.now().add(const Duration(days: 1)),
+                            firstDate: DateTime.now(),
+                            lastDate: DateTime.now().add(const Duration(days: 3650)),
+                          );
+                          if (picked != null) {
+                            setStateSheet(() => selectedDate = picked);
+                          }
+                        },
                       ),
                     ],
                   ),
-                ),
-              );
-            },
+                  const SizedBox(height: 24),
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: isVaccine ? AppColors.primary : Colors.teal,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      ),
+                      onPressed: () async {
+                        if (drugCtrl.text.isEmpty || selectedDate == null) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text('Please select or enter a drug name and pick a date.')),
+                          );
+                          return;
+                        }
+
+                        final activeMgVal = activeMg != null ? '${activeMg.toStringAsFixed(1)} mg' : null;
+                        final adminVolVal = adminVol != null ? '${adminVol.toStringAsFixed(1)} ${selectedDrug?.unit ?? "units"}' : null;
+                        final concVal = selectedDrug?.concentration;
+                        final rateVal = selectedDrug?.dosageRateText;
+
+                        // Retrieve existing and merge
+                        if (isVaccine) {
+                          final vacRaw = _vaccinationStatus ?? '';
+                          List<String> given = [];
+                          if (vacRaw.startsWith('{')) {
+                            try {
+                              final Map<String, dynamic> data = jsonDecode(vacRaw);
+                              if (data['given'] is List) {
+                                given = (data['given'] as List).map((e) => e.toString()).toList();
+                              }
+                            } catch (_) {}
+                          } else if (vacRaw.isNotEmpty) {
+                            given.add(vacRaw);
+                          }
+
+                          context.read<AnimalsBloc>().add(UpdateAnimal(
+                            _id,
+                            {
+                              'vaccination_status': jsonEncode({
+                                'given': given,
+                                'next_vaccine': drugCtrl.text.trim(),
+                                'next_date': selectedDate!.toIso8601String(),
+                                'active_mg': activeMgVal,
+                                'admin_volume': adminVolVal,
+                                'unit': selectedDrug?.unit ?? 'units',
+                                'concentration': concVal,
+                                'dosage_rate_text': rateVal,
+                              }),
+                            },
+                          ));
+                        } else {
+                          // Dewormer
+                          final dewormRaw = _dewormingStatus ?? '';
+                          DateTime? lastDeworm;
+                          if (dewormRaw.startsWith('{')) {
+                            try {
+                              final Map<String, dynamic> data = jsonDecode(dewormRaw);
+                              if (data['last_date'] != null) {
+                                lastDeworm = DateTime.tryParse(data['last_date'].toString());
+                              }
+                            } catch (_) {}
+                          }
+                          
+                          context.read<AnimalsBloc>().add(UpdateAnimal(
+                            _id,
+                            {
+                              'deworming_status': jsonEncode({
+                                'drug': drugCtrl.text.trim(),
+                                'last_date': lastDeworm?.toIso8601String(),
+                                'next_date': selectedDate!.toIso8601String(),
+                                'active_mg': activeMgVal,
+                                'admin_volume': adminVolVal,
+                                'unit': selectedDrug?.unit ?? 'units',
+                                'concentration': concVal,
+                                'dosage_rate_text': rateVal,
+                              }),
+                            },
+                          ));
+                        }
+
+                        // Also create actionable task in LocalTasks table so task list displays drug & dose
+                        try {
+                          final db = sl<LocalDatabase>();
+                          final taskId = 'task_sched_${actionType}_${_id}_${DateTime.now().millisecondsSinceEpoch}';
+                          final doseDisplay = adminVolVal ?? activeMgVal ?? '';
+                          final taskTitle = '${isVaccine ? "Vaccination" : "Deworming"} Due: #$_tagId${doseDisplay.isNotEmpty ? " ($doseDisplay)" : ""}';
+                          final taskDesc = 'Administer ${doseDisplay.isNotEmpty ? doseDisplay : "scheduled dose"} of ${drugCtrl.text.trim()}${concVal != null ? " ($concVal)" : ""} to animal #$_tagId (${_weight ?? "N/A"}kg).';
+
+                          await db.into(db.localTasks).insertOnConflictUpdate(LocalTasksCompanion.insert(
+                            id: taskId,
+                            title: taskTitle,
+                            description: drift.Value(taskDesc),
+                            priority: 'high',
+                            status: 'pending',
+                            dueDate: drift.Value(selectedDate!),
+                            category: drift.Value(isVaccine ? 'vaccination' : 'deworming'),
+                            isActionable: const drift.Value(true),
+                          ));
+                        } catch (_) {}
+
+                        if (context.mounted) {
+                          Navigator.pop(context);
+                        }
+                      },
+                      child: const Text('Save Schedule', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                    ),
+                  ),
+                ],
+              ),
+            ),
           );
         },
       ),

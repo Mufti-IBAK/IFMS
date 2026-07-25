@@ -566,9 +566,8 @@ class _PharmacyScreenState extends State<PharmacyScreen> with SingleTickerProvid
     final milkWithdrawCtrl = TextEditingController(text: '0');
     final meatWithdrawCtrl = TextEditingController(text: '0');
     final concentrationCtrl = TextEditingController();
-    final dosageMlCtrl = TextEditingController(text: '1');
-    final dosageKgCtrl = TextEditingController(text: '50');
-    String selectedDosagePreset = '1ml_50kg';
+    final dosageMlCtrl = TextEditingController(text: '10');
+    String selectedDosagePreset = '10mg_kg';
 
     // Wholesale Pricing Fields
     final numPacksCtrl = TextEditingController(text: '1');
@@ -683,90 +682,71 @@ class _PharmacyScreenState extends State<PharmacyScreen> with SingleTickerProvid
                       ],
                     ),
                     const SizedBox(height: 12),
-                    const Text('Dosage Rate (Weight-Based Dosage Calculation)', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: AppColors.primary)),
+                    const Text('Dosage Rate (Active Ingredient mg / kg bodyweight)', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: AppColors.primary)),
                     const Divider(),
                     Wrap(
                       spacing: 6,
                       runSpacing: 6,
                       children: [
                         ChoiceChip(
-                          label: const Text('1 ml / 10 kg'),
-                          selected: selectedDosagePreset == '1ml_10kg',
+                          label: const Text('0.2 mg/kg (Ivermectin)'),
+                          selected: selectedDosagePreset == '0.2mg_kg',
                           onSelected: (sel) {
                             if (sel) {
                               setStateDialog(() {
-                                selectedDosagePreset = '1ml_10kg';
-                                dosageMlCtrl.text = '1';
-                                dosageKgCtrl.text = '10';
+                                selectedDosagePreset = '0.2mg_kg';
+                                dosageMlCtrl.text = '0.2';
                               });
                             }
                           },
                         ),
                         ChoiceChip(
-                          label: const Text('1 ml / 50 kg'),
-                          selected: selectedDosagePreset == '1ml_50kg',
+                          label: const Text('7.5 mg/kg (Levamisole)'),
+                          selected: selectedDosagePreset == '7.5mg_kg',
                           onSelected: (sel) {
                             if (sel) {
                               setStateDialog(() {
-                                selectedDosagePreset = '1ml_50kg';
-                                dosageMlCtrl.text = '1';
-                                dosageKgCtrl.text = '50';
+                                selectedDosagePreset = '7.5mg_kg';
+                                dosageMlCtrl.text = '7.5';
                               });
                             }
                           },
                         ),
                         ChoiceChip(
-                          label: const Text('1 ml / 100 kg'),
-                          selected: selectedDosagePreset == '1ml_100kg',
+                          label: const Text('10 mg/kg (Albendazole/Fenbendazole)'),
+                          selected: selectedDosagePreset == '10mg_kg',
                           onSelected: (sel) {
                             if (sel) {
                               setStateDialog(() {
-                                selectedDosagePreset = '1ml_100kg';
-                                dosageMlCtrl.text = '1';
-                                dosageKgCtrl.text = '100';
+                                selectedDosagePreset = '10mg_kg';
+                                dosageMlCtrl.text = '10';
                               });
                             }
                           },
                         ),
                         ChoiceChip(
-                          label: const Text('Custom Rate'),
-                          selected: selectedDosagePreset == 'custom',
+                          label: const Text('20 mg/kg (LA Oxytet)'),
+                          selected: selectedDosagePreset == '20mg_kg',
                           onSelected: (sel) {
                             if (sel) {
-                              setStateDialog(() => selectedDosagePreset = 'custom');
+                              setStateDialog(() {
+                                selectedDosagePreset = '20mg_kg';
+                                dosageMlCtrl.text = '20';
+                              });
                             }
                           },
                         ),
                       ],
                     ),
                     const SizedBox(height: 8),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: TextField(
-                            controller: dosageMlCtrl,
-                            keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                            decoration: InputDecoration(
-                              labelText: 'Administer ($unit)',
-                              hintText: 'e.g. 1',
-                            ),
-                          ),
-                        ),
-                        const Padding(
-                          padding: EdgeInsets.symmetric(horizontal: 8.0),
-                          child: Text('PER', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: Colors.grey)),
-                        ),
-                        Expanded(
-                          child: TextField(
-                            controller: dosageKgCtrl,
-                            keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                            decoration: const InputDecoration(
-                              labelText: 'Body Weight (kg)',
-                              hintText: 'e.g. 50',
-                            ),
-                          ),
-                        ),
-                      ],
+                    TextField(
+                      controller: dosageMlCtrl,
+                      keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                      decoration: const InputDecoration(
+                        labelText: 'Dosage Rate (mg / kg bodyweight) *',
+                        hintText: 'e.g. 10.0',
+                        suffixText: 'mg / kg',
+                      ),
                     ),
                     const SizedBox(height: 16),
                     const Text('Wholesale Purchase & Unit Cost Auto-Calc', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: AppColors.primary)),
@@ -951,10 +931,9 @@ class _PharmacyScreenState extends State<PharmacyScreen> with SingleTickerProvid
                                 );
                                 return;
                               }
-                              final dMl = double.tryParse(dosageMlCtrl.text) ?? 1.0;
-                              final dKg = double.tryParse(dosageKgCtrl.text) ?? 50.0;
-                              final ratePerKg = dKg > 0 ? (dMl / dKg) : null;
-                              final rateText = '$dMl $unit / $dKg kg';
+                              final dMg = double.tryParse(dosageMlCtrl.text) ?? 10.0;
+                              final ratePerKg = dMg > 0 ? dMg : null;
+                              final rateText = '$dMg mg/kg';
 
                               BlocProvider.of<PharmacyBloc>(context).add(AddMedication({
                                 'name': nameCtrl.text.trim(),
