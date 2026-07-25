@@ -10509,6 +10509,24 @@ class $LocalMedicationsTable extends LocalMedications
       type: DriftSqlType.int,
       requiredDuringInsert: false,
       defaultValue: const Constant(0));
+  static const VerificationMeta _dosageRatePerKgMeta =
+      const VerificationMeta('dosageRatePerKg');
+  @override
+  late final GeneratedColumn<double> dosageRatePerKg = GeneratedColumn<double>(
+      'dosage_rate_per_kg', aliasedName, true,
+      type: DriftSqlType.double, requiredDuringInsert: false);
+  static const VerificationMeta _dosageRateTextMeta =
+      const VerificationMeta('dosageRateText');
+  @override
+  late final GeneratedColumn<String> dosageRateText = GeneratedColumn<String>(
+      'dosage_rate_text', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _concentrationMeta =
+      const VerificationMeta('concentration');
+  @override
+  late final GeneratedColumn<String> concentration = GeneratedColumn<String>(
+      'concentration', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
   static const VerificationMeta _isActiveMeta =
       const VerificationMeta('isActive');
   @override
@@ -10533,6 +10551,9 @@ class $LocalMedicationsTable extends LocalMedications
         batchNumber,
         milkWithdrawalDays,
         meatWithdrawalDays,
+        dosageRatePerKg,
+        dosageRateText,
+        concentration,
         isActive
       ];
   @override
@@ -10614,6 +10635,24 @@ class $LocalMedicationsTable extends LocalMedications
           meatWithdrawalDays.isAcceptableOrUnknown(
               data['meat_withdrawal_days']!, _meatWithdrawalDaysMeta));
     }
+    if (data.containsKey('dosage_rate_per_kg')) {
+      context.handle(
+          _dosageRatePerKgMeta,
+          dosageRatePerKg.isAcceptableOrUnknown(
+              data['dosage_rate_per_kg']!, _dosageRatePerKgMeta));
+    }
+    if (data.containsKey('dosage_rate_text')) {
+      context.handle(
+          _dosageRateTextMeta,
+          dosageRateText.isAcceptableOrUnknown(
+              data['dosage_rate_text']!, _dosageRateTextMeta));
+    }
+    if (data.containsKey('concentration')) {
+      context.handle(
+          _concentrationMeta,
+          concentration.isAcceptableOrUnknown(
+              data['concentration']!, _concentrationMeta));
+    }
     if (data.containsKey('is_active')) {
       context.handle(_isActiveMeta,
           isActive.isAcceptableOrUnknown(data['is_active']!, _isActiveMeta));
@@ -10651,6 +10690,12 @@ class $LocalMedicationsTable extends LocalMedications
           DriftSqlType.int, data['${effectivePrefix}milk_withdrawal_days'])!,
       meatWithdrawalDays: attachedDatabase.typeMapping.read(
           DriftSqlType.int, data['${effectivePrefix}meat_withdrawal_days'])!,
+      dosageRatePerKg: attachedDatabase.typeMapping.read(
+          DriftSqlType.double, data['${effectivePrefix}dosage_rate_per_kg']),
+      dosageRateText: attachedDatabase.typeMapping.read(
+          DriftSqlType.string, data['${effectivePrefix}dosage_rate_text']),
+      concentration: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}concentration']),
       isActive: attachedDatabase.typeMapping
           .read(DriftSqlType.bool, data['${effectivePrefix}is_active'])!,
     );
@@ -10675,6 +10720,9 @@ class LocalMedication extends DataClass implements Insertable<LocalMedication> {
   final String? batchNumber;
   final int milkWithdrawalDays;
   final int meatWithdrawalDays;
+  final double? dosageRatePerKg;
+  final String? dosageRateText;
+  final String? concentration;
   final bool isActive;
   const LocalMedication(
       {required this.id,
@@ -10689,6 +10737,9 @@ class LocalMedication extends DataClass implements Insertable<LocalMedication> {
       this.batchNumber,
       required this.milkWithdrawalDays,
       required this.meatWithdrawalDays,
+      this.dosageRatePerKg,
+      this.dosageRateText,
+      this.concentration,
       required this.isActive});
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -10711,6 +10762,15 @@ class LocalMedication extends DataClass implements Insertable<LocalMedication> {
     }
     map['milk_withdrawal_days'] = Variable<int>(milkWithdrawalDays);
     map['meat_withdrawal_days'] = Variable<int>(meatWithdrawalDays);
+    if (!nullToAbsent || dosageRatePerKg != null) {
+      map['dosage_rate_per_kg'] = Variable<double>(dosageRatePerKg);
+    }
+    if (!nullToAbsent || dosageRateText != null) {
+      map['dosage_rate_text'] = Variable<String>(dosageRateText);
+    }
+    if (!nullToAbsent || concentration != null) {
+      map['concentration'] = Variable<String>(concentration);
+    }
     map['is_active'] = Variable<bool>(isActive);
     return map;
   }
@@ -10735,6 +10795,15 @@ class LocalMedication extends DataClass implements Insertable<LocalMedication> {
           : Value(batchNumber),
       milkWithdrawalDays: Value(milkWithdrawalDays),
       meatWithdrawalDays: Value(meatWithdrawalDays),
+      dosageRatePerKg: dosageRatePerKg == null && nullToAbsent
+          ? const Value.absent()
+          : Value(dosageRatePerKg),
+      dosageRateText: dosageRateText == null && nullToAbsent
+          ? const Value.absent()
+          : Value(dosageRateText),
+      concentration: concentration == null && nullToAbsent
+          ? const Value.absent()
+          : Value(concentration),
       isActive: Value(isActive),
     );
   }
@@ -10755,6 +10824,9 @@ class LocalMedication extends DataClass implements Insertable<LocalMedication> {
       batchNumber: serializer.fromJson<String?>(json['batchNumber']),
       milkWithdrawalDays: serializer.fromJson<int>(json['milkWithdrawalDays']),
       meatWithdrawalDays: serializer.fromJson<int>(json['meatWithdrawalDays']),
+      dosageRatePerKg: serializer.fromJson<double?>(json['dosageRatePerKg']),
+      dosageRateText: serializer.fromJson<String?>(json['dosageRateText']),
+      concentration: serializer.fromJson<String?>(json['concentration']),
       isActive: serializer.fromJson<bool>(json['isActive']),
     );
   }
@@ -10774,6 +10846,9 @@ class LocalMedication extends DataClass implements Insertable<LocalMedication> {
       'batchNumber': serializer.toJson<String?>(batchNumber),
       'milkWithdrawalDays': serializer.toJson<int>(milkWithdrawalDays),
       'meatWithdrawalDays': serializer.toJson<int>(meatWithdrawalDays),
+      'dosageRatePerKg': serializer.toJson<double?>(dosageRatePerKg),
+      'dosageRateText': serializer.toJson<String?>(dosageRateText),
+      'concentration': serializer.toJson<String?>(concentration),
       'isActive': serializer.toJson<bool>(isActive),
     };
   }
@@ -10791,6 +10866,9 @@ class LocalMedication extends DataClass implements Insertable<LocalMedication> {
           Value<String?> batchNumber = const Value.absent(),
           int? milkWithdrawalDays,
           int? meatWithdrawalDays,
+          Value<double?> dosageRatePerKg = const Value.absent(),
+          Value<String?> dosageRateText = const Value.absent(),
+          Value<String?> concentration = const Value.absent(),
           bool? isActive}) =>
       LocalMedication(
         id: id ?? this.id,
@@ -10805,6 +10883,13 @@ class LocalMedication extends DataClass implements Insertable<LocalMedication> {
         batchNumber: batchNumber.present ? batchNumber.value : this.batchNumber,
         milkWithdrawalDays: milkWithdrawalDays ?? this.milkWithdrawalDays,
         meatWithdrawalDays: meatWithdrawalDays ?? this.meatWithdrawalDays,
+        dosageRatePerKg: dosageRatePerKg.present
+            ? dosageRatePerKg.value
+            : this.dosageRatePerKg,
+        dosageRateText:
+            dosageRateText.present ? dosageRateText.value : this.dosageRateText,
+        concentration:
+            concentration.present ? concentration.value : this.concentration,
         isActive: isActive ?? this.isActive,
       );
   LocalMedication copyWithCompanion(LocalMedicationsCompanion data) {
@@ -10832,6 +10917,15 @@ class LocalMedication extends DataClass implements Insertable<LocalMedication> {
       meatWithdrawalDays: data.meatWithdrawalDays.present
           ? data.meatWithdrawalDays.value
           : this.meatWithdrawalDays,
+      dosageRatePerKg: data.dosageRatePerKg.present
+          ? data.dosageRatePerKg.value
+          : this.dosageRatePerKg,
+      dosageRateText: data.dosageRateText.present
+          ? data.dosageRateText.value
+          : this.dosageRateText,
+      concentration: data.concentration.present
+          ? data.concentration.value
+          : this.concentration,
       isActive: data.isActive.present ? data.isActive.value : this.isActive,
     );
   }
@@ -10851,6 +10945,9 @@ class LocalMedication extends DataClass implements Insertable<LocalMedication> {
           ..write('batchNumber: $batchNumber, ')
           ..write('milkWithdrawalDays: $milkWithdrawalDays, ')
           ..write('meatWithdrawalDays: $meatWithdrawalDays, ')
+          ..write('dosageRatePerKg: $dosageRatePerKg, ')
+          ..write('dosageRateText: $dosageRateText, ')
+          ..write('concentration: $concentration, ')
           ..write('isActive: $isActive')
           ..write(')'))
         .toString();
@@ -10870,6 +10967,9 @@ class LocalMedication extends DataClass implements Insertable<LocalMedication> {
       batchNumber,
       milkWithdrawalDays,
       meatWithdrawalDays,
+      dosageRatePerKg,
+      dosageRateText,
+      concentration,
       isActive);
   @override
   bool operator ==(Object other) =>
@@ -10887,6 +10987,9 @@ class LocalMedication extends DataClass implements Insertable<LocalMedication> {
           other.batchNumber == this.batchNumber &&
           other.milkWithdrawalDays == this.milkWithdrawalDays &&
           other.meatWithdrawalDays == this.meatWithdrawalDays &&
+          other.dosageRatePerKg == this.dosageRatePerKg &&
+          other.dosageRateText == this.dosageRateText &&
+          other.concentration == this.concentration &&
           other.isActive == this.isActive);
 }
 
@@ -10903,6 +11006,9 @@ class LocalMedicationsCompanion extends UpdateCompanion<LocalMedication> {
   final Value<String?> batchNumber;
   final Value<int> milkWithdrawalDays;
   final Value<int> meatWithdrawalDays;
+  final Value<double?> dosageRatePerKg;
+  final Value<String?> dosageRateText;
+  final Value<String?> concentration;
   final Value<bool> isActive;
   final Value<int> rowid;
   const LocalMedicationsCompanion({
@@ -10918,6 +11024,9 @@ class LocalMedicationsCompanion extends UpdateCompanion<LocalMedication> {
     this.batchNumber = const Value.absent(),
     this.milkWithdrawalDays = const Value.absent(),
     this.meatWithdrawalDays = const Value.absent(),
+    this.dosageRatePerKg = const Value.absent(),
+    this.dosageRateText = const Value.absent(),
+    this.concentration = const Value.absent(),
     this.isActive = const Value.absent(),
     this.rowid = const Value.absent(),
   });
@@ -10934,6 +11043,9 @@ class LocalMedicationsCompanion extends UpdateCompanion<LocalMedication> {
     this.batchNumber = const Value.absent(),
     this.milkWithdrawalDays = const Value.absent(),
     this.meatWithdrawalDays = const Value.absent(),
+    this.dosageRatePerKg = const Value.absent(),
+    this.dosageRateText = const Value.absent(),
+    this.concentration = const Value.absent(),
     this.isActive = const Value.absent(),
     this.rowid = const Value.absent(),
   })  : id = Value(id),
@@ -10953,6 +11065,9 @@ class LocalMedicationsCompanion extends UpdateCompanion<LocalMedication> {
     Expression<String>? batchNumber,
     Expression<int>? milkWithdrawalDays,
     Expression<int>? meatWithdrawalDays,
+    Expression<double>? dosageRatePerKg,
+    Expression<String>? dosageRateText,
+    Expression<String>? concentration,
     Expression<bool>? isActive,
     Expression<int>? rowid,
   }) {
@@ -10971,6 +11086,9 @@ class LocalMedicationsCompanion extends UpdateCompanion<LocalMedication> {
         'milk_withdrawal_days': milkWithdrawalDays,
       if (meatWithdrawalDays != null)
         'meat_withdrawal_days': meatWithdrawalDays,
+      if (dosageRatePerKg != null) 'dosage_rate_per_kg': dosageRatePerKg,
+      if (dosageRateText != null) 'dosage_rate_text': dosageRateText,
+      if (concentration != null) 'concentration': concentration,
       if (isActive != null) 'is_active': isActive,
       if (rowid != null) 'rowid': rowid,
     });
@@ -10989,6 +11107,9 @@ class LocalMedicationsCompanion extends UpdateCompanion<LocalMedication> {
       Value<String?>? batchNumber,
       Value<int>? milkWithdrawalDays,
       Value<int>? meatWithdrawalDays,
+      Value<double?>? dosageRatePerKg,
+      Value<String?>? dosageRateText,
+      Value<String?>? concentration,
       Value<bool>? isActive,
       Value<int>? rowid}) {
     return LocalMedicationsCompanion(
@@ -11004,6 +11125,9 @@ class LocalMedicationsCompanion extends UpdateCompanion<LocalMedication> {
       batchNumber: batchNumber ?? this.batchNumber,
       milkWithdrawalDays: milkWithdrawalDays ?? this.milkWithdrawalDays,
       meatWithdrawalDays: meatWithdrawalDays ?? this.meatWithdrawalDays,
+      dosageRatePerKg: dosageRatePerKg ?? this.dosageRatePerKg,
+      dosageRateText: dosageRateText ?? this.dosageRateText,
+      concentration: concentration ?? this.concentration,
       isActive: isActive ?? this.isActive,
       rowid: rowid ?? this.rowid,
     );
@@ -11048,6 +11172,15 @@ class LocalMedicationsCompanion extends UpdateCompanion<LocalMedication> {
     if (meatWithdrawalDays.present) {
       map['meat_withdrawal_days'] = Variable<int>(meatWithdrawalDays.value);
     }
+    if (dosageRatePerKg.present) {
+      map['dosage_rate_per_kg'] = Variable<double>(dosageRatePerKg.value);
+    }
+    if (dosageRateText.present) {
+      map['dosage_rate_text'] = Variable<String>(dosageRateText.value);
+    }
+    if (concentration.present) {
+      map['concentration'] = Variable<String>(concentration.value);
+    }
     if (isActive.present) {
       map['is_active'] = Variable<bool>(isActive.value);
     }
@@ -11072,6 +11205,9 @@ class LocalMedicationsCompanion extends UpdateCompanion<LocalMedication> {
           ..write('batchNumber: $batchNumber, ')
           ..write('milkWithdrawalDays: $milkWithdrawalDays, ')
           ..write('meatWithdrawalDays: $meatWithdrawalDays, ')
+          ..write('dosageRatePerKg: $dosageRatePerKg, ')
+          ..write('dosageRateText: $dosageRateText, ')
+          ..write('concentration: $concentration, ')
           ..write('isActive: $isActive, ')
           ..write('rowid: $rowid')
           ..write(')'))
@@ -20323,6 +20459,9 @@ typedef $$LocalMedicationsTableCreateCompanionBuilder
   Value<String?> batchNumber,
   Value<int> milkWithdrawalDays,
   Value<int> meatWithdrawalDays,
+  Value<double?> dosageRatePerKg,
+  Value<String?> dosageRateText,
+  Value<String?> concentration,
   Value<bool> isActive,
   Value<int> rowid,
 });
@@ -20340,6 +20479,9 @@ typedef $$LocalMedicationsTableUpdateCompanionBuilder
   Value<String?> batchNumber,
   Value<int> milkWithdrawalDays,
   Value<int> meatWithdrawalDays,
+  Value<double?> dosageRatePerKg,
+  Value<String?> dosageRateText,
+  Value<String?> concentration,
   Value<bool> isActive,
   Value<int> rowid,
 });
@@ -20391,6 +20533,17 @@ class $$LocalMedicationsTableFilterComposer
   ColumnFilters<int> get meatWithdrawalDays => $composableBuilder(
       column: $table.meatWithdrawalDays,
       builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<double> get dosageRatePerKg => $composableBuilder(
+      column: $table.dosageRatePerKg,
+      builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get dosageRateText => $composableBuilder(
+      column: $table.dosageRateText,
+      builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get concentration => $composableBuilder(
+      column: $table.concentration, builder: (column) => ColumnFilters(column));
 
   ColumnFilters<bool> get isActive => $composableBuilder(
       column: $table.isActive, builder: (column) => ColumnFilters(column));
@@ -20445,6 +20598,18 @@ class $$LocalMedicationsTableOrderingComposer
       column: $table.meatWithdrawalDays,
       builder: (column) => ColumnOrderings(column));
 
+  ColumnOrderings<double> get dosageRatePerKg => $composableBuilder(
+      column: $table.dosageRatePerKg,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get dosageRateText => $composableBuilder(
+      column: $table.dosageRateText,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get concentration => $composableBuilder(
+      column: $table.concentration,
+      builder: (column) => ColumnOrderings(column));
+
   ColumnOrderings<bool> get isActive => $composableBuilder(
       column: $table.isActive, builder: (column) => ColumnOrderings(column));
 }
@@ -20494,6 +20659,15 @@ class $$LocalMedicationsTableAnnotationComposer
   GeneratedColumn<int> get meatWithdrawalDays => $composableBuilder(
       column: $table.meatWithdrawalDays, builder: (column) => column);
 
+  GeneratedColumn<double> get dosageRatePerKg => $composableBuilder(
+      column: $table.dosageRatePerKg, builder: (column) => column);
+
+  GeneratedColumn<String> get dosageRateText => $composableBuilder(
+      column: $table.dosageRateText, builder: (column) => column);
+
+  GeneratedColumn<String> get concentration => $composableBuilder(
+      column: $table.concentration, builder: (column) => column);
+
   GeneratedColumn<bool> get isActive =>
       $composableBuilder(column: $table.isActive, builder: (column) => column);
 }
@@ -20537,6 +20711,9 @@ class $$LocalMedicationsTableTableManager extends RootTableManager<
             Value<String?> batchNumber = const Value.absent(),
             Value<int> milkWithdrawalDays = const Value.absent(),
             Value<int> meatWithdrawalDays = const Value.absent(),
+            Value<double?> dosageRatePerKg = const Value.absent(),
+            Value<String?> dosageRateText = const Value.absent(),
+            Value<String?> concentration = const Value.absent(),
             Value<bool> isActive = const Value.absent(),
             Value<int> rowid = const Value.absent(),
           }) =>
@@ -20553,6 +20730,9 @@ class $$LocalMedicationsTableTableManager extends RootTableManager<
             batchNumber: batchNumber,
             milkWithdrawalDays: milkWithdrawalDays,
             meatWithdrawalDays: meatWithdrawalDays,
+            dosageRatePerKg: dosageRatePerKg,
+            dosageRateText: dosageRateText,
+            concentration: concentration,
             isActive: isActive,
             rowid: rowid,
           ),
@@ -20569,6 +20749,9 @@ class $$LocalMedicationsTableTableManager extends RootTableManager<
             Value<String?> batchNumber = const Value.absent(),
             Value<int> milkWithdrawalDays = const Value.absent(),
             Value<int> meatWithdrawalDays = const Value.absent(),
+            Value<double?> dosageRatePerKg = const Value.absent(),
+            Value<String?> dosageRateText = const Value.absent(),
+            Value<String?> concentration = const Value.absent(),
             Value<bool> isActive = const Value.absent(),
             Value<int> rowid = const Value.absent(),
           }) =>
@@ -20585,6 +20768,9 @@ class $$LocalMedicationsTableTableManager extends RootTableManager<
             batchNumber: batchNumber,
             milkWithdrawalDays: milkWithdrawalDays,
             meatWithdrawalDays: meatWithdrawalDays,
+            dosageRatePerKg: dosageRatePerKg,
+            dosageRateText: dosageRateText,
+            concentration: concentration,
             isActive: isActive,
             rowid: rowid,
           ),

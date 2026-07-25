@@ -195,6 +195,34 @@ class _PharmacyScreenState extends State<PharmacyScreen> with SingleTickerProvid
                                     ),
                                   ),
                                 ),
+                                if (med.concentration != null && med.concentration!.isNotEmpty) ...[
+                                  const SizedBox(width: 6),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                    decoration: BoxDecoration(
+                                      color: Colors.blue.withValues(alpha: 0.1),
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                    child: Text(
+                                      med.concentration!,
+                                      style: const TextStyle(color: Colors.blue, fontWeight: FontWeight.bold, fontSize: 10),
+                                    ),
+                                  ),
+                                ],
+                                if (med.dosageRateText != null && med.dosageRateText!.isNotEmpty) ...[
+                                  const SizedBox(width: 6),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                    decoration: BoxDecoration(
+                                      color: Colors.teal.withValues(alpha: 0.1),
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                    child: Text(
+                                      'Dose: ${med.dosageRateText!}',
+                                      style: const TextStyle(color: Colors.teal, fontWeight: FontWeight.bold, fontSize: 10),
+                                    ),
+                                  ),
+                                ],
                               ],
                             ),
                             const SizedBox(height: 8),
@@ -537,6 +565,10 @@ class _PharmacyScreenState extends State<PharmacyScreen> with SingleTickerProvid
     final supplierCtrl = TextEditingController();
     final milkWithdrawCtrl = TextEditingController(text: '0');
     final meatWithdrawCtrl = TextEditingController(text: '0');
+    final concentrationCtrl = TextEditingController();
+    final dosageMlCtrl = TextEditingController(text: '1');
+    final dosageKgCtrl = TextEditingController(text: '50');
+    String selectedDosagePreset = '1ml_50kg';
 
     // Wholesale Pricing Fields
     final numPacksCtrl = TextEditingController(text: '1');
@@ -583,24 +615,41 @@ class _PharmacyScreenState extends State<PharmacyScreen> with SingleTickerProvid
                       decoration: const InputDecoration(labelText: 'Medication Name *', hintText: 'e.g. Oxytetracycline 20%'),
                     ),
                     const SizedBox(height: 8),
-                    DropdownButtonFormField<String>(
-                      initialValue: category,
-                      decoration: const InputDecoration(labelText: 'Vet Category *'),
-                      isExpanded: true,
-                      items: const [
-                        DropdownMenuItem(value: 'antibiotic', child: Text('Antibiotic / Antimicrobial')),
-                        DropdownMenuItem(value: 'vaccine', child: Text('Vaccine')),
-                        DropdownMenuItem(value: 'dewormer', child: Text('Dewormer / Anthelmintic')),
-                        DropdownMenuItem(value: 'ectoparasiticide', child: Text('Ectoparasiticide (Tick/Flea)')),
-                        DropdownMenuItem(value: 'nsaid', child: Text('NSAID (Anti-inflammatory/Pain)')),
-                        DropdownMenuItem(value: 'hormone', child: Text('Hormone / Breeding')),
-                        DropdownMenuItem(value: 'supplement', child: Text('Supplement / Vitamin')),
-                        DropdownMenuItem(value: 'antiseptic', child: Text('Antiseptic / Disinfectant')),
-                        DropdownMenuItem(value: 'rehydration', child: Text('Rehydration / IV Fluids')),
-                        DropdownMenuItem(value: 'anesthetic', child: Text('Anesthetic / Sedative')),
-                        DropdownMenuItem(value: 'other', child: Text('Other / Miscellaneous')),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: DropdownButtonFormField<String>(
+                            initialValue: category,
+                            decoration: const InputDecoration(labelText: 'Vet Category *'),
+                            isExpanded: true,
+                            items: const [
+                              DropdownMenuItem(value: 'antibiotic', child: Text('Antibiotic / Antimicrobial')),
+                              DropdownMenuItem(value: 'vaccine', child: Text('Vaccine')),
+                              DropdownMenuItem(value: 'dewormer', child: Text('Dewormer / Anthelmintic')),
+                              DropdownMenuItem(value: 'ectoparasiticide', child: Text('Ectoparasiticide (Tick/Flea)')),
+                              DropdownMenuItem(value: 'nsaid', child: Text('NSAID (Anti-inflammatory/Pain)')),
+                              DropdownMenuItem(value: 'hormone', child: Text('Hormone / Breeding')),
+                              DropdownMenuItem(value: 'supplement', child: Text('Supplement / Vitamin')),
+                              DropdownMenuItem(value: 'antiseptic', child: Text('Antiseptic / Disinfectant')),
+                              DropdownMenuItem(value: 'rehydration', child: Text('Rehydration / IV Fluids')),
+                              DropdownMenuItem(value: 'anesthetic', child: Text('Anesthetic / Sedative')),
+                              DropdownMenuItem(value: 'other', child: Text('Other / Miscellaneous')),
+                            ],
+                            onChanged: (v) => category = v!,
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: TextField(
+                            controller: concentrationCtrl,
+                            textCapitalization: TextCapitalization.sentences,
+                            decoration: const InputDecoration(
+                              labelText: 'Concentration',
+                              hintText: 'e.g. 100 mg/ml or 10%',
+                            ),
+                          ),
+                        ),
                       ],
-                      onChanged: (v) => category = v!,
                     ),
                     const SizedBox(height: 8),
                     Row(
@@ -629,6 +678,92 @@ class _PharmacyScreenState extends State<PharmacyScreen> with SingleTickerProvid
                           child: TextField(textCapitalization: TextCapitalization.sentences, controller: thresholdCtrl,
                             keyboardType: TextInputType.number,
                             decoration: const InputDecoration(labelText: 'Reorder At *', suffixText: 'units'),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    const Text('Dosage Rate (Weight-Based Dosage Calculation)', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: AppColors.primary)),
+                    const Divider(),
+                    Wrap(
+                      spacing: 6,
+                      runSpacing: 6,
+                      children: [
+                        ChoiceChip(
+                          label: const Text('1 ml / 10 kg'),
+                          selected: selectedDosagePreset == '1ml_10kg',
+                          onSelected: (sel) {
+                            if (sel) {
+                              setStateDialog(() {
+                                selectedDosagePreset = '1ml_10kg';
+                                dosageMlCtrl.text = '1';
+                                dosageKgCtrl.text = '10';
+                              });
+                            }
+                          },
+                        ),
+                        ChoiceChip(
+                          label: const Text('1 ml / 50 kg'),
+                          selected: selectedDosagePreset == '1ml_50kg',
+                          onSelected: (sel) {
+                            if (sel) {
+                              setStateDialog(() {
+                                selectedDosagePreset = '1ml_50kg';
+                                dosageMlCtrl.text = '1';
+                                dosageKgCtrl.text = '50';
+                              });
+                            }
+                          },
+                        ),
+                        ChoiceChip(
+                          label: const Text('1 ml / 100 kg'),
+                          selected: selectedDosagePreset == '1ml_100kg',
+                          onSelected: (sel) {
+                            if (sel) {
+                              setStateDialog(() {
+                                selectedDosagePreset = '1ml_100kg';
+                                dosageMlCtrl.text = '1';
+                                dosageKgCtrl.text = '100';
+                              });
+                            }
+                          },
+                        ),
+                        ChoiceChip(
+                          label: const Text('Custom Rate'),
+                          selected: selectedDosagePreset == 'custom',
+                          onSelected: (sel) {
+                            if (sel) {
+                              setStateDialog(() => selectedDosagePreset = 'custom');
+                            }
+                          },
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: TextField(
+                            controller: dosageMlCtrl,
+                            keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                            decoration: InputDecoration(
+                              labelText: 'Administer ($unit)',
+                              hintText: 'e.g. 1',
+                            ),
+                          ),
+                        ),
+                        const Padding(
+                          padding: EdgeInsets.symmetric(horizontal: 8.0),
+                          child: Text('PER', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: Colors.grey)),
+                        ),
+                        Expanded(
+                          child: TextField(
+                            controller: dosageKgCtrl,
+                            keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                            decoration: const InputDecoration(
+                              labelText: 'Body Weight (kg)',
+                              hintText: 'e.g. 50',
+                            ),
                           ),
                         ),
                       ],
@@ -816,6 +951,11 @@ class _PharmacyScreenState extends State<PharmacyScreen> with SingleTickerProvid
                                 );
                                 return;
                               }
+                              final dMl = double.tryParse(dosageMlCtrl.text) ?? 1.0;
+                              final dKg = double.tryParse(dosageKgCtrl.text) ?? 50.0;
+                              final ratePerKg = dKg > 0 ? (dMl / dKg) : null;
+                              final rateText = '$dMl $unit / $dKg kg';
+
                               BlocProvider.of<PharmacyBloc>(context).add(AddMedication({
                                 'name': nameCtrl.text.trim(),
                                 'category': category,
@@ -828,6 +968,9 @@ class _PharmacyScreenState extends State<PharmacyScreen> with SingleTickerProvid
                                 'meat_withdrawal_days': meatWithdrawCtrl.text.trim(),
                                 'supplier': supplierCtrl.text.trim().isNotEmpty ? supplierCtrl.text.trim() : null,
                                 'expiry_date': expiryDate?.toIso8601String(),
+                                'concentration': concentrationCtrl.text.trim().isNotEmpty ? concentrationCtrl.text.trim() : null,
+                                'dosage_rate_per_kg': ratePerKg,
+                                'dosage_rate_text': rateText,
                               }));
                               Navigator.pop(dialogCtx);
                             },
@@ -855,6 +998,17 @@ class _PharmacyScreenState extends State<PharmacyScreen> with SingleTickerProvid
     final milkWithdrawCtrl = TextEditingController(text: med.milkWithdrawalDays.toString());
     final meatWithdrawCtrl = TextEditingController(text: med.meatWithdrawalDays.toString());
     final costPerUnitCtrl = TextEditingController(text: med.costPerUnit.toStringAsFixed(2));
+    final concentrationCtrl = TextEditingController(text: med.concentration ?? '');
+
+    double initMl = 1.0;
+    double initKg = 50.0;
+    if (med.dosageRatePerKg != null && med.dosageRatePerKg! > 0) {
+      initMl = 1.0;
+      initKg = (1.0 / med.dosageRatePerKg!).roundToDouble();
+      if (initKg <= 0) initKg = 1.0;
+    }
+    final dosageMlCtrl = TextEditingController(text: initMl.toStringAsFixed(0));
+    final dosageKgCtrl = TextEditingController(text: initKg.toStringAsFixed(0));
 
     String category = med.category;
     String unit = med.unit;
@@ -885,13 +1039,26 @@ class _PharmacyScreenState extends State<PharmacyScreen> with SingleTickerProvid
                       decoration: const InputDecoration(labelText: 'Medication Name *'),
                     ),
                     const SizedBox(height: 12),
-                    DropdownButtonFormField<String>(
-                      value: category,
-                      decoration: const InputDecoration(labelText: 'Category *'),
-                      items: ['antibiotic', 'vaccine', 'dewormer', 'vitamin', 'supplement', 'other']
-                          .map((c) => DropdownMenuItem(value: c, child: Text(c.toUpperCase())))
-                          .toList(),
-                      onChanged: (v) => setStateDialog(() => category = v!),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: DropdownButtonFormField<String>(
+                            value: category,
+                            decoration: const InputDecoration(labelText: 'Category *'),
+                            items: ['antibiotic', 'vaccine', 'dewormer', 'vitamin', 'supplement', 'other']
+                                .map((c) => DropdownMenuItem(value: c, child: Text(c.toUpperCase())))
+                                .toList(),
+                            onChanged: (v) => setStateDialog(() => category = v!),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: TextField(
+                            controller: concentrationCtrl,
+                            decoration: const InputDecoration(labelText: 'Concentration', hintText: 'e.g. 100 mg/ml or 10%'),
+                          ),
+                        ),
+                      ],
                     ),
                     const SizedBox(height: 12),
                     DropdownButtonFormField<String>(
@@ -901,6 +1068,37 @@ class _PharmacyScreenState extends State<PharmacyScreen> with SingleTickerProvid
                           .map((u) => DropdownMenuItem(value: u, child: Text(u)))
                           .toList(),
                       onChanged: (v) => setStateDialog(() => unit = v!),
+                    ),
+                    const SizedBox(height: 12),
+                    const Text('Dosage Rate (Weight-Based Dosage Calculation)', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: AppColors.primary)),
+                    const Divider(),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: TextField(
+                            controller: dosageMlCtrl,
+                            keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                            decoration: InputDecoration(
+                              labelText: 'Administer ($unit)',
+                              hintText: 'e.g. 1',
+                            ),
+                          ),
+                        ),
+                        const Padding(
+                          padding: EdgeInsets.symmetric(horizontal: 8.0),
+                          child: Text('PER', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: Colors.grey)),
+                        ),
+                        Expanded(
+                          child: TextField(
+                            controller: dosageKgCtrl,
+                            keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                            decoration: const InputDecoration(
+                              labelText: 'Body Weight (kg)',
+                              hintText: 'e.g. 50',
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
                     const SizedBox(height: 12),
                     TextField(
@@ -977,6 +1175,11 @@ class _PharmacyScreenState extends State<PharmacyScreen> with SingleTickerProvid
                                 );
                                 return;
                               }
+                              final dMl = double.tryParse(dosageMlCtrl.text) ?? 1.0;
+                              final dKg = double.tryParse(dosageKgCtrl.text) ?? 50.0;
+                              final ratePerKg = dKg > 0 ? (dMl / dKg) : null;
+                              final rateText = '$dMl $unit / $dKg kg';
+
                               BlocProvider.of<PharmacyBloc>(context).add(EditMedication(
                                 med.id,
                                 {
@@ -989,6 +1192,9 @@ class _PharmacyScreenState extends State<PharmacyScreen> with SingleTickerProvid
                                   'meat_withdrawal_days': meatWithdrawCtrl.text.trim(),
                                   'supplier': supplierCtrl.text.trim().isNotEmpty ? supplierCtrl.text.trim() : null,
                                   'expiry_date': expiryDate?.toIso8601String(),
+                                  'concentration': concentrationCtrl.text.trim().isNotEmpty ? concentrationCtrl.text.trim() : null,
+                                  'dosage_rate_per_kg': ratePerKg,
+                                  'dosage_rate_text': rateText,
                                 },
                               ));
                               Navigator.pop(dialogCtx);
@@ -1280,6 +1486,7 @@ class _PharmacyScreenState extends State<PharmacyScreen> with SingleTickerProvid
                   'id': (isMap ? a['id'] : a.id)?.toString() ?? '',
                   'tag': (isMap ? a['tag_id'] : a.tagId)?.toString() ?? 'Unknown',
                   'species': (isMap ? a['species'] : a.species)?.toString() ?? 'Other',
+                  'weight': (isMap ? a['weight'] : a.weight) != null ? double.tryParse((isMap ? a['weight'] : a.weight).toString()) : null,
                 });
               }
             }
@@ -1287,6 +1494,16 @@ class _PharmacyScreenState extends State<PharmacyScreen> with SingleTickerProvid
             return StatefulBuilder(
               builder: (ctx, setDialogState) {
                 final matchMed = medications.firstWhere((m) => m.id == selectedMedId);
+                final selAnimal = activeAnimals.firstWhere((a) => a['id'] == selectedAnimalId, orElse: () => {});
+                final double? animWeight = selAnimal['weight'] != null ? double.tryParse(selAnimal['weight'].toString()) : null;
+                
+                double? recDose;
+                if (animWeight != null && animWeight > 0 && matchMed.dosageRatePerKg != null && matchMed.dosageRatePerKg! > 0) {
+                  recDose = animWeight * matchMed.dosageRatePerKg!;
+                  if (doseCtrl.text.isEmpty) {
+                    doseCtrl.text = recDose.toStringAsFixed(1);
+                  }
+                }
 
                 // Auto calculate treatment cost dynamically in forms
                 final double dose = double.tryParse(doseCtrl.text) ?? 0.0;
@@ -1304,9 +1521,13 @@ class _PharmacyScreenState extends State<PharmacyScreen> with SingleTickerProvid
                           decoration: const InputDecoration(labelText: 'Select Animal *'),
                           isExpanded: true,
                           items: activeAnimals.map((a) {
-                            return DropdownMenuItem(value: a['id'] as String, child: Text('Tag ${a['tag']} (${a['species']})'));
+                            final wText = a['weight'] != null ? ' - ${a['weight']}kg' : '';
+                            return DropdownMenuItem(value: a['id'] as String, child: Text('Tag ${a['tag']} (${a['species']}$wText)'));
                           }).toList(),
-                          onChanged: (v) => setDialogState(() => selectedAnimalId = v),
+                          onChanged: (v) => setDialogState(() {
+                            selectedAnimalId = v;
+                            doseCtrl.clear();
+                          }),
                         ),
                         const SizedBox(height: 8),
                         DropdownButtonFormField<String>(
@@ -1314,12 +1535,38 @@ class _PharmacyScreenState extends State<PharmacyScreen> with SingleTickerProvid
                           decoration: const InputDecoration(labelText: 'Administered Drug *'),
                           isExpanded: true,
                           items: medications.map((m) {
-                            return DropdownMenuItem(value: m.id, child: Text(m.name));
+                            final conc = m.concentration != null ? ' (${m.concentration})' : '';
+                            return DropdownMenuItem(value: m.id, child: Text('${m.name}$conc'));
                           }).toList(),
                           onChanged: (v) => setDialogState(() {
                             selectedMedId = v;
+                            doseCtrl.clear();
                           }),
                         ),
+                        if (recDose != null && recDose > 0) ...[
+                          const SizedBox(height: 10),
+                          Container(
+                            width: double.infinity,
+                            padding: const EdgeInsets.all(10),
+                            decoration: BoxDecoration(
+                              color: AppColors.primary.withValues(alpha: 0.08),
+                              borderRadius: BorderRadius.circular(10),
+                              border: Border.all(color: AppColors.primary.withValues(alpha: 0.25)),
+                            ),
+                            child: Row(
+                              children: [
+                                const Icon(Icons.calculate_outlined, color: AppColors.primary, size: 20),
+                                const SizedBox(width: 8),
+                                Expanded(
+                                  child: Text(
+                                    '💡 Smart Calculated Dose for #${selAnimal['tag']} (${animWeight}kg) @ ${matchMed.dosageRateText ?? "${matchMed.dosageRatePerKg} ml/kg"}: ${recDose.toStringAsFixed(1)} ${matchMed.unit}',
+                                    style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: AppColors.primary),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
                         const SizedBox(height: 8),
                         Row(
                           children: [

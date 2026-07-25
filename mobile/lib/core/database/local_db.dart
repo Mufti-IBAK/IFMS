@@ -342,6 +342,9 @@ class LocalMedications extends Table {
   TextColumn get batchNumber => text().nullable()();
   IntColumn get milkWithdrawalDays => integer().withDefault(const Constant(0))();
   IntColumn get meatWithdrawalDays => integer().withDefault(const Constant(0))();
+  RealColumn get dosageRatePerKg => real().nullable()(); // Numeric ml per kg (e.g. 0.02 for 1ml/50kg)
+  TextColumn get dosageRateText => text().nullable()();  // Readable text (e.g. "1 ml / 50 kg")
+  TextColumn get concentration => text().nullable()();   // Concentration (e.g. "100 mg/ml" or "10%")
   BoolColumn get isActive => boolean().withDefault(const Constant(true))();
 
   @override
@@ -507,7 +510,7 @@ class LocalDatabase extends _$LocalDatabase {
   LocalDatabase([QueryExecutor? executor]) : super(executor ?? _openConnection());
 
   @override
-  int get schemaVersion => 27;
+  int get schemaVersion => 28;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -633,11 +636,28 @@ class LocalDatabase extends _$LocalDatabase {
           await m.addColumn(localFeedItems, localFeedItems.purchaseUnit);
         } catch (_) {}
       }
+      // --- V28: Medication dosage & concentration ---
+      if (from < 28) {
+        try {
+          await m.addColumn(localMedications, localMedications.dosageRatePerKg);
+          await m.addColumn(localMedications, localMedications.dosageRateText);
+          await m.addColumn(localMedications, localMedications.concentration);
+        } catch (_) {}
+      }
     },
     beforeOpen: (details) async {
       // Ensure purchase_unit column exists in local_feed_items table
       try {
         await customStatement("ALTER TABLE local_feed_items ADD COLUMN purchase_unit TEXT DEFAULT 'bag';");
+      } catch (_) {}
+      try {
+        await customStatement("ALTER TABLE local_medications ADD COLUMN dosage_rate_per_kg REAL;");
+      } catch (_) {}
+      try {
+        await customStatement("ALTER TABLE local_medications ADD COLUMN dosage_rate_text TEXT;");
+      } catch (_) {}
+      try {
+        await customStatement("ALTER TABLE local_medications ADD COLUMN concentration TEXT;");
       } catch (_) {}
 
       // Create high-performance indexing for SQLite queries

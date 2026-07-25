@@ -2,6 +2,7 @@ import 'package:drift/drift.dart';
 import 'package:uuid/uuid.dart';
 import '../../core/database/local_db.dart';
 import '../../core/di/service_locator.dart';
+import '../../core/network/api_client.dart';
 import '../../core/network/notification_service.dart';
 
 class PharmacyRepository {
@@ -20,7 +21,12 @@ class PharmacyRepository {
   }
 
   Future<void> addMedication(Map<String, dynamic> data) async {
-    final uuid = const Uuid().v4();
+    final uuid = data['id'] ?? const Uuid().v4();
+    data['id'] = uuid;
+    final dosageRatePerKg = data['dosage_rate_per_kg'] != null ? double.tryParse(data['dosage_rate_per_kg'].toString()) : null;
+    final dosageRateText = data['dosage_rate_text'] as String?;
+    final concentration = data['concentration'] as String?;
+
     await db.into(db.localMedications).insertOnConflictUpdate(LocalMedicationsCompanion.insert(
       id: uuid,
       name: data['name'],
@@ -34,8 +40,34 @@ class PharmacyRepository {
       batchNumber: Value(data['batch_number']),
       milkWithdrawalDays: Value(int.parse((data['milk_withdrawal_days'] ?? 0).toString())),
       meatWithdrawalDays: Value(int.parse((data['meat_withdrawal_days'] ?? 0).toString())),
+      dosageRatePerKg: Value(dosageRatePerKg),
+      dosageRateText: Value(dosageRateText),
+      concentration: Value(concentration),
       isActive: const Value(true),
     ));
+
+    // Online-First sync to Supabase Cloud REST
+    try {
+      final apiClient = sl<ApiClient>();
+      await apiClient.dio.post('/medications', data: {
+        'id': uuid,
+        'name': data['name'],
+        'category': data['category'],
+        'unit': data['unit'],
+        'current_stock': double.parse(data['current_stock'].toString()),
+        'reorder_threshold': double.parse((data['reorder_threshold'] ?? 5.0).toString()),
+        'cost_per_unit': double.parse(data['cost_per_unit'].toString()),
+        'supplier': data['supplier'],
+        'expiry_date': data['expiry_date'],
+        'batch_number': data['batch_number'],
+        'milk_withdrawal_days': int.parse((data['milk_withdrawal_days'] ?? 0).toString()),
+        'meat_withdrawal_days': int.parse((data['meat_withdrawal_days'] ?? 0).toString()),
+        'dosage_rate_per_kg': dosageRatePerKg,
+        'dosage_rate_text': dosageRateText,
+        'concentration': concentration,
+        'is_active': true,
+      });
+    } catch (_) {}
 
     // Log the initial stock if greater than zero
     final initialStock = double.parse(data['current_stock'].toString());
@@ -59,6 +91,10 @@ class PharmacyRepository {
   }
 
   Future<void> updateMedication(String id, Map<String, dynamic> data) async {
+    final dosageRatePerKg = data.containsKey('dosage_rate_per_kg')
+        ? (data['dosage_rate_per_kg'] != null ? double.tryParse(data['dosage_rate_per_kg'].toString()) : null)
+        : null;
+
     await (db.update(db.localMedications)..where((t) => t.id.equals(id)))
         .write(LocalMedicationsCompanion(
       name: data.containsKey('name') ? Value(data['name']) : const Value.absent(),
@@ -71,8 +107,35 @@ class PharmacyRepository {
       batchNumber: data.containsKey('batch_number') ? Value(data['batch_number']) : const Value.absent(),
       milkWithdrawalDays: data.containsKey('milk_withdrawal_days') ? Value(int.parse(data['milk_withdrawal_days'].toString())) : const Value.absent(),
       meatWithdrawalDays: data.containsKey('meat_withdrawal_days') ? Value(int.parse(data['meat_withdrawal_days'].toString())) : const Value.absent(),
+      dosageRatePerKg: data.containsKey('dosage_rate_per_kg') ? Value(dosageRatePerKg) : const Value.absent(),
+      dosageRateText: data.containsKey('dosage_rate_text') ? Value(data['dosage_rate_text']) : const Value.absent(),
+      concentration: data.containsKey('concentration') ? Value(data['concentration']) : const Value.absent(),
       isActive: data.containsKey('is_active') ? Value(data['is_active']) : const Value.absent(),
     ));
+
+    // Online-First sync to Supabase Cloud REST
+    try {
+      final apiClient = sl<ApiClient>();
+      final Map<String, dynamic> patchData = {};
+      if (data.containsKey('name')) patchData['name'] = data['name'];
+      if (data.containsKey('category')) patchData['category'] = data['category'];
+      if (data.containsKey('unit')) patchData['unit'] = data['unit'];
+      if (data.containsKey('reorder_threshold')) patchData['reorder_threshold'] = double.parse(data['reorder_threshold'].toString());
+      if (data.containsKey('cost_per_unit')) patchData['cost_per_unit'] = double.parse(data['cost_per_unit'].toString());
+      if (data.containsKey('supplier')) patchData['supplier'] = data['supplier'];
+      if (data.containsKey('expiry_date')) patchData['expiry_date'] = data['expiry_date'];
+      if (data.containsKey('batch_number')) patchData['batch_number'] = data['batch_number'];
+      if (data.containsKey('milk_withdrawal_days')) patchData['milk_withdrawal_days'] = int.parse(data['milk_withdrawal_days'].toString());
+      if (data.containsKey('meat_withdrawal_days')) patchData['meat_withdrawal_days'] = int.parse(data['meat_withdrawal_days'].toString());
+      if (data.containsKey('dosage_rate_per_kg')) patchData['dosage_rate_per_kg'] = dosageRatePerKg;
+      if (data.containsKey('dosage_rate_text')) patchData['dosage_rate_text'] = data['dosage_rate_text'];
+      if (data.containsKey('concentration')) patchData['concentration'] = data['concentration'];
+      if (data.containsKey('is_active')) patchData['is_active'] = data['is_active'];
+
+      if (patchData.isNotEmpty) {
+        await apiClient.dio.patch('/medications?id=eq.$id', data: patchData);
+      }
+    } catch (_) {}
   }
 
   // ──────────────────────────────────────────────
@@ -166,7 +229,7 @@ class PharmacyRepository {
     final maxWithdrawalDays = med.milkWithdrawalDays > med.meatWithdrawalDays ? med.milkWithdrawalDays : med.meatWithdrawalDays;
     final withdrawalEndDate = maxWithdrawalDays > 0 ? treatmentDate.add(Duration(days: maxWithdrawalDays)) : null;
 
-    // 4. Record the treatment
+    // 4. Record the treatment locally
     await db.into(db.localAnimalMedicalRecords).insertOnConflictUpdate(LocalAnimalMedicalRecordsCompanion.insert(
       id: uuid,
       animalId: animalId,
@@ -179,6 +242,29 @@ class PharmacyRepository {
       withdrawalEndDate: Value(withdrawalEndDate),
       notes: Value(data['notes']),
     ));
+
+    // Online-First sync to Supabase Cloud REST
+    try {
+      final apiClient = sl<ApiClient>();
+      await apiClient.dio.post('/animal_medical_records', data: {
+        'id': uuid,
+        'animal_id': animalId,
+        'medication_id': medicationId,
+        'administered_dose': dose,
+        'cost': cost,
+        'treatment_date': treatmentDate.toIso8601String(),
+        'diagnosed_condition': data['diagnosed_condition'],
+        'administered_by': data['administered_by'],
+        'withdrawal_end_date': withdrawalEndDate?.toIso8601String(),
+        'notes': data['notes'],
+      });
+
+      // Update remaining medication stock on Supabase Cloud
+      final double newStock = (med.currentStock - dose).clamp(0.0, double.infinity);
+      await apiClient.dio.patch('/medications?id=eq.$medicationId', data: {
+        'current_stock': newStock,
+      });
+    } catch (_) {}
 
     // 5. Deduct stock from medications catalog
     final double newStock = (med.currentStock - dose).clamp(0.0, double.infinity);

@@ -1417,6 +1417,25 @@ class _AnimalsScreenState extends State<AnimalsScreen> {
                               );
                               return;
                             }
+
+                            // Species-Scoped Tag Uniqueness Check
+                            final tagInput = tagController.text.trim().toLowerCase();
+                            final speciesInput = selectedSpecies.toLowerCase();
+                            final animState = context.read<AnimalsBloc>().state;
+                            if (animState is AnimalsLoaded) {
+                              final isDup = animState.animals.any((a) =>
+                                  a.species.toLowerCase() == speciesInput &&
+                                  a.tagId.toLowerCase() == tagInput);
+                              if (isDup) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text('Tag #${tagController.text.trim()} is already registered for ${selectedSpecies.toUpperCase()}!'),
+                                    backgroundColor: AppColors.error,
+                                  ),
+                                );
+                                return;
+                              }
+                            }
                             DateTime finalDob;
                             if (dobUnknown) {
                               final val = double.tryParse(estimatedAgeController.text) ?? 1.0;
