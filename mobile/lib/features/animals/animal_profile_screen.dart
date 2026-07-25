@@ -13,6 +13,7 @@ import '../../core/database/local_db.dart';
 import '../../core/network/api_client.dart';
 import '../../core/utils/report_service.dart';
 import '../finance/finance_repository.dart';
+import '../pharmacy/pharmacy_repository.dart';
 import 'animals_repository.dart';
 import 'animals_bloc.dart';
 import 'package:ifms_mobile/core/widgets/animal_silhouette.dart';
