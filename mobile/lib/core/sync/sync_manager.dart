@@ -19,8 +19,13 @@ class SyncManager {
         triggerSync();
       }
     });
-    Timer.periodic(const Duration(seconds: 3), (timer) {
-      syncAll();
+    // Outbound queue check every 30 seconds (lightweight, non-blocking)
+    Timer.periodic(const Duration(seconds: 30), (timer) {
+      triggerSync();
+    });
+    // Inbound full cloud sync every 15 minutes (batched, non-blocking)
+    Timer.periodic(const Duration(minutes: 15), (timer) {
+      restoreFromSupabase();
     });
   }
 
@@ -153,7 +158,7 @@ class SyncManager {
   }
 
   /// Pulls all tables from Supabase and inserts into local DB.
-  /// Uses insertOnConflictUpdate so it is safe to call multiple times.
+  /// Uses insertOnConflictUpdate in batch transactions for high performance.
   Future<void> restoreFromSupabase() async {
     await Future.wait([
       _restoreAnimals(),
@@ -169,8 +174,9 @@ class SyncManager {
     try {
       final res = await apiClient.dio.get('/animals', queryParameters: {'limit': '1000'});
       final rows = (res.data as List?) ?? [];
+      final companions = <LocalAnimalsCompanion>[];
       for (final r in rows) {
-        await db.into(db.localAnimals).insertOnConflictUpdate(LocalAnimalsCompanion.insert(
+        companions.add(LocalAnimalsCompanion.insert(
           id: r['id'] as String,
           tagId: r['tag_id'] as String,
           species: r['species'] as String,
@@ -194,6 +200,11 @@ class SyncManager {
           damId: Value(r['dam_id'] as String?),
         ));
       }
+      if (companions.isNotEmpty) {
+        await db.batch((batch) {
+          batch.insertAllOnConflictUpdate(db.localAnimals, companions);
+        });
+      }
     } catch (e) {
       // Non-fatal — continue restoring other tables
     }
@@ -203,16 +214,22 @@ class SyncManager {
     try {
       final res = await apiClient.dio.get('/milk_records', queryParameters: {'limit': '5000'});
       final rows = (res.data as List?) ?? [];
+      final companions = <LocalMilkRecordsCompanion>[];
       for (final r in rows) {
         final dateStr = r['record_date'] as String?;
         if (dateStr == null) continue;
-        await db.into(db.localMilkRecords).insertOnConflictUpdate(LocalMilkRecordsCompanion.insert(
+        companions.add(LocalMilkRecordsCompanion.insert(
           id: r['id'] as String,
           animalId: r['animal_id'] as String,
           recordDate: DateTime.parse(dateStr),
           milkingSession: r['milking_session'] as String? ?? 'morning',
           quantityLiters: (r['quantity_liters'] as num).toDouble(),
         ));
+      }
+      if (companions.isNotEmpty) {
+        await db.batch((batch) {
+          batch.insertAllOnConflictUpdate(db.localMilkRecords, companions);
+        });
       }
     } catch (e) {
       // Non-fatal
@@ -223,10 +240,11 @@ class SyncManager {
     try {
       final res = await apiClient.dio.get('/transactions', queryParameters: {'limit': '5000'});
       final rows = (res.data as List?) ?? [];
+      final companions = <LocalTransactionsCompanion>[];
       for (final r in rows) {
         final dateStr = r['transaction_date'] as String?;
         if (dateStr == null) continue;
-        await db.into(db.localTransactions).insertOnConflictUpdate(LocalTransactionsCompanion.insert(
+        companions.add(LocalTransactionsCompanion.insert(
           id: r['id'] as String,
           transactionType: r['transaction_type'] as String? ?? r['type'] as String? ?? 'expense',
           category: r['category'] as String? ?? 'general',
@@ -234,6 +252,11 @@ class SyncManager {
           transactionDate: DateTime.parse(dateStr),
           description: Value(r['description'] as String?),
         ));
+      }
+      if (companions.isNotEmpty) {
+        await db.batch((batch) {
+          batch.insertAllOnConflictUpdate(db.localTransactions, companions);
+        });
       }
     } catch (e) {
       // Non-fatal
@@ -244,8 +267,9 @@ class SyncManager {
     try {
       final res = await apiClient.dio.get('/tasks', queryParameters: {'limit': '2000'});
       final rows = (res.data as List?) ?? [];
+      final companions = <LocalTasksCompanion>[];
       for (final r in rows) {
-        await db.into(db.localTasks).insertOnConflictUpdate(LocalTasksCompanion.insert(
+        companions.add(LocalTasksCompanion.insert(
           id: r['id'] as String,
           title: r['title'] as String,
           status: r['status'] as String? ?? 'pending',
@@ -257,6 +281,11 @@ class SyncManager {
           category: Value(r['category'] as String?),
         ));
       }
+      if (companions.isNotEmpty) {
+        await db.batch((batch) {
+          batch.insertAllOnConflictUpdate(db.localTasks, companions);
+        });
+      }
     } catch (e) {
       // Non-fatal
     }
@@ -266,10 +295,11 @@ class SyncManager {
     try {
       final res = await apiClient.dio.get('/breeding_events', queryParameters: {'limit': '2000'});
       final rows = (res.data as List?) ?? [];
+      final companions = <LocalBreedingEventsCompanion>[];
       for (final r in rows) {
         final eventDateStr = r['event_date'] as String?;
         if (eventDateStr == null) continue;
-        await db.into(db.localBreedingEvents).insertOnConflictUpdate(LocalBreedingEventsCompanion.insert(
+        companions.add(LocalBreedingEventsCompanion.insert(
           id: r['id'] as String,
           animalId: r['animal_id'] as String,
           eventType: r['event_type'] as String,
@@ -278,6 +308,11 @@ class SyncManager {
           sireId: Value(r['sire_id'] as String?),
           payload: Value(r['payload'] != null ? jsonEncode(r['payload']) : null),
         ));
+      }
+      if (companions.isNotEmpty) {
+        await db.batch((batch) {
+          batch.insertAllOnConflictUpdate(db.localBreedingEvents, companions);
+        });
       }
     } catch (e) {
       // Non-fatal
@@ -288,9 +323,10 @@ class SyncManager {
     try {
       final res = await apiClient.dio.get('/alerts', queryParameters: {'limit': '2000'});
       final rows = (res.data as List?) ?? [];
+      final companions = <LocalAlertsCompanion>[];
       for (final r in rows) {
         final createdStr = r['created_at'] as String?;
-        await db.into(db.localAlerts).insertOnConflictUpdate(LocalAlertsCompanion.insert(
+        companions.add(LocalAlertsCompanion.insert(
           id: r['id'] as String,
           title: r['title'] as String? ?? '',
           severity: r['severity'] as String? ?? 'insight',
@@ -301,6 +337,11 @@ class SyncManager {
           location: Value(r['location'] as String?),
           impact: Value(r['impact'] as String?),
         ));
+      }
+      if (companions.isNotEmpty) {
+        await db.batch((batch) {
+          batch.insertAllOnConflictUpdate(db.localAlerts, companions);
+        });
       }
     } catch (e) {
       // Non-fatal
