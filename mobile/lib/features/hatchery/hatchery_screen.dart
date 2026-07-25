@@ -8,6 +8,7 @@ import 'package:ifms_mobile/core/widgets/custom_charts.dart';
 import '../../core/widgets/app_dropdown.dart';
 import 'hatchery_bloc.dart';
 import 'hatchery_repository.dart';
+import '../poultry/widgets/start_brooding_batch_sheet.dart';
 
 class HatcheryScreen extends StatefulWidget {
   const HatcheryScreen({super.key});
@@ -238,6 +239,32 @@ class _HatcheryScreenState extends State<HatcheryScreen> {
                                   minHeight: 6,
                                 ),
                               ),
+                              if (!isIncubating) ...[
+                                const SizedBox(height: 10),
+                                SizedBox(
+                                  width: double.infinity,
+                                  child: OutlinedButton.icon(
+                                    style: OutlinedButton.styleFrom(
+                                      foregroundColor: Colors.purple,
+                                      side: const BorderSide(color: Colors.purple),
+                                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                                    ),
+                                    icon: const Icon(Icons.flutter_dash, size: 16),
+                                    label: const Text('Transfer Hatched Chicks to Brooder Pen', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                                    onPressed: () {
+                                      showModalBottomSheet(
+                                        context: context,
+                                        isScrollControlled: true,
+                                        builder: (_) => StartBroodingBatchSheet(
+                                          initialHatcheryBatchId: batch['id'],
+                                          initialChickCount: hatched ?? eggCount,
+                                          initialBreed: breed,
+                                        ),
+                                      );
+                                    },
+                                  ),
+                                ),
+                              ],
                             ],
                           ),
                         ),
@@ -284,12 +311,11 @@ class _HatcheryScreenState extends State<HatcheryScreen> {
     int incubationDays = 21;
     DateTime collectionDate = DateTime.now();
     DateTime placementDate = DateTime.now();
+    String? validationError;
 
-    String? selectedCrate;
-    int rowStart = 1;
-    int rowEnd = 8;
-    int colStart = 1;
-    int colEnd = 11;
+    List<Map<String, dynamic>> crateSelections = [
+      {'crate': 'A1', 'cells': <String>{}, 'isCollapsed': false}
+    ];
 
     showDialog(
       context: context,
@@ -313,301 +339,386 @@ class _HatcheryScreenState extends State<HatcheryScreen> {
               ),
               content: Form(
                 key: formKey,
-                child: SingleChildScrollView(
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      AppDropdownFormField<String>(
-                        value: species,
-                        labelText: 'Species of Bird Egg *',
-                        items: speciesIncubationDays.keys.map((String val) {
-                          return DropdownMenuItem<String>(
-                            value: val,
-                            child: Text(val),
-                          );
-                        }).toList(),
-                        onChanged: (val) {
-                          if (val != null) {
-                            setState(() {
-                              species = val;
-                              incubationDays = speciesIncubationDays[val] ?? 21;
-                            });
-                          }
-                        },
-                      ),
-                      const SizedBox(height: 12),
-                      TextFormField(
-                        key: ValueKey(incubationDays),
-                        initialValue: incubationDays.toString(),
-                        decoration: const InputDecoration(labelText: 'Incubation Time (Days) *'),
-                        keyboardType: TextInputType.number,
-                        validator: (v) => v == null || v.isEmpty || int.tryParse(v) == null ? 'Enter valid days' : null,
-                        onChanged: (v) {
-                          final parsed = int.tryParse(v);
-                          if (parsed != null) {
-                            setState(() {
-                              incubationDays = parsed;
-                            });
-                          }
-                        },
-                      ),
-                      const SizedBox(height: 12),
-                      TextFormField(
-                        textCapitalization: TextCapitalization.sentences,
-                        decoration: const InputDecoration(labelText: 'Egg Source / Pen Name *'),
-                        validator: (v) => v == null || v.isEmpty ? 'Enter source' : null,
-                        onSaved: (v) => eggSource = v!,
-                      ),
-                      const SizedBox(height: 12),
-                      TextFormField(
-                        textCapitalization: TextCapitalization.sentences,
-                        decoration: const InputDecoration(labelText: 'Egg Count *'),
-                        keyboardType: TextInputType.number,
-                        validator: (v) => v == null || v.isEmpty || int.tryParse(v) == null ? 'Enter number' : null,
-                        onSaved: (v) => eggCount = int.parse(v!),
-                      ),
-                      const SizedBox(height: 12),
-                      TextFormField(
-                        textCapitalization: TextCapitalization.sentences,
-                        decoration: const InputDecoration(labelText: 'Breed / Variety (e.g. Noiler)'),
-                        onSaved: (v) => breed = v?.isNotEmpty == true ? v! : 'General',
-                      ),
-                      const SizedBox(height: 16),
-                      AppDropdownFormField<String>(
-                        value: selectedCrate,
-                        labelText: 'Assign to Crate',
-                        items: ['A1', 'A2', 'A3', 'A4', 'B1', 'B2', 'B3', 'B4', 'C1', 'C2', 'C3', 'C4', 'D1', 'D2', 'D3'].map((String val) {
-                          return DropdownMenuItem<String>(
-                            value: val,
-                            child: Text(val),
-                          );
-                        }).toList(),
-                        onChanged: (val) {
-                          setState(() {
-                            selectedCrate = val;
-                          });
-                        },
-                      ),
-                      const SizedBox(height: 12),
-                      Card(
-                        color: Colors.grey.shade50,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8),
-                          side: BorderSide(color: Colors.grey.shade200),
+                child: SizedBox(
+                  width: double.maxFinite,
+                  child: SingleChildScrollView(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        AppDropdownFormField<String>(
+                          value: species,
+                          labelText: 'Species of Bird Egg *',
+                          items: speciesIncubationDays.keys.map((String val) {
+                            return DropdownMenuItem<String>(
+                              value: val,
+                              child: Text(val),
+                            );
+                          }).toList(),
+                          onChanged: (val) {
+                            if (val != null) {
+                              setState(() {
+                                species = val;
+                                incubationDays = speciesIncubationDays[val] ?? 21;
+                              });
+                            }
+                          },
                         ),
-                        child: Padding(
-                          padding: const EdgeInsets.all(12),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              const Text('CRATE SECTION SELECTOR', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 11, color: AppColors.primary)),
-                              const SizedBox(height: 12),
-                              Row(
+                        const SizedBox(height: 12),
+                        TextFormField(
+                          key: ValueKey(incubationDays),
+                          initialValue: incubationDays.toString(),
+                          decoration: const InputDecoration(labelText: 'Incubation Time (Days) *'),
+                          keyboardType: TextInputType.number,
+                          validator: (v) => v == null || v.isEmpty || int.tryParse(v) == null ? 'Enter valid days' : null,
+                          onChanged: (v) {
+                            final parsed = int.tryParse(v);
+                            if (parsed != null) {
+                              setState(() {
+                                incubationDays = parsed;
+                              });
+                            }
+                          },
+                        ),
+                        const SizedBox(height: 12),
+                        TextFormField(
+                          textCapitalization: TextCapitalization.sentences,
+                          decoration: const InputDecoration(labelText: 'Egg Source / Pen Name *'),
+                          validator: (v) => v == null || v.isEmpty ? 'Enter source' : null,
+                          onSaved: (v) => eggSource = v!,
+                        ),
+                        const SizedBox(height: 12),
+                        TextFormField(
+                          textCapitalization: TextCapitalization.sentences,
+                          decoration: const InputDecoration(labelText: 'Egg Count *'),
+                          keyboardType: TextInputType.number,
+                          validator: (v) => v == null || v.isEmpty || int.tryParse(v) == null ? 'Enter number' : null,
+                          onChanged: (v) {
+                            final parsed = int.tryParse(v);
+                            if (parsed != null) {
+                              setState(() {
+                                eggCount = parsed;
+                                int req = (parsed / 88).ceil();
+                                if (req == 0) req = 1;
+                                while (crateSelections.length < req) {
+                                  crateSelections.add({
+                                    'crate': 'A${crateSelections.length + 1}',
+                                    'cells': <String>{},
+                                    'isCollapsed': false
+                                  });
+                                }
+                                while (crateSelections.length > req) {
+                                  crateSelections.removeLast();
+                                }
+                              });
+                            }
+                          },
+                          onSaved: (v) => eggCount = int.parse(v!),
+                        ),
+                        const SizedBox(height: 12),
+                        TextFormField(
+                          textCapitalization: TextCapitalization.sentences,
+                          decoration: const InputDecoration(labelText: 'Breed / Variety (e.g. Noiler)'),
+                          onSaved: (v) => breed = v?.isNotEmpty == true ? v! : 'General',
+                        ),
+                        const SizedBox(height: 16),
+                        ...List.generate(crateSelections.length, (index) {
+                          final crate = crateSelections[index];
+                          return Card(
+                            margin: const EdgeInsets.only(bottom: 16),
+                            color: Colors.grey.shade50,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(8),
+                              side: BorderSide(color: Colors.grey.shade300),
+                            ),
+                            child: Padding(
+                              padding: const EdgeInsets.all(12),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  Expanded(
-                                    child: TextFormField(
-                                      initialValue: rowStart.toString(),
-                                      decoration: const InputDecoration(labelText: 'Row Start (1-8)', isDense: true),
-                                      keyboardType: TextInputType.number,
-                                      onChanged: (v) {
-                                        final val = int.tryParse(v);
-                                        if (val != null && val >= 1 && val <= 8) setState(() => rowStart = val);
-                                      },
-                                    ),
-                                  ),
-                                  const SizedBox(width: 8),
-                                  Expanded(
-                                    child: TextFormField(
-                                      initialValue: rowEnd.toString(),
-                                      decoration: const InputDecoration(labelText: 'Row End (1-8)', isDense: true),
-                                      keyboardType: TextInputType.number,
-                                      onChanged: (v) {
-                                        final val = int.tryParse(v);
-                                        if (val != null && val >= 1 && val <= 8) setState(() => rowEnd = val);
-                                      },
-                                    ),
-                                  ),
-                                ],
-                              ),
-                              const SizedBox(height: 8),
-                              Row(
-                                children: [
-                                  Expanded(
-                                    child: TextFormField(
-                                      initialValue: colStart.toString(),
-                                      decoration: const InputDecoration(labelText: 'Col Start (1-11)', isDense: true),
-                                      keyboardType: TextInputType.number,
-                                      onChanged: (v) {
-                                        final val = int.tryParse(v);
-                                        if (val != null && val >= 1 && val <= 11) setState(() => colStart = val);
-                                      },
-                                    ),
-                                  ),
-                                  const SizedBox(width: 8),
-                                  Expanded(
-                                    child: TextFormField(
-                                      initialValue: colEnd.toString(),
-                                      decoration: const InputDecoration(labelText: 'Col End (1-11)', isDense: true),
-                                      keyboardType: TextInputType.number,
-                                      onChanged: (v) {
-                                        final val = int.tryParse(v);
-                                        if (val != null && val >= 1 && val <= 11) setState(() => colEnd = val);
-                                      },
-                                    ),
-                                  ),
-                                ],
-                              ),
-                              const SizedBox(height: 12),
-                              Text('Section: rows $rowStart–$rowEnd, cols $colStart–$colEnd = ${((rowEnd - rowStart + 1).clamp(0, 8) * (colEnd - colStart + 1).clamp(0, 11))} eggs', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Colors.black87)),
-                            ],
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-                      Card(
-                        color: Colors.white,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8),
-                          side: BorderSide(color: Colors.grey.shade200),
-                        ),
-                        child: Padding(
-                          padding: const EdgeInsets.all(8),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              const Text('CRATE GRID PREVIEW', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 10, color: AppColors.primary)),
-                              const SizedBox(height: 8),
-                              FittedBox(
-                                fit: BoxFit.scaleDown,
-                                alignment: Alignment.centerLeft,
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Row(
-                                      children: [
-                                        const SizedBox(width: 16),
-                                        ...List.generate(11, (c) => SizedBox(
-                                          width: 18, 
-                                          child: Center(child: Text('${c + 1}', style: const TextStyle(fontSize: 8, color: Colors.grey, fontWeight: FontWeight.bold))),
-                                        )),
-                                      ],
-                                    ),
-                                    const SizedBox(height: 2),
-                                    ...List.generate(8, (r) {
-                                      final rowNum = r + 1;
-                                      return Padding(
-                                        padding: const EdgeInsets.only(bottom: 2),
-                                        child: Row(
-                                          children: [
-                                            SizedBox(
-                                              width: 16,
-                                              child: Text('$rowNum', style: const TextStyle(fontSize: 8, color: Colors.grey, fontWeight: FontWeight.bold)),
+                                  Row(
+                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      Text('CRATE ${index + 1} SELECTOR', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 11, color: AppColors.primary)),
+                                      Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          IconButton(
+                                            icon: Icon(crate['isCollapsed'] == true ? Icons.expand_more : Icons.expand_less, size: 18),
+                                            onPressed: () {
+                                              setState(() {
+                                                crate['isCollapsed'] = !(crate['isCollapsed'] == true);
+                                              });
+                                            },
+                                          ),
+                                          if (crateSelections.length > 1)
+                                            IconButton(
+                                              icon: const Icon(Icons.delete, size: 16, color: Colors.red),
+                                              onPressed: () {
+                                                setState(() {
+                                                  crateSelections.removeAt(index);
+                                                });
+                                              },
                                             ),
-                                            ...List.generate(11, (c) {
-                                              final colNum = c + 1;
-                                              final isSelected = rowNum >= rowStart && rowNum <= rowEnd && colNum >= colStart && colNum <= colEnd;
-                                              return AnimatedContainer(
-                                                duration: const Duration(milliseconds: 200),
-                                                margin: const EdgeInsets.only(right: 2),
-                                                width: 16,
-                                                height: 16,
-                                                decoration: BoxDecoration(
-                                                  color: isSelected ? AppColors.primary : Colors.grey.shade100,
-                                                  borderRadius: BorderRadius.circular(2),
-                                                  border: Border.all(color: isSelected ? AppColors.primary : Colors.grey.shade300, width: 0.5),
-                                                  boxShadow: isSelected ? [BoxShadow(color: AppColors.primary.withValues(alpha: 0.3), blurRadius: 1)] : null,
-                                                ),
-                                                child: isSelected ? const Icon(Icons.egg, size: 10, color: Colors.white) : null,
-                                              );
-                                            }),
+                                        ],
+                                      )
+                                    ],
+                                  ),
+                                  if (crate['isCollapsed'] != true) ...[
+                                    const SizedBox(height: 8),
+                                    AppDropdownFormField<String>(
+                                      value: crate['crate'],
+                                    labelText: 'Crate Label',
+                                    items: ['A1', 'A2', 'A3', 'A4', 'B1', 'B2', 'B3', 'B4', 'C1', 'C2', 'C3', 'C4', 'D1', 'D2', 'D3'].map((String val) {
+                                      return DropdownMenuItem<String>(
+                                        value: val,
+                                        child: Text(val),
+                                      );
+                                    }).toList(),
+                                    onChanged: (val) {
+                                      setState(() {
+                                        crate['crate'] = val;
+                                      });
+                                    },
+                                  ),
+                                  const SizedBox(height: 12),
+                                  Row(
+                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      Text('Selected: ${(crate['cells'] as Set<String>).length} eggs', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Colors.black87)),
+                                      Row(
+                                        children: [
+                                          TextButton(
+                                            onPressed: () {
+                                              setState(() {
+                                                final cells = crate['cells'] as Set<String>;
+                                                for(int r=1; r<=8; r++) {
+                                                  for(int c=1; c<=11; c++) {
+                                                    cells.add('${r}_$c');
+                                                  }
+                                                }
+                                              });
+                                            },
+                                            child: const Text('All', style: TextStyle(fontSize: 12)),
+                                          ),
+                                          TextButton(
+                                            onPressed: () {
+                                              setState(() {
+                                                (crate['cells'] as Set<String>).clear();
+                                              });
+                                            },
+                                            child: const Text('Clear', style: TextStyle(fontSize: 12, color: Colors.red)),
+                                          ),
+                                        ],
+                                      )
+                                    ],
+                                  ),
+                                  const SizedBox(height: 4),
+                                  const Text('CRATE GRID PREVIEW (Tap cells to toggle)', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 10, color: AppColors.primary)),
+                                  const SizedBox(height: 8),
+                                  FittedBox(
+                                    fit: BoxFit.scaleDown,
+                                    alignment: Alignment.centerLeft,
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Row(
+                                          children: [
+                                            const SizedBox(width: 16),
+                                            ...List.generate(11, (c) => SizedBox(
+                                              width: 14, 
+                                              child: Center(child: Text('${c + 1}', style: const TextStyle(fontSize: 8, color: Colors.grey, fontWeight: FontWeight.bold))),
+                                            )),
                                           ],
                                         ),
-                                      );
-                                    }),
+                                        const SizedBox(height: 2),
+                                        ...List.generate(8, (r) {
+                                          final rowNum = r + 1;
+                                          return Padding(
+                                            padding: const EdgeInsets.only(bottom: 2),
+                                            child: Row(
+                                              children: [
+                                                SizedBox(
+                                                  width: 14,
+                                                  child: Text('$rowNum', style: const TextStyle(fontSize: 8, color: Colors.grey, fontWeight: FontWeight.bold)),
+                                                ),
+                                                ...List.generate(11, (c) {
+                                                  final colNum = c + 1;
+                                                  final cellId = '${rowNum}_$colNum';
+                                                  final isSelected = (crate['cells'] as Set<String>).contains(cellId);
+                                                  return GestureDetector(
+                                                    onTap: () {
+                                                      setState(() {
+                                                        if (isSelected) {
+                                                          (crate['cells'] as Set<String>).remove(cellId);
+                                                        } else {
+                                                          (crate['cells'] as Set<String>).add(cellId);
+                                                        }
+                                                      });
+                                                    },
+                                                    child: AnimatedContainer(
+                                                      duration: const Duration(milliseconds: 200),
+                                                      margin: const EdgeInsets.only(right: 2),
+                                                      width: 14,
+                                                      height: 14,
+                                                      decoration: BoxDecoration(
+                                                        color: isSelected ? AppColors.primary : Colors.grey.shade100,
+                                                        borderRadius: BorderRadius.circular(3),
+                                                        border: Border.all(color: isSelected ? AppColors.primary : Colors.grey.shade300, width: 0.5),
+                                                        boxShadow: isSelected ? [BoxShadow(color: AppColors.primary.withValues(alpha: 0.3), blurRadius: 1)] : null,
+                                                      ),
+                                                      child: isSelected ? const Icon(Icons.egg, size: 9, color: Colors.white) : null,
+                                                    ),
+                                                  );
+                                                }),
+                                              ],
+                                            ),
+                                          );
+                                        }),
+                                      ],
+                                    ),
+                                  ),
+                                  ],
+                                ],
+                              ),
+                            ),
+                          );
+                        }),
+                        if (crateSelections.length < 10)
+                          TextButton.icon(
+                            onPressed: () {
+                              setState(() {
+                                crateSelections.add({
+                                  'crate': 'A${crateSelections.length + 1}',
+                                  'cells': <String>{},
+                                  'isCollapsed': false
+                                });
+                              });
+                            },
+                            icon: const Icon(Icons.add),
+                            label: const Text('Add Another Crate'),
+                          ),
+                        const SizedBox(height: 16),
+                        Builder(
+                          builder: (context) {
+                            int totalSlots = crateSelections.fold<int>(0, (sum, item) => sum + (item['cells'] as Set<String>).length);
+                            int expectedTotal = eggCount;
+                            bool isMismatch = totalSlots != expectedTotal && expectedTotal > 0;
+                            
+                            return Card(
+                              color: isMismatch ? Colors.red.shade50 : Colors.blue.shade50,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(8),
+                                side: BorderSide(color: isMismatch ? Colors.red.shade200 : Colors.blue.shade200),
+                              ),
+                              child: Padding(
+                                padding: const EdgeInsets.all(12.0),
+                                child: Row(
+                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Text('EGG ASSIGNMENT SUMMARY', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 11, color: isMismatch ? Colors.red.shade700 : Colors.blue.shade700)),
+                                        const SizedBox(height: 4),
+                                        Text('Assigned on Grid: $totalSlots', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: isMismatch ? Colors.red.shade900 : Colors.blue.shade900)),
+                                      ],
+                                    ),
+                                    Column(
+                                      crossAxisAlignment: CrossAxisAlignment.end,
+                                      children: [
+                                        Text('Expected Total', style: TextStyle(fontSize: 11, color: isMismatch ? Colors.red.shade700 : Colors.blue.shade700)),
+                                        const SizedBox(height: 4),
+                                        Text('$expectedTotal', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: isMismatch ? Colors.red.shade900 : Colors.blue.shade900)),
+                                      ],
+                                    ),
                                   ],
                                 ),
                               ),
-                              const SizedBox(height: 8),
-                              Center(
-                                child: Text(
-                                  'Crate $selectedCrate Section: ${((rowEnd - rowStart + 1).clamp(0, 8) * (colEnd - colStart + 1).clamp(0, 11))} / 88 slots selected',
-                                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 11, color: AppColors.primary),
+                            );
+                          }
+                        ),
+                        const SizedBox(height: 16),
+                        Card(
+                          color: Colors.grey.shade50,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                            side: BorderSide(color: Colors.grey.shade200),
+                          ),
+                          child: Padding(
+                            padding: const EdgeInsets.all(8.0),
+                            child: Column(
+                              children: [
+                                ListTile(
+                                  dense: true,
+                                  title: Text('Date of Collection: ${formatDate(collectionDate)}'),
+                                  trailing: const Icon(Icons.calendar_today, size: 16),
+                                  onTap: () async {
+                                    final picked = await showDatePicker(builder: (context, child) => Theme(data: Theme.of(context).copyWith(useMaterial3: false), child: MediaQuery(data: MediaQuery.of(context).copyWith(textScaleFactor: 1.0), child: child!)), 
+                                      context: context,
+                                      initialDate: collectionDate,
+                                      firstDate: DateTime(2020),
+                                      lastDate: DateTime.now(),
+                                    );
+                                    if (picked != null) {
+                                      setState(() {
+                                        collectionDate = picked;
+                                      });
+                                    }
+                                  },
                                 ),
-                              ),
-                            ],
+                                const Divider(height: 1),
+                                ListTile(
+                                  dense: true,
+                                  title: Text('Date of Placement: ${formatDate(placementDate)}'),
+                                  trailing: const Icon(Icons.calendar_today, size: 16),
+                                  onTap: () async {
+                                    final picked = await showDatePicker(builder: (context, child) => Theme(data: Theme.of(context).copyWith(useMaterial3: false), child: MediaQuery(data: MediaQuery.of(context).copyWith(textScaleFactor: 1.0), child: child!)), 
+                                      context: context,
+                                      initialDate: placementDate,
+                                      firstDate: DateTime(2020),
+                                      lastDate: DateTime.now().add(const Duration(days: 30)),
+                                    );
+                                    if (picked != null) {
+                                      setState(() {
+                                        placementDate = picked;
+                                      });
+                                    }
+                                  },
+                                ),
+                              ],
+                            ),
                           ),
                         ),
-                      ),
-                      const SizedBox(height: 16),
-                      Card(
-                        color: Colors.grey.shade50,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8),
-                          side: BorderSide(color: Colors.grey.shade200),
-                        ),
-                        child: Padding(
-                          padding: const EdgeInsets.all(8.0),
-                          child: Column(
-                            children: [
-                              ListTile(
-                                dense: true,
-                                title: Text('Date of Collection: ${formatDate(collectionDate)}'),
-                                trailing: const Icon(Icons.calendar_today, size: 16),
-                                onTap: () async {
-                                  final picked = await showDatePicker(
-                                    context: context,
-                                    initialDate: collectionDate,
-                                    firstDate: DateTime(2020),
-                                    lastDate: DateTime.now(),
-                                  );
-                                  if (picked != null) {
-                                    setState(() {
-                                      collectionDate = picked;
-                                    });
-                                  }
-                                },
-                              ),
-                              const Divider(height: 1),
-                              ListTile(
-                                dense: true,
-                                title: Text('Date of Placement: ${formatDate(placementDate)}'),
-                                trailing: const Icon(Icons.calendar_today, size: 16),
-                                onTap: () async {
-                                  final picked = await showDatePicker(
-                                    context: context,
-                                    initialDate: placementDate,
-                                    firstDate: DateTime(2020),
-                                    lastDate: DateTime.now().add(const Duration(days: 30)),
-                                  );
-                                  if (picked != null) {
-                                    setState(() {
-                                      placementDate = picked;
-                                    });
-                                  }
-                                },
-                              ),
-                            ],
+                        const SizedBox(height: 16),
+                        Card(
+                          color: Colors.green.shade50,
+                          child: Padding(
+                            padding: const EdgeInsets.all(12),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                const Text('ESTIMATED TIMELINE', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 11, color: Colors.green)),
+                                const SizedBox(height: 6),
+                                _buildDateRow('Expected Hatching', formatDate(expectedHatchDate)),
+                                _buildDateRow('Transfer to Hatcher', formatDate(switchDate)),
+                                _buildDateRow('Chick Collection', formatDate(collectionProposedDate)),
+                              ],
+                            ),
                           ),
                         ),
-                      ),
-                      const SizedBox(height: 16),
-                      Card(
-                        color: Colors.green.shade50,
-                        child: Padding(
-                          padding: const EdgeInsets.all(12),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              const Text('ESTIMATED TIMELINE', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 11, color: Colors.green)),
-                              const SizedBox(height: 6),
-                              _buildDateRow('Expected Hatching', formatDate(expectedHatchDate)),
-                              _buildDateRow('Transfer to Hatcher', formatDate(switchDate)),
-                              _buildDateRow('Chick Collection', formatDate(collectionProposedDate)),
-                            ],
+                        if (validationError != null)
+                          Padding(
+                            padding: const EdgeInsets.only(top: 16),
+                            child: Row(
+                              children: [
+                                const Icon(Icons.error_outline, color: Colors.red, size: 18),
+                                const SizedBox(width: 8),
+                                Expanded(child: Text(validationError!, style: const TextStyle(color: Colors.red, fontSize: 12, fontWeight: FontWeight.bold))),
+                              ],
+                            ),
                           ),
-                        ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                 ),
               ),
@@ -621,6 +732,23 @@ class _HatcheryScreenState extends State<HatcheryScreen> {
                   onPressed: () {
                     if (formKey.currentState!.validate()) {
                       formKey.currentState!.save();
+                      
+                      int totalSlots = 0;
+                      for (var s in crateSelections) {
+                        totalSlots += (s['cells'] as Set<String>).length;
+                        s['cells'] = (s['cells'] as Set<String>).toList();
+                      }
+                      
+                      if (totalSlots != eggCount) {
+                        setState(() {
+                          validationError = 'Error: Egg count ($eggCount) does not match total crate slots selected ($totalSlots)';
+                        });
+                        return;
+                      } else {
+                        setState(() {
+                          validationError = null;
+                        });
+                      }
 
                       final breedMetadata = jsonEncode({
                         'breed': breed,
@@ -636,13 +764,8 @@ class _HatcheryScreenState extends State<HatcheryScreen> {
                         'initial_egg_cost': 0.0,
                         'set_date': formatDate(placementDate),
                         'expected_hatch_date': formatDate(expectedHatchDate),
-                        'crate_number': selectedCrate,
-                        'crate_section': selectedCrate != null ? jsonEncode({
-                          'row_start': rowStart,
-                          'row_end': rowEnd,
-                          'col_start': colStart,
-                          'col_end': colEnd,
-                        }) : null,
+                        'crate_number': crateSelections.map((c) => c['crate']).join(', '),
+                        'crate_section': jsonEncode(crateSelections),
                       }));
                       Navigator.pop(dialogContext);
                     }
@@ -742,8 +865,12 @@ class _HatcheryScreenState extends State<HatcheryScreen> {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              const Text('INCUBATION KEY DATES', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: AppColors.primary)),
+                              const Text('INCUBATION KEY DATES & LOCATION', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: AppColors.primary)),
                               const SizedBox(height: 8),
+                              if (batch['crate_number'] != null && batch['crate_number'].toString().isNotEmpty) ...[
+                                _buildDateRow('Assigned Crate(s)', batch['crate_number'].toString()),
+                                const Divider(color: Colors.black12, height: 16),
+                              ],
                               _buildDateRow('Egg Collection Date', collectionDate),
                               _buildDateRow('Placement in Incubator', batch['set_date'] ?? 'N/A'),
                               _buildDateRow('Switch to Hatchery', switchDate),

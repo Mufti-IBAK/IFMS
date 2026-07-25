@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 import 'package:uuid/uuid.dart';
 import '../../core/theme/app_colors.dart';
+import '../../core/utils/task_pdf_export_service.dart';
 import 'tasks_bloc.dart';
 
 class TasksScreen extends StatefulWidget {
@@ -13,11 +14,24 @@ class TasksScreen extends StatefulWidget {
 }
 
 class _TasksScreenState extends State<TasksScreen> {
+  String _filterScope = 'current_month'; // 'current_month', 'selected_month', 'all_time'
+  DateTime _selectedMonth = DateTime(DateTime.now().year, DateTime.now().month);
+
   @override
   void initState() {
     super.initState();
     // Load tasks on entry
     BlocProvider.of<TasksBloc>(context).add(LoadTasks());
+  }
+
+  String get _scopeTitle {
+    if (_filterScope == 'current_month') {
+      return 'Current Month (${DateFormat('MMM yyyy').format(DateTime.now())})';
+    } else if (_filterScope == 'selected_month') {
+      return 'Archive: ${DateFormat('MMMM yyyy').format(_selectedMonth)}';
+    } else {
+      return 'All Time Database Archive';
+    }
   }
 
   @override
@@ -27,6 +41,56 @@ class _TasksScreenState extends State<TasksScreen> {
       child: Scaffold(
         appBar: AppBar(
           title: const Text('TASK & OPERATION LOGS'),
+          actions: [
+            // Export PDF Action
+            BlocBuilder<TasksBloc, TasksState>(
+              builder: (context, state) {
+                if (state is TasksLoaded) {
+                  return IconButton(
+                    icon: const Icon(Icons.picture_as_pdf, color: Colors.white),
+                    tooltip: 'Export Task Log PDF',
+                    onPressed: () {
+                      final tasksToExport = _applyScopeFilter(state.tasks);
+                      TaskPdfExportService.exportTasksPdf(
+                        tasks: tasksToExport,
+                        filterTitle: _scopeTitle,
+                      );
+                    },
+                  );
+                }
+                return const SizedBox.shrink();
+              },
+            ),
+            // Month / Archive Scope Selector
+            PopupMenuButton<String>(
+              icon: const Icon(Icons.filter_alt, color: Colors.white),
+              tooltip: 'Monthly Clearing & Historical Archive',
+              onSelected: (val) async {
+                if (val == 'current_month' || val == 'all_time') {
+                  setState(() => _filterScope = val);
+                } else if (val == 'pick_month') {
+                  _showMonthYearPicker(context);
+                }
+              },
+              itemBuilder: (ctx) => [
+                CheckedPopupMenuItem<String>(
+                  value: 'current_month',
+                  checked: _filterScope == 'current_month',
+                  child: const Text('Current Month (Default Clean View)'),
+                ),
+                CheckedPopupMenuItem<String>(
+                  value: 'pick_month',
+                  checked: _filterScope == 'selected_month',
+                  child: Text('Retrieve Historical Month (${DateFormat('MMM yyyy').format(_selectedMonth)})...'),
+                ),
+                CheckedPopupMenuItem<String>(
+                  value: 'all_time',
+                  checked: _filterScope == 'all_time',
+                  child: const Text('All Time Database Archive'),
+                ),
+              ],
+            ),
+          ],
           bottom: const TabBar(
             tabs: [
               Tab(text: 'TODAY'),
@@ -55,7 +119,7 @@ class _TasksScreenState extends State<TasksScreen> {
             if (state is TasksLoading) {
               return const Center(child: CircularProgressIndicator());
             } else if (state is TasksLoaded) {
-              final allTasks = state.tasks;
+              final scopedTasks = _applyScopeFilter(state.tasks);
               
               // Categorize tasks for the tabs
               final now = DateTime.now();
@@ -69,7 +133,7 @@ class _TasksScreenState extends State<TasksScreen> {
               int publicCount = 0;
               int totalPending = 0;
 
-              for (var task in allTasks) {
+              for (var task in scopedTasks) {
                 final status = task is Map ? task['status'] : task.status;
                 final assignedTo = task is Map ? task['assignedTo'] : task.assignedTo;
                 
@@ -105,6 +169,31 @@ class _TasksScreenState extends State<TasksScreen> {
 
               return Column(
                 children: [
+                  // Active Scope Filter Header Banner
+                  Container(
+                    width: double.infinity,
+                    color: Colors.teal.shade50,
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Row(
+                          children: [
+                            const Icon(Icons.filter_list, size: 16, color: AppColors.primary),
+                            const SizedBox(width: 6),
+                            Text('Scope: $_scopeTitle', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: AppColors.primary)),
+                          ],
+                        ),
+                        if (_filterScope != 'current_month')
+                          TextButton(
+                            style: TextButton.styleFrom(padding: EdgeInsets.zero, minimumSize: const Size(50, 20), tapTargetSize: MaterialTapTargetSize.shrinkWrap),
+                            onPressed: () => setState(() => _filterScope = 'current_month'),
+                            child: const Text('Reset to Current Month', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
+                          ),
+                      ],
+                    ),
+                  ),
+
                   _buildStatsBanner(totalPending, personalCount, publicCount),
                   if (state.isOffline)
                     Container(
@@ -476,7 +565,7 @@ class _TasksScreenState extends State<TasksScreen> {
                         icon: const Icon(Icons.calendar_today),
                         label: const Text('Change'),
                         onPressed: () async {
-                          final picked = await showDatePicker(
+                          final picked = await showDatePicker(builder: (context, child) => Theme(data: Theme.of(context).copyWith(useMaterial3: false), child: MediaQuery(data: MediaQuery.of(context).copyWith(textScaleFactor: 1.0), child: child!)), 
                             context: context,
                             initialDate: selectedDate,
                             firstDate: DateTime.now().subtract(const Duration(days: 30)),
@@ -501,28 +590,35 @@ class _TasksScreenState extends State<TasksScreen> {
                         color: isPublic ? Colors.green.shade200 : Colors.blue.shade200,
                       ),
                     ),
-                    child: SwitchListTile(
-                      title: Text(
-                        isPublic ? 'Public Task' : 'Personal Task',
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          color: isPublic ? Colors.green.shade800 : Colors.blue.shade800,
+                    child: Material(
+                      color: Colors.transparent,
+                      borderRadius: BorderRadius.circular(12),
+                      child: SwitchListTile(
+                        title: Text(
+                          isPublic ? 'Public Task' : 'Personal Task',
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            color: isPublic ? Colors.green.shade800 : Colors.blue.shade800,
+                          ),
                         ),
-                      ),
-                      subtitle: Text(
-                        isPublic 
-                            ? 'Visible to all farm members. Synced with the cloud server.' 
-                            : 'Visible only on this device. Kept local.',
-                        style: TextStyle(
-                          fontSize: 11,
+                        subtitle: Text(
+                          isPublic 
+                              ? 'Visible to all farm members. Synced with the cloud server.' 
+                              : 'Visible only on this device. Kept local.',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: isPublic ? Colors.green.shade700 : Colors.blue.shade700,
+                          ),
+                        ),
+                        value: isPublic,
+                        onChanged: (val) {
+                          setState(() => isPublic = val);
+                        },
+                        secondary: Icon(
+                          isPublic ? Icons.cloud_upload : Icons.lock_outline,
                           color: isPublic ? Colors.green.shade700 : Colors.blue.shade700,
                         ),
                       ),
-                      value: isPublic,
-                      activeColor: Colors.green,
-                      onChanged: (val) {
-                        setState(() => isPublic = val);
-                      },
                     ),
                   ),
                   const SizedBox(height: 20),
@@ -584,5 +680,161 @@ class _TasksScreenState extends State<TasksScreen> {
         },
       ),
     );
+  }
+
+  Future<void> _showMonthYearPicker(BuildContext context) async {
+    int tempYear = _selectedMonth.year;
+    int tempMonth = _selectedMonth.month;
+
+    final months = [
+      'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
+    ];
+
+    await showDialog(
+      context: context,
+      builder: (ctx) {
+        return StatefulBuilder(
+          builder: (dialogCtx, setDialogState) {
+            return AlertDialog(
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+              title: const Row(
+                children: [
+                  Icon(Icons.calendar_month, color: AppColors.primary),
+                  SizedBox(width: 8),
+                  Text('Historical Month Retrieval', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                ],
+              ),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // Year Selector Row
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      IconButton(
+                        icon: const Icon(Icons.chevron_left),
+                        onPressed: tempYear > 2020
+                            ? () => setDialogState(() => tempYear--)
+                            : null,
+                      ),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+                        decoration: BoxDecoration(
+                          color: AppColors.primary.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Text(
+                          '$tempYear',
+                          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.primary),
+                        ),
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.chevron_right),
+                        onPressed: tempYear < DateTime.now().year + 1
+                            ? () => setDialogState(() => tempYear++)
+                            : null,
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+
+                  // 12 Months Grid (3 columns x 4 rows)
+                  GridView.builder(
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: 3,
+                      childAspectRatio: 2.2,
+                      crossAxisSpacing: 8,
+                      mainAxisSpacing: 8,
+                    ),
+                    itemCount: 12,
+                    itemBuilder: (mCtx, idx) {
+                      final monthNum = idx + 1;
+                      final isSelected = monthNum == tempMonth;
+                      return ChoiceChip(
+                        label: Text(
+                          months[idx],
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
+                            color: isSelected ? Colors.white : Colors.black87,
+                          ),
+                        ),
+                        selected: isSelected,
+                        selectedColor: AppColors.primary,
+                        backgroundColor: Colors.grey.shade100,
+                        onSelected: (selected) {
+                          if (selected) {
+                            setDialogState(() => tempMonth = monthNum);
+                          }
+                        },
+                      );
+                    },
+                  ),
+                ],
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(ctx),
+                  child: const Text('Cancel'),
+                ),
+                ElevatedButton(
+                  style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary, foregroundColor: Colors.white),
+                  onPressed: () {
+                    setState(() {
+                      _selectedMonth = DateTime(tempYear, tempMonth);
+                      _filterScope = 'selected_month';
+                    });
+                    Navigator.pop(ctx);
+                  },
+                  child: const Text('Retrieve Tasks'),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
+
+  List<dynamic> _applyScopeFilter(List<dynamic> tasks) {
+    if (_filterScope == 'all_time') {
+      return tasks;
+    }
+
+    final now = DateTime.now();
+    final currentMonthYear = DateTime(now.year, now.month);
+
+    return tasks.where((t) {
+      // Extract task date (dueDate or completedAt)
+      final dueDateRaw = t is Map ? t['due_date'] ?? t['dueDate'] : t.dueDate;
+      final completedAtRaw = t is Map ? t['completed_at'] ?? t['completedAt'] : t.completedAt;
+
+      DateTime? taskDate;
+      if (dueDateRaw != null) {
+        taskDate = dueDateRaw is DateTime ? dueDateRaw : DateTime.tryParse(dueDateRaw.toString());
+      } else if (completedAtRaw != null) {
+        taskDate = completedAtRaw is DateTime ? completedAtRaw : DateTime.tryParse(completedAtRaw.toString());
+      }
+
+      if (_filterScope == 'selected_month') {
+        // STRICT HISTORICAL RETRIEVAL: Only show tasks matching selected month & year!
+        if (taskDate == null) return false;
+        return taskDate.year == _selectedMonth.year && taskDate.month == _selectedMonth.month;
+      } else if (_filterScope == 'current_month') {
+        // DEFAULT CLEAN VIEW:
+        final status = (t is Map ? t['status'] : t.status)?.toString() ?? 'pending';
+        // Active pending tasks stay visible on screen
+        if (status != 'completed') return true;
+
+        if (taskDate == null) return true;
+        // Completed tasks only visible if completed/due in current month
+        return taskDate.year == currentMonthYear.year && taskDate.month == currentMonthYear.month;
+      }
+
+      return true;
+    }).toList();
   }
 }

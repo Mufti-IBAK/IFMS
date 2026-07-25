@@ -35,7 +35,7 @@ class _SetupScreenState extends State<SetupScreen> {
     });
 
     // 1. Check storage permissions via MethodChannel
-    const platform = MethodChannel('com.namanzo.ifms/permissions');
+    const platform = MethodChannel('com.royalheritage.farms/permissions');
     try {
       final isGranted = await platform.invokeMethod<bool>('isExternalStorageManager');
       _hasPermission = isGranted ?? false;
@@ -104,7 +104,7 @@ class _SetupScreenState extends State<SetupScreen> {
   }
 
   Future<void> _requestPermissions() async {
-    const platform = MethodChannel('com.namanzo.ifms/permissions');
+    const platform = MethodChannel('com.royalheritage.farms/permissions');
     try {
       await platform.invokeMethod('requestStoragePermissions');
     } catch (_) {}

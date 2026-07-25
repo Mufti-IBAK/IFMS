@@ -20,7 +20,7 @@ void main() async {
   
   // Request Storage & Notification permissions at startup via Native MethodChannel
   try {
-    const platform = MethodChannel('com.namanzo.ifms/permissions');
+    const platform = MethodChannel('com.royalheritage.farms/permissions');
     await platform.invokeMethod('requestStoragePermissions');
   } catch (e) {
     debugPrint('Permission request error: $e');

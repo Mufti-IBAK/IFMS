@@ -162,6 +162,14 @@ class FeedReportService {
 
   static pw.Widget _stockTable(List<dynamic> items) {
     return pw.TableHelper.fromTextArray(
+      columnWidths: {
+        0: const pw.FlexColumnWidth(3),
+        1: const pw.FixedColumnWidth(45),
+        2: const pw.FixedColumnWidth(60),
+        3: const pw.FixedColumnWidth(65),
+        4: const pw.FixedColumnWidth(80),
+        5: const pw.FixedColumnWidth(90),
+      },
       headerStyle: const pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 10, color: PdfColors.white),
       headerDecoration: const pw.BoxDecoration(color: PdfColors.green900),
       cellStyle: const pw.TextStyle(fontSize: 9),

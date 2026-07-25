@@ -12,6 +12,9 @@ class UserProfile {
   final String careerBio;
   final String role;
   final String? profilePicPath;
+  final String ownerEmail;
+  final String managerEmail;
+  final bool autoMonthlyStatementEmail;
 
   UserProfile({
     required this.name,
@@ -22,6 +25,9 @@ class UserProfile {
     required this.careerBio,
     required this.role,
     this.profilePicPath,
+    this.ownerEmail = 'owner@royalheritagefarms.com',
+    this.managerEmail = 'gm@royalheritagefarms.com',
+    this.autoMonthlyStatementEmail = true,
   });
 
   Map<String, dynamic> toJson() => {
@@ -33,6 +39,9 @@ class UserProfile {
         'careerBio': careerBio,
         'role': role,
         'profilePicPath': profilePicPath,
+        'ownerEmail': ownerEmail,
+        'managerEmail': managerEmail,
+        'autoMonthlyStatementEmail': autoMonthlyStatementEmail,
       };
 
   factory UserProfile.fromJson(Map<String, dynamic> json) => UserProfile(
@@ -44,6 +53,9 @@ class UserProfile {
         careerBio: json['careerBio'] ?? '',
         role: json['role'] ?? 'Casual Staff',
         profilePicPath: json['profilePicPath'],
+        ownerEmail: json['ownerEmail'] ?? 'owner@royalheritagefarms.com',
+        managerEmail: json['managerEmail'] ?? 'gm@royalheritagefarms.com',
+        autoMonthlyStatementEmail: json['autoMonthlyStatementEmail'] ?? true,
       );
 
   UserProfile copyWith({
@@ -55,6 +67,9 @@ class UserProfile {
     String? careerBio,
     String? role,
     String? profilePicPath,
+    String? ownerEmail,
+    String? managerEmail,
+    bool? autoMonthlyStatementEmail,
   }) {
     return UserProfile(
       name: name ?? this.name,
@@ -65,6 +80,9 @@ class UserProfile {
       careerBio: careerBio ?? this.careerBio,
       role: role ?? this.role,
       profilePicPath: profilePicPath ?? this.profilePicPath,
+      ownerEmail: ownerEmail ?? this.ownerEmail,
+      managerEmail: managerEmail ?? this.managerEmail,
+      autoMonthlyStatementEmail: autoMonthlyStatementEmail ?? this.autoMonthlyStatementEmail,
     );
   }
 }

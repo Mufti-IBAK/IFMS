@@ -482,13 +482,13 @@ class HomeScreen extends StatelessWidget {
                 ),
                 _insightKpiCard(
                   context,
-                  title: 'Today\'s Milk Yield',
+                  title: 'Total Milk Production',
                   icon: Icons.water_drop,
                   color: Colors.teal,
                   route: '/dairy',
                   valueWidget: BlocBuilder<DairyBloc, DairyState>(
                     builder: (context, state) {
-                      final yieldVal = state is DairyLoaded ? state.totalMilkDashboard : 0.0;
+                      final yieldVal = state is DairyLoaded ? state.allTimeMilkTotal : 0.0;
                       return Text('${yieldVal.toStringAsFixed(1)} Litres', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold));
                     },
                   ),
@@ -725,12 +725,16 @@ class HomeScreen extends StatelessWidget {
                     borderRadius: BorderRadius.circular(16),
                     border: Border.all(color: AppColors.secondary.withOpacity(0.15), width: 1.2),
                   ),
-                  child: ListTile(
-                    leading: const Icon(Icons.groups, color: Colors.indigo),
-                    title: const Text('Labor & Operations Control', style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold)),
-                    subtitle: Text('$staffCount active workers • $activeQueries unresolved queries'),
-                    trailing: const Icon(Icons.chevron_right, size: 18),
-                    onTap: () => Navigator.pushNamed(context, '/staff'),
+                  child: Material(
+                    color: Colors.transparent,
+                    borderRadius: BorderRadius.circular(16),
+                    child: ListTile(
+                      leading: const Icon(Icons.groups, color: Colors.indigo),
+                      title: const Text('Labor & Operations Control', style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold)),
+                      subtitle: Text('$staffCount active workers • $activeQueries unresolved queries'),
+                      trailing: const Icon(Icons.chevron_right, size: 18),
+                      onTap: () => Navigator.pushNamed(context, '/staff'),
+                    ),
                   ),
                 );
               },

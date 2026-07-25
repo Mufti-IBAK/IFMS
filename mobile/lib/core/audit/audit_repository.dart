@@ -99,7 +99,6 @@ class AuditRepository {
     }
   }
 
-  /// Get audit logs with optional filters and pagination.
   Future<List<LocalAuditLog>> getAuditLogs({
     int limit = 100,
     int offset = 0,
@@ -118,6 +117,26 @@ class AuditRepository {
     }
 
     return query.get();
+  }
+
+  /// Watch audit logs as a real-time stream.
+  Stream<List<LocalAuditLog>> watchAuditLogs({
+    int limit = 100,
+    String? moduleFilter,
+    String? actionFilter,
+  }) {
+    var query = db.select(db.localAuditLogs)
+      ..orderBy([(t) => OrderingTerm.desc(t.timestamp)])
+      ..limit(limit);
+
+    if (moduleFilter != null && moduleFilter.isNotEmpty && moduleFilter.toLowerCase() != 'all') {
+      query = query..where((t) => t.moduleName.equals(moduleFilter.toLowerCase()));
+    }
+    if (actionFilter != null && actionFilter.isNotEmpty && actionFilter.toUpperCase() != 'ALL') {
+      query = query..where((t) => t.actionType.equals(actionFilter.toUpperCase()));
+    }
+
+    return query.watch();
   }
 
   /// Fetch audit logs from Supabase for multi-user sync.

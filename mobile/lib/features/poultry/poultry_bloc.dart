@@ -40,6 +40,21 @@ class DeleteBatch extends PoultryEvent {
   DeleteBatch(this.id);
 }
 
+class LogFlockTreatment extends PoultryEvent {
+  final Map<String, dynamic> data;
+  LogFlockTreatment(this.data);
+}
+
+class LogFlockFeed extends PoultryEvent {
+  final Map<String, dynamic> data;
+  LogFlockFeed(this.data);
+}
+
+class LogFlockAdjustment extends PoultryEvent {
+  final Map<String, dynamic> data;
+  LogFlockAdjustment(this.data);
+}
+
 abstract class PoultryState {}
 class PoultryLoading extends PoultryState {}
 class PoultryLoaded extends PoultryState {
@@ -186,6 +201,51 @@ class PoultryBloc extends Bloc<PoultryEvent, PoultryState> {
           } else {
             emit(PoultryError(e.toString()));
           }
+        }
+      }
+    });
+
+    on<LogFlockTreatment>((event, emit) async {
+      final currentState = state;
+      try {
+        await repository.logFlockTreatment(event.data);
+        final batches = await repository.getBatches();
+        emit(PoultryLoaded(batches));
+      } catch (e) {
+        if (currentState is PoultryLoaded) {
+          emit(PoultryLoaded(currentState.batches));
+        } else {
+          emit(PoultryError(e.toString()));
+        }
+      }
+    });
+
+    on<LogFlockFeed>((event, emit) async {
+      final currentState = state;
+      try {
+        await repository.logFlockFeedConsumption(event.data);
+        final batches = await repository.getBatches();
+        emit(PoultryLoaded(batches));
+      } catch (e) {
+        if (currentState is PoultryLoaded) {
+          emit(PoultryLoaded(currentState.batches));
+        } else {
+          emit(PoultryError(e.toString()));
+        }
+      }
+    });
+
+    on<LogFlockAdjustment>((event, emit) async {
+      final currentState = state;
+      try {
+        await repository.logFlockAdjustment(event.data);
+        final batches = await repository.getBatches();
+        emit(PoultryLoaded(batches));
+      } catch (e) {
+        if (currentState is PoultryLoaded) {
+          emit(PoultryLoaded(currentState.batches));
+        } else {
+          emit(PoultryError(e.toString()));
         }
       }
     });

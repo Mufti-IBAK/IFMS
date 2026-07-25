@@ -127,7 +127,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   Future<void> _selectDate() async {
     FocusScope.of(context).unfocus();
-    final DateTime? picked = await showDatePicker(
+    final DateTime? picked = await showDatePicker(builder: (context, child) => Theme(data: Theme.of(context).copyWith(useMaterial3: false), child: MediaQuery(data: MediaQuery.of(context).copyWith(textScaleFactor: 1.0), child: child!)), 
       context: context,
       initialDate: DateTime.now().subtract(const Duration(days: 365 * 25)),
       firstDate: DateTime(1950),

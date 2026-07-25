@@ -38,6 +38,11 @@ class _InventoryScreenState extends State<InventoryScreen> with SingleTickerProv
       setState(() {});
     });
     _loadAnimalTags();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        BlocProvider.of<InventoryBloc>(context).add(LoadInventoryItems());
+      }
+    });
   }
 
   Future<void> _loadAnimalTags() async {
@@ -72,14 +77,23 @@ class _InventoryScreenState extends State<InventoryScreen> with SingleTickerProv
     return BlocConsumer<InventoryBloc, InventoryState>(
       listener: (context, state) {
         if (state is InventoryLoaded) {
-          _cachedItems = state.items;
-          _cachedLogs = state.logs;
-          _cachedFormulas = state.formulas;
-          _cachedConsumption = state.consumptionLogs;
+          setState(() {
+            _cachedItems = state.items;
+            _cachedLogs = state.logs;
+            _cachedFormulas = state.formulas;
+            _cachedConsumption = state.consumptionLogs;
+          });
+        } else if (state is InventoryError) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(state.message),
+              backgroundColor: AppColors.error,
+            ),
+          );
         }
       },
       builder: (context, state) {
-        final isLoading = state is InventoryLoading;
+        final isLoading = state is InventoryLoading || (state is InventoryInitial && _cachedItems == null);
         final hasCachedData = _cachedItems != null;
 
         // Update caches if the current state is loaded
@@ -90,10 +104,16 @@ class _InventoryScreenState extends State<InventoryScreen> with SingleTickerProv
           _cachedConsumption = state.consumptionLogs;
         }
 
+        // Trigger load if state is initial
+        if (state is InventoryInitial && _cachedItems == null) {
+          BlocProvider.of<InventoryBloc>(context).add(LoadInventoryItems());
+        }
+
         // Show full screen indicator if loading and there's no cache
         if (isLoading && !hasCachedData) {
-          return const Scaffold(
-            body: Center(child: CircularProgressIndicator()),
+          return Scaffold(
+            appBar: AppBar(title: const Text('FEED STOCK VAULT')),
+            body: const Center(child: CircularProgressIndicator()),
           );
         }
 
@@ -167,11 +187,14 @@ class _InventoryScreenState extends State<InventoryScreen> with SingleTickerProv
   }
 
   void _exportPdf(BuildContext context) {
-    if (_cachedItems != null && _cachedFormulas != null && _cachedConsumption != null) {
+    final items = _cachedItems;
+    final formulas = _cachedFormulas;
+    final consumption = _cachedConsumption;
+    if (items != null && formulas != null && consumption != null) {
       FeedReportService.generateFeedAnalyticsReport(
-        items: _cachedItems!,
-        formulas: _cachedFormulas!,
-        consumptionLogs: _cachedConsumption!,
+        items: items,
+        formulas: formulas,
+        consumptionLogs: consumption,
         repository: sl<InventoryRepository>(),
       );
     } else {
@@ -236,11 +259,19 @@ class _InventoryScreenState extends State<InventoryScreen> with SingleTickerProv
     for (var i in items) {
       if (i is Map) {
         final stock = double.tryParse(i['current_stock']?.toString() ?? '0.0') ?? 0.0;
-        final costPerUnit = double.tryParse(i['cost_per_unit']?.toString() ?? '0.0') ?? 0.0;
-        totalValue += stock * costPerUnit;
+        final packSize = double.tryParse((i['weight_per_unit'] ?? 1.0).toString()) ?? 1.0;
+        final costPerPack = double.tryParse((i['cost_per_unit'] ?? 0.0).toString()) ?? 0.0;
+        final costPerKg = packSize > 0 
+            ? (double.tryParse((i['cost_per_kg'] ?? (costPerPack / packSize)).toString()) ?? (costPerPack / packSize))
+            : costPerPack;
+        totalValue += stock * costPerKg;
       } else {
         // Drift LocalFeedItemData object
-        totalValue += (i.currentStock ?? 0.0) * (i.costPerUnit ?? 0.0);
+        final stock = i.currentStock ?? 0.0;
+        final packSize = i.weightPerUnit ?? 1.0;
+        final costPerPack = i.costPerUnit ?? 0.0;
+        final costPerKg = packSize > 0 ? ((i.costPerKg ?? 0.0) > 0 ? i.costPerKg! : costPerPack / packSize) : costPerPack;
+        totalValue += stock * costPerKg;
       }
     }
 
@@ -287,15 +318,37 @@ class _InventoryScreenState extends State<InventoryScreen> with SingleTickerProv
                   padding: const EdgeInsets.symmetric(horizontal: 16),
                   itemCount: items.length,
                   itemBuilder: (context, index) {
-                    final item = items[index];
-                    final stock = double.tryParse(item['current_stock'].toString()) ?? 0.0;
+                    final rawItem = items[index];
+                    final Map<String, dynamic> item = rawItem is Map
+                        ? Map<String, dynamic>.from(rawItem)
+                        : {
+                            'id': rawItem.id,
+                            'name': rawItem.name,
+                            'category': rawItem.category,
+                            'unit': rawItem.unit,
+                            'purchase_unit': rawItem.purchaseUnit,
+                            'current_stock': rawItem.currentStock,
+                            'reorder_threshold': rawItem.reorderThreshold,
+                            'cost_per_unit': rawItem.costPerUnit,
+                            'weight_per_unit': rawItem.weightPerUnit,
+                            'cost_per_kg': rawItem.costPerKg,
+                            'supplier': rawItem.supplier,
+                            'is_active': rawItem.isActive,
+                          };
+
+                    final stock = double.tryParse((item['current_stock'] ?? 0.0).toString()) ?? 0.0;
                     final threshold = double.tryParse(item['reorder_threshold'].toString()) ?? 0.0;
-                    final costPerUnit = double.tryParse(item['cost_per_unit'].toString()) ?? 0.0;
-                    final costKg = double.tryParse((item['cost_per_kg'] ?? costPerUnit).toString()) ?? costPerUnit;
-                    final weightPerUnit = double.tryParse((item['weight_per_unit'] ?? 1.0).toString()) ?? 1.0;
+                    final contentUnit = (item['unit'] ?? 'kg').toString();
+                    final purchaseUnit = (item['purchase_unit'] ?? item['purchaseUnit'] ?? 'bag').toString();
+                    final packSize = double.tryParse((item['weight_per_unit'] ?? 1.0).toString()) ?? 1.0;
+                    final costPerPack = double.tryParse((item['cost_per_unit'] ?? 0.0).toString()) ?? 0.0;
+                    final costPerContentUnit = packSize > 0 
+                        ? (double.tryParse((item['cost_per_kg'] ?? (costPerPack / packSize)).toString()) ?? (costPerPack / packSize))
+                        : costPerPack;
                     final isLow = stock <= threshold;
                     final maxStock = threshold * 3;
                     final progress = maxStock > 0 ? (stock / maxStock).clamp(0.0, 1.0) : 0.0;
+                    final stockPacks = packSize > 0 ? stock / packSize : stock;
 
                     return Card(
                       margin: const EdgeInsets.only(bottom: 10),
@@ -322,9 +375,10 @@ class _InventoryScreenState extends State<InventoryScreen> with SingleTickerProv
                                         item['name'] ?? 'Unknown',
                                         style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
                                       ),
+                                      const SizedBox(height: 2),
                                       Text(
-                                        'Pack: ${weightPerUnit.toStringAsFixed(1)} kg/l per ${item['unit'] != null ? item['unit'].toString().replaceAll('s', '') : 'unit'} at ${_currencyFmt.format(costPerUnit)} (${_currencyFmt.format(costKg)}/kg)',
-                                        style: TextStyle(color: Colors.grey.shade600, fontSize: 13),
+                                        '${packSize.toStringAsFixed(packSize % 1 == 0 ? 0 : 1)} $contentUnit / $purchaseUnit at ${_currencyFmt.format(costPerPack)} | ${_currencyFmt.format(costPerContentUnit)} / $contentUnit',
+                                        style: TextStyle(color: Colors.grey.shade700, fontSize: 13, fontWeight: FontWeight.w600),
                                       ),
                                     ],
                                   ),
@@ -344,8 +398,8 @@ class _InventoryScreenState extends State<InventoryScreen> with SingleTickerProv
                             Row(
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
-                                Text('Current Stock: ${stock.toStringAsFixed(1)} ${item['unit'] ?? "units"}'),
-                                Text('Reorder Level: ${threshold.toStringAsFixed(1)} ${item['unit'] ?? "units"}'),
+                                Text('Current Stock: ${stock.toStringAsFixed(1)} $contentUnit (${stockPacks.toStringAsFixed(1)} $purchaseUnit)', style: const TextStyle(fontWeight: FontWeight.bold)),
+                                Text('Reorder Level: ${threshold.toStringAsFixed(1)} $contentUnit', style: TextStyle(color: isLow ? AppColors.error : Colors.grey.shade600)),
                               ],
                             ),
                             const SizedBox(height: 6),
@@ -828,8 +882,9 @@ class _InventoryScreenState extends State<InventoryScreen> with SingleTickerProv
 
     for (var c in consumption) {
       LocalFeedFormula? formula;
-      if (_cachedFormulas != null) {
-        for (var f in _cachedFormulas!) {
+      final formulasList = _cachedFormulas;
+      if (formulasList != null) {
+        for (var f in formulasList) {
           if (f.id == c.feedItemId) {
             formula = f;
             break;
@@ -934,25 +989,31 @@ class _InventoryScreenState extends State<InventoryScreen> with SingleTickerProv
 
   void _showAddFeedItemDialog(BuildContext context) {
     final nameCtrl = TextEditingController();
-    final packSizeCtrl = TextEditingController(text: '50'); // default 50kg bag
+    final packSizeCtrl = TextEditingController(text: '50');
     final unitCostCtrl = TextEditingController();
     final initialStockCtrl = TextEditingController(text: '0');
     final thresholdCtrl = TextEditingController(text: '100');
     final supplierCtrl = TextEditingController();
-    String purchaseUnit = 'bags';
+    String contentUnit = 'kg';
+    String purchaseUnit = 'bag';
+    String stockUnitMode = 'purchase'; // 'purchase' (e.g. bags) or 'content' (e.g. kg)
 
     showDialog(
       context: context,
       builder: (_) {
         return StatefulBuilder(
           builder: (ctx, setDialogState) {
-            // Live calculated values to guide the user
             final double packSize = double.tryParse(packSizeCtrl.text) ?? 1.0;
             final double unitCost = double.tryParse(unitCostCtrl.text) ?? 0.0;
-            final double stockUnits = double.tryParse(initialStockCtrl.text) ?? 0.0;
+            final double initialStockInput = double.tryParse(initialStockCtrl.text) ?? 0.0;
 
-            final double computedCostPerKg = packSize > 0 ? unitCost / packSize : 0.0;
-            final double computedTotalStockKg = stockUnits;
+            final double computedCostPerContentUnit = packSize > 0 ? unitCost / packSize : unitCost;
+            final double computedInitialStockBase = stockUnitMode == 'purchase' 
+                ? initialStockInput * packSize 
+                : initialStockInput;
+            final double computedInitialPacks = packSize > 0 
+                ? computedInitialStockBase / packSize 
+                : computedInitialStockBase;
 
             return AlertDialog(
               title: const Text('Add Feed Stock Item'),
@@ -962,80 +1023,132 @@ class _InventoryScreenState extends State<InventoryScreen> with SingleTickerProv
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    TextField(textCapitalization: TextCapitalization.sentences, controller: nameCtrl, decoration: const InputDecoration(labelText: 'Feed Ingredient Name *', hintText: 'e.g. Yellow Maize, GNC')),
-                    const SizedBox(height: 12),
-                    AppDropdownFormField<String>(
-                      value: purchaseUnit,
-                      labelText: 'Purchase Unit (Unit Type) *',
-                      items: ['bags', 'litres', 'kg', 'tonnes'].map((u) => DropdownMenuItem(value: u, child: Text(u))).toList(),
-                      onChanged: (v) {
-                        if (v != null) setDialogState(() => purchaseUnit = v);
-                      },
+                    TextField(
+                      textCapitalization: TextCapitalization.sentences,
+                      controller: nameCtrl,
+                      decoration: const InputDecoration(labelText: 'Feed Ingredient Name *', hintText: 'e.g. Yellow Maize, GNC'),
                     ),
                     const SizedBox(height: 12),
-                    TextField(textCapitalization: TextCapitalization.sentences, controller: packSizeCtrl,
+                    Row(
+                      children: [
+                        Expanded(
+                          child: AppDropdownFormField<String>(
+                            value: contentUnit,
+                            labelText: 'Content Unit *',
+                            items: ['kg', 'liters', 'grams', 'ml', 'pcs']
+                                .map((u) => DropdownMenuItem(value: u, child: Text(u))).toList(),
+                            onChanged: (v) {
+                              if (v != null) setDialogState(() => contentUnit = v);
+                            },
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: AppDropdownFormField<String>(
+                            value: purchaseUnit,
+                            labelText: 'Purchase Unit *',
+                            items: ['bag', 'bottle', 'bucket', 'drum', 'sachet', 'carton', 'can', 'pack']
+                                .map((u) => DropdownMenuItem(value: u, child: Text(u))).toList(),
+                            onChanged: (v) {
+                              if (v != null) setDialogState(() => purchaseUnit = v);
+                            },
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    TextField(
+                      textCapitalization: TextCapitalization.sentences,
+                      controller: packSizeCtrl,
                       keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                      decoration: const InputDecoration(
-                        labelText: 'Pack Size / Capacity per unit (kg or litres) *',
-                        hintText: 'e.g. 50 for a 50kg bag',
+                      decoration: InputDecoration(
+                        labelText: 'Pack Size (Capacity per $purchaseUnit) *',
+                        hintText: 'e.g. 50 (means 1 $purchaseUnit contains 50 $contentUnit)',
                       ),
                       onChanged: (v) => setDialogState(() {}),
                     ),
                     const SizedBox(height: 12),
-                    TextField(textCapitalization: TextCapitalization.sentences, controller: unitCostCtrl,
+                    TextField(
+                      textCapitalization: TextCapitalization.sentences,
+                      controller: unitCostCtrl,
                       keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                      decoration: const InputDecoration(
-                        labelText: 'Cost per Unit/Pack (₦) *',
-                        hintText: 'e.g. 30000 for one bag',
+                      decoration: InputDecoration(
+                        labelText: 'Cost per $purchaseUnit / Pack (₦) *',
+                        hintText: 'e.g. 35000 for 1 $purchaseUnit',
                       ),
                       onChanged: (v) => setDialogState(() {}),
                     ),
                     const SizedBox(height: 12),
-                    TextField(textCapitalization: TextCapitalization.sentences, controller: initialStockCtrl,
-                      keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                      decoration: const InputDecoration(
-                        labelText: 'Initial Stock (in Units/Bags) *',
-                        hintText: 'e.g. 10 bags',
-                      ),
-                      onChanged: (v) => setDialogState(() {}),
+                    Row(
+                      children: [
+                        Expanded(
+                          flex: 2,
+                          child: TextField(
+                            textCapitalization: TextCapitalization.sentences,
+                            controller: initialStockCtrl,
+                            keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                            decoration: InputDecoration(
+                              labelText: 'Initial Stock *',
+                              hintText: 'e.g. 10',
+                            ),
+                            onChanged: (v) => setDialogState(() {}),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          flex: 2,
+                          child: AppDropdownFormField<String>(
+                            value: stockUnitMode,
+                            labelText: 'Stock Unit *',
+                            items: [
+                              DropdownMenuItem(value: 'purchase', child: Text(purchaseUnit)),
+                              DropdownMenuItem(value: 'content', child: Text(contentUnit)),
+                            ],
+                            onChanged: (v) {
+                              if (v != null) setDialogState(() => stockUnitMode = v);
+                            },
+                          ),
+                        ),
+                      ],
                     ),
                     const SizedBox(height: 12),
-                    TextField(textCapitalization: TextCapitalization.sentences, controller: thresholdCtrl,
+                    TextField(
+                      textCapitalization: TextCapitalization.sentences,
+                      controller: thresholdCtrl,
                       keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                      decoration: const InputDecoration(
-                        labelText: 'Reorder Level Threshold (in kg/litres) *',
+                      decoration: InputDecoration(
+                        labelText: 'Reorder Level Threshold (in $contentUnit) *',
                         hintText: '100.0',
                       ),
                     ),
                     const SizedBox(height: 12),
-                    TextField(textCapitalization: TextCapitalization.sentences, controller: supplierCtrl, decoration: const InputDecoration(labelText: 'Supplier Name', hintText: 'e.g. Premier Feed Mills')),
+                    TextField(
+                      textCapitalization: TextCapitalization.sentences,
+                      controller: supplierCtrl,
+                      decoration: const InputDecoration(labelText: 'Supplier Name', hintText: 'e.g. Premier Feed Mills'),
+                    ),
                     const SizedBox(height: 16),
                     
-                    // Dynamic live helper calculations
                     Container(
                       padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(
-                        color: AppColors.surfaceContainerLow,
-                        borderRadius: BorderRadius.circular(8),
-                        border: Border.all(color: AppColors.outlineVariant),
+                        color: AppColors.primaryContainer.withValues(alpha: 0.2),
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(color: AppColors.primary.withValues(alpha: 0.3)),
                       ),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              const Text('Computed Cost/kg:', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w500)),
-                              Text(_currencyFmt.format(computedCostPerKg), style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: AppColors.primary)),
-                            ],
-                          ),
-                          const SizedBox(height: 4),
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              const Text('Total Stock:', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w500)),
-                              Text('${computedTotalStockKg.toStringAsFixed(1)} $purchaseUnit', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
-                            ],
+                          const Text('CALCULATED ITEM SPECIFICATION:', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: AppColors.primary)),
+                          const SizedBox(height: 6),
+                          Text('• Packaging: 1 $purchaseUnit = ${packSize.toStringAsFixed(packSize % 1 == 0 ? 0 : 1)} $contentUnit', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500)),
+                          Text('• Price per $purchaseUnit: ${_currencyFmt.format(unitCost)}', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500)),
+                          Text('• Computed Rate: ${_currencyFmt.format(computedCostPerContentUnit)} / $contentUnit', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: AppColors.primary)),
+                          Text('• Total Initial Stock: ${computedInitialStockBase.toStringAsFixed(1)} $contentUnit (${computedInitialPacks.toStringAsFixed(1)} $purchaseUnit)', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.secondary)),
+                          const Divider(height: 12, thickness: 0.5),
+                          Text(
+                            'Card Preview: ${packSize.toStringAsFixed(packSize % 1 == 0 ? 0 : 1)} $contentUnit / $purchaseUnit @ ${_currencyFmt.format(unitCost)} | ${_currencyFmt.format(computedCostPerContentUnit)} / $contentUnit',
+                            style: TextStyle(fontSize: 11, fontStyle: FontStyle.italic, color: Colors.grey.shade800),
                           ),
                         ],
                       ),
@@ -1053,12 +1166,14 @@ class _InventoryScreenState extends State<InventoryScreen> with SingleTickerProv
                       );
                       return;
                     }
+
                     BlocProvider.of<InventoryBloc>(context).add(AddFeedItem({
                       'name': nameCtrl.text.trim(),
-                      'unit': purchaseUnit,
+                      'unit': contentUnit,
+                      'purchase_unit': purchaseUnit,
                       'weight_per_unit': packSizeCtrl.text.trim(),
                       'cost_per_unit': unitCostCtrl.text.trim(),
-                      'current_stock': initialStockCtrl.text.trim(), // Repos converted: stockInUnits * weightPerUnit
+                      'current_stock': computedInitialStockBase.toString(),
                       'reorder_threshold': thresholdCtrl.text.isNotEmpty ? thresholdCtrl.text.trim() : '100',
                       'supplier': supplierCtrl.text.trim(),
                     }));
@@ -1068,7 +1183,7 @@ class _InventoryScreenState extends State<InventoryScreen> with SingleTickerProv
                     );
                   },
                   style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary, foregroundColor: Colors.white),
-                  child: const Text('Add'),
+                  child: const Text('Add Item'),
                 ),
               ],
             );
@@ -1082,14 +1197,13 @@ class _InventoryScreenState extends State<InventoryScreen> with SingleTickerProv
     final nameCtrl = TextEditingController(text: item['name']?.toString());
     final packSizeCtrl = TextEditingController(text: (item['weight_per_unit'] ?? 1.0).toString());
     final unitCostCtrl = TextEditingController(text: (item['cost_per_unit'] ?? 0.0).toString());
-    
-    // For editing stock, let's allow updating stock directly or keeping current
-    final currentStockUnits = double.tryParse((item['current_stock'] ?? 0.0).toString()) ?? 0.0;
-
-    final initialStockCtrl = TextEditingController(text: currentStockUnits.toStringAsFixed(1));
+    final currentStock = double.tryParse((item['current_stock'] ?? 0.0).toString()) ?? 0.0;
+    final initialStockCtrl = TextEditingController(text: currentStock.toStringAsFixed(1));
     final thresholdCtrl = TextEditingController(text: (item['reorder_threshold'] ?? 100.0).toString());
     final supplierCtrl = TextEditingController(text: item['supplier']?.toString() ?? '');
-    String purchaseUnit = item['unit']?.toString() ?? 'bags';
+
+    String contentUnit = (item['unit'] ?? 'kg').toString();
+    String purchaseUnit = (item['purchase_unit'] ?? item['purchaseUnit'] ?? 'bag').toString();
 
     showDialog(
       context: context,
@@ -1098,10 +1212,8 @@ class _InventoryScreenState extends State<InventoryScreen> with SingleTickerProv
           builder: (ctx, setDialogState) {
             final double packSize = double.tryParse(packSizeCtrl.text) ?? 1.0;
             final double unitCost = double.tryParse(unitCostCtrl.text) ?? 0.0;
-            final double stockUnits = double.tryParse(initialStockCtrl.text) ?? 0.0;
 
-            final double computedCostPerKg = packSize > 0 ? unitCost / packSize : 0.0;
-            final double computedTotalStockKg = stockUnits;
+            final double computedCostPerContentUnit = packSize > 0 ? unitCost / packSize : unitCost;
 
             return AlertDialog(
               title: Text('Edit Feed Stock Item: ${item['name']}'),
@@ -1113,43 +1225,71 @@ class _InventoryScreenState extends State<InventoryScreen> with SingleTickerProv
                   children: [
                     TextField(textCapitalization: TextCapitalization.sentences, controller: nameCtrl, decoration: const InputDecoration(labelText: 'Feed Ingredient Name *')),
                     const SizedBox(height: 12),
-                    AppDropdownFormField<String>(
-                      value: purchaseUnit,
-                      labelText: 'Purchase Unit (Unit Type) *',
-                      items: ['bags', 'litres', 'kg', 'tonnes'].map((u) => DropdownMenuItem(value: u, child: Text(u))).toList(),
-                      onChanged: (v) {
-                        if (v != null) setDialogState(() => purchaseUnit = v);
-                      },
+                    Row(
+                      children: [
+                        Expanded(
+                          child: AppDropdownFormField<String>(
+                            value: contentUnit,
+                            labelText: 'Content Unit *',
+                            items: ['kg', 'liters', 'grams', 'ml', 'pcs']
+                                .map((u) => DropdownMenuItem(value: u, child: Text(u))).toList(),
+                            onChanged: (v) {
+                              if (v != null) setDialogState(() => contentUnit = v);
+                            },
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: AppDropdownFormField<String>(
+                            value: purchaseUnit,
+                            labelText: 'Purchase Unit *',
+                            items: ['bag', 'bottle', 'bucket', 'drum', 'sachet', 'carton', 'can', 'pack']
+                                .map((u) => DropdownMenuItem(value: u, child: Text(u))).toList(),
+                            onChanged: (v) {
+                              if (v != null) setDialogState(() => purchaseUnit = v);
+                            },
+                          ),
+                        ),
+                      ],
                     ),
                     const SizedBox(height: 12),
-                    TextField(textCapitalization: TextCapitalization.sentences, controller: packSizeCtrl,
+                    TextField(
+                      textCapitalization: TextCapitalization.sentences,
+                      controller: packSizeCtrl,
                       keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                      decoration: const InputDecoration(
-                        labelText: 'Pack Size / Capacity per unit (kg or litres) *',
+                      decoration: InputDecoration(
+                        labelText: 'Pack Size (Capacity per $purchaseUnit) *',
+                        hintText: 'e.g. 50 (means 1 $purchaseUnit contains 50 $contentUnit)',
                       ),
                       onChanged: (v) => setDialogState(() {}),
                     ),
                     const SizedBox(height: 12),
-                    TextField(textCapitalization: TextCapitalization.sentences, controller: unitCostCtrl,
+                    TextField(
+                      textCapitalization: TextCapitalization.sentences,
+                      controller: unitCostCtrl,
                       keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                      decoration: const InputDecoration(
-                        labelText: 'Cost per Unit/Pack (₦) *',
+                      decoration: InputDecoration(
+                        labelText: 'Cost per $purchaseUnit / Pack (₦) *',
                       ),
                       onChanged: (v) => setDialogState(() {}),
                     ),
                     const SizedBox(height: 12),
-                    TextField(textCapitalization: TextCapitalization.sentences, controller: initialStockCtrl,
+                    TextField(
+                      textCapitalization: TextCapitalization.sentences,
+                      controller: initialStockCtrl,
                       keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                      decoration: const InputDecoration(
-                        labelText: 'Current Stock (in Units/Bags) *',
+                      decoration: InputDecoration(
+                        labelText: 'Current Stock (in $contentUnit) *',
                       ),
                       onChanged: (v) => setDialogState(() {}),
                     ),
                     const SizedBox(height: 12),
-                    TextField(textCapitalization: TextCapitalization.sentences, controller: thresholdCtrl,
+                    TextField(
+                      textCapitalization: TextCapitalization.sentences,
+                      controller: thresholdCtrl,
                       keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                      decoration: const InputDecoration(
-                        labelText: 'Reorder Level Threshold (in kg/litres) *',
+                      decoration: InputDecoration(
+                        labelText: 'Reorder Alert Threshold (in $contentUnit) *',
                       ),
                     ),
                     const SizedBox(height: 12),
@@ -1159,27 +1299,22 @@ class _InventoryScreenState extends State<InventoryScreen> with SingleTickerProv
                     Container(
                       padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(
-                        color: AppColors.surfaceContainerLow,
-                        borderRadius: BorderRadius.circular(8),
-                        border: Border.all(color: AppColors.outlineVariant),
+                        color: AppColors.primaryContainer.withValues(alpha: 0.2),
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(color: AppColors.primary.withValues(alpha: 0.3)),
                       ),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              const Text('Computed Cost/kg:', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w500)),
-                              Text(_currencyFmt.format(computedCostPerKg), style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: AppColors.primary)),
-                            ],
-                          ),
-                          const SizedBox(height: 4),
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              const Text('Total Stock:', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w500)),
-                              Text('${computedTotalStockKg.toStringAsFixed(1)} $purchaseUnit', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
-                            ],
+                          const Text('CALCULATED ITEM SPECIFICATION:', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: AppColors.primary)),
+                          const SizedBox(height: 6),
+                          Text('• Packaging: 1 $purchaseUnit = ${packSize.toStringAsFixed(packSize % 1 == 0 ? 0 : 1)} $contentUnit', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500)),
+                          Text('• Price per $purchaseUnit: ${_currencyFmt.format(unitCost)}', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500)),
+                          Text('• Computed Cost / $contentUnit: ${_currencyFmt.format(computedCostPerContentUnit)} / $contentUnit', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: AppColors.primary)),
+                          const Divider(height: 12, thickness: 0.5),
+                          Text(
+                            'Card Display: ${packSize.toStringAsFixed(packSize % 1 == 0 ? 0 : 1)} $contentUnit / $purchaseUnit at ${_currencyFmt.format(unitCost)} | ${_currencyFmt.format(computedCostPerContentUnit)} / $contentUnit',
+                            style: TextStyle(fontSize: 11, fontStyle: FontStyle.italic, color: Colors.grey.shade800),
                           ),
                         ],
                       ),
@@ -1199,7 +1334,8 @@ class _InventoryScreenState extends State<InventoryScreen> with SingleTickerProv
                     }
                     BlocProvider.of<InventoryBloc>(context).add(EditFeedItem(item['id'].toString(), {
                       'name': nameCtrl.text.trim(),
-                      'unit': purchaseUnit,
+                      'unit': contentUnit,
+                      'purchase_unit': purchaseUnit,
                       'weight_per_unit': packSizeCtrl.text.trim(),
                       'cost_per_unit': unitCostCtrl.text.trim(),
                       'current_stock': initialStockCtrl.text.trim(),
@@ -1270,7 +1406,7 @@ class _InventoryScreenState extends State<InventoryScreen> with SingleTickerProv
           builder: (ctx, setDialogState) {
             Map<String, dynamic>? match;
             if (selectedItemId != null) {
-              for (var i in _cachedItems!) {
+              for (var i in (_cachedItems ?? [])) {
                 if (i is Map && i['id'] == selectedItemId) {
                   match = Map<String, dynamic>.from(i);
                   break;
@@ -1289,7 +1425,7 @@ class _InventoryScreenState extends State<InventoryScreen> with SingleTickerProv
                     DropdownButtonFormField<String>(
                       initialValue: selectedItemId,
                       decoration: const InputDecoration(labelText: 'Feed Ingredient *'),
-                      items: _cachedItems!.map<DropdownMenuItem<String>>((i) {
+                      items: (_cachedItems ?? []).map<DropdownMenuItem<String>>((i) {
                         return DropdownMenuItem(value: i['id'] as String, child: Text(i['name'] as String));
                       }).toList(),
                       onChanged: (v) => setDialogState(() => selectedItemId = v),
@@ -1301,7 +1437,7 @@ class _InventoryScreenState extends State<InventoryScreen> with SingleTickerProv
                       items: ['purchase', 'return', 'adjustment', 'waste'].map((t) {
                         return DropdownMenuItem(value: t, child: Text(t[0].toUpperCase() + t.substring(1)));
                       }).toList(),
-                      onChanged: (v) => setDialogState(() => changeType = v!),
+                      onChanged: (v) { if (v != null) setDialogState(() => changeType = v); },
                     ),
                     const SizedBox(height: 12),
                     TextField(textCapitalization: TextCapitalization.sentences, controller: qtyCtrl,
@@ -1392,7 +1528,7 @@ class _InventoryScreenState extends State<InventoryScreen> with SingleTickerProv
                         DropdownMenuItem(value: 'per_50kg', child: Text('Per 50 kg')),
                         DropdownMenuItem(value: 'per_1kg', child: Text('Per 1 kg')),
                       ],
-                      onChanged: (v) => setDialogState(() => batchUnit = v!),
+                      onChanged: (v) { if (v != null) setDialogState(() => batchUnit = v); },
                     ),
                     const SizedBox(height: 12),
                     TextField(textCapitalization: TextCapitalization.sentences, controller: notesCtrl, maxLines: 2, decoration: const InputDecoration(labelText: 'Recipe Notes', hintText: 'Optional')),
@@ -1570,7 +1706,7 @@ class _InventoryScreenState extends State<InventoryScreen> with SingleTickerProv
   // ═══════════════════════════════════════════
 
   void _showLogConsumptionDialog(BuildContext context) {
-    if (_cachedFormulas == null || _cachedFormulas!.isEmpty) {
+    if ((_cachedFormulas ?? []).isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('No feed formulas registered. Please create a feed formula first.')),
       );
@@ -1593,7 +1729,7 @@ class _InventoryScreenState extends State<InventoryScreen> with SingleTickerProv
         double getCostPerKg(String feedItemId) {
           if (_cachedItems == null) return 0.0;
           Map<String, dynamic>? item;
-          for (var i in _cachedItems!) {
+          for (var i in (_cachedItems ?? [])) {
             if (i is Map && i['id'] == feedItemId) {
               item = Map<String, dynamic>.from(i);
               break;
@@ -1652,7 +1788,7 @@ class _InventoryScreenState extends State<InventoryScreen> with SingleTickerProv
 
                 if (selectedIngredients != null && qtyCtrl.text.isNotEmpty) {
                   final totalQty = double.tryParse(qtyCtrl.text) ?? 0.0;
-                  for (var ing in selectedIngredients!) {
+                  for (var ing in (selectedIngredients ?? [])) {
                     final pct = ing.percentage;
                     final qtyIng = totalQty * (pct / 100.0);
                     final costPerKg = getCostPerKg(ing.feedItemId);
@@ -1661,7 +1797,7 @@ class _InventoryScreenState extends State<InventoryScreen> with SingleTickerProv
 
                     String itemName = 'Unknown';
                     if (_cachedItems != null) {
-                      for (var i in _cachedItems!) {
+                      for (var i in (_cachedItems ?? [])) {
                         if (i is Map && i['id'] == ing.feedItemId) {
                           itemName = i['name']?.toString() ?? 'Unknown';
                           break;
@@ -1707,7 +1843,7 @@ class _InventoryScreenState extends State<InventoryScreen> with SingleTickerProv
                           initialValue: selectedFormulaId,
                           decoration: const InputDecoration(labelText: 'Formulated Feed *'),
                           isExpanded: true,
-                          items: _cachedFormulas!.map<DropdownMenuItem<String>>((f) {
+                          items: (_cachedFormulas ?? []).map<DropdownMenuItem<String>>((f) {
                             return DropdownMenuItem(value: f.id, child: Text(f.name));
                           }).toList(),
                           onChanged: (v) {
@@ -1739,7 +1875,7 @@ class _InventoryScreenState extends State<InventoryScreen> with SingleTickerProv
                           subtitle: Text(DateFormat('yyyy-MM-dd').format(logDate)),
                           trailing: const Icon(Icons.calendar_today),
                           onTap: () async {
-                            final picked = await showDatePicker(
+                            final picked = await showDatePicker(builder: (context, child) => Theme(data: Theme.of(context).copyWith(useMaterial3: false), child: MediaQuery(data: MediaQuery.of(context).copyWith(textScaleFactor: 1.0), child: child!)), 
                               context: ctx,
                               initialDate: logDate,
                               firstDate: DateTime(2024),
@@ -1801,7 +1937,7 @@ class _InventoryScreenState extends State<InventoryScreen> with SingleTickerProv
                           return;
                         }
                         
-                        final fName = _cachedFormulas!.firstWhere((f) => f.id == selectedFormulaId).name;
+                        final fName = (_cachedFormulas ?? []).firstWhere((f) => f.id == selectedFormulaId).name;
                         final finalNotes = 'Cost: ₦ ${totalCost.toStringAsFixed(0)}${notesCtrl.text.isNotEmpty ? " | Notes: ${notesCtrl.text.trim()}" : ""}';
                         
                         BlocProvider.of<InventoryBloc>(context).add(LogFeedConsumption({
@@ -2279,7 +2415,7 @@ class _AnimalFeedPlanCardState extends State<AnimalFeedPlanCard> {
                       onPressed: () {
                         if (_selectedFormulaId == null || _qtyCtrl.text.isEmpty) return;
                         final qty = double.tryParse(_qtyCtrl.text) ?? widget.calculatedQty;
-                        widget.onSave(_selectedFormulaId!, qty);
+                        if (_selectedFormulaId != null) widget.onSave(_selectedFormulaId!, qty);
                       },
                       icon: const Icon(Icons.save, size: 14),
                       label: Text(widget.initialPlan != null ? 'Update' : 'Save', style: const TextStyle(fontSize: 12)),
@@ -2507,33 +2643,145 @@ class _OperationsPOSTabState extends State<OperationsPOSTab> {
       builder: (dialogCtx) {
         String? selectedFormulaId;
         final qtyCtrl = TextEditingController();
+        final repo = sl<InventoryRepository>();
+        List<LocalFormulaIngredient>? loadedIngredients;
+        bool isLoadingIngredients = false;
 
         return StatefulBuilder(
           builder: (ctx, setDialogState) {
+            final double batchQty = double.tryParse(qtyCtrl.text) ?? 0.0;
+
+            void loadIngredientsForFormula(String formulaId) async {
+              setDialogState(() => isLoadingIngredients = true);
+              final ingList = await repo.getFormulaIngredients(formulaId);
+              setDialogState(() {
+                loadedIngredients = ingList;
+                isLoadingIngredients = false;
+              });
+            }
+
+            String? insufficientError;
+            final breakdownRows = <Widget>[];
+
+            if (selectedFormulaId != null && loadedIngredients != null && batchQty > 0) {
+              for (var ing in loadedIngredients!) {
+                final reqKg = batchQty * (ing.percentage / 100.0);
+                Map<String, dynamic>? item;
+                final itemsList = widget.items;
+                for (var i in itemsList) {
+                  final mapI = i is Map ? Map<String, dynamic>.from(i) : {
+                    'id': i.id,
+                    'name': i.name,
+                    'current_stock': i.currentStock,
+                  };
+                  if (mapI['id'] == ing.feedItemId) {
+                    item = mapI;
+                    break;
+                  }
+                }
+                final itemName = item != null ? (item['name'] ?? 'Ingredient').toString() : 'Ingredient';
+                final availStock = item != null ? (double.tryParse((item['current_stock'] ?? 0.0).toString()) ?? 0.0) : 0.0;
+                final isShort = availStock < reqKg;
+
+                if (isShort && insufficientError == null) {
+                  insufficientError = 'We don\'t have that amount in stock! Required: ${reqKg.toStringAsFixed(1)} kg of $itemName, but only ${availStock.toStringAsFixed(1)} kg available.';
+                }
+
+                breakdownRows.add(
+                  Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 2),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Expanded(
+                          child: Text(
+                            '$itemName (${ing.percentage.toStringAsFixed(0)}%): Req ${reqKg.toStringAsFixed(1)} kg',
+                            style: TextStyle(fontSize: 12, color: isShort ? AppColors.error : Colors.grey.shade700, fontWeight: isShort ? FontWeight.bold : FontWeight.normal),
+                          ),
+                        ),
+                        Text(
+                          'Stock: ${availStock.toStringAsFixed(1)} kg ${isShort ? '❌ SHORT' : '✓'}',
+                          style: TextStyle(fontSize: 12, color: isShort ? AppColors.error : AppColors.secondary, fontWeight: FontWeight.bold),
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              }
+            }
+
+            final currentError = insufficientError;
+
             return AlertDialog(
               title: const Text('Prepare Formulated Feed'),
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-              content: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  DropdownButtonFormField<String>(
-                    initialValue: selectedFormulaId,
-                    decoration: const InputDecoration(labelText: 'Feed Formula *'),
-                    isExpanded: true,
-                    items: widget.formulas.map((f) {
-                      return DropdownMenuItem(value: f.id, child: Text(f.name));
-                    }).toList(),
-                    onChanged: (v) => setDialogState(() => selectedFormulaId = v),
-                  ),
-                  const SizedBox(height: 12),
-                  TextField(textCapitalization: TextCapitalization.sentences, controller: qtyCtrl,
-                    keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                    decoration: const InputDecoration(
-                      labelText: 'Batch Size to Formulate (kg) *',
-                      hintText: 'e.g. 100',
+              content: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    DropdownButtonFormField<String>(
+                      initialValue: selectedFormulaId,
+                      decoration: const InputDecoration(labelText: 'Feed Formula *'),
+                      isExpanded: true,
+                      items: widget.formulas.map((f) {
+                        return DropdownMenuItem(value: f.id, child: Text(f.name));
+                      }).toList(),
+                      onChanged: (v) {
+                        setDialogState(() {
+                          selectedFormulaId = v;
+                          loadedIngredients = null;
+                        });
+                        if (v != null) {
+                          loadIngredientsForFormula(v);
+                        }
+                      },
                     ),
-                  ),
-                ],
+                    const SizedBox(height: 12),
+                    TextField(
+                      textCapitalization: TextCapitalization.sentences,
+                      controller: qtyCtrl,
+                      keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                      decoration: const InputDecoration(
+                        labelText: 'Batch Size to Formulate (kg) *',
+                        hintText: 'e.g. 1000',
+                      ),
+                      onChanged: (v) => setDialogState(() {}),
+                    ),
+                    const SizedBox(height: 12),
+                    if (isLoadingIngredients)
+                      const Center(child: Padding(padding: EdgeInsets.all(8), child: CircularProgressIndicator()))
+                    else if (selectedFormulaId != null && loadedIngredients != null) ...[
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: currentError != null 
+                              ? AppColors.errorContainer 
+                              : AppColors.primaryContainer.withValues(alpha: 0.2),
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(color: currentError != null ? AppColors.error : AppColors.primary.withValues(alpha: 0.3)),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              currentError != null ? '⚠️ INVENTORY STOCK WARNING' : 'RAW INGREDIENTS DEDUCTION PREVIEW:',
+                              style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: currentError != null ? AppColors.error : AppColors.primary),
+                            ),
+                            const SizedBox(height: 6),
+                            if (loadedIngredients!.isEmpty)
+                              const Text('No ingredients added to this formula yet.', style: TextStyle(fontSize: 12, color: AppColors.error))
+                            else ...breakdownRows,
+                            if (currentError != null) ...[
+                              const Divider(height: 12, thickness: 0.5),
+                              Text(currentError, style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: AppColors.error)),
+                            ],
+                          ],
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
               ),
               actions: [
                 TextButton(
@@ -2556,10 +2804,19 @@ class _OperationsPOSTabState extends State<OperationsPOSTab> {
                       return;
                     }
 
-                    BlocProvider.of<InventoryBloc>(context).add(PrepareFormulaBatch(selectedFormulaId!, qty));
+                    if (currentError != null) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text(currentError), backgroundColor: AppColors.error),
+                      );
+                      return;
+                    }
+
+                    if (selectedFormulaId != null) {
+                      BlocProvider.of<InventoryBloc>(context).add(PrepareFormulaBatch(selectedFormulaId!, qty));
+                    }
                     Navigator.pop(dialogCtx);
                     ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Feed batch formulation processing...'), backgroundColor: AppColors.primary),
+                      const SnackBar(content: Text('Feed batch formulated! Ingredients deducted from stock items.'), backgroundColor: AppColors.secondary),
                     );
                   },
                   style: ElevatedButton.styleFrom(backgroundColor: AppColors.secondary, foregroundColor: Colors.white),

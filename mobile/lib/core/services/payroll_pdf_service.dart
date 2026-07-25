@@ -95,10 +95,11 @@ class PayrollPdfService {
     return pw.TableHelper.fromTextArray(
       context: null,
       border: pw.TableBorder.all(color: PdfColors.grey300),
-      headerStyle: pw.TextStyle(fontWeight: pw.FontWeight.bold, color: PdfColors.white),
+      headerStyle: pw.TextStyle(fontWeight: pw.FontWeight.bold, color: PdfColors.white, fontSize: 9),
       headerDecoration: const pw.BoxDecoration(color: PdfColors.teal800),
       rowDecoration: const pw.BoxDecoration(border: pw.Border(bottom: pw.BorderSide(color: PdfColors.grey200))),
-      cellPadding: const pw.EdgeInsets.all(8),
+      cellPadding: const pw.EdgeInsets.symmetric(horizontal: 4, vertical: 6),
+      cellStyle: const pw.TextStyle(fontSize: 8),
       cellAlignments: {
         0: pw.Alignment.centerLeft,
         1: pw.Alignment.centerLeft,
@@ -106,22 +107,40 @@ class PayrollPdfService {
         3: pw.Alignment.centerRight,
         4: pw.Alignment.centerRight,
         5: pw.Alignment.centerRight,
+        6: pw.Alignment.centerRight,
       },
-      headers: ['Name', 'Role', 'Rating', 'Base Salary', 'Deductions', 'Net Pay'],
+      headers: ['Name', 'Role', 'Base Salary', 'Salary Advance', 'Loan Repaid', 'Loan Left', 'Net Pay'],
       data: staff.map((s) {
-        final member = s as LocalStaffData;
-        final name = member.name;
-        final role = member.role;
-        final rating = member.performanceRating;
-        final base = member.baseSalary;
-        final net = base;
-        const deductions = 0.0;
+        String name = '';
+        String role = '';
+        double base = 0.0;
+        double advance = 0.0;
+        double loanRepayment = 0.0;
+        double loanBalance = 0.0;
+        double net = 0.0;
+
+        if (s is Map) {
+          name = s['name']?.toString() ?? '';
+          role = s['role']?.toString() ?? '';
+          base = (s['base_salary'] ?? 0.0) as double;
+          advance = (s['one_off_advance'] ?? 0.0) as double;
+          loanRepayment = (s['loan_deduction'] ?? 0.0) as double;
+          loanBalance = (s['remaining_loan_balance'] ?? 0.0) as double;
+          net = (s['net_pay'] ?? (base - advance - loanRepayment)) as double;
+        } else if (s is LocalStaffData) {
+          name = s.name;
+          role = s.role;
+          base = s.baseSalary;
+          net = base;
+        }
+
         return [
-          name.toString(),
-          role.toString(),
-          '${rating.toString()}/5.0',
+          name,
+          role,
           currency.format(base),
-          currency.format(deductions),
+          currency.format(advance),
+          currency.format(loanRepayment),
+          currency.format(loanBalance),
           currency.format(net),
         ];
       }).toList(),

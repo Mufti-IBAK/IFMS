@@ -20,6 +20,7 @@ class BreedingScreen extends StatefulWidget {
 class _BreedingScreenState extends State<BreedingScreen> with SingleTickerProviderStateMixin {
   late TabController _tabController;
   String _selectedStatusFilter = 'all';
+  String _searchQuery = '';
 
   @override
   void initState() {
@@ -88,8 +89,20 @@ class _BreedingScreenState extends State<BreedingScreen> with SingleTickerProvid
           final int synchronized = activeAnimals.where((a) => _getReproStatus(a) == 'synchronized').length;
           final int open = activeAnimals.where((a) => _getReproStatus(a) == 'active' || _getReproStatus(a) == 'open').length;
 
-          // Filter animal list
+          // Filter animal list by status and search query
           final filteredAnimals = activeAnimals.where((a) {
+            final isMap = a is Map;
+            final tag = (isMap ? (a['tagId'] ?? a['tag_id'] ?? '') : (a as LocalAnimal).tagId).toString().toLowerCase();
+            final species = (isMap ? (a['species'] ?? '') : (a as LocalAnimal).species).toString().toLowerCase();
+            final breed = (isMap ? (a['breed'] ?? '') : ((a as LocalAnimal).breed ?? '')).toString().toLowerCase();
+            
+            final matchesSearch = _searchQuery.isEmpty || 
+                tag.contains(_searchQuery) || 
+                species.contains(_searchQuery) || 
+                breed.contains(_searchQuery);
+
+            if (!matchesSearch) return false;
+
             if (_selectedStatusFilter == 'all') return true;
             final s = _getReproStatus(a);
             if (_selectedStatusFilter == 'open') return s == 'active' || s == 'open';
@@ -119,22 +132,49 @@ class _BreedingScreenState extends State<BreedingScreen> with SingleTickerProvid
               ),
               const SizedBox(height: 20),
 
-              // Filter Chips Row
-              SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
-                child: Row(
-                  children: [
-                    _filterChip('all', 'All Animals (${activeAnimals.length})'),
-                    _filterChip('pregnant', 'Pregnant ($pregnant)'),
-                    _filterChip('lactating', 'Lactating ($lactating)'),
-                    _filterChip('dry', 'Dry ($dry)'),
-                    _filterChip('on_heat', 'On Heat ($heat)'),
-                    _filterChip('synchronized', 'Synchronized ($synchronized)'),
-                    _filterChip('open', 'Open ($open)'),
+          // Filter & Search Bar
+          Row(
+            children: [
+              Expanded(
+                child: TextField(
+                  decoration: InputDecoration(
+                    hintText: 'Search Tag ID, name, or breed...',
+                    prefixIcon: const Icon(Icons.search),
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                    filled: true,
+                    fillColor: Colors.grey.shade100,
+                  ),
+                  onChanged: (val) => setState(() => _searchQuery = val.trim().toLowerCase()),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Container(
+                decoration: BoxDecoration(
+                  color: _selectedStatusFilter != 'all' ? AppColors.primary : Colors.grey.shade200,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: PopupMenuButton<String>(
+                  icon: Icon(
+                    Icons.filter_list,
+                    color: _selectedStatusFilter != 'all' ? Colors.white : Colors.black87,
+                  ),
+                  tooltip: 'Filter Status',
+                  onSelected: (val) => setState(() => _selectedStatusFilter = val),
+                  itemBuilder: (context) => [
+                    const PopupMenuItem(value: 'all', child: Text('All Statuses')),
+                    const PopupMenuItem(value: 'pregnant', child: Text('Pregnant')),
+                    const PopupMenuItem(value: 'lactating', child: Text('Lactating')),
+                    const PopupMenuItem(value: 'dry', child: Text('Dry')),
+                    const PopupMenuItem(value: 'on_heat', child: Text('On Heat')),
+                    const PopupMenuItem(value: 'synchronized', child: Text('Synchronized')),
+                    const PopupMenuItem(value: 'open', child: Text('Open')),
                   ],
                 ),
               ),
-              const SizedBox(height: 16),
+            ],
+          ),
+          const SizedBox(height: 16),
 
               Text(
                 'Animal Registry (${_selectedStatusFilter.replaceAll('_', ' ').toUpperCase()})',
@@ -303,20 +343,6 @@ class _BreedingScreenState extends State<BreedingScreen> with SingleTickerProvid
             ),
           ],
         ),
-      ),
-    );
-  }
-
-  Widget _filterChip(String filterKey, String label) {
-    final bool isSelected = _selectedStatusFilter == filterKey;
-    return Padding(
-      padding: const EdgeInsets.only(right: 8),
-      child: ChoiceChip(
-        label: Text(label),
-        selected: isSelected,
-        onSelected: (val) {
-          if (val) setState(() => _selectedStatusFilter = filterKey);
-        },
       ),
     );
   }

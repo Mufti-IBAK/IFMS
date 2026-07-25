@@ -109,12 +109,16 @@ class _AnimalProfileScreenState extends State<AnimalProfileScreen> with SingleTi
           .then((records) {
         if (records.isNotEmpty) {
           double total = 0.0;
+          int validCount = 0;
           for (var r in records) {
-            total += r.quantityLiters;
+            if (!r.isWithdrawn) {
+              total += r.quantityLiters;
+              validCount++;
+            }
           }
           setState(() {
             _totalMilkLiters = total;
-            _avgMilkLiters = total / records.length;
+            _avgMilkLiters = validCount > 0 ? total / validCount : 0.0;
           });
         }
         return records;
@@ -991,14 +995,7 @@ class _AnimalProfileScreenState extends State<AnimalProfileScreen> with SingleTi
                       child: Icon(Icons.water_drop, color: Colors.white, size: 16),
                     ),
                     title: Text('${r.quantityLiters.toStringAsFixed(1)} Liters (${r.milkingSession.toUpperCase()})'),
-                    subtitle: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(DateFormat('yyyy-MM-dd').format(r.recordDate)),
-                        if (r.fatPercentage != null || r.proteinPercentage != null)
-                          Text('Fat: ${r.fatPercentage ?? "-"}% | Protein: ${r.proteinPercentage ?? "-"}%', style: const TextStyle(fontSize: 10, color: Colors.grey)),
-                      ]
-                    ),
+                    subtitle: Text(DateFormat('yyyy-MM-dd HH:mm').format(r.recordDate)),
                     trailing: r.isWithdrawn
                         ? const Icon(Icons.warning_amber_rounded, color: Colors.orange, size: 20)
                         : null,
@@ -1555,7 +1552,7 @@ class _AnimalProfileScreenState extends State<AnimalProfileScreen> with SingleTi
                         icon: const Icon(Icons.calendar_month),
                         label: const Text('Pick Date'),
                         onPressed: () async {
-                          final picked = await showDatePicker(
+                          final picked = await showDatePicker(builder: (context, child) => Theme(data: Theme.of(context).copyWith(useMaterial3: false), child: MediaQuery(data: MediaQuery.of(context).copyWith(textScaleFactor: 1.0), child: child!)), 
                             context: context,
                             initialDate: DateTime.now().add(const Duration(days: 1)),
                             firstDate: DateTime.now(),
@@ -1715,9 +1712,29 @@ class _AnimalProfileScreenState extends State<AnimalProfileScreen> with SingleTi
     String selectedSex = _sex.toLowerCase();
     if (selectedSex != 'female' && selectedSex != 'male') selectedSex = 'female';
 
-    String selectedPedigree = _pedigreeType?.toLowerCase() ?? 'pure';
-    const validPedigrees = ['pure', 'cross', 'grading', 'commercial'];
-    if (!validPedigrees.contains(selectedPedigree)) selectedPedigree = 'pure';
+    final rawBreed = _breed;
+    final rawPedigree = (_pedigreeType ?? '').toLowerCase();
+
+    String selectedPedigree = 'pure';
+    final parent1BreedController = TextEditingController();
+    final parent2BreedController = TextEditingController();
+
+    if (rawPedigree.contains('cross') || rawBreed.contains(' x ')) {
+      selectedPedigree = 'cross';
+      final parts = rawBreed.split(' x ');
+      if (parts.length >= 2) {
+        parent1BreedController.text = parts[0].trim();
+        parent2BreedController.text = parts.sublist(1).join(' x ').trim();
+      } else {
+        parent1BreedController.text = rawBreed.trim();
+      }
+    } else if (rawPedigree.contains('mixed') || rawBreed.toLowerCase() == 'mixed breed') {
+      selectedPedigree = 'mixed';
+      breedController.text = rawBreed.isNotEmpty ? rawBreed : 'Mixed Breed';
+    } else {
+      selectedPedigree = 'pure';
+      breedController.text = (rawBreed == 'Unknown') ? '' : rawBreed;
+    }
 
     String selectedPurpose = _purpose?.toLowerCase() ?? 'milk';
     const validPurposes = ['breeding', 'milk', 'meat', 'others'];
@@ -1821,20 +1838,132 @@ class _AnimalProfileScreenState extends State<AnimalProfileScreen> with SingleTi
                       ),
                     ],
                   ),
+                  const SizedBox(height: 12),
+
+                  buildInputField(
+                    label: 'Breeding Type *',
+                    child: Wrap(
+                      spacing: 8,
+                      children: [
+                        ChoiceChip(
+                          label: const Text('Purebreed'),
+                          selected: selectedPedigree == 'pure',
+                          onSelected: (selected) {
+                            if (selected) setStateSheet(() => selectedPedigree = 'pure');
+                          },
+                        ),
+                        ChoiceChip(
+                          label: const Text('Crossbreed'),
+                          selected: selectedPedigree == 'cross',
+                          onSelected: (selected) {
+                            if (selected) setStateSheet(() => selectedPedigree = 'cross');
+                          },
+                        ),
+                        ChoiceChip(
+                          label: const Text('Mixed Breed'),
+                          selected: selectedPedigree == 'mixed',
+                          onSelected: (selected) {
+                            if (selected) setStateSheet(() => selectedPedigree = 'mixed');
+                          },
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+
+                  if (selectedPedigree == 'pure') ...[
+                    buildInputField(
+                      label: 'Breed Name *',
+                      child: TextField(
+                        textCapitalization: TextCapitalization.sentences,
+                        controller: breedController,
+                        decoration: const InputDecoration(
+                          hintText: 'e.g. Holstein-Friesian / White Fulani',
+                          prefixIcon: Icon(Icons.category, size: 20),
+                        ),
+                      ),
+                    ),
+                  ] else if (selectedPedigree == 'cross') ...[
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: AppColors.primary.withValues(alpha: 0.05),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: AppColors.primary.withValues(alpha: 0.2)),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            'CROSSBREEDING PARENTAGE DETAILS',
+                            style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: AppColors.primary),
+                          ),
+                          const SizedBox(height: 8),
+                          Row(
+                            children: [
+                              Expanded(
+                                child: TextField(
+                                  textCapitalization: TextCapitalization.sentences,
+                                  controller: parent1BreedController,
+                                  decoration: const InputDecoration(
+                                    labelText: 'Parent 1 Breed *',
+                                    hintText: 'e.g. Holstein-Friesian',
+                                    prefixIcon: Icon(Icons.pets, size: 18),
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: TextField(
+                                  textCapitalization: TextCapitalization.sentences,
+                                  controller: parent2BreedController,
+                                  decoration: const InputDecoration(
+                                    labelText: 'Parent 2 Breed *',
+                                    hintText: 'e.g. White Fulani',
+                                    prefixIcon: Icon(Icons.pets, size: 18),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                  ] else ...[
+                    buildInputField(
+                      label: 'Breed Designation',
+                      child: TextField(
+                        textCapitalization: TextCapitalization.sentences,
+                        controller: breedController,
+                        decoration: const InputDecoration(
+                          hintText: 'e.g. Mixed Breed / Local Mix',
+                          prefixIcon: Icon(Icons.category, size: 20),
+                        ),
+                      ),
+                    ),
+                  ],
                   const SizedBox(height: 8),
 
                   Row(
                     children: [
                       Expanded(
-                        child: TextField(textCapitalization: TextCapitalization.sentences, controller: breedController,
-                          decoration: const InputDecoration(labelText: 'Breed', hintText: 'e.g. Friesian'),
+                        child: TextField(textCapitalization: TextCapitalization.sentences, controller: weightController,
+                          decoration: const InputDecoration(labelText: 'Weight (kg)', hintText: 'e.g. 350'),
+                          keyboardType: TextInputType.number,
                         ),
                       ),
                       const SizedBox(width: 12),
                       Expanded(
-                        child: TextField(textCapitalization: TextCapitalization.sentences, controller: weightController,
-                          decoration: const InputDecoration(labelText: 'Weight (kg)', hintText: 'e.g. 350'),
-                          keyboardType: TextInputType.number,
+                        child: DropdownButtonFormField<String>(
+                          initialValue: selectedPurpose,
+                          decoration: const InputDecoration(labelText: 'Purpose'),
+                          items: const [
+                            DropdownMenuItem(value: 'breeding', child: Text('Breeding')),
+                            DropdownMenuItem(value: 'milk', child: Text('Dairy (Milk)')),
+                            DropdownMenuItem(value: 'meat', child: Text('Beef (Meat)')),
+                            DropdownMenuItem(value: 'others', child: Text('Others')),
+                          ],
+                          onChanged: (val) => setStateSheet(() => selectedPurpose = val!),
                         ),
                       ),
                     ],
@@ -1861,7 +1990,7 @@ class _AnimalProfileScreenState extends State<AnimalProfileScreen> with SingleTi
                     label: 'Date of Birth *',
                     child: InkWell(
                       onTap: () async {
-                        final picked = await showDatePicker(
+                        final picked = await showDatePicker(builder: (context, child) => Theme(data: Theme.of(context).copyWith(useMaterial3: false), child: MediaQuery(data: MediaQuery.of(context).copyWith(textScaleFactor: 1.0), child: child!)), 
                           context: context,
                           initialDate: selectedDob ?? DateTime.now().subtract(const Duration(days: 365)),
                           firstDate: DateTime(2000),
@@ -1969,39 +2098,6 @@ class _AnimalProfileScreenState extends State<AnimalProfileScreen> with SingleTi
                   ],
                   const SizedBox(height: 8),
 
-                  Row(
-                    children: [
-                      Expanded(
-                        child: DropdownButtonFormField<String>(
-                          initialValue: selectedPedigree,
-                          decoration: const InputDecoration(labelText: 'Pedigree Type'),
-                          items: const [
-                            DropdownMenuItem(value: 'pure', child: Text('Purebreed')),
-                            DropdownMenuItem(value: 'cross', child: Text('Crossbreed')),
-                            DropdownMenuItem(value: 'grading', child: Text('Grading Up')),
-                            DropdownMenuItem(value: 'commercial', child: Text('Commercial')),
-                          ],
-                          onChanged: (val) => setStateSheet(() => selectedPedigree = val!),
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: DropdownButtonFormField<String>(
-                          initialValue: selectedPurpose,
-                          decoration: const InputDecoration(labelText: 'Purpose'),
-                          items: const [
-                            DropdownMenuItem(value: 'breeding', child: Text('Breeding')),
-                            DropdownMenuItem(value: 'milk', child: Text('Dairy (Milk)')),
-                            DropdownMenuItem(value: 'meat', child: Text('Beef (Meat)')),
-                            DropdownMenuItem(value: 'others', child: Text('Others')),
-                          ],
-                          onChanged: (val) => setStateSheet(() => selectedPurpose = val!),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-
                   if (isFemale)
                     buildInputField(
                       label: 'Reproductive Status',
@@ -2041,7 +2137,6 @@ class _AnimalProfileScreenState extends State<AnimalProfileScreen> with SingleTi
                       ),
                     ),
 
-                  // Removed Vaccination and Deworming UI as it is now in the Schedules tab
                   const SizedBox(height: 20),
 
                   Row(
@@ -2089,19 +2184,32 @@ class _AnimalProfileScreenState extends State<AnimalProfileScreen> with SingleTi
                               'drug': dewormingDrugController.text.trim(),
                             });
 
-                            // Removed inline schedule task creation; now handled by _showScheduleActionSheet
+                            String finalBreed;
+                            String finalPedigreeType;
+                            if (selectedPedigree == 'cross') {
+                              final p1 = parent1BreedController.text.trim();
+                              final p2 = parent2BreedController.text.trim();
+                              finalBreed = (p1.isNotEmpty && p2.isNotEmpty) ? '$p1 x $p2' : (p1.isNotEmpty ? p1 : (p2.isNotEmpty ? p2 : 'Crossbreed'));
+                              finalPedigreeType = 'crossbreed';
+                            } else if (selectedPedigree == 'mixed') {
+                              finalBreed = breedController.text.trim().isNotEmpty ? breedController.text.trim() : 'Mixed Breed';
+                              finalPedigreeType = 'mixed_breed';
+                            } else {
+                              finalBreed = breedController.text.trim().isNotEmpty ? breedController.text.trim() : 'Purebreed';
+                              finalPedigreeType = 'purebreed';
+                            }
 
                             // Update repository
                             await sl<AnimalsRepository>().updateAnimal(_id, {
                               'tag_id': tagController.text.trim(),
                               'species': selectedSpecies,
                               'sex': selectedSex,
-                              'breed': breedController.text.trim().isNotEmpty ? breedController.text.trim() : null,
+                              'breed': finalBreed,
                               'date_of_birth': dobStr,
                               'weight': weightController.text.isNotEmpty ? double.tryParse(weightController.text) : null,
                               'color': colorController.text.trim().isNotEmpty ? colorController.text.trim() : null,
                               'unique_marks': marksController.text.trim().isNotEmpty ? marksController.text.trim() : null,
-                              'pedigree_type': selectedPedigree,
+                              'pedigree_type': finalPedigreeType,
                               'purpose': selectedPurpose,
                               'current_reproductive_status': isFemale ? selectedReproductive : 'open',
                               'vaccination_status': vacJson,
@@ -2209,7 +2317,7 @@ class _AnimalProfileScreenState extends State<AnimalProfileScreen> with SingleTi
                         Text('Date: ${DateFormat('yyyy-MM-dd').format(selectedDate)}'),
                         TextButton(
                           onPressed: () async {
-                            final picked = await showDatePicker(
+                            final picked = await showDatePicker(builder: (context, child) => Theme(data: Theme.of(context).copyWith(useMaterial3: false), child: MediaQuery(data: MediaQuery.of(context).copyWith(textScaleFactor: 1.0), child: child!)), 
                               context: context,
                               initialDate: selectedDate,
                               firstDate: DateTime(2020),
@@ -2317,7 +2425,7 @@ class _AnimalProfileScreenState extends State<AnimalProfileScreen> with SingleTi
                           ),
                           TextButton(
                             onPressed: () async {
-                              final picked = await showDatePicker(
+                              final picked = await showDatePicker(builder: (context, child) => Theme(data: Theme.of(context).copyWith(useMaterial3: false), child: MediaQuery(data: MediaQuery.of(context).copyWith(textScaleFactor: 1.0), child: child!)), 
                                 context: context,
                                 initialDate: DateTime.now().add(const Duration(days: 3)),
                                 firstDate: DateTime.now(),
@@ -2370,7 +2478,7 @@ class _AnimalProfileScreenState extends State<AnimalProfileScreen> with SingleTi
                             ),
                             TextButton(
                               onPressed: () async {
-                                final picked = await showDatePicker(
+                                final picked = await showDatePicker(builder: (context, child) => Theme(data: Theme.of(context).copyWith(useMaterial3: false), child: MediaQuery(data: MediaQuery.of(context).copyWith(textScaleFactor: 1.0), child: child!)), 
                                   context: context,
                                   initialDate: DateTime.now().add(const Duration(days: 280)),
                                   firstDate: DateTime.now(),

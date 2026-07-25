@@ -40,6 +40,7 @@ class AppTheme {
       ),
       appBarTheme: AppBarTheme(
         backgroundColor: AppColors.primary,
+        foregroundColor: Colors.white,
         surfaceTintColor: Colors.transparent,
         elevation: 0,
         centerTitle: false,
@@ -56,6 +57,7 @@ class AppTheme {
         labelColor: Colors.white,
         unselectedLabelColor: Colors.white70,
         indicatorColor: AppColors.secondary,
+        dividerColor: Colors.transparent,
         labelStyle: GoogleFonts.rajdhani(
           fontSize: 14,
           fontWeight: FontWeight.bold,

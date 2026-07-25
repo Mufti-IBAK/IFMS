@@ -8,7 +8,8 @@ import '../../animals/animals_bloc.dart';
 
 class AddMilkEntrySheet extends StatefulWidget {
   final LocalMilkRecord? record;
-  const AddMilkEntrySheet({super.key, this.record});
+  final DateTime? initialDate;
+  const AddMilkEntrySheet({super.key, this.record, this.initialDate});
 
   @override
   State<AddMilkEntrySheet> createState() => _AddMilkEntrySheetState();
@@ -17,30 +18,24 @@ class AddMilkEntrySheet extends StatefulWidget {
 class _AddMilkEntrySheetState extends State<AddMilkEntrySheet> {
   String? selectedAnimalId;
   String selectedSession = 'morning';
-  DateTime selectedDate = DateTime.now();
+  late DateTime selectedDate;
 
   final litersCtrl = TextEditingController();
-  final fatCtrl = TextEditingController();
-  final proteinCtrl = TextEditingController();
 
   @override
   void initState() {
     super.initState();
+    selectedDate = widget.record?.recordDate ?? widget.initialDate ?? DateTime.now();
     if (widget.record != null) {
       selectedAnimalId = widget.record!.animalId;
       selectedSession = widget.record!.milkingSession;
-      selectedDate = widget.record!.recordDate;
       litersCtrl.text = widget.record!.quantityLiters.toString();
-      fatCtrl.text = widget.record!.fatPercentage?.toString() ?? '';
-      proteinCtrl.text = widget.record!.proteinPercentage?.toString() ?? '';
     }
   }
 
   @override
   void dispose() {
     litersCtrl.dispose();
-    fatCtrl.dispose();
-    proteinCtrl.dispose();
     super.dispose();
   }
 
@@ -138,7 +133,7 @@ class _AddMilkEntrySheetState extends State<AddMilkEntrySheet> {
                   child: GestureDetector(
                     onTap: () async {
                       FocusScope.of(context).unfocus();
-                      final date = await showDatePicker(
+                      final date = await showDatePicker(builder: (context, child) => Theme(data: Theme.of(context).copyWith(useMaterial3: false), child: MediaQuery(data: MediaQuery.of(context).copyWith(textScaleFactor: 1.0), child: child!)), 
                         context: context,
                         initialDate: selectedDate,
                         firstDate: DateTime(2000),
@@ -163,31 +158,11 @@ class _AddMilkEntrySheetState extends State<AddMilkEntrySheet> {
             ),
             const SizedBox(height: 16),
 
-            // Production & Quality
+            // Production & Quantity
             TextField(textCapitalization: TextCapitalization.sentences, controller: litersCtrl,
               decoration: const InputDecoration(labelText: 'Quantity (Liters)', border: OutlineInputBorder(), prefixIcon: Icon(Icons.water_drop)),
               keyboardType: TextInputType.number,
             ),
-            const SizedBox(height: 16),
-            Row(
-              children: [
-                Expanded(
-                  child: TextField(textCapitalization: TextCapitalization.sentences, controller: fatCtrl,
-                    decoration: const InputDecoration(labelText: 'Fat (%)', border: OutlineInputBorder()),
-                    keyboardType: TextInputType.number,
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: TextField(textCapitalization: TextCapitalization.sentences, controller: proteinCtrl,
-                    decoration: const InputDecoration(labelText: 'Protein (%)', border: OutlineInputBorder()),
-                    keyboardType: TextInputType.number,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 16),
-            
             const SizedBox(height: 32),
             SizedBox(
               width: double.infinity,
@@ -217,8 +192,6 @@ class _AddMilkEntrySheetState extends State<AddMilkEntrySheet> {
                     'record_date': recordDate.toIso8601String(),
                     'milking_session': selectedSession,
                     'quantity_liters': liters,
-                    'fat_percentage': double.tryParse(fatCtrl.text),
-                    'protein_percentage': double.tryParse(proteinCtrl.text),
                   };
 
                   if (widget.record != null) {

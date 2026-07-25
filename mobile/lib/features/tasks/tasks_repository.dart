@@ -1,6 +1,8 @@
 import 'dart:convert';
 import 'package:drift/drift.dart';
 import 'package:dio/dio.dart';
+import '../../core/di/service_locator.dart';
+import '../../core/network/notification_service.dart';
 import '../../core/database/local_db.dart';
 import '../../core/network/api_client.dart';
 
@@ -19,9 +21,15 @@ class TasksRepository {
     try {
       await autoGenerateTasks();
     } catch (_) {}
-    return await (db.select(db.localTasks)
+    final allTasks = await (db.select(db.localTasks)
           ..orderBy([(t) => OrderingTerm(expression: t.dueDate, mode: OrderingMode.asc)]))
         .get();
+
+    try {
+      sl<NotificationService>().scheduleDailyTaskSummaries(allTasks);
+    } catch (_) {}
+
+    return allTasks;
   }
 
   Future<void> autoGenerateTasks() async {
@@ -254,6 +262,17 @@ class TasksRepository {
 
     // Save to local database only on success (or if personal/not synced)
     await db.into(db.localTasks).insertOnConflictUpdate(companion);
+
+    // Fire system notification tray alert
+    try {
+      final String taskTitle = taskData['title']?.toString() ?? 'New Task';
+      final String taskDesc = taskData['description']?.toString() ?? 'Task scheduled';
+      await sl<NotificationService>().showLocalNotification(
+        'Task Scheduled: $taskTitle',
+        taskDesc,
+        payload: '/tasks',
+      );
+    } catch (_) {}
   }
 
   Future<void> _updateLocalCache(List<dynamic> tasks) async {

@@ -213,6 +213,211 @@ class _LineChartPainter extends CustomPainter {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+// 1B. CUSTOM DUAL LINE / AREA CHART (Revenue vs Expenses Trend)
+// ─────────────────────────────────────────────────────────────────────────────
+class CustomDualLineChart extends StatelessWidget {
+  final List<double> primaryData;
+  final List<double> secondaryData;
+  final List<String> labels;
+  final Color primaryColor;
+  final Color secondaryColor;
+  final double height;
+
+  const CustomDualLineChart({
+    super.key,
+    required this.primaryData,
+    required this.secondaryData,
+    required this.labels,
+    this.primaryColor = const Color(0xFF2E7D32),
+    this.secondaryColor = const Color(0xFFC62828),
+    this.height = 200,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    if (primaryData.isEmpty) return SizedBox(height: height, child: const Center(child: Text('No data')));
+
+    final allData = [...primaryData, ...secondaryData];
+    final maxVal = max(allData.reduce(max), 1.0) * 1.25;
+
+    return Container(
+      height: height,
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+      child: CustomPaint(
+        size: Size(double.infinity, height - 16),
+        painter: _DualLineChartPainter(
+          primaryData: primaryData,
+          secondaryData: secondaryData,
+          labels: labels,
+          maxVal: maxVal,
+          primaryColor: primaryColor,
+          secondaryColor: secondaryColor,
+        ),
+      ),
+    );
+  }
+}
+
+class _DualLineChartPainter extends CustomPainter {
+  final List<double> primaryData;
+  final List<double> secondaryData;
+  final List<String> labels;
+  final double maxVal;
+  final Color primaryColor;
+  final Color secondaryColor;
+
+  _DualLineChartPainter({
+    required this.primaryData,
+    required this.secondaryData,
+    required this.labels,
+    required this.maxVal,
+    required this.primaryColor,
+    required this.secondaryColor,
+  });
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    const paddingLeft = 48.0;
+    const paddingBottom = 24.0;
+    const paddingTop = 22.0;
+    const paddingRight = 12.0;
+
+    final chartWidth = size.width - paddingLeft - paddingRight;
+    final chartHeight = size.height - paddingTop - paddingBottom;
+
+    final gridPaint = Paint()
+      ..color = Colors.grey.withOpacity(0.15)
+      ..strokeWidth = 0.8;
+
+    final textPainter = TextPainter(textDirection: TextDirection.ltr);
+
+    String formatVal(double val) {
+      if (val >= 1000000) {
+        return '₦${(val / 1000000).toStringAsFixed(1)}M';
+      } else if (val >= 1000) {
+        return '₦${(val / 1000).toStringAsFixed(0)}k';
+      } else if (val == 0) {
+        return '₦0';
+      } else {
+        return '₦${val.toStringAsFixed(0)}';
+      }
+    }
+
+    // 1. Draw horizontal grids & Y-axis labels
+    const gridLines = 4;
+    for (int i = 0; i <= gridLines; i++) {
+      final y = paddingTop + chartHeight - (chartHeight / gridLines) * i;
+      final val = (maxVal / gridLines) * i;
+
+      canvas.drawLine(Offset(paddingLeft, y), Offset(size.width - paddingRight, y), gridPaint);
+
+      textPainter.text = TextSpan(
+        text: formatVal(val),
+        style: TextStyle(color: Colors.grey.shade600, fontSize: 9, fontWeight: FontWeight.w600),
+      );
+      textPainter.layout();
+      textPainter.paint(canvas, Offset(paddingLeft - textPainter.width - 6, y - textPainter.height / 2));
+    }
+
+    final count = primaryData.length;
+    final stepX = count > 1 ? chartWidth / (count - 1) : chartWidth / 2;
+
+    void drawSeries(List<double> data, Color color) {
+      final points = <Offset>[];
+      for (int i = 0; i < data.length; i++) {
+        final x = count == 1 ? paddingLeft + chartWidth / 2 : paddingLeft + i * stepX;
+        final y = paddingTop + chartHeight - (data[i] / maxVal) * chartHeight;
+        points.add(Offset(x, y));
+      }
+
+      if (points.isEmpty) return;
+
+      // Draw Gradient Fill
+      final fillPath = Path()..moveTo(points.first.dx, paddingTop + chartHeight);
+      fillPath.lineTo(points.first.dx, points.first.dy);
+
+      for (int i = 0; i < points.length - 1; i++) {
+        final p0 = points[i];
+        final p1 = points[i + 1];
+        final controlX1 = p0.dx + (p1.dx - p0.dx) / 2;
+        final controlY1 = p0.dy;
+        final controlX2 = p0.dx + (p1.dx - p0.dx) / 2;
+        final controlY2 = p1.dy;
+        fillPath.cubicTo(controlX1, controlY1, controlX2, controlY2, p1.dx, p1.dy);
+      }
+
+      fillPath.lineTo(points.last.dx, paddingTop + chartHeight);
+      fillPath.close();
+
+      final fillPaint = Paint()
+        ..shader = LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [color.withOpacity(0.25), color.withOpacity(0.0)],
+        ).createShader(Rect.fromLTWH(paddingLeft, paddingTop, chartWidth, chartHeight))
+        ..style = PaintingStyle.fill;
+      canvas.drawPath(fillPath, fillPaint);
+
+      // Draw Smooth Line
+      final linePath = Path()..moveTo(points.first.dx, points.first.dy);
+      for (int i = 0; i < points.length - 1; i++) {
+        final p0 = points[i];
+        final p1 = points[i + 1];
+        final controlX1 = p0.dx + (p1.dx - p0.dx) / 2;
+        final controlY1 = p0.dy;
+        final controlX2 = p0.dx + (p1.dx - p0.dx) / 2;
+        final controlY2 = p1.dy;
+        linePath.cubicTo(controlX1, controlY1, controlX2, controlY2, p1.dx, p1.dy);
+      }
+
+      final linePaint = Paint()
+        ..color = color
+        ..strokeWidth = 2.8
+        ..style = PaintingStyle.stroke
+        ..strokeCap = StrokeCap.round
+        ..isAntiAlias = true;
+      canvas.drawPath(linePath, linePaint);
+
+      // Draw Dots & Value Callouts
+      final dotPaint = Paint()..color = color..style = PaintingStyle.fill;
+      final dotOuter = Paint()..color = Colors.white..style = PaintingStyle.stroke..strokeWidth = 2.0;
+
+      for (int i = 0; i < points.length; i++) {
+        canvas.drawCircle(points[i], 4.5, dotPaint);
+        canvas.drawCircle(points[i], 4.5, dotOuter);
+
+        if (data[i] > 0) {
+          textPainter.text = TextSpan(
+            text: formatVal(data[i]),
+            style: TextStyle(color: color, fontSize: 8, fontWeight: FontWeight.bold),
+          );
+          textPainter.layout();
+          textPainter.paint(canvas, Offset(points[i].dx - textPainter.width / 2, points[i].dy - textPainter.height - 4));
+        }
+      }
+    }
+
+    drawSeries(secondaryData, secondaryColor);
+    drawSeries(primaryData, primaryColor);
+
+    for (int i = 0; i < count; i++) {
+      final x = count == 1 ? paddingLeft + chartWidth / 2 : paddingLeft + i * stepX;
+      if (i < labels.length) {
+        textPainter.text = TextSpan(
+          text: labels[i],
+          style: TextStyle(color: Colors.grey.shade700, fontSize: 8.5, fontWeight: FontWeight.bold),
+        );
+        textPainter.layout();
+        textPainter.paint(canvas, Offset(x - textPainter.width / 2, paddingTop + chartHeight + 6));
+      }
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => true;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // 2. CUSTOM BAR CHART (Grouped/Side-by-Side)
 // ─────────────────────────────────────────────────────────────────────────────
 class CustomBarChart extends StatelessWidget {
@@ -277,19 +482,31 @@ class _BarChartPainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-    const paddingLeft = 36.0;
+    const paddingLeft = 48.0;
     const paddingBottom = 20.0;
-    const paddingTop = 10.0;
+    const paddingTop = 20.0;
     const paddingRight = 10.0;
 
     final chartWidth = size.width - paddingLeft - paddingRight;
     final chartHeight = size.height - paddingTop - paddingBottom;
 
     final gridPaint = Paint()
-      ..color = Colors.grey.withOpacity(0.12)
+      ..color = Colors.grey.withOpacity(0.15)
       ..strokeWidth = 0.8;
 
     final textPainter = TextPainter(textDirection: TextDirection.ltr);
+
+    String formatVal(double val) {
+      if (val >= 1000000) {
+        return '₦${(val / 1000000).toStringAsFixed(1)}M';
+      } else if (val >= 1000) {
+        return '₦${(val / 1000).toStringAsFixed(0)}k';
+      } else if (val == 0) {
+        return '₦0';
+      } else {
+        return '₦${val.toStringAsFixed(0)}';
+      }
+    }
 
     // 1. Draw horizontal grids & Y-axis labels
     const gridLines = 4;
@@ -300,8 +517,8 @@ class _BarChartPainter extends CustomPainter {
       canvas.drawLine(Offset(paddingLeft, y), Offset(size.width - paddingRight, y), gridPaint);
 
       textPainter.text = TextSpan(
-        text: val >= 1000 ? '${(val / 1000).toStringAsFixed(0)}k' : val.toStringAsFixed(0),
-        style: TextStyle(color: Colors.grey.shade600, fontSize: 8, fontWeight: FontWeight.w600),
+        text: formatVal(val),
+        style: TextStyle(color: Colors.grey.shade600, fontSize: 9, fontWeight: FontWeight.w600),
       );
       textPainter.layout();
       textPainter.paint(canvas, Offset(paddingLeft - textPainter.width - 6, y - textPainter.height / 2));
@@ -311,7 +528,7 @@ class _BarChartPainter extends CustomPainter {
     final groupCount = primaryData.length;
     final groupWidth = chartWidth / groupCount;
     const barSpacing = 2.0;
-    final barWidth = (groupWidth * 0.5 - barSpacing) * 0.8;
+    final barWidth = (groupWidth * 0.35 - barSpacing).clamp(4.0, 14.0);
 
     final pPaint = Paint()..color = primaryColor..style = PaintingStyle.fill;
     final sPaint = Paint()..color = secondaryColor..style = PaintingStyle.fill;
@@ -320,35 +537,67 @@ class _BarChartPainter extends CustomPainter {
       final groupCenterX = paddingLeft + i * groupWidth + groupWidth / 2;
 
       // Primary Bar Left Offset, Secondary Bar Right Offset
-      final pHeight = (primaryData[i] / maxVal) * chartHeight;
-      final sHeight = (secondaryData[i] / maxVal) * chartHeight;
+      final pHeight = maxVal > 0 ? (primaryData[i] / maxVal) * chartHeight : 0.0;
+      final sHeight = maxVal > 0 ? (secondaryData[i] / maxVal) * chartHeight : 0.0;
 
       final pLeft = groupCenterX - barWidth - barSpacing / 2;
+      final pTop = paddingTop + chartHeight - pHeight;
       final pRect = RRect.fromRectAndCorners(
-        Rect.fromLTWH(pLeft, paddingTop + chartHeight - pHeight, barWidth, pHeight),
+        Rect.fromLTWH(pLeft, pTop, barWidth, pHeight),
         topLeft: const Radius.circular(4),
         topRight: const Radius.circular(4),
       );
       canvas.drawRRect(pRect, pPaint);
 
+      // Primary Bar Value Callout
+      if (primaryData[i] > 0) {
+        textPainter.text = TextSpan(
+          text: formatVal(primaryData[i]),
+          style: TextStyle(color: primaryColor, fontSize: 7.5, fontWeight: FontWeight.bold),
+        );
+        textPainter.layout();
+        textPainter.paint(canvas, Offset(pLeft + barWidth / 2 - textPainter.width / 2, pTop - textPainter.height - 2));
+      }
+
       final sLeft = groupCenterX + barSpacing / 2;
+      final sTop = paddingTop + chartHeight - sHeight;
       final sRect = RRect.fromRectAndCorners(
-        Rect.fromLTWH(sLeft, paddingTop + chartHeight - sHeight, barWidth, sHeight),
+        Rect.fromLTWH(sLeft, sTop, barWidth, sHeight),
         topLeft: const Radius.circular(4),
         topRight: const Radius.circular(4),
       );
       canvas.drawRRect(sRect, sPaint);
 
+      // Secondary Bar Value Callout
+      if (secondaryData[i] > 0) {
+        textPainter.text = TextSpan(
+          text: formatVal(secondaryData[i]),
+          style: TextStyle(color: secondaryColor, fontSize: 7.5, fontWeight: FontWeight.bold),
+        );
+        textPainter.layout();
+        textPainter.paint(canvas, Offset(sLeft + barWidth / 2 - textPainter.width / 2, sTop - textPainter.height - 2));
+      }
+
       // Group X-axis Label
       if (i < labels.length) {
         textPainter.text = TextSpan(
           text: labels[i],
-          style: TextStyle(color: Colors.grey.shade700, fontSize: 8, fontWeight: FontWeight.bold),
+          style: TextStyle(color: Colors.blueGrey.shade800, fontSize: 9.0, fontWeight: FontWeight.w700),
         );
         textPainter.layout();
         textPainter.paint(canvas, Offset(groupCenterX - textPainter.width / 2, paddingTop + chartHeight + 6));
       }
     }
+
+    // Draw X-axis Baseline
+    final axisPaint = Paint()
+      ..color = Colors.grey.shade400
+      ..strokeWidth = 1.0;
+    canvas.drawLine(
+      Offset(paddingLeft, paddingTop + chartHeight),
+      Offset(size.width - paddingRight, paddingTop + chartHeight),
+      axisPaint,
+    );
   }
 
   @override

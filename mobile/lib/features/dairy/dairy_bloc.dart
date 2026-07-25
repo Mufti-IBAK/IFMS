@@ -26,6 +26,41 @@ class DeleteMilkEntry extends DairyEvent {
   DeleteMilkEntry(this.id);
 }
 
+class RecordMilkSaleEvent extends DairyEvent {
+  final double quantityLiters;
+  final double pricePerLiter;
+  final String? buyerName;
+  final String? notes;
+
+  RecordMilkSaleEvent({
+    required this.quantityLiters,
+    required this.pricePerLiter,
+    this.buyerName,
+    this.notes,
+  });
+}
+
+class EditMilkSaleEvent extends DairyEvent {
+  final String id;
+  final double quantityLiters;
+  final double pricePerLiter;
+  final String? buyerName;
+  final String? notes;
+
+  EditMilkSaleEvent({
+    required this.id,
+    required this.quantityLiters,
+    required this.pricePerLiter,
+    this.buyerName,
+    this.notes,
+  });
+}
+
+class DeleteMilkSaleEvent extends DairyEvent {
+  final String id;
+  DeleteMilkSaleEvent(this.id);
+}
+
 class ChangeAnalyticsFilter extends DairyEvent {
   final AnalyticsFilter filter;
   ChangeAnalyticsFilter(this.filter);
@@ -53,6 +88,9 @@ class DairyLoaded extends DairyState {
   final double averagePerCowDashboard;
   final Map<String, double> topProducersDashboard;
   final Map<String, double> lowPerformersDashboard;
+  final int cowsMilkedCount;
+  final double monthlyMilkTotal;
+  final double allTimeMilkTotal;
   
   final DateTime selectedDashboardDate;
   final AnalyticsFilter dashboardFilter;
@@ -66,12 +104,23 @@ class DairyLoaded extends DairyState {
   final Map<String, List<double>> cowChartData;
   final double totalYieldForPeriod;
 
+  // Store & Sales tab specific
+  final double totalCollectedLiters;
+  final double totalWithdrawnLiters;
+  final double totalSoldLiters;
+  final double totalRevenue;
+  final double inStoreLiters;
+  final List<LocalTransaction> salesHistory;
+
   DairyLoaded({
     required this.dashboardRecords,
     required this.totalMilkDashboard,
     required this.averagePerCowDashboard,
     required this.topProducersDashboard,
     required this.lowPerformersDashboard,
+    required this.cowsMilkedCount,
+    required this.monthlyMilkTotal,
+    required this.allTimeMilkTotal,
     required this.selectedDashboardDate,
     required this.dashboardFilter,
     required this.animalTagMap,
@@ -81,6 +130,12 @@ class DairyLoaded extends DairyState {
     required this.cowYieldBreakdown,
     required this.cowChartData,
     required this.totalYieldForPeriod,
+    this.totalCollectedLiters = 0.0,
+    this.totalWithdrawnLiters = 0.0,
+    this.totalSoldLiters = 0.0,
+    this.totalRevenue = 0.0,
+    this.inStoreLiters = 0.0,
+    this.salesHistory = const [],
   });
 
   DairyLoaded copyWith({
@@ -89,6 +144,9 @@ class DairyLoaded extends DairyState {
     double? averagePerCowDashboard,
     Map<String, double>? topProducersDashboard,
     Map<String, double>? lowPerformersDashboard,
+    int? cowsMilkedCount,
+    double? monthlyMilkTotal,
+    double? allTimeMilkTotal,
     DateTime? selectedDashboardDate,
     AnalyticsFilter? dashboardFilter,
     Map<String, String>? animalTagMap,
@@ -98,6 +156,12 @@ class DairyLoaded extends DairyState {
     Map<String, double>? cowYieldBreakdown,
     Map<String, List<double>>? cowChartData,
     double? totalYieldForPeriod,
+    double? totalCollectedLiters,
+    double? totalWithdrawnLiters,
+    double? totalSoldLiters,
+    double? totalRevenue,
+    double? inStoreLiters,
+    List<LocalTransaction>? salesHistory,
   }) {
     return DairyLoaded(
       dashboardRecords: dashboardRecords ?? this.dashboardRecords,
@@ -105,6 +169,9 @@ class DairyLoaded extends DairyState {
       averagePerCowDashboard: averagePerCowDashboard ?? this.averagePerCowDashboard,
       topProducersDashboard: topProducersDashboard ?? this.topProducersDashboard,
       lowPerformersDashboard: lowPerformersDashboard ?? this.lowPerformersDashboard,
+      cowsMilkedCount: cowsMilkedCount ?? this.cowsMilkedCount,
+      monthlyMilkTotal: monthlyMilkTotal ?? this.monthlyMilkTotal,
+      allTimeMilkTotal: allTimeMilkTotal ?? this.allTimeMilkTotal,
       selectedDashboardDate: selectedDashboardDate ?? this.selectedDashboardDate,
       dashboardFilter: dashboardFilter ?? this.dashboardFilter,
       animalTagMap: animalTagMap ?? this.animalTagMap,
@@ -140,6 +207,50 @@ class DairyBloc extends Bloc<DairyEvent, DairyState> {
     on<ChangeDashboardDate>(_onChangeDashboardDate);
     on<UpdateMilkEntry>(_onUpdateMilkEntry);
     on<DeleteMilkEntry>(_onDeleteMilkEntry);
+    on<RecordMilkSaleEvent>(_onRecordMilkSale);
+    on<EditMilkSaleEvent>(_onEditMilkSale);
+    on<DeleteMilkSaleEvent>(_onDeleteMilkSale);
+  }
+
+  Future<void> _onRecordMilkSale(RecordMilkSaleEvent event, Emitter<DairyState> emit) async {
+    try {
+      await dairyRepo.recordBulkMilkSale(
+        quantityLiters: event.quantityLiters,
+        pricePerLiter: event.pricePerLiter,
+        buyerName: event.buyerName,
+        notes: event.notes,
+      );
+      add(LoadDairyData());
+    } catch (e) {
+      emit(DairyError(e.toString().replaceAll('Exception:', '').trim()));
+      add(LoadDairyData());
+    }
+  }
+
+  Future<void> _onEditMilkSale(EditMilkSaleEvent event, Emitter<DairyState> emit) async {
+    try {
+      await dairyRepo.editMilkSaleTransaction(
+        id: event.id,
+        quantityLiters: event.quantityLiters,
+        pricePerLiter: event.pricePerLiter,
+        buyerName: event.buyerName,
+        notes: event.notes,
+      );
+      add(LoadDairyData());
+    } catch (e) {
+      emit(DairyError(e.toString().replaceAll('Exception:', '').trim()));
+      add(LoadDairyData());
+    }
+  }
+
+  Future<void> _onDeleteMilkSale(DeleteMilkSaleEvent event, Emitter<DairyState> emit) async {
+    try {
+      await dairyRepo.deleteMilkSaleTransaction(event.id);
+      add(LoadDairyData());
+    } catch (e) {
+      emit(DairyError(e.toString().replaceAll('Exception:', '').trim()));
+      add(LoadDairyData());
+    }
   }
 
   Future<void> _onLoadDairyData(LoadDairyData event, Emitter<DairyState> emit) async {
@@ -200,13 +311,41 @@ class DairyBloc extends Bloc<DairyEvent, DairyState> {
       }
 
       final cowCount = cowTotals.keys.length;
+      final cowsMilkedCount = dashboardRecords.where((r) => !r.isWithdrawn).map((r) => r.animalId).toSet().length;
       final averagePerCowDashboard = cowCount > 0 ? totalMilkDashboard / cowCount : 0.0;
       final sortedCows = cowTotals.entries.toList()..sort((a, b) => b.value.compareTo(a.value));
       final topProducersDashboard = Map.fromEntries(sortedCows.take(3));
       final lowPerformersDashboard = Map.fromEntries(sortedCows.reversed.take(3));
 
+      // Calculate Monthly Milk Total for current month
+      final now = DateTime.now();
+      final mStart = DateTime(now.year, now.month, 1);
+      int nextMonth = now.month + 1;
+      int nextYear = now.year;
+      if (nextMonth > 12) { nextMonth = 1; nextYear++; }
+      final mEnd = DateTime(nextYear, nextMonth, 1).subtract(const Duration(seconds: 1));
+      final monthRecords = await dairyRepo.getRecordsByDateRange(mStart, mEnd);
+      double monthlyMilkTotal = 0;
+      for (var r in monthRecords) {
+        if (!r.isWithdrawn) {
+          monthlyMilkTotal += r.quantityLiters;
+        }
+      }
+
+      // Calculate All-Time Herd Milk Total (sum across all cows)
+      final allRecords = await (dairyRepo.db.select(dairyRepo.db.localMilkRecords)).get();
+      double allTimeMilkTotal = 0;
+      for (var r in allRecords) {
+        if (!r.isWithdrawn) {
+          allTimeMilkTotal += r.quantityLiters;
+        }
+      }
+
       // 2. Analytics Data
       final analyticsData = await _calculateAnalytics(_currentFilter, tagMap);
+
+      // 3. Store & Sales Metrics
+      final storeMetrics = await dairyRepo.getMilkStoreMetrics();
 
       emit(DairyLoaded(
         dashboardRecords: dashboardRecords,
@@ -214,6 +353,9 @@ class DairyBloc extends Bloc<DairyEvent, DairyState> {
         averagePerCowDashboard: averagePerCowDashboard,
         topProducersDashboard: topProducersDashboard,
         lowPerformersDashboard: lowPerformersDashboard,
+        cowsMilkedCount: cowsMilkedCount,
+        monthlyMilkTotal: monthlyMilkTotal,
+        allTimeMilkTotal: allTimeMilkTotal,
         selectedDashboardDate: _dashboardDate,
         dashboardFilter: _dashboardFilter,
         animalTagMap: tagMap,
@@ -223,6 +365,12 @@ class DairyBloc extends Bloc<DairyEvent, DairyState> {
         cowYieldBreakdown: analyticsData['cowBreakdown'] as Map<String, double>,
         cowChartData: analyticsData['cowChartData'] as Map<String, List<double>>,
         totalYieldForPeriod: analyticsData['totalYield'] as double,
+        totalCollectedLiters: (storeMetrics['totalCollectedLiters'] as num).toDouble(),
+        totalWithdrawnLiters: (storeMetrics['totalWithdrawnLiters'] as num).toDouble(),
+        totalSoldLiters: (storeMetrics['totalSoldLiters'] as num).toDouble(),
+        totalRevenue: (storeMetrics['totalRevenue'] as num).toDouble(),
+        inStoreLiters: (storeMetrics['inStoreLiters'] as num).toDouble(),
+        salesHistory: storeMetrics['salesHistory'] as List<LocalTransaction>,
       ));
     } catch (e) {
       emit(DairyError(e.toString()));

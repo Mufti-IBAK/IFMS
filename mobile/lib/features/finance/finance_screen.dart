@@ -7,6 +7,8 @@ import '../animals/animals_repository.dart';
 import '../poultry/poultry_repository.dart';
 import '../../core/database/local_db.dart';
 import 'package:ifms_mobile/core/widgets/custom_charts.dart';
+import '../../core/utils/finance_pdf_export_service.dart';
+import '../settings/settings_controller.dart';
 import 'finance_bloc.dart';
 
 class FinanceScreen extends StatefulWidget {
@@ -29,6 +31,16 @@ class _FinanceScreenState extends State<FinanceScreen> with SingleTickerProvider
 
   List<_InventoryCachedItem> _animalsList = [];
   List<_InventoryCachedItem> _flocksList = [];
+  DateTime _selectedMonth = DateTime.now();
+  int _selectedWeek = 0; // 0 = All Weeks, 1 = Wk 1 (1-7), 2 = Wk 2 (8-14), 3 = Wk 3 (15-21), 4 = Wk 4 (22+)
+
+  bool _isManualTransaction(LocalTransaction tx) {
+    final type = tx.relatedEntityType?.toLowerCase();
+    if (type == null || type.isEmpty || type == 'manual' || type == 'manual_entry') {
+      return true;
+    }
+    return false;
+  }
 
   @override
   void initState() {
@@ -94,6 +106,18 @@ class _FinanceScreenState extends State<FinanceScreen> with SingleTickerProvider
             appBar: AppBar(
               title: const Text('FINANCIAL LEDGER'),
               actions: [
+                IconButton(
+                  icon: const Icon(Icons.picture_as_pdf),
+                  tooltip: 'Export Monthly Account Statement PDF',
+                  onPressed: () {
+                    FinancePdfExportService.exportMonthlyAccountStatementPdf(
+                      transactions: state.transactions,
+                      selectedMonth: _selectedMonth,
+                      ownerEmail: sl.isRegistered<SettingsController>() ? sl<SettingsController>().profile?.ownerEmail : null,
+                      managerEmail: sl.isRegistered<SettingsController>() ? sl<SettingsController>().profile?.managerEmail : null,
+                    );
+                  },
+                ),
                 if (_tabController.index == 1)
                   IconButton(
                     icon: const Icon(Icons.delete_sweep_outlined, color: Colors.red),
@@ -131,9 +155,26 @@ class _FinanceScreenState extends State<FinanceScreen> with SingleTickerProvider
                 : null,
           );
         } else if (state is FinanceError) {
-          // Temporarily return loading, listener shows snackbar
-          return const Scaffold(
-            body: Center(child: CircularProgressIndicator()),
+          return Scaffold(
+            appBar: AppBar(title: const Text('FINANCIAL LEDGER')),
+            body: Center(
+              child: Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Icon(Icons.error_outline, color: Colors.red, size: 48),
+                    const SizedBox(height: 16),
+                    Text(state.message, textAlign: TextAlign.center, style: const TextStyle(color: Colors.red)),
+                    const SizedBox(height: 16),
+                    ElevatedButton(
+                      onPressed: () => BlocProvider.of<FinanceBloc>(context).add(LoadFinanceData()),
+                      child: const Text('Retry'),
+                    ),
+                  ],
+                ),
+              ),
+            ),
           );
         }
         return const Scaffold(
@@ -143,36 +184,132 @@ class _FinanceScreenState extends State<FinanceScreen> with SingleTickerProvider
     );
   }
 
+  Widget _buildWeekSegmentTab(int weekIndex, String label) {
+    final isSelected = _selectedWeek == weekIndex;
+    return Expanded(
+      child: GestureDetector(
+        onTap: () => setState(() => _selectedWeek = weekIndex),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 180),
+          padding: const EdgeInsets.symmetric(vertical: 8),
+          decoration: BoxDecoration(
+            color: isSelected ? AppColors.primary : Colors.transparent,
+            borderRadius: BorderRadius.circular(8),
+            boxShadow: isSelected
+                ? [BoxShadow(color: AppColors.primary.withOpacity(0.3), blurRadius: 4, offset: const Offset(0, 2))]
+                : null,
+          ),
+          alignment: Alignment.center,
+          child: Text(
+            label,
+            style: TextStyle(
+              color: isSelected ? Colors.white : Colors.grey.shade800,
+              fontWeight: isSelected ? FontWeight.bold : FontWeight.w600,
+              fontSize: 11,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
   // ──────────────────────────────────────────────
   // TAB 1: DASHBOARD
   // ──────────────────────────────────────────────
   Widget _buildDashboardTab(BuildContext context, FinanceLoaded state) {
-    final revenue = double.tryParse(state.overallProfit['total_revenue']?.toString() ?? '0.0') ?? 0.0;
-    final expenses = double.tryParse(state.overallProfit['total_expenses']?.toString() ?? '0.0') ?? 0.0;
-    final profit = double.tryParse(state.overallProfit['net_profit']?.toString() ?? '0.0') ?? 0.0;
-    final margin = revenue > 0 ? (profit / revenue) * 100 : 0.0;
+    // 1. Filter transactions by Month, Week, AND Reconciliation status
+    final filteredTxs = state.transactions.where((t) {
+      if (!t.isReconciled) return false; // ONLY RECONCILED TRANSACTIONS REFLECT ON FINANCIAL RECORDS & DASHBOARD
+      final d = t.transactionDate;
+      if (d.year != _selectedMonth.year || d.month != _selectedMonth.month) {
+        return false;
+      }
+      if (_selectedWeek == 1) return d.day >= 1 && d.day <= 7;
+      if (_selectedWeek == 2) return d.day >= 8 && d.day <= 14;
+      if (_selectedWeek == 3) return d.day >= 15 && d.day <= 21;
+      if (_selectedWeek == 4) return d.day >= 22;
+      return true; // 0 = All Weeks
+    }).toList();
 
-    // Compute weekly totals for the last 4 weeks (7-day intervals)
-    final weeklyRevenue = List.filled(4, 0.0);
-    final weeklyExpenses = List.filled(4, 0.0);
-    final now = DateTime.now();
-    for (var tx in state.transactions) {
-      final daysDiff = now.difference(tx.transactionDate).inDays;
-      if (daysDiff >= 0 && daysDiff < 28) {
-        final weekIdx = (daysDiff / 7).floor(); // 0 to 3
-        if (weekIdx >= 0 && weekIdx < 4) {
-          if (tx.transactionType == 'income') {
-            weeklyRevenue[3 - weekIdx] += tx.amount;
-          } else {
-            weeklyExpenses[3 - weekIdx] += tx.amount;
-          }
+    double totalRevenue = 0.0;
+    double totalExpenses = 0.0;
+    final Map<String, double> categoryBreakdown = {};
+
+    for (var tx in filteredTxs) {
+      final amt = tx.amount;
+      if (tx.transactionType == 'income') {
+        totalRevenue += amt;
+      } else {
+        totalExpenses += amt;
+      }
+      categoryBreakdown[tx.category] = (categoryBreakdown[tx.category] ?? 0.0) + amt;
+    }
+
+    final netProfit = totalRevenue - totalExpenses;
+    final margin = totalRevenue > 0 ? (netProfit / totalRevenue) * 100 : 0.0;
+
+    // 2. Compute Bar Graph Data (CustomBarChart) for the selected week / month
+    final List<String> chartLabels = [];
+    final List<double> chartRevenue = [];
+    final List<double> chartExpenses = [];
+
+    if (_selectedWeek == 0) {
+      // All Weeks Mode (4 Weeks of the Month)
+      final weeklyRev = List.filled(4, 0.0);
+      final weeklyExp = List.filled(4, 0.0);
+      for (var tx in filteredTxs) {
+        int w = ((tx.transactionDate.day - 1) / 7).floor();
+        if (w > 3) w = 3;
+        if (tx.transactionType == 'income') {
+          weeklyRev[w] += tx.amount;
+        } else {
+          weeklyExp[w] += tx.amount;
         }
+      }
+      chartLabels.addAll(['Wk 1', 'Wk 2', 'Wk 3', 'Wk 4']);
+      chartRevenue.addAll(weeklyRev);
+      chartExpenses.addAll(weeklyExp);
+    } else {
+      // Specific Week Mode: plot days of that specific week!
+      int startDay = 1;
+      int endDay = 7;
+      if (_selectedWeek == 1) { startDay = 1; endDay = 7; }
+      else if (_selectedWeek == 2) { startDay = 8; endDay = 14; }
+      else if (_selectedWeek == 3) { startDay = 15; endDay = 21; }
+      else if (_selectedWeek == 4) {
+        startDay = 22;
+        endDay = DateTime(_selectedMonth.year, _selectedMonth.month + 1, 0).day;
+      }
+
+      final Map<int, double> dailyRev = {};
+      final Map<int, double> dailyExp = {};
+
+      for (var tx in filteredTxs) {
+        final day = tx.transactionDate.day;
+        if (tx.transactionType == 'income') {
+          dailyRev[day] = (dailyRev[day] ?? 0.0) + tx.amount;
+        } else {
+          dailyExp[day] = (dailyExp[day] ?? 0.0) + tx.amount;
+        }
+      }
+
+      for (int day = startDay; day <= endDay; day++) {
+        chartLabels.add('$day');
+        chartRevenue.add(dailyRev[day] ?? 0.0);
+        chartExpenses.add(dailyExp[day] ?? 0.0);
       }
     }
 
-    // Prepare Category Donut Chart data
+    // 3. Category Donut Chart Data
     final List<double> donutValues = [];
     final List<String> donutLabels = [];
+    categoryBreakdown.forEach((k, v) {
+      if (v > 0) {
+        donutValues.add(v);
+        donutLabels.add(k.replaceAll('_', ' ').toUpperCase());
+      }
+    });
+
     final List<Color> donutColors = [
       Colors.teal,
       Colors.amber.shade700,
@@ -183,22 +320,86 @@ class _FinanceScreenState extends State<FinanceScreen> with SingleTickerProvider
       Colors.orange,
     ];
 
-    if (state.overallProfit['breakdown'] != null) {
-      final breakdown = state.overallProfit['breakdown'] as Map;
-      breakdown.forEach((k, v) {
-        final val = double.tryParse(v.toString()) ?? 0.0;
-        if (val > 0) {
-          donutValues.add(val);
-          donutLabels.add(k.toString().replaceAll('_', ' ').toUpperCase());
-        }
-      });
-    }
-
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // PERIOD & WEEK SELECTOR BAR
+          Card(
+            margin: const EdgeInsets.only(bottom: 16),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            child: Padding(
+              padding: const EdgeInsets.all(12),
+              child: Column(
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Row(
+                        children: [
+                          const Icon(Icons.calendar_month, color: AppColors.primary, size: 20),
+                          const SizedBox(width: 8),
+                          Text(
+                            'PERIOD: ${DateFormat('MMMM yyyy').format(_selectedMonth).toUpperCase()}',
+                            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                          ),
+                        ],
+                      ),
+                      Row(
+                        children: [
+                          IconButton(
+                            icon: const Icon(Icons.chevron_left),
+                            onPressed: () {
+                              setState(() {
+                                _selectedMonth = DateTime(_selectedMonth.year, _selectedMonth.month - 1);
+                              });
+                            },
+                          ),
+                          IconButton(
+                            icon: const Icon(Icons.today, size: 20),
+                            tooltip: 'Current Month',
+                            onPressed: () {
+                              setState(() {
+                                _selectedMonth = DateTime.now();
+                                _selectedWeek = 0;
+                              });
+                            },
+                          ),
+                          IconButton(
+                            icon: const Icon(Icons.chevron_right),
+                            onPressed: () {
+                              setState(() {
+                                _selectedMonth = DateTime(_selectedMonth.year, _selectedMonth.month + 1);
+                              });
+                            },
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                  Container(
+                    decoration: BoxDecoration(
+                      color: Colors.grey.shade100,
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(color: Colors.grey.shade300),
+                    ),
+                    padding: const EdgeInsets.all(3),
+                    child: Row(
+                      children: [
+                        _buildWeekSegmentTab(0, 'All'),
+                        _buildWeekSegmentTab(1, 'Wk 1'),
+                        _buildWeekSegmentTab(2, 'Wk 2'),
+                        _buildWeekSegmentTab(3, 'Wk 3'),
+                        _buildWeekSegmentTab(4, 'Wk 4'),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+
           // KPI GRID
           GridView.count(
             crossAxisCount: 2,
@@ -210,24 +411,24 @@ class _FinanceScreenState extends State<FinanceScreen> with SingleTickerProvider
             children: [
               _kpiCard(
                 'Total Revenue',
-                _compactFormatter.format(revenue),
+                _compactFormatter.format(totalRevenue),
                 Icons.trending_up,
                 Colors.green,
-                '₦ ${revenue.toStringAsFixed(0)}',
+                '₦ ${totalRevenue.toStringAsFixed(0)}',
               ),
               _kpiCard(
                 'Total Expenses',
-                _compactFormatter.format(expenses),
+                _compactFormatter.format(totalExpenses),
                 Icons.trending_down,
                 Colors.red,
-                '₦ ${expenses.toStringAsFixed(0)}',
+                '₦ ${totalExpenses.toStringAsFixed(0)}',
               ),
               _kpiCard(
                 'Net Cash Flow',
-                _compactFormatter.format(profit),
+                _compactFormatter.format(netProfit),
                 Icons.account_balance_wallet,
-                profit >= 0 ? AppColors.primary : Colors.orange,
-                '₦ ${profit.toStringAsFixed(0)}',
+                netProfit >= 0 ? AppColors.primary : Colors.orange,
+                '₦ ${netProfit.toStringAsFixed(0)}',
               ),
               _kpiCard(
                 'Profit Margin',
@@ -240,7 +441,7 @@ class _FinanceScreenState extends State<FinanceScreen> with SingleTickerProvider
           ),
           const SizedBox(height: 16),
 
-          // CASH FLOW COMPARISON CHART
+          // CASH FLOW COMPARISON BAR CHART
           Card(
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
             elevation: 2,
@@ -249,20 +450,31 @@ class _FinanceScreenState extends State<FinanceScreen> with SingleTickerProvider
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Row(
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Icon(Icons.bar_chart, color: Colors.teal),
-                      SizedBox(width: 8),
-                      Text('WEEKLY CASH FLOW (LAST 4 WEEKS)', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Colors.grey)),
+                      Row(
+                        children: [
+                          const Icon(Icons.bar_chart, color: Colors.teal),
+                          const SizedBox(width: 8),
+                          Text(
+                            _selectedWeek == 0 ? 'MONTHLY CASH FLOW' : 'WEEK $_selectedWeek CASH FLOW',
+                            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Colors.grey),
+                          ),
+                        ],
+                      ),
+                      Text(
+                        '${DateFormat('MMM yyyy').format(_selectedMonth)} ${_selectedWeek > 0 ? "(Wk $_selectedWeek)" : ""}',
+                        style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.teal),
+                      ),
                     ],
                   ),
                   const SizedBox(height: 16),
                   CustomBarChart(
-                    primaryData: weeklyRevenue,
-                    secondaryData: weeklyExpenses,
-                    labels: const ['Wk -3', 'Wk -2', 'Wk -1', 'This Wk'],
+                    primaryData: chartRevenue,
+                    secondaryData: chartExpenses,
+                    labels: chartLabels,
                     primaryColor: Colors.green.shade700,
-                    secondaryColor: Colors.red.shade700,
                   ),
                   const SizedBox(height: 12),
                   Row(
@@ -376,7 +588,7 @@ class _FinanceScreenState extends State<FinanceScreen> with SingleTickerProvider
                       values: donutValues,
                       labels: donutLabels,
                       colors: donutColors.take(donutValues.length).toList(),
-                      centerValue: _compactFormatter.format(revenue),
+                      centerValue: _compactFormatter.format(totalRevenue),
                       centerTitle: 'Total Tx',
                     ),
                     const SizedBox(height: 16),
@@ -443,90 +655,215 @@ class _FinanceScreenState extends State<FinanceScreen> with SingleTickerProvider
   // ──────────────────────────────────────────────
   // TAB 2: CONSOLIDATED LEDGER
   // ──────────────────────────────────────────────
-  Widget _buildLedgerTab(BuildContext context, FinanceLoaded state) {
-    final transactions = state.transactions;
+  Widget _buildMonthSelectorHeader(FinanceLoaded state) {
+    final monthFormat = DateFormat('MMMM yyyy');
+    final isCurrentMonth = _selectedMonth.year == DateTime.now().year && _selectedMonth.month == DateTime.now().month;
 
-    if (transactions.isEmpty) {
-      return const Center(child: Text('No transactions recorded in the farm ledger yet.'));
-    }
-
-    return ListView.separated(
-      padding: const EdgeInsets.all(16),
-      itemCount: transactions.length,
-      separatorBuilder: (_, __) => const SizedBox(height: 8),
-      itemBuilder: (context, index) {
-        final tx = transactions[index];
-        final isIncome = tx.transactionType == 'income';
-        final isReconciled = tx.isReconciled;
-
-        return Card(
-          elevation: 1,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-          child: ListTile(
-            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            onTap: () => _showLedgerActionsBottomSheet(context, tx),
-            leading: CircleAvatar(
-              backgroundColor: isIncome ? Colors.green.shade50 : Colors.red.shade50,
-              child: Icon(
-                isIncome ? Icons.trending_up : Icons.trending_down,
-                color: isIncome ? Colors.green : Colors.red,
-                size: 22,
-              ),
-            ),
-            title: Row(
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+      decoration: BoxDecoration(
+        color: Colors.purple.shade50,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.purple.shade200),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          IconButton(
+            icon: const Icon(Icons.chevron_left, color: Colors.purple),
+            tooltip: 'Previous Month',
+            onPressed: () {
+              setState(() {
+                _selectedMonth = DateTime(_selectedMonth.year, _selectedMonth.month - 1, 1);
+              });
+            },
+          ),
+          InkWell(
+            onTap: () async {
+              final picked = await showDatePicker(
+                context: context,
+                initialDate: _selectedMonth,
+                firstDate: DateTime(2020),
+                lastDate: DateTime(2030),
+                helpText: 'SELECT LEDGER MONTH',
+              );
+              if (picked != null) {
+                setState(() {
+                  _selectedMonth = DateTime(picked.year, picked.month, 1);
+                });
+              }
+            },
+            child: Row(
               children: [
-                Expanded(
-                  child: Text(
-                    tx.description?.isNotEmpty == true ? tx.description! : tx.category.replaceAll('_', ' ').toUpperCase(),
-                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
-                  ),
+                const Icon(Icons.calendar_month, color: Colors.purple, size: 18),
+                const SizedBox(width: 4),
+                Text(
+                  monthFormat.format(_selectedMonth).toUpperCase(),
+                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Colors.purple),
                 ),
-                if (isReconciled)
-                  Container(
-                    margin: const EdgeInsets.only(left: 6),
-                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                    decoration: BoxDecoration(
-                      color: Colors.green.shade50,
-                      borderRadius: BorderRadius.circular(4),
-                      border: Border.all(color: Colors.green.shade200, width: 0.5),
-                    ),
-                    child: const Text('APPROVED', style: TextStyle(color: Colors.green, fontSize: 9, fontWeight: FontWeight.bold)),
-                  )
-                else
-                  Container(
-                    margin: const EdgeInsets.only(left: 6),
-                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                    decoration: BoxDecoration(
-                      color: Colors.orange.shade50,
-                      borderRadius: BorderRadius.circular(4),
-                      border: Border.all(color: Colors.orange.shade200, width: 0.5),
-                    ),
-                    child: const Text('PENDING', style: TextStyle(color: Colors.orange, fontSize: 9, fontWeight: FontWeight.bold)),
-                  ),
+                const Icon(Icons.arrow_drop_down, color: Colors.purple),
               ],
             ),
-            subtitle: Padding(
-              padding: const EdgeInsets.only(top: 4),
-              child: Text(
-                '${tx.category.replaceAll('_', ' ').toUpperCase()} • ${DateFormat('yyyy-MM-dd HH:mm').format(tx.transactionDate)}',
-                style: TextStyle(fontSize: 11, color: Colors.grey.shade600),
-              ),
-            ),
-            trailing: Text(
-              '${isIncome ? '+' : '-'}${_currencyFormatter.format(tx.amount)}',
-              style: TextStyle(
-                fontWeight: FontWeight.bold,
-                color: isIncome ? Colors.green : Colors.red,
-                fontSize: 14,
-              ),
-            ),
           ),
-        );
-      },
+          Row(
+            children: [
+              IconButton(
+                icon: const Icon(Icons.picture_as_pdf, color: Colors.purple, size: 20),
+                tooltip: 'Export Statement PDF',
+                onPressed: () {
+                  FinancePdfExportService.exportMonthlyAccountStatementPdf(
+                    transactions: state.transactions,
+                    selectedMonth: _selectedMonth,
+                    ownerEmail: sl.isRegistered<SettingsController>() ? sl<SettingsController>().profile?.ownerEmail : null,
+                    managerEmail: sl.isRegistered<SettingsController>() ? sl<SettingsController>().profile?.managerEmail : null,
+                  );
+                },
+              ),
+              if (!isCurrentMonth)
+                TextButton(
+                  onPressed: () {
+                    setState(() {
+                      _selectedMonth = DateTime.now();
+                    });
+                  },
+                  child: const Text('THIS MONTH', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.purple)),
+                ),
+              IconButton(
+                icon: const Icon(Icons.chevron_right, color: Colors.purple),
+                tooltip: 'Next Month',
+                onPressed: () {
+                  setState(() {
+                    _selectedMonth = DateTime(_selectedMonth.year, _selectedMonth.month + 1, 1);
+                  });
+                },
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ──────────────────────────────────────────────
+  // TAB 2: CONSOLIDATED LEDGER
+  // ──────────────────────────────────────────────
+  Widget _buildLedgerTab(BuildContext context, FinanceLoaded state) {
+    final filteredTransactions = state.transactions.where((tx) {
+      return tx.transactionDate.year == _selectedMonth.year &&
+             tx.transactionDate.month == _selectedMonth.month;
+    }).toList();
+
+    return Column(
+      children: [
+        Padding(
+          padding: const EdgeInsets.only(left: 16, right: 16, top: 12),
+          child: _buildMonthSelectorHeader(state),
+        ),
+        Expanded(
+          child: filteredTransactions.isEmpty
+              ? Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Icon(Icons.receipt_long, size: 48, color: Colors.grey),
+                      const SizedBox(height: 12),
+                      Text(
+                        'No transactions recorded for ${DateFormat('MMMM yyyy').format(_selectedMonth)}.',
+                        style: const TextStyle(color: Colors.grey, fontWeight: FontWeight.bold),
+                      ),
+                      const SizedBox(height: 4),
+                      const Text(
+                        'This month is a clean sheet. Use "+ Record Tx" or operate farm modules to log activity.',
+                        style: TextStyle(fontSize: 12, color: Colors.grey),
+                        textAlign: TextAlign.center,
+                      ),
+                    ],
+                  ),
+                )
+              : ListView.separated(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  itemCount: filteredTransactions.length,
+                  separatorBuilder: (_, __) => const SizedBox(height: 8),
+                  itemBuilder: (context, index) {
+                    final tx = filteredTransactions[index];
+                    final isIncome = tx.transactionType == 'income';
+                    final isReconciled = tx.isReconciled;
+                    final isManual = _isManualTransaction(tx);
+
+                    return Card(
+                      elevation: 1,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      child: ListTile(
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                        onTap: () => _showLedgerActionsBottomSheet(context, tx),
+                        leading: CircleAvatar(
+                          backgroundColor: isIncome ? Colors.green.shade50 : Colors.red.shade50,
+                          child: Icon(
+                            isIncome ? Icons.trending_up : Icons.trending_down,
+                            color: isIncome ? Colors.green : Colors.red,
+                            size: 22,
+                          ),
+                        ),
+                        title: Row(
+                          children: [
+                            Expanded(
+                              child: Text(
+                                tx.description?.isNotEmpty == true ? tx.description! : tx.category.replaceAll('_', ' ').toUpperCase(),
+                                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                              ),
+                            ),
+                            if (isManual)
+                              Container(
+                                margin: const EdgeInsets.only(left: 6),
+                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                decoration: BoxDecoration(
+                                  color: Colors.purple.shade50,
+                                  borderRadius: BorderRadius.circular(4),
+                                  border: Border.all(color: Colors.purple.shade200, width: 0.5),
+                                ),
+                                child: const Text('MANUAL', style: TextStyle(color: Colors.purple, fontSize: 9, fontWeight: FontWeight.bold)),
+                              ),
+                            if (isReconciled)
+                              Container(
+                                margin: const EdgeInsets.only(left: 6),
+                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                decoration: BoxDecoration(
+                                  color: Colors.green.shade50,
+                                  borderRadius: BorderRadius.circular(4),
+                                  border: Border.all(color: Colors.green.shade200, width: 0.5),
+                                ),
+                                child: const Text('APPROVED', style: TextStyle(color: Colors.green, fontSize: 9, fontWeight: FontWeight.bold)),
+                              ),
+                          ],
+                        ),
+                        subtitle: Padding(
+                          padding: const EdgeInsets.only(top: 4),
+                          child: Text(
+                            '${tx.category.replaceAll('_', ' ').toUpperCase()} • ${DateFormat('yyyy-MM-dd HH:mm').format(tx.transactionDate)}',
+                            style: TextStyle(fontSize: 11, color: Colors.grey.shade600),
+                          ),
+                        ),
+                        trailing: Text(
+                          '${isIncome ? '+' : '-'}${_currencyFormatter.format(tx.amount)}',
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            color: isIncome ? Colors.green : Colors.red,
+                            fontSize: 14,
+                          ),
+                        ),
+                      ),
+                    );
+                  },
+                ),
+        ),
+      ],
     );
   }
 
   void _showLedgerActionsBottomSheet(BuildContext context, LocalTransaction tx) {
+    final isManual = _isManualTransaction(tx);
+
     showModalBottomSheet(
       context: context,
       shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
@@ -548,6 +885,8 @@ class _FinanceScreenState extends State<FinanceScreen> with SingleTickerProvider
               orElse: () => _InventoryCachedItem('', ''),
             );
             displayLink = match.display.isNotEmpty ? match.display : 'Flock ID: ${tx.relatedEntityId}';
+          } else {
+            displayLink = '${tx.relatedEntityType?.replaceAll('_', ' ').toUpperCase()} (${tx.relatedEntityId})';
           }
         }
 
@@ -584,59 +923,105 @@ class _FinanceScreenState extends State<FinanceScreen> with SingleTickerProvider
                 const SizedBox(height: 20),
                 const Divider(),
                 const SizedBox(height: 10),
-                Row(
-                  children: [
-                    Expanded(
-                      child: OutlinedButton.icon(
-                        onPressed: () {
-                          Navigator.pop(sheetCtx);
-                          _showEditTransactionDialog(context, tx);
-                        },
-                        icon: const Icon(Icons.edit_outlined, color: AppColors.primary),
-                        label: const Text('Edit', style: TextStyle(color: AppColors.primary)),
-                        style: OutlinedButton.styleFrom(
-                          side: const BorderSide(color: AppColors.primary),
-                          padding: const EdgeInsets.symmetric(vertical: 12),
+
+                if (isManual) ...[
+                  Row(
+                    children: [
+                      if (!isReconciled) ...[
+                        Expanded(
+                          child: OutlinedButton.icon(
+                            onPressed: () {
+                              Navigator.pop(sheetCtx);
+                              _showEditTransactionDialog(context, tx);
+                            },
+                            icon: const Icon(Icons.edit_outlined, color: AppColors.primary),
+                            label: const Text('Edit', style: TextStyle(color: AppColors.primary)),
+                            style: OutlinedButton.styleFrom(
+                              side: const BorderSide(color: AppColors.primary),
+                              padding: const EdgeInsets.symmetric(vertical: 12),
+                            ),
+                          ),
                         ),
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    if (!isReconciled) ...[
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: OutlinedButton.icon(
+                            onPressed: () {
+                              Navigator.pop(sheetCtx);
+                              BlocProvider.of<FinanceBloc>(context).add(ReconcileTransactionEvent(tx.id));
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(content: Text('Transaction reconciled successfully.')),
+                              );
+                            },
+                            icon: const Icon(Icons.verified_outlined, color: Colors.green),
+                            label: const Text('Reconcile', style: TextStyle(color: Colors.green)),
+                            style: OutlinedButton.styleFrom(
+                              side: const BorderSide(color: Colors.green),
+                              padding: const EdgeInsets.symmetric(vertical: 12),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                      ] else ...[
+                        Expanded(
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(vertical: 12),
+                            decoration: BoxDecoration(
+                              color: Colors.green.shade50,
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(color: Colors.green.shade200),
+                            ),
+                            alignment: Alignment.center,
+                            child: const Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(Icons.check_circle, color: Colors.green, size: 16),
+                                SizedBox(width: 6),
+                                Text('RECONCILED (LOCKED)', style: TextStyle(color: Colors.green, fontWeight: FontWeight.bold, fontSize: 11)),
+                              ],
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                      ],
                       Expanded(
-                        child: OutlinedButton.icon(
+                        child: ElevatedButton.icon(
                           onPressed: () {
                             Navigator.pop(sheetCtx);
-                            BlocProvider.of<FinanceBloc>(context).add(ReconcileTransactionEvent(tx.id));
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(content: Text('Transaction submitted for reconciliation approval.')),
-                            );
+                            _confirmDeleteTransaction(context, tx);
                           },
-                          icon: const Icon(Icons.verified_outlined, color: Colors.green),
-                          label: const Text('Reconcile', style: TextStyle(color: Colors.green)),
-                          style: OutlinedButton.styleFrom(
-                            side: const BorderSide(color: Colors.green),
+                          icon: const Icon(Icons.delete_outline, color: Colors.white),
+                          label: const Text('Delete', style: TextStyle(color: Colors.white)),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.red,
                             padding: const EdgeInsets.symmetric(vertical: 12),
                           ),
                         ),
                       ),
-                      const SizedBox(width: 8),
                     ],
-                    Expanded(
-                      child: ElevatedButton.icon(
-                        onPressed: () {
-                          Navigator.pop(sheetCtx);
-                          _confirmDeleteTransaction(context, tx);
-                        },
-                        icon: const Icon(Icons.delete_outline, color: Colors.white),
-                        label: const Text('Delete', style: TextStyle(color: Colors.white)),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.red,
-                          padding: const EdgeInsets.symmetric(vertical: 12),
-                        ),
-                      ),
+                  ),
+                ] else ...[
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: Colors.blue.shade50,
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(color: Colors.blue.shade200),
                     ),
-                  ],
-                ),
+                    child: Row(
+                      children: const [
+                        Icon(Icons.lock_outline, color: Colors.blue),
+                        SizedBox(width: 10),
+                        Expanded(
+                          child: Text(
+                            'System Auto-Captured Entry\nThis transaction was automatically logged by operational activity (poultry, pharmacy, staff advance, animal sale) and is read-only for audit compliance.',
+                            style: TextStyle(fontSize: 11, color: Colors.blue),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
               ],
             ),
           ),
@@ -700,6 +1085,13 @@ class _FinanceScreenState extends State<FinanceScreen> with SingleTickerProvider
   }
 
   void _showEditTransactionDialog(BuildContext context, LocalTransaction tx) {
+    if (tx.isReconciled) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Reconciled transactions cannot be edited. You can only delete them.')),
+      );
+      return;
+    }
+
     String type = tx.transactionType;
     String category = tx.category;
     final amountCtrl = TextEditingController(text: tx.amount.toString());
@@ -796,11 +1188,26 @@ class _FinanceScreenState extends State<FinanceScreen> with SingleTickerProvider
                       },
                     ),
                     const SizedBox(height: 12),
-                    InputDatePickerFormField(
-                      firstDate: DateTime(2020),
-                      lastDate: DateTime(2030),
-                      initialDate: selectedDate,
-                      onDateSubmitted: (d) => setDialogState(() => selectedDate = d),
+                    InkWell(
+                      onTap: () async {
+                        final picked = await showDatePicker(
+                          context: context,
+                          initialDate: selectedDate,
+                          firstDate: DateTime(2020),
+                          lastDate: DateTime(2030),
+                        );
+                        if (picked != null) {
+                          setDialogState(() => selectedDate = picked);
+                        }
+                      },
+                      child: InputDecorator(
+                        decoration: const InputDecoration(
+                          labelText: 'Transaction Date *',
+                          border: OutlineInputBorder(),
+                          prefixIcon: Icon(Icons.calendar_today),
+                        ),
+                        child: Text(DateFormat('yyyy-MM-dd').format(selectedDate)),
+                      ),
                     ),
                     const SizedBox(height: 12),
                     TextField(
@@ -834,11 +1241,10 @@ class _FinanceScreenState extends State<FinanceScreen> with SingleTickerProvider
                       'category': category,
                       'amount': amt,
                       'description': descCtrl.text.trim(),
-                      'transaction_date': DateFormat('yyyy-MM-dd HH:mm:ss').format(selectedDate),
-                      if (linkToEntity && selectedEntityId != null) ...{
-                        'related_entity_type': entityType,
+                      'transaction_date': selectedDate.toIso8601String(),
+                      'related_entity_type': (linkToEntity && selectedEntityId != null) ? entityType : 'manual',
+                      if (linkToEntity && selectedEntityId != null)
                         'related_entity_id': selectedEntityId,
-                      }
                     };
 
                     BlocProvider.of<FinanceBloc>(context).add(UpdateTransactionEvent(tx.id, payload));
@@ -1145,13 +1551,26 @@ class _FinanceScreenState extends State<FinanceScreen> with SingleTickerProvider
                     ),
                     const SizedBox(height: 12),
 
-                    InputDatePickerFormField(
-                      firstDate: DateTime(2020),
-                      lastDate: DateTime(2030),
-                      initialDate: selectedDate,
-                      onDateSubmitted: (d) {
-                        setDialogState(() => selectedDate = d);
+                    InkWell(
+                      onTap: () async {
+                        final picked = await showDatePicker(
+                          context: context,
+                          initialDate: selectedDate,
+                          firstDate: DateTime(2020),
+                          lastDate: DateTime(2030),
+                        );
+                        if (picked != null) {
+                          setDialogState(() => selectedDate = picked);
+                        }
                       },
+                      child: InputDecorator(
+                        decoration: const InputDecoration(
+                          labelText: 'Transaction Date *',
+                          border: OutlineInputBorder(),
+                          prefixIcon: Icon(Icons.calendar_today),
+                        ),
+                        child: Text(DateFormat('yyyy-MM-dd').format(selectedDate)),
+                      ),
                     ),
                     const SizedBox(height: 12),
 
@@ -1260,11 +1679,10 @@ class _FinanceScreenState extends State<FinanceScreen> with SingleTickerProvider
                       'category': category,
                       'amount': amt,
                       'description': descCtrl.text.trim(),
-                      'transaction_date': DateFormat('yyyy-MM-dd').format(selectedDate),
-                      if (linkToEntity && selectedEntityId != null) ...{
-                        'related_entity_type': entityType,
+                      'transaction_date': selectedDate.toIso8601String(),
+                      'related_entity_type': (linkToEntity && selectedEntityId != null) ? entityType : 'manual',
+                      if (linkToEntity && selectedEntityId != null)
                         'related_entity_id': selectedEntityId,
-                      }
                     };
 
                     BlocProvider.of<FinanceBloc>(context).add(AddTransaction(payload));

@@ -752,6 +752,8 @@ class _AnimalsScreenState extends State<AnimalsScreen> {
   void _showAddAnimalDialog(BuildContext context) {
     final tagController = TextEditingController();
     final breedController = TextEditingController();
+    final parent1BreedController = TextEditingController();
+    final parent2BreedController = TextEditingController();
     final weightController = TextEditingController();
     final colorController = TextEditingController();
     final marksController = TextEditingController();
@@ -764,7 +766,7 @@ class _AnimalsScreenState extends State<AnimalsScreen> {
     String estimatedAgeUnit = 'Years';
     String selectedSpecies = 'bovine';
     String selectedSex = 'female';
-    String selectedPedigree = 'pure';
+    String selectedPedigree = 'pure'; // 'pure', 'cross', 'mixed'
     String selectedPurpose = 'milk';
     String selectedReproductive = 'open';
     String? selectedImagePath;
@@ -932,7 +934,7 @@ class _AnimalsScreenState extends State<AnimalsScreen> {
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  const Text('1. BASIC IDENTITY', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: AppColors.primary)),
+                                  const Text('1. BASIC IDENTITY & BREED', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: AppColors.primary)),
                                   const SizedBox(height: 12),
                                   
                                   buildInputField(
@@ -986,15 +988,107 @@ class _AnimalsScreenState extends State<AnimalsScreen> {
                                       ),
                                     ),
                                   ),
+                                  const SizedBox(height: 6),
+
                                   buildInputField(
-                                    label: 'Breed',
-                                    child: TextField(textCapitalization: TextCapitalization.sentences, controller: breedController,
-                                      decoration: const InputDecoration(
-                                        hintText: 'e.g. Holstein Friesian / Cobb 500',
-                                        prefixIcon: Icon(Icons.category, size: 20),
-                                      ),
+                                    label: 'Breeding Type *',
+                                    child: Wrap(
+                                      spacing: 8,
+                                      children: [
+                                        ChoiceChip(
+                                          label: const Text('Purebreed'),
+                                          selected: selectedPedigree == 'pure',
+                                          onSelected: (selected) {
+                                            if (selected) setState(() => selectedPedigree = 'pure');
+                                          },
+                                        ),
+                                        ChoiceChip(
+                                          label: const Text('Crossbreed'),
+                                          selected: selectedPedigree == 'cross',
+                                          onSelected: (selected) {
+                                            if (selected) setState(() => selectedPedigree = 'cross');
+                                          },
+                                        ),
+                                        ChoiceChip(
+                                          label: const Text('Mixed Breed'),
+                                          selected: selectedPedigree == 'mixed',
+                                          onSelected: (selected) {
+                                            if (selected) setState(() => selectedPedigree = 'mixed');
+                                          },
+                                        ),
+                                      ],
                                     ),
                                   ),
+                                  const SizedBox(height: 6),
+
+                                  if (selectedPedigree == 'pure') ...[
+                                    buildInputField(
+                                      label: 'Breed Name *',
+                                      child: TextField(
+                                        textCapitalization: TextCapitalization.sentences,
+                                        controller: breedController,
+                                        decoration: const InputDecoration(
+                                          hintText: 'e.g. Holstein-Friesian / White Fulani',
+                                          prefixIcon: Icon(Icons.category, size: 20),
+                                        ),
+                                      ),
+                                    ),
+                                  ] else if (selectedPedigree == 'cross') ...[
+                                    Container(
+                                      padding: const EdgeInsets.all(12),
+                                      decoration: BoxDecoration(
+                                        color: AppColors.primary.withValues(alpha: 0.05),
+                                        borderRadius: BorderRadius.circular(12),
+                                        border: Border.all(color: AppColors.primary.withValues(alpha: 0.2)),
+                                      ),
+                                      child: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          const Text(
+                                            'CROSSBREEDING PARENTAGE DETAILS',
+                                            style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: AppColors.primary),
+                                          ),
+                                          const SizedBox(height: 8),
+                                          buildRowIfResponsive(
+                                            buildInputField(
+                                              label: 'Primary Breed (Parent 1) *',
+                                              child: TextField(
+                                                textCapitalization: TextCapitalization.sentences,
+                                                controller: parent1BreedController,
+                                                decoration: const InputDecoration(
+                                                  hintText: 'e.g. Holstein-Friesian',
+                                                  prefixIcon: Icon(Icons.pets, size: 20),
+                                                ),
+                                              ),
+                                            ),
+                                            buildInputField(
+                                              label: 'Secondary Breed (Parent 2) *',
+                                              child: TextField(
+                                                textCapitalization: TextCapitalization.sentences,
+                                                controller: parent2BreedController,
+                                                decoration: const InputDecoration(
+                                                  hintText: 'e.g. White Fulani',
+                                                  prefixIcon: Icon(Icons.pets, size: 20),
+                                                ),
+                                              ),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ] else ...[
+                                    buildInputField(
+                                      label: 'Breed Designation',
+                                      child: TextField(
+                                        textCapitalization: TextCapitalization.sentences,
+                                        controller: breedController,
+                                        decoration: const InputDecoration(
+                                          hintText: 'e.g. Mixed Breed / Local Mix',
+                                          prefixIcon: Icon(Icons.category, size: 20),
+                                        ),
+                                      ),
+                                    ),
+                                  ],
                                 ],
                               ),
                             ),
@@ -1018,11 +1112,11 @@ class _AnimalsScreenState extends State<AnimalsScreen> {
                                   const SizedBox(height: 12),
                                   
                                   buildInputField(
-                                                                    label: 'Date of Birth *',
+                                    label: 'Date of Birth *',
                                     child: InkWell(
                                       onTap: () async {
                                         FocusScope.of(context).unfocus();
-                                        final picked = await showDatePicker(
+                                        final picked = await showDatePicker(builder: (context, child) => Theme(data: Theme.of(context).copyWith(useMaterial3: false), child: MediaQuery(data: MediaQuery.of(context).copyWith(textScaleFactor: 1.0), child: child!)), 
                                           context: context,
                                           initialDate: DateTime.now().subtract(const Duration(days: 365)),
                                           firstDate: DateTime(2000),
@@ -1182,45 +1276,21 @@ class _AnimalsScreenState extends State<AnimalsScreen> {
                                   const Text('3. PURPOSE & PRODUCTION STATUS', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: AppColors.primary)),
                                   const SizedBox(height: 12),
                                   
-                                  buildRowIfResponsive(
-                                    buildInputField(
-                                      label: 'Pedigree Type',
-                                      child: Row(
-                                        children: [
-                                          ChoiceChip(
-                                            label: const Text('Purebreed'),
-                                            selected: selectedPedigree == 'pure',
-                                            onSelected: (selected) {
-                                              if (selected) setState(() => selectedPedigree = 'pure');
-                                            },
-                                          ),
-                                          const SizedBox(width: 8),
-                                          ChoiceChip(
-                                            label: const Text('Crossbreed'),
-                                            selected: selectedPedigree == 'cross',
-                                            onSelected: (selected) {
-                                              if (selected) setState(() => selectedPedigree = 'cross');
-                                            },
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                    buildInputField(
-                                      label: 'Operational Purpose',
-                                      child: AppDropdownFormField<String>(
-                                        value: selectedPurpose,
-                                        labelText: 'Purpose',
-                                        items: const [
-                                          DropdownMenuItem(value: 'breeding', child: Text('Breeding')),
-                                          DropdownMenuItem(value: 'milk', child: Text('Dairy (Milk)')),
-                                          DropdownMenuItem(value: 'meat', child: Text('Beef (Meat)')),
-                                          DropdownMenuItem(value: 'eggs', child: Text('Layers (Eggs)')),
-                                          DropdownMenuItem(value: 'others', child: Text('Others')),
-                                        ],
-                                        onChanged: (val) {
-                                          if (val != null) setState(() => selectedPurpose = val);
-                                        },
-                                      ),
+                                  buildInputField(
+                                    label: 'Operational Purpose',
+                                    child: AppDropdownFormField<String>(
+                                      value: selectedPurpose,
+                                      labelText: 'Purpose',
+                                      items: const [
+                                        DropdownMenuItem(value: 'breeding', child: Text('Breeding')),
+                                        DropdownMenuItem(value: 'milk', child: Text('Dairy (Milk)')),
+                                        DropdownMenuItem(value: 'meat', child: Text('Beef (Meat)')),
+                                        DropdownMenuItem(value: 'eggs', child: Text('Layers (Eggs)')),
+                                        DropdownMenuItem(value: 'others', child: Text('Others')),
+                                      ],
+                                      onChanged: (val) {
+                                        if (val != null) setState(() => selectedPurpose = val);
+                                      },
                                     ),
                                   ),
                                   
@@ -1262,7 +1332,6 @@ class _AnimalsScreenState extends State<AnimalsScreen> {
                                         ],
                                       ),
                                     ),
-                                  // Removed Vaccination and Deworming UI as it is now in the Schedules tab
                                 ],
                               ),
                             ),
@@ -1371,18 +1440,33 @@ class _AnimalsScreenState extends State<AnimalsScreen> {
                             }
                             final dobStr = finalDob.toIso8601String().split('T')[0];
                             final newId = const Uuid().v4();
+
+                            String finalBreed;
+                            String finalPedigreeType;
+                            if (selectedPedigree == 'cross') {
+                              final p1 = parent1BreedController.text.trim();
+                              final p2 = parent2BreedController.text.trim();
+                              finalBreed = (p1.isNotEmpty && p2.isNotEmpty) ? '$p1 x $p2' : (p1.isNotEmpty ? p1 : (p2.isNotEmpty ? p2 : 'Crossbreed'));
+                              finalPedigreeType = 'crossbreed';
+                            } else if (selectedPedigree == 'mixed') {
+                              finalBreed = breedController.text.trim().isNotEmpty ? breedController.text.trim() : 'Mixed Breed';
+                              finalPedigreeType = 'mixed_breed';
+                            } else {
+                              finalBreed = breedController.text.trim().isNotEmpty ? breedController.text.trim() : 'Purebreed';
+                              finalPedigreeType = 'purebreed';
+                            }
                             
                             BlocProvider.of<AnimalsBloc>(context).add(AddAnimal({
                               'id': newId,
                               'tag_id': tagController.text.trim(),
                               'species': selectedSpecies,
                               'sex': selectedSex,
-                              'breed': breedController.text.trim().isNotEmpty ? breedController.text.trim() : null,
+                              'breed': finalBreed,
                               'date_of_birth': dobStr,
                               'weight': weightController.text.isNotEmpty ? double.tryParse(weightController.text) : null,
                               'color': colorController.text.trim().isNotEmpty ? colorController.text.trim() : null,
                               'unique_marks': marksController.text.trim().isNotEmpty ? marksController.text.trim() : null,
-                              'pedigree_type': selectedPedigree,
+                              'pedigree_type': finalPedigreeType,
                               'purpose': selectedPurpose,
                               'current_reproductive_status': isFemale ? selectedReproductive : 'open',
                               'vaccination_status': '{}',
@@ -1418,12 +1502,35 @@ class _AnimalsScreenState extends State<AnimalsScreen> {
     final id = animal.id;
     
     final tagController = TextEditingController(text: animal.tagId);
-    final breedController = TextEditingController(text: animal.breed ?? '');
+    final breedController = TextEditingController();
+    final parent1BreedController = TextEditingController();
+    final parent2BreedController = TextEditingController();
     final weightController = TextEditingController(text: animal.weight?.toString() ?? '');
     final colorController = TextEditingController(text: animal.color ?? '');
     final marksController = TextEditingController(text: animal.uniqueMarks ?? '');
     final acquisitionCostController = TextEditingController(text: animal.acquisitionCost.toString());
     final salvageValueController = TextEditingController(text: animal.salvageValue.toString());
+
+    final rawBreed = animal.breed ?? '';
+    final rawPedigree = (animal.pedigreeType ?? '').toLowerCase();
+
+    String selectedPedigree = 'pure';
+    if (rawPedigree.contains('cross') || rawBreed.contains(' x ')) {
+      selectedPedigree = 'cross';
+      final parts = rawBreed.split(' x ');
+      if (parts.length >= 2) {
+        parent1BreedController.text = parts[0].trim();
+        parent2BreedController.text = parts.sublist(1).join(' x ').trim();
+      } else {
+        parent1BreedController.text = rawBreed.trim();
+      }
+    } else if (rawPedigree.contains('mixed') || rawBreed.toLowerCase() == 'mixed breed') {
+      selectedPedigree = 'mixed';
+      breedController.text = rawBreed.isNotEmpty ? rawBreed : 'Mixed Breed';
+    } else {
+      selectedPedigree = 'pure';
+      breedController.text = rawBreed;
+    }
 
     DateTime? selectedDob = animal.dateOfBirth;
     bool dobUnknown = false;
@@ -1432,7 +1539,6 @@ class _AnimalsScreenState extends State<AnimalsScreen> {
 
     String selectedSpecies = animal.species;
     String selectedSex = animal.sex;
-    String selectedPedigree = animal.pedigreeType ?? 'pure';
     String selectedPurpose = animal.purpose ?? 'milk';
     String selectedReproductive = animal.currentReproductiveStatus;
     String? selectedImagePath = animal.imagePath;
@@ -1521,7 +1627,7 @@ class _AnimalsScreenState extends State<AnimalsScreen> {
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       const Text(
-                        'Update Animal Details',
+                        'Edit Animal Profile',
                         style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, letterSpacing: -0.5),
                       ),
                       IconButton(
@@ -1590,7 +1696,7 @@ class _AnimalsScreenState extends State<AnimalsScreen> {
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  const Text('1. BASIC IDENTITY', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: AppColors.primary)),
+                                  const Text('1. BASIC IDENTITY & BREED', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: AppColors.primary)),
                                   const SizedBox(height: 12),
                                   buildInputField(
                                     label: 'Ear Tag / Identifier *',
@@ -1605,7 +1711,7 @@ class _AnimalsScreenState extends State<AnimalsScreen> {
                                     buildInputField(
                                       label: 'Species *',
                                       child: DropdownButtonFormField<String>(
-                                        initialValue: selectedSpecies,
+                                        value: selectedSpecies,
                                         items: const [
                                           DropdownMenuItem(value: 'bovine', child: Text('Bovine (Cattle)')),
                                           DropdownMenuItem(value: 'avian', child: Text('Avian (Poultry)')),
@@ -1642,15 +1748,105 @@ class _AnimalsScreenState extends State<AnimalsScreen> {
                                       ),
                                     ),
                                   ),
+                                  const SizedBox(height: 6),
                                   buildInputField(
-                                    label: 'Breed',
-                                    child: TextField(textCapitalization: TextCapitalization.sentences, controller: breedController,
-                                      decoration: const InputDecoration(
-                                        hintText: 'e.g. Holstein Friesian',
-                                        prefixIcon: Icon(Icons.category, size: 20),
-                                      ),
+                                    label: 'Breeding Type *',
+                                    child: Wrap(
+                                      spacing: 8,
+                                      children: [
+                                        ChoiceChip(
+                                          label: const Text('Purebreed'),
+                                          selected: selectedPedigree == 'pure',
+                                          onSelected: (selected) {
+                                            if (selected) setState(() => selectedPedigree = 'pure');
+                                          },
+                                        ),
+                                        ChoiceChip(
+                                          label: const Text('Crossbreed'),
+                                          selected: selectedPedigree == 'cross',
+                                          onSelected: (selected) {
+                                            if (selected) setState(() => selectedPedigree = 'cross');
+                                          },
+                                        ),
+                                        ChoiceChip(
+                                          label: const Text('Mixed Breed'),
+                                          selected: selectedPedigree == 'mixed',
+                                          onSelected: (selected) {
+                                            if (selected) setState(() => selectedPedigree = 'mixed');
+                                          },
+                                        ),
+                                      ],
                                     ),
                                   ),
+                                  const SizedBox(height: 6),
+                                  if (selectedPedigree == 'pure') ...[
+                                    buildInputField(
+                                      label: 'Breed Name *',
+                                      child: TextField(
+                                        textCapitalization: TextCapitalization.sentences,
+                                        controller: breedController,
+                                        decoration: const InputDecoration(
+                                          hintText: 'e.g. Holstein-Friesian / White Fulani',
+                                          prefixIcon: Icon(Icons.category, size: 20),
+                                        ),
+                                      ),
+                                    ),
+                                  ] else if (selectedPedigree == 'cross') ...[
+                                    Container(
+                                      padding: const EdgeInsets.all(12),
+                                      decoration: BoxDecoration(
+                                        color: AppColors.primary.withValues(alpha: 0.05),
+                                        borderRadius: BorderRadius.circular(12),
+                                        border: Border.all(color: AppColors.primary.withValues(alpha: 0.2)),
+                                      ),
+                                      child: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          const Text(
+                                            'CROSSBREEDING PARENTAGE DETAILS',
+                                            style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: AppColors.primary),
+                                          ),
+                                          const SizedBox(height: 8),
+                                          buildRowIfResponsive(
+                                            buildInputField(
+                                              label: 'Primary Breed (Parent 1) *',
+                                              child: TextField(
+                                                textCapitalization: TextCapitalization.sentences,
+                                                controller: parent1BreedController,
+                                                decoration: const InputDecoration(
+                                                  hintText: 'e.g. Holstein-Friesian',
+                                                  prefixIcon: Icon(Icons.pets, size: 20),
+                                                ),
+                                              ),
+                                            ),
+                                            buildInputField(
+                                              label: 'Secondary Breed (Parent 2) *',
+                                              child: TextField(
+                                                textCapitalization: TextCapitalization.sentences,
+                                                controller: parent2BreedController,
+                                                decoration: const InputDecoration(
+                                                  hintText: 'e.g. White Fulani',
+                                                  prefixIcon: Icon(Icons.pets, size: 20),
+                                                ),
+                                              ),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ] else ...[
+                                    buildInputField(
+                                      label: 'Breed Designation',
+                                      child: TextField(
+                                        textCapitalization: TextCapitalization.sentences,
+                                        controller: breedController,
+                                        decoration: const InputDecoration(
+                                          hintText: 'e.g. Mixed Breed / Local Mix',
+                                          prefixIcon: Icon(Icons.category, size: 20),
+                                        ),
+                                      ),
+                                    ),
+                                  ],
                                 ],
                               ),
                             ),
@@ -1674,14 +1870,18 @@ class _AnimalsScreenState extends State<AnimalsScreen> {
                                     label: 'Date of Birth *',
                                     child: InkWell(
                                       onTap: () async {
-                                        final picked = await showDatePicker(
+                                        FocusScope.of(context).unfocus();
+                                        final picked = await showDatePicker(builder: (context, child) => Theme(data: Theme.of(context).copyWith(useMaterial3: false), child: MediaQuery(data: MediaQuery.of(context).copyWith(textScaleFactor: 1.0), child: child!)), 
                                           context: context,
                                           initialDate: selectedDob ?? DateTime.now().subtract(const Duration(days: 365)),
                                           firstDate: DateTime(2000),
                                           lastDate: DateTime.now(),
                                         );
                                         if (picked != null) {
-                                          setState(() => selectedDob = picked);
+                                          setState(() {
+                                            selectedDob = picked;
+                                            dobUnknown = false;
+                                          });
                                         }
                                       },
                                       child: Container(
@@ -1792,7 +1992,7 @@ class _AnimalsScreenState extends State<AnimalsScreen> {
                                       label: 'Color / Pattern',
                                       child: TextField(textCapitalization: TextCapitalization.sentences, controller: colorController,
                                         decoration: const InputDecoration(
-                                          hintText: 'e.g. Brown with spots',
+                                          hintText: 'e.g. Brown with white spot',
                                           prefixIcon: Icon(Icons.palette, size: 20),
                                         ),
                                       ),
@@ -1802,7 +2002,7 @@ class _AnimalsScreenState extends State<AnimalsScreen> {
                                     label: 'Unique Distinguishing Marks',
                                     child: TextField(textCapitalization: TextCapitalization.sentences, controller: marksController,
                                       decoration: const InputDecoration(
-                                        hintText: 'e.g. Notch on left ear',
+                                        hintText: 'e.g. Slit on right ear / Branding #40',
                                         prefixIcon: Icon(Icons.visibility, size: 20),
                                       ),
                                     ),
@@ -1826,42 +2026,18 @@ class _AnimalsScreenState extends State<AnimalsScreen> {
                                 children: [
                                   const Text('3. PURPOSE & PRODUCTION STATUS', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: AppColors.primary)),
                                   const SizedBox(height: 12),
-                                  buildRowIfResponsive(
-                                    buildInputField(
-                                      label: 'Pedigree Type',
-                                      child: Row(
-                                        children: [
-                                          ChoiceChip(
-                                            label: const Text('Purebreed'),
-                                            selected: selectedPedigree == 'pure',
-                                            onSelected: (selected) {
-                                              if (selected) setState(() => selectedPedigree = 'pure');
-                                            },
-                                          ),
-                                          const SizedBox(width: 8),
-                                          ChoiceChip(
-                                            label: const Text('Crossbreed'),
-                                            selected: selectedPedigree == 'cross',
-                                            onSelected: (selected) {
-                                              if (selected) setState(() => selectedPedigree = 'cross');
-                                            },
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                    buildInputField(
-                                      label: 'Operational Purpose',
-                                      child: DropdownButtonFormField<String>(
-                                        initialValue: selectedPurpose,
-                                        items: const [
-                                          DropdownMenuItem(value: 'breeding', child: Text('Breeding')),
-                                          DropdownMenuItem(value: 'milk', child: Text('Dairy (Milk)')),
-                                          DropdownMenuItem(value: 'meat', child: Text('Beef (Meat)')),
-                                          DropdownMenuItem(value: 'eggs', child: Text('Layers (Eggs)')),
-                                          DropdownMenuItem(value: 'others', child: Text('Others')),
-                                        ],
-                                        onChanged: (val) => setState(() => selectedPurpose = val!),
-                                      ),
+                                  buildInputField(
+                                    label: 'Operational Purpose',
+                                    child: DropdownButtonFormField<String>(
+                                      value: selectedPurpose,
+                                      items: const [
+                                        DropdownMenuItem(value: 'breeding', child: Text('Breeding')),
+                                        DropdownMenuItem(value: 'milk', child: Text('Dairy (Milk)')),
+                                        DropdownMenuItem(value: 'meat', child: Text('Beef (Meat)')),
+                                        DropdownMenuItem(value: 'eggs', child: Text('Layers (Eggs)')),
+                                        DropdownMenuItem(value: 'others', child: Text('Others')),
+                                      ],
+                                      onChanged: (val) => setState(() => selectedPurpose = val!),
                                     ),
                                   ),
                                   if (isFemale)
@@ -1902,7 +2078,6 @@ class _AnimalsScreenState extends State<AnimalsScreen> {
                                         ],
                                       ),
                                     ),
-                                  // Removed Vaccination and Deworming UI as it is now in the Schedules tab
                                 ],
                               ),
                             ),
@@ -2034,19 +2209,13 @@ class _AnimalsScreenState extends State<AnimalsScreen> {
                                               const SizedBox(height: 2),
                                               Text(
                                                 '${rec.administeredDose} ${med.unit} of ${med.name} on ${DateFormat('yyyy-MM-dd').format(rec.treatmentDate)}',
-                                                style: const TextStyle(fontSize: 11, color: Colors.grey),
+                                                style: TextStyle(fontSize: 12, color: Colors.grey.shade700),
                                               ),
                                               if (hasWithdrawal) ...[
                                                 const SizedBox(height: 4),
-                                                Row(
-                                                  children: [
-                                                    const Icon(Icons.warning, color: Colors.orange, size: 12),
-                                                    const SizedBox(width: 4),
-                                                    Text(
-                                                      'Active Withdrawal: ends ${DateFormat('yyyy-MM-dd').format(rec.withdrawalEndDate!)}',
-                                                      style: const TextStyle(color: Colors.orange, fontSize: 10, fontWeight: FontWeight.bold),
-                                                    ),
-                                                  ],
+                                                Text(
+                                                  '⚠️ Withdrawal active until ${DateFormat('yyyy-MM-dd').format(rec.withdrawalEndDate!)}',
+                                                  style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.orange),
                                                 ),
                                               ],
                                             ],
@@ -2103,17 +2272,32 @@ class _AnimalsScreenState extends State<AnimalsScreen> {
                                 finalDob = selectedDob!;
                               }
                               final dobStr = finalDob.toIso8601String().split('T')[0];
+
+                              String finalBreed;
+                              String finalPedigreeType;
+                              if (selectedPedigree == 'cross') {
+                                final p1 = parent1BreedController.text.trim();
+                                final p2 = parent2BreedController.text.trim();
+                                finalBreed = (p1.isNotEmpty && p2.isNotEmpty) ? '$p1 x $p2' : (p1.isNotEmpty ? p1 : (p2.isNotEmpty ? p2 : 'Crossbreed'));
+                                finalPedigreeType = 'crossbreed';
+                              } else if (selectedPedigree == 'mixed') {
+                                finalBreed = breedController.text.trim().isNotEmpty ? breedController.text.trim() : 'Mixed Breed';
+                                finalPedigreeType = 'mixed_breed';
+                              } else {
+                                finalBreed = breedController.text.trim().isNotEmpty ? breedController.text.trim() : 'Purebreed';
+                                finalPedigreeType = 'purebreed';
+                              }
                               
                               BlocProvider.of<AnimalsBloc>(context).add(UpdateAnimal(id, {
                                 'tag_id': tagController.text.trim(),
                                 'species': selectedSpecies,
                                 'sex': selectedSex,
-                                'breed': breedController.text.trim().isNotEmpty ? breedController.text.trim() : null,
+                                'breed': finalBreed,
                                 'date_of_birth': dobStr,
                                 'weight': weightController.text.isNotEmpty ? double.tryParse(weightController.text) : null,
                                 'color': colorController.text.trim().isNotEmpty ? colorController.text.trim() : null,
                                 'unique_marks': marksController.text.trim().isNotEmpty ? marksController.text.trim() : null,
-                                'pedigree_type': selectedPedigree,
+                                'pedigree_type': finalPedigreeType,
                                 'purpose': selectedPurpose,
                                 'current_reproductive_status': isFemale ? selectedReproductive : 'open',
                                 'image_path': selectedImagePath,

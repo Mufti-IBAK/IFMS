@@ -156,7 +156,7 @@ class _LogBreedingSheetState extends State<LogBreedingSheet> {
                       child: InkWell(
                         onTap: () async {
                           FocusScope.of(context).unfocus();
-                          final date = await showDatePicker(
+                          final date = await showDatePicker(builder: (context, child) => Theme(data: Theme.of(context).copyWith(useMaterial3: false), child: MediaQuery(data: MediaQuery.of(context).copyWith(textScaleFactor: 1.0), child: child!)), 
                             context: context,
                             initialDate: _birthDate,
                             firstDate: DateTime.now().subtract(const Duration(days: 365)),
@@ -267,7 +267,7 @@ class _LogBreedingSheetState extends State<LogBreedingSheet> {
                     Expanded(
                       child: InkWell(
                         onTap: () async {
-                          final date = await showDatePicker(
+                          final date = await showDatePicker(builder: (context, child) => Theme(data: Theme.of(context).copyWith(useMaterial3: false), child: MediaQuery(data: MediaQuery.of(context).copyWith(textScaleFactor: 1.0), child: child!)), 
                             context: context,
                             initialDate: _injectionDate,
                             firstDate: DateTime.now().subtract(const Duration(days: 30)),
@@ -285,7 +285,7 @@ class _LogBreedingSheetState extends State<LogBreedingSheet> {
                     Expanded(
                       child: InkWell(
                         onTap: () async {
-                          final date = await showDatePicker(
+                          final date = await showDatePicker(builder: (context, child) => Theme(data: Theme.of(context).copyWith(useMaterial3: false), child: MediaQuery(data: MediaQuery.of(context).copyWith(textScaleFactor: 1.0), child: child!)), 
                             context: context,
                             initialDate: _expectedEstrusDate,
                             firstDate: DateTime.now().subtract(const Duration(days: 30)),

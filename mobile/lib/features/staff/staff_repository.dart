@@ -334,6 +334,7 @@ class StaffRepository {
 
   Future<void> createAdvance(Map<String, dynamic> data) async {
     final uuid = const Uuid().v4();
+    final isOneOff = data['is_one_off_advance'] == true || data['is_one_off'] == true;
     final apiData = {
       'id': uuid,
       'staff_id': data['staff_id'],
@@ -342,6 +343,7 @@ class StaffRepository {
       'total_repaid': 0.0,
       'collection_date': data['collection_date'] ?? DateTime.now().toIso8601String(),
       'is_fully_repaid': false,
+      'is_one_off_advance': isOneOff,
       'notes': data['notes'],
     };
 
@@ -356,6 +358,7 @@ class StaffRepository {
         totalRepaid: const Value(0.0),
         collectionDate: DateTime.parse(apiData['collection_date']!),
         isFullyRepaid: const Value(false),
+        isOneOffAdvance: Value(isOneOff),
         notes: Value(data['notes']),
       ));
     } catch (e) {
@@ -368,6 +371,7 @@ class StaffRepository {
           totalRepaid: const Value(0.0),
           collectionDate: DateTime.parse(apiData['collection_date']!),
           isFullyRepaid: const Value(false),
+          isOneOffAdvance: Value(isOneOff),
           notes: Value(data['notes']),
         ));
 

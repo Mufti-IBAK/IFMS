@@ -782,7 +782,7 @@ class _PharmacyScreenState extends State<PharmacyScreen> with SingleTickerProvid
                         ),
                         TextButton(
                           onPressed: () async {
-                            final picked = await showDatePicker(
+                            final picked = await showDatePicker(builder: (context, child) => Theme(data: Theme.of(context).copyWith(useMaterial3: false), child: MediaQuery(data: MediaQuery.of(context).copyWith(textScaleFactor: 1.0), child: child!)), 
                               context: context,
                               initialDate: DateTime.now().add(const Duration(days: 365)),
                               firstDate: DateTime.now(),
@@ -943,7 +943,7 @@ class _PharmacyScreenState extends State<PharmacyScreen> with SingleTickerProvid
                         ),
                         TextButton(
                           onPressed: () async {
-                            final picked = await showDatePicker(
+                            final picked = await showDatePicker(builder: (context, child) => Theme(data: Theme.of(context).copyWith(useMaterial3: false), child: MediaQuery(data: MediaQuery.of(context).copyWith(textScaleFactor: 1.0), child: child!)), 
                               context: context,
                               initialDate: expiryDate ?? DateTime.now().add(const Duration(days: 365)),
                               firstDate: DateTime.now().subtract(const Duration(days: 365)),

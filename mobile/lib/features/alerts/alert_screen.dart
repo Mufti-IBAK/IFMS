@@ -258,58 +258,89 @@ class _InsightsAndEventsView extends StatelessWidget {
                 if (severity == 'warning') badgeColor = Colors.orange;
 
                 return Card(
-                  margin: const EdgeInsets.only(bottom: 12),
-                  child: Padding(
-                    padding: const EdgeInsets.all(16),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  margin: const EdgeInsets.only(bottom: 10),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  child: ExpansionTile(
+                    tilePadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
+                    childrenPadding: const EdgeInsets.all(16),
+                    leading: CircleAvatar(
+                      backgroundColor: badgeColor.withOpacity(0.15),
+                      child: Icon(
+                        severity == 'critical'
+                            ? Icons.error_outline
+                            : severity == 'warning'
+                                ? Icons.warning_amber_rounded
+                                : Icons.lightbulb_outline,
+                        color: badgeColor,
+                        size: 20,
+                      ),
+                    ),
+                    title: Text(
+                      ev.eventType.replaceAll('_', ' ').toUpperCase(),
+                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                    ),
+                    subtitle: Text(
+                      '${DateFormat('MMM dd, HH:mm').format(ev.eventDate)} • ${descText ?? ""}',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(fontSize: 11, color: Colors.grey),
+                    ),
+                    trailing: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: badgeColor.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: Text(
+                        severity == 'warning' ? 'ACTION REQ' : severity!.toUpperCase(),
+                        style: TextStyle(color: badgeColor, fontWeight: FontWeight.bold, fontSize: 9),
+                      ),
+                    ),
+                    children: [
+                      Align(
+                        alignment: Alignment.centerLeft,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
+                            const Text('Full Event Description:', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: Colors.purple)),
+                            const SizedBox(height: 4),
+                            Text(descText ?? 'No description provided.', style: const TextStyle(fontSize: 13, color: Colors.black87)),
+                            if (actionText != null && actionText.isNotEmpty) ...[
+                              const SizedBox(height: 10),
+                              Container(
+                                width: double.infinity,
+                                padding: const EdgeInsets.all(10),
+                                decoration: BoxDecoration(
+                                  color: Colors.orange.shade50,
+                                  borderRadius: BorderRadius.circular(8),
+                                  border: Border.all(color: Colors.orange.shade300),
+                                ),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    const Text('Action Required:', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: Colors.deepOrange)),
+                                    const SizedBox(height: 2),
+                                    Text(actionText, style: const TextStyle(fontSize: 12, color: Colors.black87)),
+                                  ],
+                                ),
+                              ),
+                            ],
+                            if (ev.involvedAnimals != null && ev.involvedAnimals!.isNotEmpty) ...[
+                              const SizedBox(height: 10),
+                              Text(
+                                'Involved Animals / Units: ${ev.involvedAnimals}',
+                                style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: Colors.grey.shade700),
+                              ),
+                            ],
+                            const SizedBox(height: 8),
                             Text(
-                              ev.eventType.replaceAll('_', ' ').toUpperCase(),
-                              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
-                            ),
-                            Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                              decoration: BoxDecoration(
-                                color: badgeColor.withOpacity(0.1),
-                                borderRadius: BorderRadius.circular(4),
-                              ),
-                              child: Text(
-                                severity == 'warning' ? 'ACTION REQUIRED' : severity!.toUpperCase(),
-                                style: TextStyle(color: badgeColor, fontWeight: FontWeight.bold, fontSize: 10),
-                              ),
+                              'Captured: ${DateFormat('yyyy-MM-dd HH:mm:ss').format(ev.eventDate)}',
+                              style: TextStyle(fontSize: 10, color: Colors.grey.shade500),
                             ),
                           ],
                         ),
-                        const SizedBox(height: 8),
-                        Text(descText ?? '', style: const TextStyle(fontSize: 13)),
-                        if (actionText != null) ...[
-                          const SizedBox(height: 8),
-                          Text(
-                            'Action Required: $actionText',
-                            style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.orange),
-                          ),
-                        ],
-                        if (ev.involvedAnimals != null && ev.involvedAnimals!.isNotEmpty) ...[
-                          const SizedBox(height: 8),
-                          Text(
-                            'Involved Animals: ${ev.involvedAnimals}',
-                            style: TextStyle(fontSize: 11, color: Colors.grey[600]),
-                          ),
-                        ],
-                        const SizedBox(height: 8),
-                        Align(
-                          alignment: Alignment.bottomRight,
-                          child: Text(
-                            DateFormat('yyyy-MM-dd HH:mm').format(ev.eventDate),
-                            style: TextStyle(fontSize: 10, color: Colors.grey[500]),
-                          ),
-                        ),
-                      ],
-                    ),
+                      ),
+                    ],
                   ),
                 );
               }),

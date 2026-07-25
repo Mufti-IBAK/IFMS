@@ -14,7 +14,7 @@ final ValueNotifier<bool> updateAvailableNotifier = ValueNotifier(false);
 Map<String, dynamic>? _pendingUpdateData;
 
 class AppUpdater {
-  static const _platform = MethodChannel('com.namanzo.ifms/permissions');
+  static const _platform = MethodChannel('com.royalheritage.farms/permissions');
 
   static Future<void> _openBrowser(String url) async {
     try {

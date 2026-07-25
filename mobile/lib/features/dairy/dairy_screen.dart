@@ -3,7 +3,10 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/widgets/custom_charts.dart';
+import '../../core/di/service_locator.dart';
+import '../../core/database/local_db.dart';
 import 'dairy_bloc.dart';
+import 'dairy_repository.dart';
 import 'widgets/add_milk_entry_sheet.dart';
 
 class DairyScreen extends StatefulWidget {
@@ -19,7 +22,10 @@ class _DairyScreenState extends State<DairyScreen> with SingleTickerProviderStat
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 2, vsync: this);
+    _tabController = TabController(length: 3, vsync: this);
+    _tabController.addListener(() {
+      if (mounted) setState(() {});
+    });
     context.read<DairyBloc>().add(LoadDairyData());
   }
 
@@ -43,6 +49,7 @@ class _DairyScreenState extends State<DairyScreen> with SingleTickerProviderStat
           indicatorColor: Colors.white,
           tabs: const [
             Tab(icon: Icon(Icons.dashboard), text: 'Dashboard'),
+            Tab(icon: Icon(Icons.storefront), text: 'Milk Store & Sales'),
             Tab(icon: Icon(Icons.analytics), text: 'Analytics'),
           ],
         ),
@@ -66,8 +73,6 @@ class _DairyScreenState extends State<DairyScreen> with SingleTickerProviderStat
             return const Center(child: CircularProgressIndicator());
           }
           if (state is DairyError) {
-            // Error is handled by listener, but we return a temporary loading indicator
-            // because DairyBloc immediately fires LoadDairyData() after emitting an error.
             return const Center(child: CircularProgressIndicator());
           }
           if (state is DairyLoaded) {
@@ -75,6 +80,7 @@ class _DairyScreenState extends State<DairyScreen> with SingleTickerProviderStat
               controller: _tabController,
               children: [
                 _buildDashboardTab(state),
+                _buildStoreAndSalesTab(state),
                 _buildAnalyticsTab(state),
               ],
             );
@@ -82,23 +88,27 @@ class _DairyScreenState extends State<DairyScreen> with SingleTickerProviderStat
           return const Center(child: Text('Initialize Dairy Data'));
         },
       ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () {
-          showModalBottomSheet(
-            context: context,
-            isScrollControlled: true,
-            backgroundColor: Colors.transparent,
-            builder: (ctx) => BlocProvider.value(
-              value: context.read<DairyBloc>(),
-              child: const AddMilkEntrySheet(),
-            ),
-          );
-        },
-        backgroundColor: AppColors.primary,
-        foregroundColor: Colors.white,
-        icon: const Icon(Icons.add),
-        label: const Text('Record Milk'),
-      ),
+      floatingActionButton: _tabController.index == 0
+          ? FloatingActionButton.extended(
+              onPressed: () {
+                final dairyState = context.read<DairyBloc>().state;
+                final activeDate = dairyState is DairyLoaded ? dairyState.selectedDashboardDate : null;
+                showModalBottomSheet(
+                  context: context,
+                  isScrollControlled: true,
+                  backgroundColor: Colors.transparent,
+                  builder: (ctx) => BlocProvider.value(
+                    value: context.read<DairyBloc>(),
+                    child: AddMilkEntrySheet(initialDate: activeDate),
+                  ),
+                );
+              },
+              backgroundColor: AppColors.primary,
+              foregroundColor: Colors.white,
+              icon: const Icon(Icons.add),
+              label: const Text('Record Milk'),
+            )
+          : null,
     );
   }
 
@@ -166,7 +176,7 @@ class _DairyScreenState extends State<DairyScreen> with SingleTickerProviderStat
             children: [
               Expanded(child: _buildKpiCard('Avg / Cow', '${state.averagePerCowDashboard.toStringAsFixed(1)} L', Icons.scale, Colors.teal)),
               const SizedBox(width: 12),
-              Expanded(child: _buildKpiCard('Cows Milked', '${state.topProducersDashboard.length + state.lowPerformersDashboard.length}', Icons.pets, Colors.orange)),
+              Expanded(child: _buildKpiCard('Cows Milked', '${state.cowsMilkedCount}', Icons.pets, Colors.orange)),
             ],
           ),
           const SizedBox(height: 24),
@@ -419,6 +429,673 @@ class _DairyScreenState extends State<DairyScreen> with SingleTickerProviderStat
             Text(value, style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
           ],
         ),
+      ),
+    );
+  }  Widget _buildStoreAndSalesTab(DairyLoaded state) {
+    final currencyFormatter = NumberFormat.currency(symbol: '₦', decimalDigits: 2);
+    final inStore = state.inStoreLiters;
+
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Live Availability Banner
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [Colors.teal.shade800, Colors.teal.shade600],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+              borderRadius: BorderRadius.circular(16),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.teal.withOpacity(0.3),
+                  blurRadius: 10,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Text(
+                      'MILK IN STORE (AVAILABLE FOR BUYERS)',
+                      style: TextStyle(color: Colors.white70, fontWeight: FontWeight.bold, fontSize: 11),
+                    ),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.2),
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: const Row(
+                        children: [
+                          Icon(Icons.check_circle, color: Colors.greenAccent, size: 14),
+                          SizedBox(width: 4),
+                          Text('LIVE INVENTORY', style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold)),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.baseline,
+                  textBaseline: TextBaseline.alphabetic,
+                  children: [
+                    Text(
+                      inStore.toStringAsFixed(1),
+                      style: const TextStyle(color: Colors.white, fontSize: 36, fontWeight: FontWeight.bold),
+                    ),
+                    const SizedBox(width: 6),
+                    const Text('LITERS AVAILABLE', style: TextStyle(color: Colors.white70, fontSize: 14, fontWeight: FontWeight.bold)),
+                  ],
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  inStore > 0
+                      ? 'Ready for commercial buyer dispatch & bulk milk pickup.'
+                      : 'Store balance is zero. Log milk harvests to replenish inventory.',
+                  style: const TextStyle(color: Colors.white70, fontSize: 12),
+                ),
+                const SizedBox(height: 16),
+                Row(
+                  children: [
+                    Expanded(
+                      child: ElevatedButton.icon(
+                        onPressed: () => _showRecordBulkSaleDialog(context, inStore),
+                        icon: const Icon(Icons.point_of_sale, color: Colors.teal),
+                        label: const Text('RECORD BULK MILK SALE', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.teal, fontSize: 12)),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    OutlinedButton.icon(
+                      onPressed: () => _showSetDefaultPriceDialog(context),
+                      icon: const Icon(Icons.price_change, color: Colors.white, size: 18),
+                      label: Text('₦${DairyRepository.defaultMilkPrice.toStringAsFixed(0)}/L', style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.white, fontSize: 12)),
+                      style: OutlinedButton.styleFrom(
+                        side: const BorderSide(color: Colors.white, width: 1.5),
+                        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 10),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 20),
+
+          // Inventory KPI Cards Grid
+          Row(
+            children: [
+              Expanded(
+                child: _buildKpiCard('Total Collected', '${state.totalCollectedLiters.toStringAsFixed(1)} L', Icons.opacity, Colors.blue),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: _buildKpiCard('Total Sold', '${state.totalSoldLiters.toStringAsFixed(1)} L', Icons.shopping_bag, Colors.orange),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              Expanded(
+                child: _buildKpiCard('Medical Withdrawn', '${state.totalWithdrawnLiters.toStringAsFixed(1)} L', Icons.medical_services, Colors.red),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: _buildKpiCard('Total Revenue', currencyFormatter.format(state.totalRevenue), Icons.account_balance_wallet, Colors.green),
+              ),
+            ],
+          ),
+          const SizedBox(height: 24),
+
+          // Sales History List Section
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text('MILK SALES TRANSACTION HISTORY', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+              Text('${state.salesHistory.length} Records', style: const TextStyle(color: Colors.grey, fontSize: 12)),
+            ],
+          ),
+          const SizedBox(height: 12),
+
+          if (state.salesHistory.isEmpty)
+            Card(
+              elevation: 1,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              child: const Padding(
+                padding: EdgeInsets.all(24),
+                child: Center(
+                  child: Column(
+                    children: [
+                      Icon(Icons.storefront_outlined, size: 40, color: Colors.grey),
+                      SizedBox(height: 8),
+                      Text('No milk sales recorded yet.', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.grey)),
+                      SizedBox(height: 4),
+                      Text('Use "RECORD BULK MILK SALE" above to log sales to buyers.', style: TextStyle(fontSize: 11, color: Colors.grey)),
+                    ],
+                  ),
+                ),
+              ),
+            )
+          else
+            ListView.separated(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              itemCount: state.salesHistory.length,
+              separatorBuilder: (_, __) => const SizedBox(height: 8),
+              itemBuilder: (context, index) {
+                final tx = state.salesHistory[index];
+                return Card(
+                  elevation: 1.5,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  child: Padding(
+                    padding: const EdgeInsets.all(12),
+                    child: Row(
+                      children: [
+                        CircleAvatar(
+                          backgroundColor: Colors.green.shade50,
+                          child: const Icon(Icons.local_shipping, color: Colors.green, size: 20),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                tx.description?.isNotEmpty == true ? tx.description! : 'Bulk Milk Sale',
+                                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                DateFormat('yyyy-MM-dd HH:mm').format(tx.transactionDate),
+                                style: const TextStyle(fontSize: 11, color: Colors.grey),
+                              ),
+                            ],
+                          ),
+                        ),
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.end,
+                          children: [
+                            Text(
+                              '+${currencyFormatter.format(tx.amount)}',
+                              style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.green, fontSize: 14),
+                            ),
+                            const SizedBox(height: 4),
+                            Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                InkWell(
+                                  onTap: () => _showEditBulkSaleDialog(context, tx),
+                                  child: Padding(
+                                    padding: const EdgeInsets.all(4),
+                                    child: Icon(Icons.edit_note, size: 18, color: Colors.blue.shade700),
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                InkWell(
+                                  onTap: () => _confirmDeleteMilkSale(context, tx.id),
+                                  child: const Padding(
+                                    padding: EdgeInsets.all(4),
+                                    child: Icon(Icons.delete_outline, size: 18, color: Colors.red),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              },
+            ),
+        ],
+      ),
+    );
+  }
+
+  void _showSetDefaultPriceDialog(BuildContext context) {
+    final priceCtrl = TextEditingController(text: DairyRepository.defaultMilkPrice.toStringAsFixed(0));
+
+    showDialog(
+      context: context,
+      builder: (dialogCtx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Row(
+          children: const [
+            Icon(Icons.price_change, color: AppColors.primary),
+            SizedBox(width: 8),
+            Text('Set Default Milk Price'),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Set fixed milk price per liter (₦). This will pre-fill all commercial bulk sales.',
+              style: TextStyle(fontSize: 12, color: Colors.grey),
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: priceCtrl,
+              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+              decoration: const InputDecoration(
+                labelText: 'Price Per Liter (₦) *',
+                prefixText: '₦ ',
+                border: OutlineInputBorder(),
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(dialogCtx), child: const Text('CANCEL')),
+          ElevatedButton(
+            onPressed: () async {
+              final price = double.tryParse(priceCtrl.text) ?? 500.0;
+              await sl<DairyRepository>().setDefaultMilkPrice(price);
+              if (dialogCtx.mounted) Navigator.pop(dialogCtx);
+              if (context.mounted) {
+                setState(() {});
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('Default milk price set to ₦${price.toStringAsFixed(0)} / Liter'),
+                    backgroundColor: AppColors.secondary,
+                  ),
+                );
+              }
+            },
+            style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary, foregroundColor: Colors.white),
+            child: const Text('SAVE PRICE'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showRecordBulkSaleDialog(BuildContext context, double inStoreLiters) {
+    final formKey = GlobalKey<FormState>();
+    final qtyCtrl = TextEditingController(text: inStoreLiters > 0 ? inStoreLiters.toStringAsFixed(1) : '100');
+    final priceCtrl = TextEditingController(text: DairyRepository.defaultMilkPrice.toStringAsFixed(0));
+    final buyerCtrl = TextEditingController();
+    final notesCtrl = TextEditingController();
+
+    double calculateTotal() {
+      final q = double.tryParse(qtyCtrl.text) ?? 0.0;
+      final p = double.tryParse(priceCtrl.text) ?? 0.0;
+      return q * p;
+    }
+
+    showDialog(
+      context: context,
+      builder: (dialogCtx) {
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            final totalRevenue = calculateTotal();
+
+            return AlertDialog(
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+              title: Row(
+                children: const [
+                  Icon(Icons.point_of_sale, color: Colors.teal),
+                  SizedBox(width: 8),
+                  Text('RECORD BULK MILK SALE'),
+                ],
+              ),
+              content: Form(
+                key: formKey,
+                child: SingleChildScrollView(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(10),
+                        decoration: BoxDecoration(
+                          color: Colors.teal.shade50,
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: Colors.teal.shade200),
+                        ),
+                        child: Row(
+                          children: [
+                            const Icon(Icons.info_outline, color: Colors.teal, size: 18),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                'Available in Store: ${inStoreLiters.toStringAsFixed(1)} Liters',
+                                style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.teal),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      TextFormField(
+                        controller: qtyCtrl,
+                        keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                        decoration: const InputDecoration(
+                          labelText: 'Quantity Sold (Liters) *',
+                          border: OutlineInputBorder(),
+                          prefixIcon: Icon(Icons.opacity),
+                        ),
+                        onChanged: (_) => setDialogState(() {}),
+                        validator: (v) {
+                          if (v == null || v.trim().isEmpty) return 'Enter quantity in liters';
+                          final val = double.tryParse(v);
+                          if (val == null || val <= 0) return 'Enter valid quantity > 0';
+                          return null;
+                        },
+                      ),
+                      const SizedBox(height: 12),
+                      TextFormField(
+                        controller: priceCtrl,
+                        keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                        decoration: const InputDecoration(
+                          labelText: 'Price Per Liter (₦) *',
+                          prefixText: '₦ ',
+                          border: OutlineInputBorder(),
+                          prefixIcon: Icon(Icons.payments),
+                        ),
+                        onChanged: (_) => setDialogState(() {}),
+                        validator: (v) {
+                          if (v == null || v.trim().isEmpty) return 'Enter price per liter';
+                          final val = double.tryParse(v);
+                          if (val == null || val <= 0) return 'Enter valid price > 0';
+                          return null;
+                        },
+                      ),
+                      const SizedBox(height: 12),
+                      TextFormField(
+                        controller: buyerCtrl,
+                        decoration: const InputDecoration(
+                          labelText: 'Buyer / Company Name *',
+                          hintText: 'e.g. FrieslandCampina, Local Dairy',
+                          border: OutlineInputBorder(),
+                          prefixIcon: Icon(Icons.business),
+                        ),
+                        validator: (v) => v?.trim().isEmpty == true ? 'Enter buyer name' : null,
+                      ),
+                      const SizedBox(height: 12),
+                      TextFormField(
+                        controller: notesCtrl,
+                        decoration: const InputDecoration(
+                          labelText: 'Notes / Delivery Ref',
+                          border: OutlineInputBorder(),
+                          prefixIcon: Icon(Icons.notes),
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: Colors.green.shade50,
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(color: Colors.green.shade300),
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            const Text('Calculated Revenue:', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                            Text(
+                              '₦${NumberFormat('#,##0.00').format(totalRevenue)}',
+                              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.green),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(dialogCtx),
+                  child: const Text('CANCEL'),
+                ),
+                ElevatedButton(
+                  onPressed: () {
+                    if (formKey.currentState!.validate()) {
+                      final q = double.parse(qtyCtrl.text.trim());
+                      final p = double.parse(priceCtrl.text.trim());
+
+                      BlocProvider.of<DairyBloc>(context).add(RecordMilkSaleEvent(
+                        quantityLiters: q,
+                        pricePerLiter: p,
+                        buyerName: buyerCtrl.text.trim(),
+                        notes: notesCtrl.text.trim(),
+                      ));
+
+                      Navigator.pop(dialogCtx);
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text('Recorded sale of ${q.toStringAsFixed(1)} L to ${buyerCtrl.text.trim()} (₦${NumberFormat('#,##0.00').format(q * p)}).'),
+                          backgroundColor: Colors.green,
+                        ),
+                      );
+                    }
+                  },
+                  style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary),
+                  child: const Text('CONFIRM SALE', style: TextStyle(color: Colors.white)),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
+
+  void _showEditBulkSaleDialog(BuildContext context, LocalTransaction tx) {
+    final formKey = GlobalKey<FormState>();
+
+    final regexLiters = RegExp(r'(\d+(?:\.\d+)?)\s*L');
+    final regexPrice = RegExp(r'@\s*₦?(\d+(?:\.\d+)?)');
+    
+    double initialQty = 100.0;
+    double initialPrice = DairyRepository.defaultMilkPrice;
+    String initialBuyer = '';
+
+    final desc = tx.description ?? '';
+    final matchLiters = regexLiters.firstMatch(desc);
+    if (matchLiters != null) {
+      initialQty = double.tryParse(matchLiters.group(1)!) ?? 100.0;
+    }
+    final matchPrice = regexPrice.firstMatch(desc);
+    if (matchPrice != null) {
+      initialPrice = double.tryParse(matchPrice.group(1)!) ?? DairyRepository.defaultMilkPrice;
+    }
+    if (desc.contains(' - ')) {
+      initialBuyer = desc.split(' - ').last.trim();
+    }
+
+    final qtyCtrl = TextEditingController(text: initialQty.toStringAsFixed(1));
+    final priceCtrl = TextEditingController(text: initialPrice.toStringAsFixed(0));
+    final buyerCtrl = TextEditingController(text: initialBuyer);
+    final notesCtrl = TextEditingController();
+
+    double calculateTotal() {
+      final q = double.tryParse(qtyCtrl.text) ?? 0.0;
+      final p = double.tryParse(priceCtrl.text) ?? 0.0;
+      return q * p;
+    }
+
+    showDialog(
+      context: context,
+      builder: (dialogCtx) {
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            final totalRevenue = calculateTotal();
+
+            return AlertDialog(
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+              title: Row(
+                children: const [
+                  Icon(Icons.edit_note, color: Colors.blue),
+                  SizedBox(width: 8),
+                  Text('Edit Milk Sale Entry'),
+                ],
+              ),
+              content: Form(
+                key: formKey,
+                child: SingleChildScrollView(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      TextFormField(
+                        controller: qtyCtrl,
+                        keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                        decoration: const InputDecoration(
+                          labelText: 'Quantity Sold (Liters) *',
+                          border: OutlineInputBorder(),
+                          prefixIcon: Icon(Icons.opacity),
+                        ),
+                        onChanged: (_) => setDialogState(() {}),
+                        validator: (v) {
+                          if (v == null || v.trim().isEmpty) return 'Enter quantity in liters';
+                          final val = double.tryParse(v);
+                          if (val == null || val <= 0) return 'Enter valid quantity > 0';
+                          return null;
+                        },
+                      ),
+                      const SizedBox(height: 12),
+                      TextFormField(
+                        controller: priceCtrl,
+                        keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                        decoration: const InputDecoration(
+                          labelText: 'Price Per Liter (₦) *',
+                          prefixText: '₦ ',
+                          border: OutlineInputBorder(),
+                          prefixIcon: Icon(Icons.payments),
+                        ),
+                        onChanged: (_) => setDialogState(() {}),
+                        validator: (v) {
+                          if (v == null || v.trim().isEmpty) return 'Enter price per liter';
+                          final val = double.tryParse(v);
+                          if (val == null || val <= 0) return 'Enter valid price > 0';
+                          return null;
+                        },
+                      ),
+                      const SizedBox(height: 12),
+                      TextFormField(
+                        controller: buyerCtrl,
+                        decoration: const InputDecoration(
+                          labelText: 'Buyer / Company Name *',
+                          border: OutlineInputBorder(),
+                          prefixIcon: Icon(Icons.business),
+                        ),
+                        validator: (v) => v?.trim().isEmpty == true ? 'Enter buyer name' : null,
+                      ),
+                      const SizedBox(height: 12),
+                      TextFormField(
+                        controller: notesCtrl,
+                        decoration: const InputDecoration(
+                          labelText: 'Notes / Delivery Ref',
+                          border: OutlineInputBorder(),
+                          prefixIcon: Icon(Icons.notes),
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: Colors.green.shade50,
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(color: Colors.green.shade300),
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            const Text('Updated Revenue:', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                            Text(
+                              '₦${NumberFormat('#,##0.00').format(totalRevenue)}',
+                              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.green),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(dialogCtx),
+                  child: const Text('CANCEL'),
+                ),
+                ElevatedButton(
+                  onPressed: () {
+                    if (formKey.currentState!.validate()) {
+                      final q = double.parse(qtyCtrl.text.trim());
+                      final p = double.parse(priceCtrl.text.trim());
+
+                      BlocProvider.of<DairyBloc>(context).add(EditMilkSaleEvent(
+                        id: tx.id,
+                        quantityLiters: q,
+                        pricePerLiter: p,
+                        buyerName: buyerCtrl.text.trim(),
+                        notes: notesCtrl.text.trim(),
+                      ));
+
+                      Navigator.pop(dialogCtx);
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Milk sale record updated successfully!'),
+                          backgroundColor: Colors.green,
+                        ),
+                      );
+                    }
+                  },
+                  style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary),
+                  child: const Text('SAVE CHANGES', style: TextStyle(color: Colors.white)),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
+
+  void _confirmDeleteMilkSale(BuildContext context, String id) {
+    showDialog(
+      context: context,
+      builder: (dialogCtx) => AlertDialog(
+        title: const Text('Delete Milk Sale Record'),
+        content: const Text('Are you sure you want to delete this milk sale transaction? The sold milk quantity will be restored to live store inventory.'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(dialogCtx), child: const Text('CANCEL')),
+          ElevatedButton(
+            onPressed: () {
+              BlocProvider.of<DairyBloc>(context).add(DeleteMilkSaleEvent(id));
+              Navigator.pop(dialogCtx);
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('Milk sale transaction deleted.'),
+                  backgroundColor: AppColors.error,
+                ),
+              );
+            },
+            style: ElevatedButton.styleFrom(backgroundColor: AppColors.error, foregroundColor: Colors.white),
+            child: const Text('DELETE'),
+          ),
+        ],
       ),
     );
   }

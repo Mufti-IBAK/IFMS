@@ -4,6 +4,7 @@ import '../../../core/theme/app_colors.dart';
 import '../../../core/di/service_locator.dart';
 import '../../../core/database/local_db.dart';
 import '../../../core/network/api_client.dart';
+import '../../../core/network/notification_service.dart';
 import 'package:drift/drift.dart' as drift;
 import 'package:intl/intl.dart';
 import 'package:uuid/uuid.dart';
@@ -115,15 +116,7 @@ class _FarmEventReportSheetState extends State<FarmEventReportSheet> {
     });
 
     try {
-      // Remote sync first
-      await apiClient.dio.post('/farm-events', data: {
-        'id': eventId,
-        'type': _eventType,
-        'description': localDescription,
-        'animals': involvedAnimalsStr,
-      });
-
-      // On success, insert to local db
+      // 1. ALWAYS insert to local SQLite database FIRST (Offline-First)
       await db.into(db.localFarmEvents).insert(LocalFarmEventsCompanion.insert(
         id: eventId,
         eventType: _eventType,
@@ -132,7 +125,7 @@ class _FarmEventReportSheetState extends State<FarmEventReportSheet> {
         involvedAnimals: drift.Value(involvedAnimalsStr),
       ));
 
-      // Update animal status to deceased if mortality
+      // 2. Update animal status to deceased if mortality
       if (_eventType == 'mortality') {
         for (var tag in _selectedAnimalTags) {
           await (db.update(db.localAnimals)..where((a) => a.tagId.equals(tag)))
@@ -140,11 +133,11 @@ class _FarmEventReportSheetState extends State<FarmEventReportSheet> {
         }
       }
 
-      // Schedule an informational task in the Notification Center
+      // 3. Schedule an informational task in Notification Center
       final taskId = 'task_ev_$eventId';
-      await db.into(db.localTasks).insert(LocalTasksCompanion.insert(
+      await db.into(db.localTasks).insertOnConflictUpdate(LocalTasksCompanion.insert(
         id: taskId,
-        title: 'Farm Event Reported: ${_eventType.toUpperCase()}',
+        title: 'Farm Event Reported: ${_eventType.replaceAll('_', ' ').toUpperCase()}',
         description: drift.Value('${_descriptionCtrl.text} (Animals: $involvedAnimalsStr)'),
         priority: 'high',
         status: 'completed',
@@ -153,10 +146,34 @@ class _FarmEventReportSheetState extends State<FarmEventReportSheet> {
         isActionable: const drift.Value(false),
       ));
 
+      // 4. Trigger System Tray Notification Alert
+      try {
+        await sl<NotificationService>().showLocalNotification(
+          'Farm Alert: ${_eventType.replaceAll('_', ' ').toUpperCase()}',
+          '${_descriptionCtrl.text} (Involved: $involvedAnimalsStr)',
+          payload: '/alerts',
+        );
+      } catch (_) {}
+
+      // 5. Background Remote Sync (Non-blocking)
+      try {
+        await apiClient.dio.post('/farm-events', data: {
+          'id': eventId,
+          'type': _eventType,
+          'description': localDescription,
+          'animals': involvedAnimalsStr,
+        });
+      } catch (_) {
+        // Silently capture remote network sync error without failing local report save
+      }
+
       if (mounted) {
         Navigator.pop(context);
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Farm Event logged successfully!')),
+          const SnackBar(
+            content: Text('Farm Event report saved successfully!'),
+            backgroundColor: Colors.green,
+          ),
         );
       }
     } catch (e) {

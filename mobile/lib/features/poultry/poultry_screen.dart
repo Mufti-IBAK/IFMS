@@ -12,6 +12,10 @@ import 'poultry_bloc.dart';
 import 'poultry_repository.dart';
 import '../pharmacy/pharmacy_repository.dart';
 
+import 'poultry_flock_profile_screen.dart';
+import 'brooding_batch_profile_screen.dart';
+import 'widgets/start_brooding_batch_sheet.dart';
+
 class PoultryScreen extends StatefulWidget {
   const PoultryScreen({super.key});
 
@@ -25,7 +29,10 @@ class _PoultryScreenState extends State<PoultryScreen> with SingleTickerProvider
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 2, vsync: this);
+    _tabController = TabController(length: 3, vsync: this);
+    _tabController.addListener(() {
+      if (mounted) setState(() {});
+    });
   }
 
   @override
@@ -36,7 +43,8 @@ class _PoultryScreenState extends State<PoultryScreen> with SingleTickerProvider
         bottom: TabBar(
           controller: _tabController,
           tabs: const [
-            Tab(text: 'ACTIVE BATCHES'),
+            Tab(text: 'MAIN FLOCKS'),
+            Tab(text: 'BROODING UNIT (0-4 WKS)'),
             Tab(text: 'CLOSED ARCHIVE'),
           ],
         ),
@@ -53,6 +61,7 @@ class _PoultryScreenState extends State<PoultryScreen> with SingleTickerProvider
               controller: _tabController,
               children: [
                 _buildBatchList(context, activeBatches, true),
+                _buildBroodingTab(context),
                 _buildBatchList(context, closedBatches, false),
               ],
             );
@@ -60,13 +69,29 @@ class _PoultryScreenState extends State<PoultryScreen> with SingleTickerProvider
           return const Center(child: Text('Error loading poultry data.'));
         },
       ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => _showStartBatchDialog(context),
-        label: const Text('Start New Batch'),
-        icon: const Icon(Icons.add),
-        backgroundColor: AppColors.primary,
-        foregroundColor: Colors.white,
-      ),
+      floatingActionButton: _tabController.index == 1
+          ? FloatingActionButton.extended(
+              onPressed: () {
+                showModalBottomSheet(
+                  context: context,
+                  isScrollControlled: true,
+                  builder: (_) => const StartBroodingBatchSheet(),
+                ).then((_) => setState(() {}));
+              },
+              icon: const Icon(Icons.flutter_dash),
+              label: const Text('Start Brooding Batch'),
+              backgroundColor: Colors.purple,
+              foregroundColor: Colors.white,
+            )
+          : _tabController.index == 0
+              ? FloatingActionButton.extended(
+                  onPressed: () => _showStartBatchDialog(context),
+                  label: const Text('Start Main Flock Batch'),
+                  icon: const Icon(Icons.add),
+                  backgroundColor: AppColors.primary,
+                  foregroundColor: Colors.white,
+                )
+              : null,
     );
   }
 
@@ -95,7 +120,7 @@ class _PoultryScreenState extends State<PoultryScreen> with SingleTickerProvider
               Navigator.push(
                 context,
                 MaterialPageRoute(
-                  builder: (context) => PoultryDetailScreen(batch: batch),
+                  builder: (context) => PoultryFlockProfileScreen(batch: batch),
                 ),
               );
             },
@@ -197,18 +222,24 @@ class _PoultryScreenState extends State<PoultryScreen> with SingleTickerProvider
     final supplierCtrl = TextEditingController();
     DateTime startDate = DateTime.now();
     String selectedType = 'broiler';
+    bool isFromBrooding = false;
 
     showDialog(
       context: context,
       builder: (dialogCtx) {
         return StatefulBuilder(
           builder: (ctx, setStateDialog) {
+            final countVal = int.tryParse(countCtrl.text) ?? 0;
+            final priceVal = double.tryParse(costCtrl.text) ?? 0.0;
+            final calculatedTotalCost = countVal * priceVal;
+
             return AlertDialog(
               title: const Text('Start Flock Batch'),
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
               content: SingleChildScrollView(
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     DropdownButtonFormField<String>(
                       initialValue: selectedType,
@@ -235,15 +266,78 @@ class _PoultryScreenState extends State<PoultryScreen> with SingleTickerProvider
                     ),
                     const SizedBox(height: 8),
                     TextField(textCapitalization: TextCapitalization.sentences, controller: countCtrl,
-                      decoration: const InputDecoration(labelText: 'Initial Count *', hintText: 'e.g. 500'),
+                      decoration: const InputDecoration(labelText: 'Initial Count (Number of Birds) *', hintText: 'e.g. 500'),
                       keyboardType: TextInputType.number,
+                      onChanged: (_) => setStateDialog(() {}),
+                    ),
+                    const SizedBox(height: 12),
+
+                    // Stocking Source Selection
+                    const Text('Stocking Source / Origin *', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
+                    const SizedBox(height: 6),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: ChoiceChip(
+                            label: const Text('Purchased Outside', style: TextStyle(fontSize: 11)),
+                            selected: !isFromBrooding,
+                            onSelected: (val) {
+                              if (val) setStateDialog(() => isFromBrooding = false);
+                            },
+                          ),
+                        ),
+                        const SizedBox(width: 6),
+                        Expanded(
+                          child: ChoiceChip(
+                            label: const Text('In-House Brooder', style: TextStyle(fontSize: 11)),
+                            selected: isFromBrooding,
+                            onSelected: (val) {
+                              if (val) setStateDialog(() => isFromBrooding = true);
+                            },
+                          ),
+                        ),
+                      ],
                     ),
                     const SizedBox(height: 8),
-                    TextField(textCapitalization: TextCapitalization.sentences, controller: costCtrl,
-                      decoration: const InputDecoration(labelText: 'Chick Price per Bird (₦) *', hintText: 'e.g. 450'),
+
+                    TextField(
+                      textCapitalization: TextCapitalization.sentences,
+                      controller: costCtrl,
+                      decoration: InputDecoration(
+                        labelText: isFromBrooding ? 'Brooder Valuation / Chick Price (₦)' : 'Chick Price per Bird (₦) *',
+                        hintText: 'e.g. 450',
+                        prefixIcon: const Icon(Icons.payments),
+                      ),
                       keyboardType: TextInputType.number,
+                      onChanged: (_) => setStateDialog(() {}),
+                    ),
+                    const SizedBox(height: 6),
+
+                    // Live Total Initial Stocking Cost Preview
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        color: isFromBrooding ? Colors.purple.shade50 : Colors.teal.shade50,
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(color: isFromBrooding ? Colors.purple.shade200 : Colors.teal.shade200),
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            isFromBrooding ? 'Total Internal Transfer Cost:' : 'Total Initial Purchase Price:',
+                            style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold),
+                          ),
+                          Text(
+                            '₦${calculatedTotalCost.toStringAsFixed(2)}',
+                            style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: isFromBrooding ? Colors.purple : Colors.teal),
+                          ),
+                        ],
+                      ),
                     ),
                     const SizedBox(height: 8),
+
                     TextField(textCapitalization: TextCapitalization.sentences, controller: breedCtrl,
                       decoration: const InputDecoration(labelText: 'Breed', hintText: 'e.g. Cobb 500'),
                     ),
@@ -253,7 +347,10 @@ class _PoultryScreenState extends State<PoultryScreen> with SingleTickerProvider
                     ),
                     const SizedBox(height: 8),
                     TextField(textCapitalization: TextCapitalization.sentences, controller: supplierCtrl,
-                      decoration: const InputDecoration(labelText: 'Supplier / Source', hintText: 'e.g. Zartech Farms'),
+                      decoration: InputDecoration(
+                        labelText: isFromBrooding ? 'Brooding Hatchery Batch Reference' : 'Supplier / Source',
+                        hintText: isFromBrooding ? 'e.g. Hatchery Batch #21' : 'e.g. Zartech Farms',
+                      ),
                     ),
                     const SizedBox(height: 12),
                     Row(
@@ -266,7 +363,7 @@ class _PoultryScreenState extends State<PoultryScreen> with SingleTickerProvider
                         ),
                         TextButton(
                           onPressed: () async {
-                            final picked = await showDatePicker(
+                            final picked = await showDatePicker(builder: (context, child) => Theme(data: Theme.of(context).copyWith(useMaterial3: false), child: MediaQuery(data: MediaQuery.of(context).copyWith(textScaleFactor: 1.0), child: child!)), 
                               context: context,
                               initialDate: startDate,
                               firstDate: DateTime.now().subtract(const Duration(days: 90)),
@@ -287,7 +384,7 @@ class _PoultryScreenState extends State<PoultryScreen> with SingleTickerProvider
                 TextButton(onPressed: () => Navigator.pop(dialogCtx), child: const Text('Cancel')),
                 ElevatedButton(
                   onPressed: () {
-                    if (numberCtrl.text.isEmpty || houseCtrl.text.isEmpty || countCtrl.text.isEmpty || costCtrl.text.isEmpty) {
+                    if (numberCtrl.text.isEmpty || houseCtrl.text.isEmpty || countCtrl.text.isEmpty) {
                       ScaffoldMessenger.of(context).showSnackBar(
                         const SnackBar(content: Text('Please fill all required fields'), backgroundColor: AppColors.error),
                       );
@@ -297,8 +394,12 @@ class _PoultryScreenState extends State<PoultryScreen> with SingleTickerProvider
                     final price = double.tryParse(costCtrl.text) ?? 0.0;
                     final totalChickCost = count * price;
 
+                    final sourceText = isFromBrooding 
+                        ? 'Internal Brooder Unit (${supplierCtrl.text.trim().isEmpty ? "Hatchery" : supplierCtrl.text.trim()})'
+                        : 'Purchased Outside (${supplierCtrl.text.trim().isEmpty ? "Unknown Supplier" : supplierCtrl.text.trim()})';
+
                     // Combine breed + age + source metadata for clean storage
-                    final combinedBreed = '${breedCtrl.text.trim()} (${ageCtrl.text.trim()}, Source: ${supplierCtrl.text.trim().isEmpty ? "Unknown" : supplierCtrl.text.trim()})';
+                    final combinedBreed = '${breedCtrl.text.trim()} (${ageCtrl.text.trim()}, Source: $sourceText)';
 
                     BlocProvider.of<PoultryBloc>(context).add(CreateBatch({
                       'batch_number': numberCtrl.text.trim(),
@@ -401,7 +502,7 @@ class _PoultryScreenState extends State<PoultryScreen> with SingleTickerProvider
                         ),
                         TextButton(
                           onPressed: () async {
-                            final picked = await showDatePicker(
+                            final picked = await showDatePicker(builder: (context, child) => Theme(data: Theme.of(context).copyWith(useMaterial3: false), child: MediaQuery(data: MediaQuery.of(context).copyWith(textScaleFactor: 1.0), child: child!)), 
                               context: context,
                               initialDate: startDate,
                               firstDate: DateTime.now().subtract(const Duration(days: 365)),
@@ -476,6 +577,71 @@ class _PoultryScreenState extends State<PoultryScreen> with SingleTickerProvider
               child: const Text('Delete'),
             ),
           ],
+        );
+      },
+    );
+  }
+
+  Widget _buildBroodingTab(BuildContext context) {
+    return FutureBuilder<List<LocalBroodingBatche>>(
+      future: sl<PoultryRepository>().getBroodingBatches(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(child: CircularProgressIndicator());
+        }
+        final batches = snapshot.data ?? [];
+        if (batches.isEmpty) {
+          return const Center(
+            child: Padding(
+              padding: EdgeInsets.all(24),
+              child: Text(
+                'No brooding chick batches currently active.\nTap "+ Start Brooding Batch" below to record chicks in the brooding phase (0-4 weeks).',
+                textAlign: TextAlign.center,
+                style: TextStyle(color: Colors.grey),
+              ),
+            ),
+          );
+        }
+
+        return ListView.builder(
+          padding: const EdgeInsets.fromLTRB(16, 16, 16, 80),
+          itemCount: batches.length,
+          itemBuilder: (ctx, idx) {
+            final b = batches[idx];
+            final ageDays = DateTime.now().difference(b.startDate).inDays;
+            return Card(
+              margin: const EdgeInsets.only(bottom: 12),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              child: ListTile(
+                contentPadding: const EdgeInsets.all(12),
+                leading: const CircleAvatar(
+                  backgroundColor: Colors.purple,
+                  child: Icon(Icons.flutter_dash, color: Colors.white),
+                ),
+                title: Text(
+                  'BROODER PEN ${b.penName} (#${b.batchNumber})',
+                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+                ),
+                subtitle: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const SizedBox(height: 4),
+                    Text('Count: ${b.currentCount} / ${b.initialCount} chicks | Age: $ageDays Days (${ageDays ~/ 7} Wks)'),
+                    Text('Origin: ${b.chickSource.replaceAll("_", " ").toUpperCase()} | Status: ${b.status.toUpperCase()}'),
+                  ],
+                ),
+                trailing: const Icon(Icons.chevron_right),
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => BroodingBatchProfileScreen(batch: b),
+                    ),
+                  ).then((_) => setState(() {}));
+                },
+              ),
+            );
+          },
         );
       },
     );

@@ -47,8 +47,6 @@ class LocalMilkRecords extends Table {
   DateTimeColumn get recordDate => dateTime()();
   TextColumn get milkingSession => text()();
   RealColumn get quantityLiters => real()();
-  RealColumn get fatPercentage => real().nullable()();
-  RealColumn get proteinPercentage => real().nullable()();
   BoolColumn get isWithdrawn => boolean().withDefault(const Constant(false))();
   
   @override
@@ -96,6 +94,9 @@ class LocalPoultryBatches extends Table {
   IntColumn get currentCount => integer()();
   DateTimeColumn get startDate => dateTime()();
   TextColumn get status => text()(); // "active", "closed"
+  TextColumn get breed => text().nullable()();
+  TextColumn get purpose => text().nullable()(); // "layers", "broilers", "breeders"
+  RealColumn get acquisitionCost => real().withDefault(const Constant(0.0))();
   
   @override
   Set<Column> get primaryKey => {id};
@@ -108,6 +109,91 @@ class LocalPoultryLogs extends Table {
   IntColumn get feedBags => integer().withDefault(const Constant(0))();
   IntColumn get mortality => integer().withDefault(const Constant(0))();
   RealColumn get averageWeight => real().nullable()();
+}
+
+class LocalPoultryTreatments extends Table {
+  TextColumn get id => text()();
+  TextColumn get batchId => text()();
+  TextColumn get medicationId => text().nullable()();
+  TextColumn get medicationName => text()();
+  RealColumn get quantityUsed => real()();
+  TextColumn get unit => text()();
+  RealColumn get costPerUnit => real().withDefault(const Constant(0.0))();
+  RealColumn get totalCost => real().withDefault(const Constant(0.0))();
+  DateTimeColumn get treatmentDate => dateTime()();
+  TextColumn get notes => text().nullable()();
+
+  @override
+  Set<Column> get primaryKey => {id};
+}
+
+class LocalPoultryFeedLogs extends Table {
+  TextColumn get id => text()();
+  TextColumn get batchId => text()();
+  TextColumn get feedSourceType => text()(); // "inventory", "formula"
+  TextColumn get feedItemId => text().nullable()();
+  TextColumn get formulaId => text().nullable()();
+  TextColumn get feedName => text()();
+  RealColumn get quantityKg => real()();
+  RealColumn get costPerKg => real().withDefault(const Constant(0.0))();
+  RealColumn get totalCost => real().withDefault(const Constant(0.0))();
+  DateTimeColumn get logDate => dateTime()();
+  TextColumn get notes => text().nullable()();
+
+  @override
+  Set<Column> get primaryKey => {id};
+}
+
+class LocalPoultryAdjustments extends Table {
+  TextColumn get id => text()();
+  TextColumn get batchId => text()();
+  TextColumn get adjustmentType => text()(); // "mortality", "addition", "cull"
+  IntColumn get headCount => integer()();
+  DateTimeColumn get adjustmentDate => dateTime()();
+  TextColumn get reasonNotes => text().nullable()();
+
+  @override
+  Set<Column> get primaryKey => {id};
+}
+
+class LocalBroodingBatches extends Table {
+  TextColumn get id => text()();
+  TextColumn get batchNumber => text()();
+  TextColumn get penName => text()(); // "Brooder Pen A"
+  TextColumn get chickSource => text()(); // "hatchery_transfer", "external_doc"
+  TextColumn get hatcheryBatchId => text().nullable()();
+  IntColumn get initialCount => integer()();
+  IntColumn get currentCount => integer()();
+  DateTimeColumn get startDate => dateTime()();
+  DateTimeColumn get targetGraduationDate => dateTime()();
+  TextColumn get status => text()(); // "brooding", "graduated", "closed"
+  RealColumn get initialChickCost => real().withDefault(const Constant(0.0))();
+  RealColumn get initialTemperatureCelsius => real().withDefault(const Constant(33.0))();
+  TextColumn get breed => text().nullable()();
+  TextColumn get notes => text().nullable()();
+
+  @override
+  Set<Column> get primaryKey => {id};
+}
+
+class LocalBroodingLogs extends Table {
+  TextColumn get id => text()();
+  TextColumn get broodingBatchId => text()();
+  DateTimeColumn get logDate => dateTime()();
+  RealColumn get temperatureCelsius => real().nullable()();
+  TextColumn get heatingStatus => text().nullable()(); // "active", "off", "adjusted"
+  RealColumn get humidityPercent => real().nullable()();
+  RealColumn get starterFeedKg => real().withDefault(const Constant(0.0))();
+  RealColumn get feedCost => real().withDefault(const Constant(0.0))();
+  IntColumn get mortalityCount => integer().withDefault(const Constant(0))();
+  IntColumn get cullCount => integer().withDefault(const Constant(0))();
+  TextColumn get medicationGiven => text().nullable()();
+  RealColumn get medicationCost => real().withDefault(const Constant(0.0))();
+  RealColumn get averageWeightGrams => real().nullable()();
+  TextColumn get notes => text().nullable()();
+
+  @override
+  Set<Column> get primaryKey => {id};
 }
 
 class LocalAlerts extends Table {
@@ -138,12 +224,13 @@ class LocalFeedItems extends Table {
   TextColumn get id => text()();
   TextColumn get name => text()();
   TextColumn get category => text()(); // "feed", "drug", "vaccine", "supplement", "supply"
-  TextColumn get unit => text()();
+  TextColumn get unit => text()(); // Content unit (kg, liters, g, ml, pcs)
+  TextColumn get purchaseUnit => text().withDefault(const Constant('bag'))(); // Container/Purchase unit (bag, bottle, sachet, carton, drum, bucket, can, pack)
   RealColumn get currentStock => real()();
   RealColumn get reorderThreshold => real()();
-  RealColumn get costPerUnit => real()();
-  RealColumn get weightPerUnit => real().withDefault(const Constant(1.0))();
-  RealColumn get costPerKg => real().withDefault(const Constant(0.0))();
+  RealColumn get costPerUnit => real()(); // Cost per pack/purchase unit
+  RealColumn get weightPerUnit => real().withDefault(const Constant(1.0))(); // Pack size (capacity per purchase unit)
+  RealColumn get costPerKg => real().withDefault(const Constant(0.0))(); // Computed cost per content unit (costPerUnit / weightPerUnit)
   TextColumn get supplier => text().nullable()();
   BoolColumn get isActive => boolean().withDefault(const Constant(true))();
 
@@ -318,6 +405,7 @@ class LocalSalaryAdvances extends Table {
   RealColumn get totalRepaid => real().withDefault(const Constant(0.0))();
   DateTimeColumn get collectionDate => dateTime()();  // when advance was collected
   BoolColumn get isFullyRepaid => boolean().withDefault(const Constant(false))();
+  BoolColumn get isOneOffAdvance => boolean().withDefault(const Constant(false))();
   TextColumn get notes => text().nullable()();
 
   @override
@@ -390,6 +478,11 @@ class LocalAuditLogs extends Table {
   LocalTasks,
   LocalPoultryBatches,
   LocalPoultryLogs,
+  LocalPoultryTreatments,
+  LocalPoultryFeedLogs,
+  LocalPoultryAdjustments,
+  LocalBroodingBatches,
+  LocalBroodingLogs,
   LocalAlerts,
   SyncQueue,
   LocalFeedItems,
@@ -414,7 +507,7 @@ class LocalDatabase extends _$LocalDatabase {
   LocalDatabase([QueryExecutor? executor]) : super(executor ?? _openConnection());
 
   @override
-  int get schemaVersion => 21;
+  int get schemaVersion => 27;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -509,8 +602,44 @@ class LocalDatabase extends _$LocalDatabase {
       if (from < 21) {
         await m.createTable(localAuditLogs);
       }
+      // --- V22: Is one off salary advance ---
+      if (from < 22) {
+        await m.addColumn(localSalaryAdvances, localSalaryAdvances.isOneOffAdvance);
+      }
+      // --- V23: Drop fat & protein percentage from milk records ---
+      if (from < 23) {
+        // Migration to version 23
+      }
+      // --- V24: Poultry treatments, feed logs, and adjustments ---
+      if (from < 24) {
+        await m.addColumn(localPoultryBatches, localPoultryBatches.breed);
+        await m.addColumn(localPoultryBatches, localPoultryBatches.purpose);
+        await m.addColumn(localPoultryBatches, localPoultryBatches.acquisitionCost);
+        await m.createTable(localPoultryTreatments);
+        await m.createTable(localPoultryFeedLogs);
+        await m.createTable(localPoultryAdjustments);
+      }
+      // --- V25: Brooding unit management ---
+      if (from < 25) {
+        await m.createTable(localBroodingBatches);
+        await m.createTable(localBroodingLogs);
+      }
+      if (from < 26) {
+        await m.addColumn(localBroodingBatches, localBroodingBatches.initialTemperatureCelsius);
+      }
+      // --- V27: Purchase unit column for feed items ---
+      if (from < 27) {
+        try {
+          await m.addColumn(localFeedItems, localFeedItems.purchaseUnit);
+        } catch (_) {}
+      }
     },
     beforeOpen: (details) async {
+      // Ensure purchase_unit column exists in local_feed_items table
+      try {
+        await customStatement("ALTER TABLE local_feed_items ADD COLUMN purchase_unit TEXT DEFAULT 'bag';");
+      } catch (_) {}
+
       // Create high-performance indexing for SQLite queries
       await customStatement('CREATE INDEX IF NOT EXISTS idx_animals_tag_id ON local_animals (tag_id);');
       await customStatement('CREATE INDEX IF NOT EXISTS idx_milk_records_animal_id ON local_milk_records (animal_id, record_date);');
@@ -524,9 +653,9 @@ class LocalDatabase extends _$LocalDatabase {
 LazyDatabase _openConnection() {
   return LazyDatabase(() async {
     const dbName = 'ifms_local.db';
-    const folderName = 'NamanzoIFMS';
+    const folderName = 'RoyalHeritageFarms';
 
-    // ── 1. Try public Documents folder (/sdcard/Documents/NamanzoIFMS/)
+    // ── 1. Try public Documents folder (/sdcard/Documents/RoyalHeritageFarms/)
     //    This folder is NEVER wiped by Android on uninstall.
     try {
       // Check if we actually have external storage management permission
@@ -584,8 +713,8 @@ LazyDatabase _openConnection() {
 /// Uses a platform channel to query the native Android side.
 Future<bool> _hasExternalStoragePermission() async {
   if (!Platform.isAndroid) return false;
+  const platform = MethodChannel('com.royalheritage.farms/permissions');
   try {
-    const platform = MethodChannel('com.namanzo.ifms/permissions');
     final result = await platform.invokeMethod<bool>('isExternalStorageManager');
     return result ?? false;
   } catch (e) {
@@ -593,4 +722,3 @@ Future<bool> _hasExternalStoragePermission() async {
     return false;
   }
 }
-

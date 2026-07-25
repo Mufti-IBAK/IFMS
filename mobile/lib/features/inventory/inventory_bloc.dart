@@ -146,6 +146,7 @@ class InventoryBloc extends Bloc<InventoryEvent, InventoryState> {
       add(LoadInventoryItems());
     } catch (e) {
       emit(InventoryError('Failed to add feed item: ${e.toString()}'));
+      add(LoadInventoryItems());
     }
   }
 
@@ -155,6 +156,7 @@ class InventoryBloc extends Bloc<InventoryEvent, InventoryState> {
       add(LoadInventoryItems());
     } catch (e) {
       emit(InventoryError('Failed to edit feed item: ${e.toString()}'));
+      add(LoadInventoryItems());
     }
   }
 
@@ -164,6 +166,7 @@ class InventoryBloc extends Bloc<InventoryEvent, InventoryState> {
       add(LoadInventoryItems());
     } catch (e) {
       emit(InventoryError('Failed to delete feed item: ${e.toString()}'));
+      add(LoadInventoryItems());
     }
   }
 
@@ -177,6 +180,7 @@ class InventoryBloc extends Bloc<InventoryEvent, InventoryState> {
       add(LoadInventoryItems());
     } catch (e) {
       emit(InventoryError('Failed to log inventory change: ${e.toString()}'));
+      add(LoadInventoryItems());
     }
   }
 

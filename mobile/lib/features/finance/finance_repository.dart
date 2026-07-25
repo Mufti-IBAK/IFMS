@@ -34,7 +34,12 @@ class FinanceRepository {
     final category = data['category'].toString();
     final amount = double.parse(data['amount'].toString());
     final description = data['description'] ?? '';
-    final dateVal = DateTime.parse(data['transaction_date'].toString());
+    
+    DateTime dateVal = DateTime.now();
+    if (data['transaction_date'] != null && data['transaction_date'].toString() != 'null') {
+      dateVal = DateTime.tryParse(data['transaction_date'].toString()) ?? DateTime.now();
+    }
+    data['transaction_date'] = dateVal.toIso8601String();
 
     // Local Insert first (offline-first)
     await db.into(db.localTransactions).insertOnConflictUpdate(LocalTransactionsCompanion.insert(
@@ -74,12 +79,22 @@ class FinanceRepository {
   }
 
   Future<void> updateTransaction(String id, Map<String, dynamic> data) async {
+    final existing = await (db.select(db.localTransactions)..where((t) => t.id.equals(id))).getSingleOrNull();
+    if (existing != null && existing.isReconciled) {
+      throw Exception('Reconciled transactions cannot be edited. You can only delete them.');
+    }
+
     data['id'] = id;
     final type = data['transaction_type'].toString();
     final category = data['category'].toString();
     final amount = double.parse(data['amount'].toString());
     final description = data['description'] ?? '';
-    final dateVal = DateTime.parse(data['transaction_date'].toString());
+    
+    DateTime dateVal = DateTime.now();
+    if (data['transaction_date'] != null && data['transaction_date'].toString() != 'null') {
+      dateVal = DateTime.tryParse(data['transaction_date'].toString()) ?? DateTime.now();
+    }
+    data['transaction_date'] = dateVal.toIso8601String();
 
     await (db.update(db.localTransactions)..where((t) => t.id.equals(id))).write(
       LocalTransactionsCompanion(
@@ -146,7 +161,7 @@ class FinanceRepository {
   Future<void> clearAllTransactions() async {
     await db.delete(db.localTransactions).go();
     try {
-      await apiClient.dio.delete('/finance/transactions');
+      await apiClient.dio.delete('/transactions?id=neq.00000000-0000-0000-0000-000000000000');
     } catch (_) {}
   }
 
@@ -314,29 +329,31 @@ class FinanceRepository {
   }
 
   Future<void> reconcileTransaction(String id) async {
+    // 1. Local update first
+    await (db.update(db.localTransactions)..where((t) => t.id.equals(id))).write(
+      const LocalTransactionsCompanion(isReconciled: Value(true)),
+    );
+
+    // 2. Audit Log
+    sl<AuditRepository>().logAction(
+      userName: 'Farm Manager',
+      actionType: 'UPDATE',
+      moduleName: 'finance',
+      entityId: id,
+      entityName: 'Reconciled Transaction',
+      description: 'Reconciled transaction $id',
+    );
+
+    // 3. Cloud Sync
     try {
       await apiClient.dio.patch('/finance/transactions/$id/reconcile');
-      
-      await (db.update(db.localTransactions)..where((t) => t.id.equals(id))).write(
-        const LocalTransactionsCompanion(isReconciled: Value(true)),
-      );
     } catch (e) {
-      if (e is DioException && ApiClient.isNetworkError(e)) {
-        await (db.update(db.localTransactions)..where((t) => t.id.equals(id))).write(
-          const LocalTransactionsCompanion(isReconciled: Value(true)),
-        );
-        await db.into(db.syncQueue).insert(SyncQueueCompanion.insert(
-          endpoint: '/finance/transactions/$id/reconcile',
-          method: 'PATCH',
-          body: jsonEncode({}),
-          queuedAt: DateTime.now(),
-        ));
-        throw Exception('Saved locally. Will sync when connection is restored.');
-      }
-      if (e is DioException) {
-        throw Exception(e.response?.data?['message'] ?? e.response?.data?['details'] ?? 'Failed to reconcile transaction: ${e.message}');
-      }
-      throw Exception('Failed to reconcile transaction: $e');
+      await db.into(db.syncQueue).insert(SyncQueueCompanion.insert(
+        endpoint: '/finance/transactions/$id/reconcile',
+        method: 'PATCH',
+        body: jsonEncode({}),
+        queuedAt: DateTime.now(),
+      ));
     }
   }
 

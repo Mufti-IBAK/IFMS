@@ -1030,18 +1030,6 @@ class $LocalMilkRecordsTable extends LocalMilkRecords
   late final GeneratedColumn<double> quantityLiters = GeneratedColumn<double>(
       'quantity_liters', aliasedName, false,
       type: DriftSqlType.double, requiredDuringInsert: true);
-  static const VerificationMeta _fatPercentageMeta =
-      const VerificationMeta('fatPercentage');
-  @override
-  late final GeneratedColumn<double> fatPercentage = GeneratedColumn<double>(
-      'fat_percentage', aliasedName, true,
-      type: DriftSqlType.double, requiredDuringInsert: false);
-  static const VerificationMeta _proteinPercentageMeta =
-      const VerificationMeta('proteinPercentage');
-  @override
-  late final GeneratedColumn<double> proteinPercentage =
-      GeneratedColumn<double>('protein_percentage', aliasedName, true,
-          type: DriftSqlType.double, requiredDuringInsert: false);
   static const VerificationMeta _isWithdrawnMeta =
       const VerificationMeta('isWithdrawn');
   @override
@@ -1053,16 +1041,8 @@ class $LocalMilkRecordsTable extends LocalMilkRecords
           'CHECK ("is_withdrawn" IN (0, 1))'),
       defaultValue: const Constant(false));
   @override
-  List<GeneratedColumn> get $columns => [
-        id,
-        animalId,
-        recordDate,
-        milkingSession,
-        quantityLiters,
-        fatPercentage,
-        proteinPercentage,
-        isWithdrawn
-      ];
+  List<GeneratedColumn> get $columns =>
+      [id, animalId, recordDate, milkingSession, quantityLiters, isWithdrawn];
   @override
   String get aliasedName => _alias ?? actualTableName;
   @override
@@ -1108,18 +1088,6 @@ class $LocalMilkRecordsTable extends LocalMilkRecords
     } else if (isInserting) {
       context.missing(_quantityLitersMeta);
     }
-    if (data.containsKey('fat_percentage')) {
-      context.handle(
-          _fatPercentageMeta,
-          fatPercentage.isAcceptableOrUnknown(
-              data['fat_percentage']!, _fatPercentageMeta));
-    }
-    if (data.containsKey('protein_percentage')) {
-      context.handle(
-          _proteinPercentageMeta,
-          proteinPercentage.isAcceptableOrUnknown(
-              data['protein_percentage']!, _proteinPercentageMeta));
-    }
     if (data.containsKey('is_withdrawn')) {
       context.handle(
           _isWithdrawnMeta,
@@ -1145,10 +1113,6 @@ class $LocalMilkRecordsTable extends LocalMilkRecords
           DriftSqlType.string, data['${effectivePrefix}milking_session'])!,
       quantityLiters: attachedDatabase.typeMapping.read(
           DriftSqlType.double, data['${effectivePrefix}quantity_liters'])!,
-      fatPercentage: attachedDatabase.typeMapping
-          .read(DriftSqlType.double, data['${effectivePrefix}fat_percentage']),
-      proteinPercentage: attachedDatabase.typeMapping.read(
-          DriftSqlType.double, data['${effectivePrefix}protein_percentage']),
       isWithdrawn: attachedDatabase.typeMapping
           .read(DriftSqlType.bool, data['${effectivePrefix}is_withdrawn'])!,
     );
@@ -1166,8 +1130,6 @@ class LocalMilkRecord extends DataClass implements Insertable<LocalMilkRecord> {
   final DateTime recordDate;
   final String milkingSession;
   final double quantityLiters;
-  final double? fatPercentage;
-  final double? proteinPercentage;
   final bool isWithdrawn;
   const LocalMilkRecord(
       {required this.id,
@@ -1175,8 +1137,6 @@ class LocalMilkRecord extends DataClass implements Insertable<LocalMilkRecord> {
       required this.recordDate,
       required this.milkingSession,
       required this.quantityLiters,
-      this.fatPercentage,
-      this.proteinPercentage,
       required this.isWithdrawn});
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -1186,12 +1146,6 @@ class LocalMilkRecord extends DataClass implements Insertable<LocalMilkRecord> {
     map['record_date'] = Variable<DateTime>(recordDate);
     map['milking_session'] = Variable<String>(milkingSession);
     map['quantity_liters'] = Variable<double>(quantityLiters);
-    if (!nullToAbsent || fatPercentage != null) {
-      map['fat_percentage'] = Variable<double>(fatPercentage);
-    }
-    if (!nullToAbsent || proteinPercentage != null) {
-      map['protein_percentage'] = Variable<double>(proteinPercentage);
-    }
     map['is_withdrawn'] = Variable<bool>(isWithdrawn);
     return map;
   }
@@ -1203,12 +1157,6 @@ class LocalMilkRecord extends DataClass implements Insertable<LocalMilkRecord> {
       recordDate: Value(recordDate),
       milkingSession: Value(milkingSession),
       quantityLiters: Value(quantityLiters),
-      fatPercentage: fatPercentage == null && nullToAbsent
-          ? const Value.absent()
-          : Value(fatPercentage),
-      proteinPercentage: proteinPercentage == null && nullToAbsent
-          ? const Value.absent()
-          : Value(proteinPercentage),
       isWithdrawn: Value(isWithdrawn),
     );
   }
@@ -1222,9 +1170,6 @@ class LocalMilkRecord extends DataClass implements Insertable<LocalMilkRecord> {
       recordDate: serializer.fromJson<DateTime>(json['recordDate']),
       milkingSession: serializer.fromJson<String>(json['milkingSession']),
       quantityLiters: serializer.fromJson<double>(json['quantityLiters']),
-      fatPercentage: serializer.fromJson<double?>(json['fatPercentage']),
-      proteinPercentage:
-          serializer.fromJson<double?>(json['proteinPercentage']),
       isWithdrawn: serializer.fromJson<bool>(json['isWithdrawn']),
     );
   }
@@ -1237,8 +1182,6 @@ class LocalMilkRecord extends DataClass implements Insertable<LocalMilkRecord> {
       'recordDate': serializer.toJson<DateTime>(recordDate),
       'milkingSession': serializer.toJson<String>(milkingSession),
       'quantityLiters': serializer.toJson<double>(quantityLiters),
-      'fatPercentage': serializer.toJson<double?>(fatPercentage),
-      'proteinPercentage': serializer.toJson<double?>(proteinPercentage),
       'isWithdrawn': serializer.toJson<bool>(isWithdrawn),
     };
   }
@@ -1249,8 +1192,6 @@ class LocalMilkRecord extends DataClass implements Insertable<LocalMilkRecord> {
           DateTime? recordDate,
           String? milkingSession,
           double? quantityLiters,
-          Value<double?> fatPercentage = const Value.absent(),
-          Value<double?> proteinPercentage = const Value.absent(),
           bool? isWithdrawn}) =>
       LocalMilkRecord(
         id: id ?? this.id,
@@ -1258,11 +1199,6 @@ class LocalMilkRecord extends DataClass implements Insertable<LocalMilkRecord> {
         recordDate: recordDate ?? this.recordDate,
         milkingSession: milkingSession ?? this.milkingSession,
         quantityLiters: quantityLiters ?? this.quantityLiters,
-        fatPercentage:
-            fatPercentage.present ? fatPercentage.value : this.fatPercentage,
-        proteinPercentage: proteinPercentage.present
-            ? proteinPercentage.value
-            : this.proteinPercentage,
         isWithdrawn: isWithdrawn ?? this.isWithdrawn,
       );
   LocalMilkRecord copyWithCompanion(LocalMilkRecordsCompanion data) {
@@ -1277,12 +1213,6 @@ class LocalMilkRecord extends DataClass implements Insertable<LocalMilkRecord> {
       quantityLiters: data.quantityLiters.present
           ? data.quantityLiters.value
           : this.quantityLiters,
-      fatPercentage: data.fatPercentage.present
-          ? data.fatPercentage.value
-          : this.fatPercentage,
-      proteinPercentage: data.proteinPercentage.present
-          ? data.proteinPercentage.value
-          : this.proteinPercentage,
       isWithdrawn:
           data.isWithdrawn.present ? data.isWithdrawn.value : this.isWithdrawn,
     );
@@ -1296,16 +1226,14 @@ class LocalMilkRecord extends DataClass implements Insertable<LocalMilkRecord> {
           ..write('recordDate: $recordDate, ')
           ..write('milkingSession: $milkingSession, ')
           ..write('quantityLiters: $quantityLiters, ')
-          ..write('fatPercentage: $fatPercentage, ')
-          ..write('proteinPercentage: $proteinPercentage, ')
           ..write('isWithdrawn: $isWithdrawn')
           ..write(')'))
         .toString();
   }
 
   @override
-  int get hashCode => Object.hash(id, animalId, recordDate, milkingSession,
-      quantityLiters, fatPercentage, proteinPercentage, isWithdrawn);
+  int get hashCode => Object.hash(
+      id, animalId, recordDate, milkingSession, quantityLiters, isWithdrawn);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -1315,8 +1243,6 @@ class LocalMilkRecord extends DataClass implements Insertable<LocalMilkRecord> {
           other.recordDate == this.recordDate &&
           other.milkingSession == this.milkingSession &&
           other.quantityLiters == this.quantityLiters &&
-          other.fatPercentage == this.fatPercentage &&
-          other.proteinPercentage == this.proteinPercentage &&
           other.isWithdrawn == this.isWithdrawn);
 }
 
@@ -1326,8 +1252,6 @@ class LocalMilkRecordsCompanion extends UpdateCompanion<LocalMilkRecord> {
   final Value<DateTime> recordDate;
   final Value<String> milkingSession;
   final Value<double> quantityLiters;
-  final Value<double?> fatPercentage;
-  final Value<double?> proteinPercentage;
   final Value<bool> isWithdrawn;
   final Value<int> rowid;
   const LocalMilkRecordsCompanion({
@@ -1336,8 +1260,6 @@ class LocalMilkRecordsCompanion extends UpdateCompanion<LocalMilkRecord> {
     this.recordDate = const Value.absent(),
     this.milkingSession = const Value.absent(),
     this.quantityLiters = const Value.absent(),
-    this.fatPercentage = const Value.absent(),
-    this.proteinPercentage = const Value.absent(),
     this.isWithdrawn = const Value.absent(),
     this.rowid = const Value.absent(),
   });
@@ -1347,8 +1269,6 @@ class LocalMilkRecordsCompanion extends UpdateCompanion<LocalMilkRecord> {
     required DateTime recordDate,
     required String milkingSession,
     required double quantityLiters,
-    this.fatPercentage = const Value.absent(),
-    this.proteinPercentage = const Value.absent(),
     this.isWithdrawn = const Value.absent(),
     this.rowid = const Value.absent(),
   })  : id = Value(id),
@@ -1362,8 +1282,6 @@ class LocalMilkRecordsCompanion extends UpdateCompanion<LocalMilkRecord> {
     Expression<DateTime>? recordDate,
     Expression<String>? milkingSession,
     Expression<double>? quantityLiters,
-    Expression<double>? fatPercentage,
-    Expression<double>? proteinPercentage,
     Expression<bool>? isWithdrawn,
     Expression<int>? rowid,
   }) {
@@ -1373,8 +1291,6 @@ class LocalMilkRecordsCompanion extends UpdateCompanion<LocalMilkRecord> {
       if (recordDate != null) 'record_date': recordDate,
       if (milkingSession != null) 'milking_session': milkingSession,
       if (quantityLiters != null) 'quantity_liters': quantityLiters,
-      if (fatPercentage != null) 'fat_percentage': fatPercentage,
-      if (proteinPercentage != null) 'protein_percentage': proteinPercentage,
       if (isWithdrawn != null) 'is_withdrawn': isWithdrawn,
       if (rowid != null) 'rowid': rowid,
     });
@@ -1386,8 +1302,6 @@ class LocalMilkRecordsCompanion extends UpdateCompanion<LocalMilkRecord> {
       Value<DateTime>? recordDate,
       Value<String>? milkingSession,
       Value<double>? quantityLiters,
-      Value<double?>? fatPercentage,
-      Value<double?>? proteinPercentage,
       Value<bool>? isWithdrawn,
       Value<int>? rowid}) {
     return LocalMilkRecordsCompanion(
@@ -1396,8 +1310,6 @@ class LocalMilkRecordsCompanion extends UpdateCompanion<LocalMilkRecord> {
       recordDate: recordDate ?? this.recordDate,
       milkingSession: milkingSession ?? this.milkingSession,
       quantityLiters: quantityLiters ?? this.quantityLiters,
-      fatPercentage: fatPercentage ?? this.fatPercentage,
-      proteinPercentage: proteinPercentage ?? this.proteinPercentage,
       isWithdrawn: isWithdrawn ?? this.isWithdrawn,
       rowid: rowid ?? this.rowid,
     );
@@ -1421,12 +1333,6 @@ class LocalMilkRecordsCompanion extends UpdateCompanion<LocalMilkRecord> {
     if (quantityLiters.present) {
       map['quantity_liters'] = Variable<double>(quantityLiters.value);
     }
-    if (fatPercentage.present) {
-      map['fat_percentage'] = Variable<double>(fatPercentage.value);
-    }
-    if (proteinPercentage.present) {
-      map['protein_percentage'] = Variable<double>(proteinPercentage.value);
-    }
     if (isWithdrawn.present) {
       map['is_withdrawn'] = Variable<bool>(isWithdrawn.value);
     }
@@ -1444,8 +1350,6 @@ class LocalMilkRecordsCompanion extends UpdateCompanion<LocalMilkRecord> {
           ..write('recordDate: $recordDate, ')
           ..write('milkingSession: $milkingSession, ')
           ..write('quantityLiters: $quantityLiters, ')
-          ..write('fatPercentage: $fatPercentage, ')
-          ..write('proteinPercentage: $proteinPercentage, ')
           ..write('isWithdrawn: $isWithdrawn, ')
           ..write('rowid: $rowid')
           ..write(')'))
@@ -2609,6 +2513,25 @@ class $LocalPoultryBatchesTable extends LocalPoultryBatches
   late final GeneratedColumn<String> status = GeneratedColumn<String>(
       'status', aliasedName, false,
       type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _breedMeta = const VerificationMeta('breed');
+  @override
+  late final GeneratedColumn<String> breed = GeneratedColumn<String>(
+      'breed', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _purposeMeta =
+      const VerificationMeta('purpose');
+  @override
+  late final GeneratedColumn<String> purpose = GeneratedColumn<String>(
+      'purpose', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _acquisitionCostMeta =
+      const VerificationMeta('acquisitionCost');
+  @override
+  late final GeneratedColumn<double> acquisitionCost = GeneratedColumn<double>(
+      'acquisition_cost', aliasedName, false,
+      type: DriftSqlType.double,
+      requiredDuringInsert: false,
+      defaultValue: const Constant(0.0));
   @override
   List<GeneratedColumn> get $columns => [
         id,
@@ -2617,7 +2540,10 @@ class $LocalPoultryBatchesTable extends LocalPoultryBatches
         initialCount,
         currentCount,
         startDate,
-        status
+        status,
+        breed,
+        purpose,
+        acquisitionCost
       ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -2676,6 +2602,20 @@ class $LocalPoultryBatchesTable extends LocalPoultryBatches
     } else if (isInserting) {
       context.missing(_statusMeta);
     }
+    if (data.containsKey('breed')) {
+      context.handle(
+          _breedMeta, breed.isAcceptableOrUnknown(data['breed']!, _breedMeta));
+    }
+    if (data.containsKey('purpose')) {
+      context.handle(_purposeMeta,
+          purpose.isAcceptableOrUnknown(data['purpose']!, _purposeMeta));
+    }
+    if (data.containsKey('acquisition_cost')) {
+      context.handle(
+          _acquisitionCostMeta,
+          acquisitionCost.isAcceptableOrUnknown(
+              data['acquisition_cost']!, _acquisitionCostMeta));
+    }
     return context;
   }
 
@@ -2699,6 +2639,12 @@ class $LocalPoultryBatchesTable extends LocalPoultryBatches
           .read(DriftSqlType.dateTime, data['${effectivePrefix}start_date'])!,
       status: attachedDatabase.typeMapping
           .read(DriftSqlType.string, data['${effectivePrefix}status'])!,
+      breed: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}breed']),
+      purpose: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}purpose']),
+      acquisitionCost: attachedDatabase.typeMapping.read(
+          DriftSqlType.double, data['${effectivePrefix}acquisition_cost'])!,
     );
   }
 
@@ -2717,6 +2663,9 @@ class LocalPoultryBatche extends DataClass
   final int currentCount;
   final DateTime startDate;
   final String status;
+  final String? breed;
+  final String? purpose;
+  final double acquisitionCost;
   const LocalPoultryBatche(
       {required this.id,
       required this.batchNumber,
@@ -2724,7 +2673,10 @@ class LocalPoultryBatche extends DataClass
       required this.initialCount,
       required this.currentCount,
       required this.startDate,
-      required this.status});
+      required this.status,
+      this.breed,
+      this.purpose,
+      required this.acquisitionCost});
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
@@ -2735,6 +2687,13 @@ class LocalPoultryBatche extends DataClass
     map['current_count'] = Variable<int>(currentCount);
     map['start_date'] = Variable<DateTime>(startDate);
     map['status'] = Variable<String>(status);
+    if (!nullToAbsent || breed != null) {
+      map['breed'] = Variable<String>(breed);
+    }
+    if (!nullToAbsent || purpose != null) {
+      map['purpose'] = Variable<String>(purpose);
+    }
+    map['acquisition_cost'] = Variable<double>(acquisitionCost);
     return map;
   }
 
@@ -2747,6 +2706,12 @@ class LocalPoultryBatche extends DataClass
       currentCount: Value(currentCount),
       startDate: Value(startDate),
       status: Value(status),
+      breed:
+          breed == null && nullToAbsent ? const Value.absent() : Value(breed),
+      purpose: purpose == null && nullToAbsent
+          ? const Value.absent()
+          : Value(purpose),
+      acquisitionCost: Value(acquisitionCost),
     );
   }
 
@@ -2761,6 +2726,9 @@ class LocalPoultryBatche extends DataClass
       currentCount: serializer.fromJson<int>(json['currentCount']),
       startDate: serializer.fromJson<DateTime>(json['startDate']),
       status: serializer.fromJson<String>(json['status']),
+      breed: serializer.fromJson<String?>(json['breed']),
+      purpose: serializer.fromJson<String?>(json['purpose']),
+      acquisitionCost: serializer.fromJson<double>(json['acquisitionCost']),
     );
   }
   @override
@@ -2774,6 +2742,9 @@ class LocalPoultryBatche extends DataClass
       'currentCount': serializer.toJson<int>(currentCount),
       'startDate': serializer.toJson<DateTime>(startDate),
       'status': serializer.toJson<String>(status),
+      'breed': serializer.toJson<String?>(breed),
+      'purpose': serializer.toJson<String?>(purpose),
+      'acquisitionCost': serializer.toJson<double>(acquisitionCost),
     };
   }
 
@@ -2784,7 +2755,10 @@ class LocalPoultryBatche extends DataClass
           int? initialCount,
           int? currentCount,
           DateTime? startDate,
-          String? status}) =>
+          String? status,
+          Value<String?> breed = const Value.absent(),
+          Value<String?> purpose = const Value.absent(),
+          double? acquisitionCost}) =>
       LocalPoultryBatche(
         id: id ?? this.id,
         batchNumber: batchNumber ?? this.batchNumber,
@@ -2793,6 +2767,9 @@ class LocalPoultryBatche extends DataClass
         currentCount: currentCount ?? this.currentCount,
         startDate: startDate ?? this.startDate,
         status: status ?? this.status,
+        breed: breed.present ? breed.value : this.breed,
+        purpose: purpose.present ? purpose.value : this.purpose,
+        acquisitionCost: acquisitionCost ?? this.acquisitionCost,
       );
   LocalPoultryBatche copyWithCompanion(LocalPoultryBatchesCompanion data) {
     return LocalPoultryBatche(
@@ -2808,6 +2785,11 @@ class LocalPoultryBatche extends DataClass
           : this.currentCount,
       startDate: data.startDate.present ? data.startDate.value : this.startDate,
       status: data.status.present ? data.status.value : this.status,
+      breed: data.breed.present ? data.breed.value : this.breed,
+      purpose: data.purpose.present ? data.purpose.value : this.purpose,
+      acquisitionCost: data.acquisitionCost.present
+          ? data.acquisitionCost.value
+          : this.acquisitionCost,
     );
   }
 
@@ -2820,14 +2802,17 @@ class LocalPoultryBatche extends DataClass
           ..write('initialCount: $initialCount, ')
           ..write('currentCount: $currentCount, ')
           ..write('startDate: $startDate, ')
-          ..write('status: $status')
+          ..write('status: $status, ')
+          ..write('breed: $breed, ')
+          ..write('purpose: $purpose, ')
+          ..write('acquisitionCost: $acquisitionCost')
           ..write(')'))
         .toString();
   }
 
   @override
   int get hashCode => Object.hash(id, batchNumber, houseName, initialCount,
-      currentCount, startDate, status);
+      currentCount, startDate, status, breed, purpose, acquisitionCost);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -2838,7 +2823,10 @@ class LocalPoultryBatche extends DataClass
           other.initialCount == this.initialCount &&
           other.currentCount == this.currentCount &&
           other.startDate == this.startDate &&
-          other.status == this.status);
+          other.status == this.status &&
+          other.breed == this.breed &&
+          other.purpose == this.purpose &&
+          other.acquisitionCost == this.acquisitionCost);
 }
 
 class LocalPoultryBatchesCompanion extends UpdateCompanion<LocalPoultryBatche> {
@@ -2849,6 +2837,9 @@ class LocalPoultryBatchesCompanion extends UpdateCompanion<LocalPoultryBatche> {
   final Value<int> currentCount;
   final Value<DateTime> startDate;
   final Value<String> status;
+  final Value<String?> breed;
+  final Value<String?> purpose;
+  final Value<double> acquisitionCost;
   final Value<int> rowid;
   const LocalPoultryBatchesCompanion({
     this.id = const Value.absent(),
@@ -2858,6 +2849,9 @@ class LocalPoultryBatchesCompanion extends UpdateCompanion<LocalPoultryBatche> {
     this.currentCount = const Value.absent(),
     this.startDate = const Value.absent(),
     this.status = const Value.absent(),
+    this.breed = const Value.absent(),
+    this.purpose = const Value.absent(),
+    this.acquisitionCost = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   LocalPoultryBatchesCompanion.insert({
@@ -2868,6 +2862,9 @@ class LocalPoultryBatchesCompanion extends UpdateCompanion<LocalPoultryBatche> {
     required int currentCount,
     required DateTime startDate,
     required String status,
+    this.breed = const Value.absent(),
+    this.purpose = const Value.absent(),
+    this.acquisitionCost = const Value.absent(),
     this.rowid = const Value.absent(),
   })  : id = Value(id),
         batchNumber = Value(batchNumber),
@@ -2884,6 +2881,9 @@ class LocalPoultryBatchesCompanion extends UpdateCompanion<LocalPoultryBatche> {
     Expression<int>? currentCount,
     Expression<DateTime>? startDate,
     Expression<String>? status,
+    Expression<String>? breed,
+    Expression<String>? purpose,
+    Expression<double>? acquisitionCost,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
@@ -2894,6 +2894,9 @@ class LocalPoultryBatchesCompanion extends UpdateCompanion<LocalPoultryBatche> {
       if (currentCount != null) 'current_count': currentCount,
       if (startDate != null) 'start_date': startDate,
       if (status != null) 'status': status,
+      if (breed != null) 'breed': breed,
+      if (purpose != null) 'purpose': purpose,
+      if (acquisitionCost != null) 'acquisition_cost': acquisitionCost,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -2906,6 +2909,9 @@ class LocalPoultryBatchesCompanion extends UpdateCompanion<LocalPoultryBatche> {
       Value<int>? currentCount,
       Value<DateTime>? startDate,
       Value<String>? status,
+      Value<String?>? breed,
+      Value<String?>? purpose,
+      Value<double>? acquisitionCost,
       Value<int>? rowid}) {
     return LocalPoultryBatchesCompanion(
       id: id ?? this.id,
@@ -2915,6 +2921,9 @@ class LocalPoultryBatchesCompanion extends UpdateCompanion<LocalPoultryBatche> {
       currentCount: currentCount ?? this.currentCount,
       startDate: startDate ?? this.startDate,
       status: status ?? this.status,
+      breed: breed ?? this.breed,
+      purpose: purpose ?? this.purpose,
+      acquisitionCost: acquisitionCost ?? this.acquisitionCost,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -2943,6 +2952,15 @@ class LocalPoultryBatchesCompanion extends UpdateCompanion<LocalPoultryBatche> {
     if (status.present) {
       map['status'] = Variable<String>(status.value);
     }
+    if (breed.present) {
+      map['breed'] = Variable<String>(breed.value);
+    }
+    if (purpose.present) {
+      map['purpose'] = Variable<String>(purpose.value);
+    }
+    if (acquisitionCost.present) {
+      map['acquisition_cost'] = Variable<double>(acquisitionCost.value);
+    }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
     }
@@ -2959,6 +2977,9 @@ class LocalPoultryBatchesCompanion extends UpdateCompanion<LocalPoultryBatche> {
           ..write('currentCount: $currentCount, ')
           ..write('startDate: $startDate, ')
           ..write('status: $status, ')
+          ..write('breed: $breed, ')
+          ..write('purpose: $purpose, ')
+          ..write('acquisitionCost: $acquisitionCost, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -3301,6 +3322,2884 @@ class LocalPoultryLogsCompanion extends UpdateCompanion<LocalPoultryLog> {
           ..write('feedBags: $feedBags, ')
           ..write('mortality: $mortality, ')
           ..write('averageWeight: $averageWeight')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $LocalPoultryTreatmentsTable extends LocalPoultryTreatments
+    with TableInfo<$LocalPoultryTreatmentsTable, LocalPoultryTreatment> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $LocalPoultryTreatmentsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+      'id', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _batchIdMeta =
+      const VerificationMeta('batchId');
+  @override
+  late final GeneratedColumn<String> batchId = GeneratedColumn<String>(
+      'batch_id', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _medicationIdMeta =
+      const VerificationMeta('medicationId');
+  @override
+  late final GeneratedColumn<String> medicationId = GeneratedColumn<String>(
+      'medication_id', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _medicationNameMeta =
+      const VerificationMeta('medicationName');
+  @override
+  late final GeneratedColumn<String> medicationName = GeneratedColumn<String>(
+      'medication_name', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _quantityUsedMeta =
+      const VerificationMeta('quantityUsed');
+  @override
+  late final GeneratedColumn<double> quantityUsed = GeneratedColumn<double>(
+      'quantity_used', aliasedName, false,
+      type: DriftSqlType.double, requiredDuringInsert: true);
+  static const VerificationMeta _unitMeta = const VerificationMeta('unit');
+  @override
+  late final GeneratedColumn<String> unit = GeneratedColumn<String>(
+      'unit', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _costPerUnitMeta =
+      const VerificationMeta('costPerUnit');
+  @override
+  late final GeneratedColumn<double> costPerUnit = GeneratedColumn<double>(
+      'cost_per_unit', aliasedName, false,
+      type: DriftSqlType.double,
+      requiredDuringInsert: false,
+      defaultValue: const Constant(0.0));
+  static const VerificationMeta _totalCostMeta =
+      const VerificationMeta('totalCost');
+  @override
+  late final GeneratedColumn<double> totalCost = GeneratedColumn<double>(
+      'total_cost', aliasedName, false,
+      type: DriftSqlType.double,
+      requiredDuringInsert: false,
+      defaultValue: const Constant(0.0));
+  static const VerificationMeta _treatmentDateMeta =
+      const VerificationMeta('treatmentDate');
+  @override
+  late final GeneratedColumn<DateTime> treatmentDate =
+      GeneratedColumn<DateTime>('treatment_date', aliasedName, false,
+          type: DriftSqlType.dateTime, requiredDuringInsert: true);
+  static const VerificationMeta _notesMeta = const VerificationMeta('notes');
+  @override
+  late final GeneratedColumn<String> notes = GeneratedColumn<String>(
+      'notes', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  @override
+  List<GeneratedColumn> get $columns => [
+        id,
+        batchId,
+        medicationId,
+        medicationName,
+        quantityUsed,
+        unit,
+        costPerUnit,
+        totalCost,
+        treatmentDate,
+        notes
+      ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'local_poultry_treatments';
+  @override
+  VerificationContext validateIntegrity(
+      Insertable<LocalPoultryTreatment> instance,
+      {bool isInserting = false}) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('batch_id')) {
+      context.handle(_batchIdMeta,
+          batchId.isAcceptableOrUnknown(data['batch_id']!, _batchIdMeta));
+    } else if (isInserting) {
+      context.missing(_batchIdMeta);
+    }
+    if (data.containsKey('medication_id')) {
+      context.handle(
+          _medicationIdMeta,
+          medicationId.isAcceptableOrUnknown(
+              data['medication_id']!, _medicationIdMeta));
+    }
+    if (data.containsKey('medication_name')) {
+      context.handle(
+          _medicationNameMeta,
+          medicationName.isAcceptableOrUnknown(
+              data['medication_name']!, _medicationNameMeta));
+    } else if (isInserting) {
+      context.missing(_medicationNameMeta);
+    }
+    if (data.containsKey('quantity_used')) {
+      context.handle(
+          _quantityUsedMeta,
+          quantityUsed.isAcceptableOrUnknown(
+              data['quantity_used']!, _quantityUsedMeta));
+    } else if (isInserting) {
+      context.missing(_quantityUsedMeta);
+    }
+    if (data.containsKey('unit')) {
+      context.handle(
+          _unitMeta, unit.isAcceptableOrUnknown(data['unit']!, _unitMeta));
+    } else if (isInserting) {
+      context.missing(_unitMeta);
+    }
+    if (data.containsKey('cost_per_unit')) {
+      context.handle(
+          _costPerUnitMeta,
+          costPerUnit.isAcceptableOrUnknown(
+              data['cost_per_unit']!, _costPerUnitMeta));
+    }
+    if (data.containsKey('total_cost')) {
+      context.handle(_totalCostMeta,
+          totalCost.isAcceptableOrUnknown(data['total_cost']!, _totalCostMeta));
+    }
+    if (data.containsKey('treatment_date')) {
+      context.handle(
+          _treatmentDateMeta,
+          treatmentDate.isAcceptableOrUnknown(
+              data['treatment_date']!, _treatmentDateMeta));
+    } else if (isInserting) {
+      context.missing(_treatmentDateMeta);
+    }
+    if (data.containsKey('notes')) {
+      context.handle(
+          _notesMeta, notes.isAcceptableOrUnknown(data['notes']!, _notesMeta));
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  LocalPoultryTreatment map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return LocalPoultryTreatment(
+      id: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}id'])!,
+      batchId: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}batch_id'])!,
+      medicationId: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}medication_id']),
+      medicationName: attachedDatabase.typeMapping.read(
+          DriftSqlType.string, data['${effectivePrefix}medication_name'])!,
+      quantityUsed: attachedDatabase.typeMapping
+          .read(DriftSqlType.double, data['${effectivePrefix}quantity_used'])!,
+      unit: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}unit'])!,
+      costPerUnit: attachedDatabase.typeMapping
+          .read(DriftSqlType.double, data['${effectivePrefix}cost_per_unit'])!,
+      totalCost: attachedDatabase.typeMapping
+          .read(DriftSqlType.double, data['${effectivePrefix}total_cost'])!,
+      treatmentDate: attachedDatabase.typeMapping.read(
+          DriftSqlType.dateTime, data['${effectivePrefix}treatment_date'])!,
+      notes: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}notes']),
+    );
+  }
+
+  @override
+  $LocalPoultryTreatmentsTable createAlias(String alias) {
+    return $LocalPoultryTreatmentsTable(attachedDatabase, alias);
+  }
+}
+
+class LocalPoultryTreatment extends DataClass
+    implements Insertable<LocalPoultryTreatment> {
+  final String id;
+  final String batchId;
+  final String? medicationId;
+  final String medicationName;
+  final double quantityUsed;
+  final String unit;
+  final double costPerUnit;
+  final double totalCost;
+  final DateTime treatmentDate;
+  final String? notes;
+  const LocalPoultryTreatment(
+      {required this.id,
+      required this.batchId,
+      this.medicationId,
+      required this.medicationName,
+      required this.quantityUsed,
+      required this.unit,
+      required this.costPerUnit,
+      required this.totalCost,
+      required this.treatmentDate,
+      this.notes});
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['batch_id'] = Variable<String>(batchId);
+    if (!nullToAbsent || medicationId != null) {
+      map['medication_id'] = Variable<String>(medicationId);
+    }
+    map['medication_name'] = Variable<String>(medicationName);
+    map['quantity_used'] = Variable<double>(quantityUsed);
+    map['unit'] = Variable<String>(unit);
+    map['cost_per_unit'] = Variable<double>(costPerUnit);
+    map['total_cost'] = Variable<double>(totalCost);
+    map['treatment_date'] = Variable<DateTime>(treatmentDate);
+    if (!nullToAbsent || notes != null) {
+      map['notes'] = Variable<String>(notes);
+    }
+    return map;
+  }
+
+  LocalPoultryTreatmentsCompanion toCompanion(bool nullToAbsent) {
+    return LocalPoultryTreatmentsCompanion(
+      id: Value(id),
+      batchId: Value(batchId),
+      medicationId: medicationId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(medicationId),
+      medicationName: Value(medicationName),
+      quantityUsed: Value(quantityUsed),
+      unit: Value(unit),
+      costPerUnit: Value(costPerUnit),
+      totalCost: Value(totalCost),
+      treatmentDate: Value(treatmentDate),
+      notes:
+          notes == null && nullToAbsent ? const Value.absent() : Value(notes),
+    );
+  }
+
+  factory LocalPoultryTreatment.fromJson(Map<String, dynamic> json,
+      {ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return LocalPoultryTreatment(
+      id: serializer.fromJson<String>(json['id']),
+      batchId: serializer.fromJson<String>(json['batchId']),
+      medicationId: serializer.fromJson<String?>(json['medicationId']),
+      medicationName: serializer.fromJson<String>(json['medicationName']),
+      quantityUsed: serializer.fromJson<double>(json['quantityUsed']),
+      unit: serializer.fromJson<String>(json['unit']),
+      costPerUnit: serializer.fromJson<double>(json['costPerUnit']),
+      totalCost: serializer.fromJson<double>(json['totalCost']),
+      treatmentDate: serializer.fromJson<DateTime>(json['treatmentDate']),
+      notes: serializer.fromJson<String?>(json['notes']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'batchId': serializer.toJson<String>(batchId),
+      'medicationId': serializer.toJson<String?>(medicationId),
+      'medicationName': serializer.toJson<String>(medicationName),
+      'quantityUsed': serializer.toJson<double>(quantityUsed),
+      'unit': serializer.toJson<String>(unit),
+      'costPerUnit': serializer.toJson<double>(costPerUnit),
+      'totalCost': serializer.toJson<double>(totalCost),
+      'treatmentDate': serializer.toJson<DateTime>(treatmentDate),
+      'notes': serializer.toJson<String?>(notes),
+    };
+  }
+
+  LocalPoultryTreatment copyWith(
+          {String? id,
+          String? batchId,
+          Value<String?> medicationId = const Value.absent(),
+          String? medicationName,
+          double? quantityUsed,
+          String? unit,
+          double? costPerUnit,
+          double? totalCost,
+          DateTime? treatmentDate,
+          Value<String?> notes = const Value.absent()}) =>
+      LocalPoultryTreatment(
+        id: id ?? this.id,
+        batchId: batchId ?? this.batchId,
+        medicationId:
+            medicationId.present ? medicationId.value : this.medicationId,
+        medicationName: medicationName ?? this.medicationName,
+        quantityUsed: quantityUsed ?? this.quantityUsed,
+        unit: unit ?? this.unit,
+        costPerUnit: costPerUnit ?? this.costPerUnit,
+        totalCost: totalCost ?? this.totalCost,
+        treatmentDate: treatmentDate ?? this.treatmentDate,
+        notes: notes.present ? notes.value : this.notes,
+      );
+  LocalPoultryTreatment copyWithCompanion(
+      LocalPoultryTreatmentsCompanion data) {
+    return LocalPoultryTreatment(
+      id: data.id.present ? data.id.value : this.id,
+      batchId: data.batchId.present ? data.batchId.value : this.batchId,
+      medicationId: data.medicationId.present
+          ? data.medicationId.value
+          : this.medicationId,
+      medicationName: data.medicationName.present
+          ? data.medicationName.value
+          : this.medicationName,
+      quantityUsed: data.quantityUsed.present
+          ? data.quantityUsed.value
+          : this.quantityUsed,
+      unit: data.unit.present ? data.unit.value : this.unit,
+      costPerUnit:
+          data.costPerUnit.present ? data.costPerUnit.value : this.costPerUnit,
+      totalCost: data.totalCost.present ? data.totalCost.value : this.totalCost,
+      treatmentDate: data.treatmentDate.present
+          ? data.treatmentDate.value
+          : this.treatmentDate,
+      notes: data.notes.present ? data.notes.value : this.notes,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('LocalPoultryTreatment(')
+          ..write('id: $id, ')
+          ..write('batchId: $batchId, ')
+          ..write('medicationId: $medicationId, ')
+          ..write('medicationName: $medicationName, ')
+          ..write('quantityUsed: $quantityUsed, ')
+          ..write('unit: $unit, ')
+          ..write('costPerUnit: $costPerUnit, ')
+          ..write('totalCost: $totalCost, ')
+          ..write('treatmentDate: $treatmentDate, ')
+          ..write('notes: $notes')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(id, batchId, medicationId, medicationName,
+      quantityUsed, unit, costPerUnit, totalCost, treatmentDate, notes);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is LocalPoultryTreatment &&
+          other.id == this.id &&
+          other.batchId == this.batchId &&
+          other.medicationId == this.medicationId &&
+          other.medicationName == this.medicationName &&
+          other.quantityUsed == this.quantityUsed &&
+          other.unit == this.unit &&
+          other.costPerUnit == this.costPerUnit &&
+          other.totalCost == this.totalCost &&
+          other.treatmentDate == this.treatmentDate &&
+          other.notes == this.notes);
+}
+
+class LocalPoultryTreatmentsCompanion
+    extends UpdateCompanion<LocalPoultryTreatment> {
+  final Value<String> id;
+  final Value<String> batchId;
+  final Value<String?> medicationId;
+  final Value<String> medicationName;
+  final Value<double> quantityUsed;
+  final Value<String> unit;
+  final Value<double> costPerUnit;
+  final Value<double> totalCost;
+  final Value<DateTime> treatmentDate;
+  final Value<String?> notes;
+  final Value<int> rowid;
+  const LocalPoultryTreatmentsCompanion({
+    this.id = const Value.absent(),
+    this.batchId = const Value.absent(),
+    this.medicationId = const Value.absent(),
+    this.medicationName = const Value.absent(),
+    this.quantityUsed = const Value.absent(),
+    this.unit = const Value.absent(),
+    this.costPerUnit = const Value.absent(),
+    this.totalCost = const Value.absent(),
+    this.treatmentDate = const Value.absent(),
+    this.notes = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  LocalPoultryTreatmentsCompanion.insert({
+    required String id,
+    required String batchId,
+    this.medicationId = const Value.absent(),
+    required String medicationName,
+    required double quantityUsed,
+    required String unit,
+    this.costPerUnit = const Value.absent(),
+    this.totalCost = const Value.absent(),
+    required DateTime treatmentDate,
+    this.notes = const Value.absent(),
+    this.rowid = const Value.absent(),
+  })  : id = Value(id),
+        batchId = Value(batchId),
+        medicationName = Value(medicationName),
+        quantityUsed = Value(quantityUsed),
+        unit = Value(unit),
+        treatmentDate = Value(treatmentDate);
+  static Insertable<LocalPoultryTreatment> custom({
+    Expression<String>? id,
+    Expression<String>? batchId,
+    Expression<String>? medicationId,
+    Expression<String>? medicationName,
+    Expression<double>? quantityUsed,
+    Expression<String>? unit,
+    Expression<double>? costPerUnit,
+    Expression<double>? totalCost,
+    Expression<DateTime>? treatmentDate,
+    Expression<String>? notes,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (batchId != null) 'batch_id': batchId,
+      if (medicationId != null) 'medication_id': medicationId,
+      if (medicationName != null) 'medication_name': medicationName,
+      if (quantityUsed != null) 'quantity_used': quantityUsed,
+      if (unit != null) 'unit': unit,
+      if (costPerUnit != null) 'cost_per_unit': costPerUnit,
+      if (totalCost != null) 'total_cost': totalCost,
+      if (treatmentDate != null) 'treatment_date': treatmentDate,
+      if (notes != null) 'notes': notes,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  LocalPoultryTreatmentsCompanion copyWith(
+      {Value<String>? id,
+      Value<String>? batchId,
+      Value<String?>? medicationId,
+      Value<String>? medicationName,
+      Value<double>? quantityUsed,
+      Value<String>? unit,
+      Value<double>? costPerUnit,
+      Value<double>? totalCost,
+      Value<DateTime>? treatmentDate,
+      Value<String?>? notes,
+      Value<int>? rowid}) {
+    return LocalPoultryTreatmentsCompanion(
+      id: id ?? this.id,
+      batchId: batchId ?? this.batchId,
+      medicationId: medicationId ?? this.medicationId,
+      medicationName: medicationName ?? this.medicationName,
+      quantityUsed: quantityUsed ?? this.quantityUsed,
+      unit: unit ?? this.unit,
+      costPerUnit: costPerUnit ?? this.costPerUnit,
+      totalCost: totalCost ?? this.totalCost,
+      treatmentDate: treatmentDate ?? this.treatmentDate,
+      notes: notes ?? this.notes,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (batchId.present) {
+      map['batch_id'] = Variable<String>(batchId.value);
+    }
+    if (medicationId.present) {
+      map['medication_id'] = Variable<String>(medicationId.value);
+    }
+    if (medicationName.present) {
+      map['medication_name'] = Variable<String>(medicationName.value);
+    }
+    if (quantityUsed.present) {
+      map['quantity_used'] = Variable<double>(quantityUsed.value);
+    }
+    if (unit.present) {
+      map['unit'] = Variable<String>(unit.value);
+    }
+    if (costPerUnit.present) {
+      map['cost_per_unit'] = Variable<double>(costPerUnit.value);
+    }
+    if (totalCost.present) {
+      map['total_cost'] = Variable<double>(totalCost.value);
+    }
+    if (treatmentDate.present) {
+      map['treatment_date'] = Variable<DateTime>(treatmentDate.value);
+    }
+    if (notes.present) {
+      map['notes'] = Variable<String>(notes.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('LocalPoultryTreatmentsCompanion(')
+          ..write('id: $id, ')
+          ..write('batchId: $batchId, ')
+          ..write('medicationId: $medicationId, ')
+          ..write('medicationName: $medicationName, ')
+          ..write('quantityUsed: $quantityUsed, ')
+          ..write('unit: $unit, ')
+          ..write('costPerUnit: $costPerUnit, ')
+          ..write('totalCost: $totalCost, ')
+          ..write('treatmentDate: $treatmentDate, ')
+          ..write('notes: $notes, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $LocalPoultryFeedLogsTable extends LocalPoultryFeedLogs
+    with TableInfo<$LocalPoultryFeedLogsTable, LocalPoultryFeedLog> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $LocalPoultryFeedLogsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+      'id', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _batchIdMeta =
+      const VerificationMeta('batchId');
+  @override
+  late final GeneratedColumn<String> batchId = GeneratedColumn<String>(
+      'batch_id', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _feedSourceTypeMeta =
+      const VerificationMeta('feedSourceType');
+  @override
+  late final GeneratedColumn<String> feedSourceType = GeneratedColumn<String>(
+      'feed_source_type', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _feedItemIdMeta =
+      const VerificationMeta('feedItemId');
+  @override
+  late final GeneratedColumn<String> feedItemId = GeneratedColumn<String>(
+      'feed_item_id', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _formulaIdMeta =
+      const VerificationMeta('formulaId');
+  @override
+  late final GeneratedColumn<String> formulaId = GeneratedColumn<String>(
+      'formula_id', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _feedNameMeta =
+      const VerificationMeta('feedName');
+  @override
+  late final GeneratedColumn<String> feedName = GeneratedColumn<String>(
+      'feed_name', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _quantityKgMeta =
+      const VerificationMeta('quantityKg');
+  @override
+  late final GeneratedColumn<double> quantityKg = GeneratedColumn<double>(
+      'quantity_kg', aliasedName, false,
+      type: DriftSqlType.double, requiredDuringInsert: true);
+  static const VerificationMeta _costPerKgMeta =
+      const VerificationMeta('costPerKg');
+  @override
+  late final GeneratedColumn<double> costPerKg = GeneratedColumn<double>(
+      'cost_per_kg', aliasedName, false,
+      type: DriftSqlType.double,
+      requiredDuringInsert: false,
+      defaultValue: const Constant(0.0));
+  static const VerificationMeta _totalCostMeta =
+      const VerificationMeta('totalCost');
+  @override
+  late final GeneratedColumn<double> totalCost = GeneratedColumn<double>(
+      'total_cost', aliasedName, false,
+      type: DriftSqlType.double,
+      requiredDuringInsert: false,
+      defaultValue: const Constant(0.0));
+  static const VerificationMeta _logDateMeta =
+      const VerificationMeta('logDate');
+  @override
+  late final GeneratedColumn<DateTime> logDate = GeneratedColumn<DateTime>(
+      'log_date', aliasedName, false,
+      type: DriftSqlType.dateTime, requiredDuringInsert: true);
+  static const VerificationMeta _notesMeta = const VerificationMeta('notes');
+  @override
+  late final GeneratedColumn<String> notes = GeneratedColumn<String>(
+      'notes', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  @override
+  List<GeneratedColumn> get $columns => [
+        id,
+        batchId,
+        feedSourceType,
+        feedItemId,
+        formulaId,
+        feedName,
+        quantityKg,
+        costPerKg,
+        totalCost,
+        logDate,
+        notes
+      ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'local_poultry_feed_logs';
+  @override
+  VerificationContext validateIntegrity(
+      Insertable<LocalPoultryFeedLog> instance,
+      {bool isInserting = false}) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('batch_id')) {
+      context.handle(_batchIdMeta,
+          batchId.isAcceptableOrUnknown(data['batch_id']!, _batchIdMeta));
+    } else if (isInserting) {
+      context.missing(_batchIdMeta);
+    }
+    if (data.containsKey('feed_source_type')) {
+      context.handle(
+          _feedSourceTypeMeta,
+          feedSourceType.isAcceptableOrUnknown(
+              data['feed_source_type']!, _feedSourceTypeMeta));
+    } else if (isInserting) {
+      context.missing(_feedSourceTypeMeta);
+    }
+    if (data.containsKey('feed_item_id')) {
+      context.handle(
+          _feedItemIdMeta,
+          feedItemId.isAcceptableOrUnknown(
+              data['feed_item_id']!, _feedItemIdMeta));
+    }
+    if (data.containsKey('formula_id')) {
+      context.handle(_formulaIdMeta,
+          formulaId.isAcceptableOrUnknown(data['formula_id']!, _formulaIdMeta));
+    }
+    if (data.containsKey('feed_name')) {
+      context.handle(_feedNameMeta,
+          feedName.isAcceptableOrUnknown(data['feed_name']!, _feedNameMeta));
+    } else if (isInserting) {
+      context.missing(_feedNameMeta);
+    }
+    if (data.containsKey('quantity_kg')) {
+      context.handle(
+          _quantityKgMeta,
+          quantityKg.isAcceptableOrUnknown(
+              data['quantity_kg']!, _quantityKgMeta));
+    } else if (isInserting) {
+      context.missing(_quantityKgMeta);
+    }
+    if (data.containsKey('cost_per_kg')) {
+      context.handle(
+          _costPerKgMeta,
+          costPerKg.isAcceptableOrUnknown(
+              data['cost_per_kg']!, _costPerKgMeta));
+    }
+    if (data.containsKey('total_cost')) {
+      context.handle(_totalCostMeta,
+          totalCost.isAcceptableOrUnknown(data['total_cost']!, _totalCostMeta));
+    }
+    if (data.containsKey('log_date')) {
+      context.handle(_logDateMeta,
+          logDate.isAcceptableOrUnknown(data['log_date']!, _logDateMeta));
+    } else if (isInserting) {
+      context.missing(_logDateMeta);
+    }
+    if (data.containsKey('notes')) {
+      context.handle(
+          _notesMeta, notes.isAcceptableOrUnknown(data['notes']!, _notesMeta));
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  LocalPoultryFeedLog map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return LocalPoultryFeedLog(
+      id: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}id'])!,
+      batchId: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}batch_id'])!,
+      feedSourceType: attachedDatabase.typeMapping.read(
+          DriftSqlType.string, data['${effectivePrefix}feed_source_type'])!,
+      feedItemId: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}feed_item_id']),
+      formulaId: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}formula_id']),
+      feedName: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}feed_name'])!,
+      quantityKg: attachedDatabase.typeMapping
+          .read(DriftSqlType.double, data['${effectivePrefix}quantity_kg'])!,
+      costPerKg: attachedDatabase.typeMapping
+          .read(DriftSqlType.double, data['${effectivePrefix}cost_per_kg'])!,
+      totalCost: attachedDatabase.typeMapping
+          .read(DriftSqlType.double, data['${effectivePrefix}total_cost'])!,
+      logDate: attachedDatabase.typeMapping
+          .read(DriftSqlType.dateTime, data['${effectivePrefix}log_date'])!,
+      notes: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}notes']),
+    );
+  }
+
+  @override
+  $LocalPoultryFeedLogsTable createAlias(String alias) {
+    return $LocalPoultryFeedLogsTable(attachedDatabase, alias);
+  }
+}
+
+class LocalPoultryFeedLog extends DataClass
+    implements Insertable<LocalPoultryFeedLog> {
+  final String id;
+  final String batchId;
+  final String feedSourceType;
+  final String? feedItemId;
+  final String? formulaId;
+  final String feedName;
+  final double quantityKg;
+  final double costPerKg;
+  final double totalCost;
+  final DateTime logDate;
+  final String? notes;
+  const LocalPoultryFeedLog(
+      {required this.id,
+      required this.batchId,
+      required this.feedSourceType,
+      this.feedItemId,
+      this.formulaId,
+      required this.feedName,
+      required this.quantityKg,
+      required this.costPerKg,
+      required this.totalCost,
+      required this.logDate,
+      this.notes});
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['batch_id'] = Variable<String>(batchId);
+    map['feed_source_type'] = Variable<String>(feedSourceType);
+    if (!nullToAbsent || feedItemId != null) {
+      map['feed_item_id'] = Variable<String>(feedItemId);
+    }
+    if (!nullToAbsent || formulaId != null) {
+      map['formula_id'] = Variable<String>(formulaId);
+    }
+    map['feed_name'] = Variable<String>(feedName);
+    map['quantity_kg'] = Variable<double>(quantityKg);
+    map['cost_per_kg'] = Variable<double>(costPerKg);
+    map['total_cost'] = Variable<double>(totalCost);
+    map['log_date'] = Variable<DateTime>(logDate);
+    if (!nullToAbsent || notes != null) {
+      map['notes'] = Variable<String>(notes);
+    }
+    return map;
+  }
+
+  LocalPoultryFeedLogsCompanion toCompanion(bool nullToAbsent) {
+    return LocalPoultryFeedLogsCompanion(
+      id: Value(id),
+      batchId: Value(batchId),
+      feedSourceType: Value(feedSourceType),
+      feedItemId: feedItemId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(feedItemId),
+      formulaId: formulaId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(formulaId),
+      feedName: Value(feedName),
+      quantityKg: Value(quantityKg),
+      costPerKg: Value(costPerKg),
+      totalCost: Value(totalCost),
+      logDate: Value(logDate),
+      notes:
+          notes == null && nullToAbsent ? const Value.absent() : Value(notes),
+    );
+  }
+
+  factory LocalPoultryFeedLog.fromJson(Map<String, dynamic> json,
+      {ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return LocalPoultryFeedLog(
+      id: serializer.fromJson<String>(json['id']),
+      batchId: serializer.fromJson<String>(json['batchId']),
+      feedSourceType: serializer.fromJson<String>(json['feedSourceType']),
+      feedItemId: serializer.fromJson<String?>(json['feedItemId']),
+      formulaId: serializer.fromJson<String?>(json['formulaId']),
+      feedName: serializer.fromJson<String>(json['feedName']),
+      quantityKg: serializer.fromJson<double>(json['quantityKg']),
+      costPerKg: serializer.fromJson<double>(json['costPerKg']),
+      totalCost: serializer.fromJson<double>(json['totalCost']),
+      logDate: serializer.fromJson<DateTime>(json['logDate']),
+      notes: serializer.fromJson<String?>(json['notes']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'batchId': serializer.toJson<String>(batchId),
+      'feedSourceType': serializer.toJson<String>(feedSourceType),
+      'feedItemId': serializer.toJson<String?>(feedItemId),
+      'formulaId': serializer.toJson<String?>(formulaId),
+      'feedName': serializer.toJson<String>(feedName),
+      'quantityKg': serializer.toJson<double>(quantityKg),
+      'costPerKg': serializer.toJson<double>(costPerKg),
+      'totalCost': serializer.toJson<double>(totalCost),
+      'logDate': serializer.toJson<DateTime>(logDate),
+      'notes': serializer.toJson<String?>(notes),
+    };
+  }
+
+  LocalPoultryFeedLog copyWith(
+          {String? id,
+          String? batchId,
+          String? feedSourceType,
+          Value<String?> feedItemId = const Value.absent(),
+          Value<String?> formulaId = const Value.absent(),
+          String? feedName,
+          double? quantityKg,
+          double? costPerKg,
+          double? totalCost,
+          DateTime? logDate,
+          Value<String?> notes = const Value.absent()}) =>
+      LocalPoultryFeedLog(
+        id: id ?? this.id,
+        batchId: batchId ?? this.batchId,
+        feedSourceType: feedSourceType ?? this.feedSourceType,
+        feedItemId: feedItemId.present ? feedItemId.value : this.feedItemId,
+        formulaId: formulaId.present ? formulaId.value : this.formulaId,
+        feedName: feedName ?? this.feedName,
+        quantityKg: quantityKg ?? this.quantityKg,
+        costPerKg: costPerKg ?? this.costPerKg,
+        totalCost: totalCost ?? this.totalCost,
+        logDate: logDate ?? this.logDate,
+        notes: notes.present ? notes.value : this.notes,
+      );
+  LocalPoultryFeedLog copyWithCompanion(LocalPoultryFeedLogsCompanion data) {
+    return LocalPoultryFeedLog(
+      id: data.id.present ? data.id.value : this.id,
+      batchId: data.batchId.present ? data.batchId.value : this.batchId,
+      feedSourceType: data.feedSourceType.present
+          ? data.feedSourceType.value
+          : this.feedSourceType,
+      feedItemId:
+          data.feedItemId.present ? data.feedItemId.value : this.feedItemId,
+      formulaId: data.formulaId.present ? data.formulaId.value : this.formulaId,
+      feedName: data.feedName.present ? data.feedName.value : this.feedName,
+      quantityKg:
+          data.quantityKg.present ? data.quantityKg.value : this.quantityKg,
+      costPerKg: data.costPerKg.present ? data.costPerKg.value : this.costPerKg,
+      totalCost: data.totalCost.present ? data.totalCost.value : this.totalCost,
+      logDate: data.logDate.present ? data.logDate.value : this.logDate,
+      notes: data.notes.present ? data.notes.value : this.notes,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('LocalPoultryFeedLog(')
+          ..write('id: $id, ')
+          ..write('batchId: $batchId, ')
+          ..write('feedSourceType: $feedSourceType, ')
+          ..write('feedItemId: $feedItemId, ')
+          ..write('formulaId: $formulaId, ')
+          ..write('feedName: $feedName, ')
+          ..write('quantityKg: $quantityKg, ')
+          ..write('costPerKg: $costPerKg, ')
+          ..write('totalCost: $totalCost, ')
+          ..write('logDate: $logDate, ')
+          ..write('notes: $notes')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(id, batchId, feedSourceType, feedItemId,
+      formulaId, feedName, quantityKg, costPerKg, totalCost, logDate, notes);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is LocalPoultryFeedLog &&
+          other.id == this.id &&
+          other.batchId == this.batchId &&
+          other.feedSourceType == this.feedSourceType &&
+          other.feedItemId == this.feedItemId &&
+          other.formulaId == this.formulaId &&
+          other.feedName == this.feedName &&
+          other.quantityKg == this.quantityKg &&
+          other.costPerKg == this.costPerKg &&
+          other.totalCost == this.totalCost &&
+          other.logDate == this.logDate &&
+          other.notes == this.notes);
+}
+
+class LocalPoultryFeedLogsCompanion
+    extends UpdateCompanion<LocalPoultryFeedLog> {
+  final Value<String> id;
+  final Value<String> batchId;
+  final Value<String> feedSourceType;
+  final Value<String?> feedItemId;
+  final Value<String?> formulaId;
+  final Value<String> feedName;
+  final Value<double> quantityKg;
+  final Value<double> costPerKg;
+  final Value<double> totalCost;
+  final Value<DateTime> logDate;
+  final Value<String?> notes;
+  final Value<int> rowid;
+  const LocalPoultryFeedLogsCompanion({
+    this.id = const Value.absent(),
+    this.batchId = const Value.absent(),
+    this.feedSourceType = const Value.absent(),
+    this.feedItemId = const Value.absent(),
+    this.formulaId = const Value.absent(),
+    this.feedName = const Value.absent(),
+    this.quantityKg = const Value.absent(),
+    this.costPerKg = const Value.absent(),
+    this.totalCost = const Value.absent(),
+    this.logDate = const Value.absent(),
+    this.notes = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  LocalPoultryFeedLogsCompanion.insert({
+    required String id,
+    required String batchId,
+    required String feedSourceType,
+    this.feedItemId = const Value.absent(),
+    this.formulaId = const Value.absent(),
+    required String feedName,
+    required double quantityKg,
+    this.costPerKg = const Value.absent(),
+    this.totalCost = const Value.absent(),
+    required DateTime logDate,
+    this.notes = const Value.absent(),
+    this.rowid = const Value.absent(),
+  })  : id = Value(id),
+        batchId = Value(batchId),
+        feedSourceType = Value(feedSourceType),
+        feedName = Value(feedName),
+        quantityKg = Value(quantityKg),
+        logDate = Value(logDate);
+  static Insertable<LocalPoultryFeedLog> custom({
+    Expression<String>? id,
+    Expression<String>? batchId,
+    Expression<String>? feedSourceType,
+    Expression<String>? feedItemId,
+    Expression<String>? formulaId,
+    Expression<String>? feedName,
+    Expression<double>? quantityKg,
+    Expression<double>? costPerKg,
+    Expression<double>? totalCost,
+    Expression<DateTime>? logDate,
+    Expression<String>? notes,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (batchId != null) 'batch_id': batchId,
+      if (feedSourceType != null) 'feed_source_type': feedSourceType,
+      if (feedItemId != null) 'feed_item_id': feedItemId,
+      if (formulaId != null) 'formula_id': formulaId,
+      if (feedName != null) 'feed_name': feedName,
+      if (quantityKg != null) 'quantity_kg': quantityKg,
+      if (costPerKg != null) 'cost_per_kg': costPerKg,
+      if (totalCost != null) 'total_cost': totalCost,
+      if (logDate != null) 'log_date': logDate,
+      if (notes != null) 'notes': notes,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  LocalPoultryFeedLogsCompanion copyWith(
+      {Value<String>? id,
+      Value<String>? batchId,
+      Value<String>? feedSourceType,
+      Value<String?>? feedItemId,
+      Value<String?>? formulaId,
+      Value<String>? feedName,
+      Value<double>? quantityKg,
+      Value<double>? costPerKg,
+      Value<double>? totalCost,
+      Value<DateTime>? logDate,
+      Value<String?>? notes,
+      Value<int>? rowid}) {
+    return LocalPoultryFeedLogsCompanion(
+      id: id ?? this.id,
+      batchId: batchId ?? this.batchId,
+      feedSourceType: feedSourceType ?? this.feedSourceType,
+      feedItemId: feedItemId ?? this.feedItemId,
+      formulaId: formulaId ?? this.formulaId,
+      feedName: feedName ?? this.feedName,
+      quantityKg: quantityKg ?? this.quantityKg,
+      costPerKg: costPerKg ?? this.costPerKg,
+      totalCost: totalCost ?? this.totalCost,
+      logDate: logDate ?? this.logDate,
+      notes: notes ?? this.notes,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (batchId.present) {
+      map['batch_id'] = Variable<String>(batchId.value);
+    }
+    if (feedSourceType.present) {
+      map['feed_source_type'] = Variable<String>(feedSourceType.value);
+    }
+    if (feedItemId.present) {
+      map['feed_item_id'] = Variable<String>(feedItemId.value);
+    }
+    if (formulaId.present) {
+      map['formula_id'] = Variable<String>(formulaId.value);
+    }
+    if (feedName.present) {
+      map['feed_name'] = Variable<String>(feedName.value);
+    }
+    if (quantityKg.present) {
+      map['quantity_kg'] = Variable<double>(quantityKg.value);
+    }
+    if (costPerKg.present) {
+      map['cost_per_kg'] = Variable<double>(costPerKg.value);
+    }
+    if (totalCost.present) {
+      map['total_cost'] = Variable<double>(totalCost.value);
+    }
+    if (logDate.present) {
+      map['log_date'] = Variable<DateTime>(logDate.value);
+    }
+    if (notes.present) {
+      map['notes'] = Variable<String>(notes.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('LocalPoultryFeedLogsCompanion(')
+          ..write('id: $id, ')
+          ..write('batchId: $batchId, ')
+          ..write('feedSourceType: $feedSourceType, ')
+          ..write('feedItemId: $feedItemId, ')
+          ..write('formulaId: $formulaId, ')
+          ..write('feedName: $feedName, ')
+          ..write('quantityKg: $quantityKg, ')
+          ..write('costPerKg: $costPerKg, ')
+          ..write('totalCost: $totalCost, ')
+          ..write('logDate: $logDate, ')
+          ..write('notes: $notes, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $LocalPoultryAdjustmentsTable extends LocalPoultryAdjustments
+    with TableInfo<$LocalPoultryAdjustmentsTable, LocalPoultryAdjustment> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $LocalPoultryAdjustmentsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+      'id', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _batchIdMeta =
+      const VerificationMeta('batchId');
+  @override
+  late final GeneratedColumn<String> batchId = GeneratedColumn<String>(
+      'batch_id', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _adjustmentTypeMeta =
+      const VerificationMeta('adjustmentType');
+  @override
+  late final GeneratedColumn<String> adjustmentType = GeneratedColumn<String>(
+      'adjustment_type', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _headCountMeta =
+      const VerificationMeta('headCount');
+  @override
+  late final GeneratedColumn<int> headCount = GeneratedColumn<int>(
+      'head_count', aliasedName, false,
+      type: DriftSqlType.int, requiredDuringInsert: true);
+  static const VerificationMeta _adjustmentDateMeta =
+      const VerificationMeta('adjustmentDate');
+  @override
+  late final GeneratedColumn<DateTime> adjustmentDate =
+      GeneratedColumn<DateTime>('adjustment_date', aliasedName, false,
+          type: DriftSqlType.dateTime, requiredDuringInsert: true);
+  static const VerificationMeta _reasonNotesMeta =
+      const VerificationMeta('reasonNotes');
+  @override
+  late final GeneratedColumn<String> reasonNotes = GeneratedColumn<String>(
+      'reason_notes', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  @override
+  List<GeneratedColumn> get $columns =>
+      [id, batchId, adjustmentType, headCount, adjustmentDate, reasonNotes];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'local_poultry_adjustments';
+  @override
+  VerificationContext validateIntegrity(
+      Insertable<LocalPoultryAdjustment> instance,
+      {bool isInserting = false}) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('batch_id')) {
+      context.handle(_batchIdMeta,
+          batchId.isAcceptableOrUnknown(data['batch_id']!, _batchIdMeta));
+    } else if (isInserting) {
+      context.missing(_batchIdMeta);
+    }
+    if (data.containsKey('adjustment_type')) {
+      context.handle(
+          _adjustmentTypeMeta,
+          adjustmentType.isAcceptableOrUnknown(
+              data['adjustment_type']!, _adjustmentTypeMeta));
+    } else if (isInserting) {
+      context.missing(_adjustmentTypeMeta);
+    }
+    if (data.containsKey('head_count')) {
+      context.handle(_headCountMeta,
+          headCount.isAcceptableOrUnknown(data['head_count']!, _headCountMeta));
+    } else if (isInserting) {
+      context.missing(_headCountMeta);
+    }
+    if (data.containsKey('adjustment_date')) {
+      context.handle(
+          _adjustmentDateMeta,
+          adjustmentDate.isAcceptableOrUnknown(
+              data['adjustment_date']!, _adjustmentDateMeta));
+    } else if (isInserting) {
+      context.missing(_adjustmentDateMeta);
+    }
+    if (data.containsKey('reason_notes')) {
+      context.handle(
+          _reasonNotesMeta,
+          reasonNotes.isAcceptableOrUnknown(
+              data['reason_notes']!, _reasonNotesMeta));
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  LocalPoultryAdjustment map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return LocalPoultryAdjustment(
+      id: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}id'])!,
+      batchId: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}batch_id'])!,
+      adjustmentType: attachedDatabase.typeMapping.read(
+          DriftSqlType.string, data['${effectivePrefix}adjustment_type'])!,
+      headCount: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}head_count'])!,
+      adjustmentDate: attachedDatabase.typeMapping.read(
+          DriftSqlType.dateTime, data['${effectivePrefix}adjustment_date'])!,
+      reasonNotes: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}reason_notes']),
+    );
+  }
+
+  @override
+  $LocalPoultryAdjustmentsTable createAlias(String alias) {
+    return $LocalPoultryAdjustmentsTable(attachedDatabase, alias);
+  }
+}
+
+class LocalPoultryAdjustment extends DataClass
+    implements Insertable<LocalPoultryAdjustment> {
+  final String id;
+  final String batchId;
+  final String adjustmentType;
+  final int headCount;
+  final DateTime adjustmentDate;
+  final String? reasonNotes;
+  const LocalPoultryAdjustment(
+      {required this.id,
+      required this.batchId,
+      required this.adjustmentType,
+      required this.headCount,
+      required this.adjustmentDate,
+      this.reasonNotes});
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['batch_id'] = Variable<String>(batchId);
+    map['adjustment_type'] = Variable<String>(adjustmentType);
+    map['head_count'] = Variable<int>(headCount);
+    map['adjustment_date'] = Variable<DateTime>(adjustmentDate);
+    if (!nullToAbsent || reasonNotes != null) {
+      map['reason_notes'] = Variable<String>(reasonNotes);
+    }
+    return map;
+  }
+
+  LocalPoultryAdjustmentsCompanion toCompanion(bool nullToAbsent) {
+    return LocalPoultryAdjustmentsCompanion(
+      id: Value(id),
+      batchId: Value(batchId),
+      adjustmentType: Value(adjustmentType),
+      headCount: Value(headCount),
+      adjustmentDate: Value(adjustmentDate),
+      reasonNotes: reasonNotes == null && nullToAbsent
+          ? const Value.absent()
+          : Value(reasonNotes),
+    );
+  }
+
+  factory LocalPoultryAdjustment.fromJson(Map<String, dynamic> json,
+      {ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return LocalPoultryAdjustment(
+      id: serializer.fromJson<String>(json['id']),
+      batchId: serializer.fromJson<String>(json['batchId']),
+      adjustmentType: serializer.fromJson<String>(json['adjustmentType']),
+      headCount: serializer.fromJson<int>(json['headCount']),
+      adjustmentDate: serializer.fromJson<DateTime>(json['adjustmentDate']),
+      reasonNotes: serializer.fromJson<String?>(json['reasonNotes']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'batchId': serializer.toJson<String>(batchId),
+      'adjustmentType': serializer.toJson<String>(adjustmentType),
+      'headCount': serializer.toJson<int>(headCount),
+      'adjustmentDate': serializer.toJson<DateTime>(adjustmentDate),
+      'reasonNotes': serializer.toJson<String?>(reasonNotes),
+    };
+  }
+
+  LocalPoultryAdjustment copyWith(
+          {String? id,
+          String? batchId,
+          String? adjustmentType,
+          int? headCount,
+          DateTime? adjustmentDate,
+          Value<String?> reasonNotes = const Value.absent()}) =>
+      LocalPoultryAdjustment(
+        id: id ?? this.id,
+        batchId: batchId ?? this.batchId,
+        adjustmentType: adjustmentType ?? this.adjustmentType,
+        headCount: headCount ?? this.headCount,
+        adjustmentDate: adjustmentDate ?? this.adjustmentDate,
+        reasonNotes: reasonNotes.present ? reasonNotes.value : this.reasonNotes,
+      );
+  LocalPoultryAdjustment copyWithCompanion(
+      LocalPoultryAdjustmentsCompanion data) {
+    return LocalPoultryAdjustment(
+      id: data.id.present ? data.id.value : this.id,
+      batchId: data.batchId.present ? data.batchId.value : this.batchId,
+      adjustmentType: data.adjustmentType.present
+          ? data.adjustmentType.value
+          : this.adjustmentType,
+      headCount: data.headCount.present ? data.headCount.value : this.headCount,
+      adjustmentDate: data.adjustmentDate.present
+          ? data.adjustmentDate.value
+          : this.adjustmentDate,
+      reasonNotes:
+          data.reasonNotes.present ? data.reasonNotes.value : this.reasonNotes,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('LocalPoultryAdjustment(')
+          ..write('id: $id, ')
+          ..write('batchId: $batchId, ')
+          ..write('adjustmentType: $adjustmentType, ')
+          ..write('headCount: $headCount, ')
+          ..write('adjustmentDate: $adjustmentDate, ')
+          ..write('reasonNotes: $reasonNotes')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+      id, batchId, adjustmentType, headCount, adjustmentDate, reasonNotes);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is LocalPoultryAdjustment &&
+          other.id == this.id &&
+          other.batchId == this.batchId &&
+          other.adjustmentType == this.adjustmentType &&
+          other.headCount == this.headCount &&
+          other.adjustmentDate == this.adjustmentDate &&
+          other.reasonNotes == this.reasonNotes);
+}
+
+class LocalPoultryAdjustmentsCompanion
+    extends UpdateCompanion<LocalPoultryAdjustment> {
+  final Value<String> id;
+  final Value<String> batchId;
+  final Value<String> adjustmentType;
+  final Value<int> headCount;
+  final Value<DateTime> adjustmentDate;
+  final Value<String?> reasonNotes;
+  final Value<int> rowid;
+  const LocalPoultryAdjustmentsCompanion({
+    this.id = const Value.absent(),
+    this.batchId = const Value.absent(),
+    this.adjustmentType = const Value.absent(),
+    this.headCount = const Value.absent(),
+    this.adjustmentDate = const Value.absent(),
+    this.reasonNotes = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  LocalPoultryAdjustmentsCompanion.insert({
+    required String id,
+    required String batchId,
+    required String adjustmentType,
+    required int headCount,
+    required DateTime adjustmentDate,
+    this.reasonNotes = const Value.absent(),
+    this.rowid = const Value.absent(),
+  })  : id = Value(id),
+        batchId = Value(batchId),
+        adjustmentType = Value(adjustmentType),
+        headCount = Value(headCount),
+        adjustmentDate = Value(adjustmentDate);
+  static Insertable<LocalPoultryAdjustment> custom({
+    Expression<String>? id,
+    Expression<String>? batchId,
+    Expression<String>? adjustmentType,
+    Expression<int>? headCount,
+    Expression<DateTime>? adjustmentDate,
+    Expression<String>? reasonNotes,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (batchId != null) 'batch_id': batchId,
+      if (adjustmentType != null) 'adjustment_type': adjustmentType,
+      if (headCount != null) 'head_count': headCount,
+      if (adjustmentDate != null) 'adjustment_date': adjustmentDate,
+      if (reasonNotes != null) 'reason_notes': reasonNotes,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  LocalPoultryAdjustmentsCompanion copyWith(
+      {Value<String>? id,
+      Value<String>? batchId,
+      Value<String>? adjustmentType,
+      Value<int>? headCount,
+      Value<DateTime>? adjustmentDate,
+      Value<String?>? reasonNotes,
+      Value<int>? rowid}) {
+    return LocalPoultryAdjustmentsCompanion(
+      id: id ?? this.id,
+      batchId: batchId ?? this.batchId,
+      adjustmentType: adjustmentType ?? this.adjustmentType,
+      headCount: headCount ?? this.headCount,
+      adjustmentDate: adjustmentDate ?? this.adjustmentDate,
+      reasonNotes: reasonNotes ?? this.reasonNotes,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (batchId.present) {
+      map['batch_id'] = Variable<String>(batchId.value);
+    }
+    if (adjustmentType.present) {
+      map['adjustment_type'] = Variable<String>(adjustmentType.value);
+    }
+    if (headCount.present) {
+      map['head_count'] = Variable<int>(headCount.value);
+    }
+    if (adjustmentDate.present) {
+      map['adjustment_date'] = Variable<DateTime>(adjustmentDate.value);
+    }
+    if (reasonNotes.present) {
+      map['reason_notes'] = Variable<String>(reasonNotes.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('LocalPoultryAdjustmentsCompanion(')
+          ..write('id: $id, ')
+          ..write('batchId: $batchId, ')
+          ..write('adjustmentType: $adjustmentType, ')
+          ..write('headCount: $headCount, ')
+          ..write('adjustmentDate: $adjustmentDate, ')
+          ..write('reasonNotes: $reasonNotes, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $LocalBroodingBatchesTable extends LocalBroodingBatches
+    with TableInfo<$LocalBroodingBatchesTable, LocalBroodingBatche> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $LocalBroodingBatchesTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+      'id', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _batchNumberMeta =
+      const VerificationMeta('batchNumber');
+  @override
+  late final GeneratedColumn<String> batchNumber = GeneratedColumn<String>(
+      'batch_number', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _penNameMeta =
+      const VerificationMeta('penName');
+  @override
+  late final GeneratedColumn<String> penName = GeneratedColumn<String>(
+      'pen_name', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _chickSourceMeta =
+      const VerificationMeta('chickSource');
+  @override
+  late final GeneratedColumn<String> chickSource = GeneratedColumn<String>(
+      'chick_source', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _hatcheryBatchIdMeta =
+      const VerificationMeta('hatcheryBatchId');
+  @override
+  late final GeneratedColumn<String> hatcheryBatchId = GeneratedColumn<String>(
+      'hatchery_batch_id', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _initialCountMeta =
+      const VerificationMeta('initialCount');
+  @override
+  late final GeneratedColumn<int> initialCount = GeneratedColumn<int>(
+      'initial_count', aliasedName, false,
+      type: DriftSqlType.int, requiredDuringInsert: true);
+  static const VerificationMeta _currentCountMeta =
+      const VerificationMeta('currentCount');
+  @override
+  late final GeneratedColumn<int> currentCount = GeneratedColumn<int>(
+      'current_count', aliasedName, false,
+      type: DriftSqlType.int, requiredDuringInsert: true);
+  static const VerificationMeta _startDateMeta =
+      const VerificationMeta('startDate');
+  @override
+  late final GeneratedColumn<DateTime> startDate = GeneratedColumn<DateTime>(
+      'start_date', aliasedName, false,
+      type: DriftSqlType.dateTime, requiredDuringInsert: true);
+  static const VerificationMeta _targetGraduationDateMeta =
+      const VerificationMeta('targetGraduationDate');
+  @override
+  late final GeneratedColumn<DateTime> targetGraduationDate =
+      GeneratedColumn<DateTime>('target_graduation_date', aliasedName, false,
+          type: DriftSqlType.dateTime, requiredDuringInsert: true);
+  static const VerificationMeta _statusMeta = const VerificationMeta('status');
+  @override
+  late final GeneratedColumn<String> status = GeneratedColumn<String>(
+      'status', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _initialChickCostMeta =
+      const VerificationMeta('initialChickCost');
+  @override
+  late final GeneratedColumn<double> initialChickCost = GeneratedColumn<double>(
+      'initial_chick_cost', aliasedName, false,
+      type: DriftSqlType.double,
+      requiredDuringInsert: false,
+      defaultValue: const Constant(0.0));
+  static const VerificationMeta _initialTemperatureCelsiusMeta =
+      const VerificationMeta('initialTemperatureCelsius');
+  @override
+  late final GeneratedColumn<double> initialTemperatureCelsius =
+      GeneratedColumn<double>('initial_temperature_celsius', aliasedName, false,
+          type: DriftSqlType.double,
+          requiredDuringInsert: false,
+          defaultValue: const Constant(33.0));
+  static const VerificationMeta _breedMeta = const VerificationMeta('breed');
+  @override
+  late final GeneratedColumn<String> breed = GeneratedColumn<String>(
+      'breed', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _notesMeta = const VerificationMeta('notes');
+  @override
+  late final GeneratedColumn<String> notes = GeneratedColumn<String>(
+      'notes', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  @override
+  List<GeneratedColumn> get $columns => [
+        id,
+        batchNumber,
+        penName,
+        chickSource,
+        hatcheryBatchId,
+        initialCount,
+        currentCount,
+        startDate,
+        targetGraduationDate,
+        status,
+        initialChickCost,
+        initialTemperatureCelsius,
+        breed,
+        notes
+      ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'local_brooding_batches';
+  @override
+  VerificationContext validateIntegrity(
+      Insertable<LocalBroodingBatche> instance,
+      {bool isInserting = false}) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('batch_number')) {
+      context.handle(
+          _batchNumberMeta,
+          batchNumber.isAcceptableOrUnknown(
+              data['batch_number']!, _batchNumberMeta));
+    } else if (isInserting) {
+      context.missing(_batchNumberMeta);
+    }
+    if (data.containsKey('pen_name')) {
+      context.handle(_penNameMeta,
+          penName.isAcceptableOrUnknown(data['pen_name']!, _penNameMeta));
+    } else if (isInserting) {
+      context.missing(_penNameMeta);
+    }
+    if (data.containsKey('chick_source')) {
+      context.handle(
+          _chickSourceMeta,
+          chickSource.isAcceptableOrUnknown(
+              data['chick_source']!, _chickSourceMeta));
+    } else if (isInserting) {
+      context.missing(_chickSourceMeta);
+    }
+    if (data.containsKey('hatchery_batch_id')) {
+      context.handle(
+          _hatcheryBatchIdMeta,
+          hatcheryBatchId.isAcceptableOrUnknown(
+              data['hatchery_batch_id']!, _hatcheryBatchIdMeta));
+    }
+    if (data.containsKey('initial_count')) {
+      context.handle(
+          _initialCountMeta,
+          initialCount.isAcceptableOrUnknown(
+              data['initial_count']!, _initialCountMeta));
+    } else if (isInserting) {
+      context.missing(_initialCountMeta);
+    }
+    if (data.containsKey('current_count')) {
+      context.handle(
+          _currentCountMeta,
+          currentCount.isAcceptableOrUnknown(
+              data['current_count']!, _currentCountMeta));
+    } else if (isInserting) {
+      context.missing(_currentCountMeta);
+    }
+    if (data.containsKey('start_date')) {
+      context.handle(_startDateMeta,
+          startDate.isAcceptableOrUnknown(data['start_date']!, _startDateMeta));
+    } else if (isInserting) {
+      context.missing(_startDateMeta);
+    }
+    if (data.containsKey('target_graduation_date')) {
+      context.handle(
+          _targetGraduationDateMeta,
+          targetGraduationDate.isAcceptableOrUnknown(
+              data['target_graduation_date']!, _targetGraduationDateMeta));
+    } else if (isInserting) {
+      context.missing(_targetGraduationDateMeta);
+    }
+    if (data.containsKey('status')) {
+      context.handle(_statusMeta,
+          status.isAcceptableOrUnknown(data['status']!, _statusMeta));
+    } else if (isInserting) {
+      context.missing(_statusMeta);
+    }
+    if (data.containsKey('initial_chick_cost')) {
+      context.handle(
+          _initialChickCostMeta,
+          initialChickCost.isAcceptableOrUnknown(
+              data['initial_chick_cost']!, _initialChickCostMeta));
+    }
+    if (data.containsKey('initial_temperature_celsius')) {
+      context.handle(
+          _initialTemperatureCelsiusMeta,
+          initialTemperatureCelsius.isAcceptableOrUnknown(
+              data['initial_temperature_celsius']!,
+              _initialTemperatureCelsiusMeta));
+    }
+    if (data.containsKey('breed')) {
+      context.handle(
+          _breedMeta, breed.isAcceptableOrUnknown(data['breed']!, _breedMeta));
+    }
+    if (data.containsKey('notes')) {
+      context.handle(
+          _notesMeta, notes.isAcceptableOrUnknown(data['notes']!, _notesMeta));
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  LocalBroodingBatche map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return LocalBroodingBatche(
+      id: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}id'])!,
+      batchNumber: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}batch_number'])!,
+      penName: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}pen_name'])!,
+      chickSource: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}chick_source'])!,
+      hatcheryBatchId: attachedDatabase.typeMapping.read(
+          DriftSqlType.string, data['${effectivePrefix}hatchery_batch_id']),
+      initialCount: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}initial_count'])!,
+      currentCount: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}current_count'])!,
+      startDate: attachedDatabase.typeMapping
+          .read(DriftSqlType.dateTime, data['${effectivePrefix}start_date'])!,
+      targetGraduationDate: attachedDatabase.typeMapping.read(
+          DriftSqlType.dateTime,
+          data['${effectivePrefix}target_graduation_date'])!,
+      status: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}status'])!,
+      initialChickCost: attachedDatabase.typeMapping.read(
+          DriftSqlType.double, data['${effectivePrefix}initial_chick_cost'])!,
+      initialTemperatureCelsius: attachedDatabase.typeMapping.read(
+          DriftSqlType.double,
+          data['${effectivePrefix}initial_temperature_celsius'])!,
+      breed: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}breed']),
+      notes: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}notes']),
+    );
+  }
+
+  @override
+  $LocalBroodingBatchesTable createAlias(String alias) {
+    return $LocalBroodingBatchesTable(attachedDatabase, alias);
+  }
+}
+
+class LocalBroodingBatche extends DataClass
+    implements Insertable<LocalBroodingBatche> {
+  final String id;
+  final String batchNumber;
+  final String penName;
+  final String chickSource;
+  final String? hatcheryBatchId;
+  final int initialCount;
+  final int currentCount;
+  final DateTime startDate;
+  final DateTime targetGraduationDate;
+  final String status;
+  final double initialChickCost;
+  final double initialTemperatureCelsius;
+  final String? breed;
+  final String? notes;
+  const LocalBroodingBatche(
+      {required this.id,
+      required this.batchNumber,
+      required this.penName,
+      required this.chickSource,
+      this.hatcheryBatchId,
+      required this.initialCount,
+      required this.currentCount,
+      required this.startDate,
+      required this.targetGraduationDate,
+      required this.status,
+      required this.initialChickCost,
+      required this.initialTemperatureCelsius,
+      this.breed,
+      this.notes});
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['batch_number'] = Variable<String>(batchNumber);
+    map['pen_name'] = Variable<String>(penName);
+    map['chick_source'] = Variable<String>(chickSource);
+    if (!nullToAbsent || hatcheryBatchId != null) {
+      map['hatchery_batch_id'] = Variable<String>(hatcheryBatchId);
+    }
+    map['initial_count'] = Variable<int>(initialCount);
+    map['current_count'] = Variable<int>(currentCount);
+    map['start_date'] = Variable<DateTime>(startDate);
+    map['target_graduation_date'] = Variable<DateTime>(targetGraduationDate);
+    map['status'] = Variable<String>(status);
+    map['initial_chick_cost'] = Variable<double>(initialChickCost);
+    map['initial_temperature_celsius'] =
+        Variable<double>(initialTemperatureCelsius);
+    if (!nullToAbsent || breed != null) {
+      map['breed'] = Variable<String>(breed);
+    }
+    if (!nullToAbsent || notes != null) {
+      map['notes'] = Variable<String>(notes);
+    }
+    return map;
+  }
+
+  LocalBroodingBatchesCompanion toCompanion(bool nullToAbsent) {
+    return LocalBroodingBatchesCompanion(
+      id: Value(id),
+      batchNumber: Value(batchNumber),
+      penName: Value(penName),
+      chickSource: Value(chickSource),
+      hatcheryBatchId: hatcheryBatchId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(hatcheryBatchId),
+      initialCount: Value(initialCount),
+      currentCount: Value(currentCount),
+      startDate: Value(startDate),
+      targetGraduationDate: Value(targetGraduationDate),
+      status: Value(status),
+      initialChickCost: Value(initialChickCost),
+      initialTemperatureCelsius: Value(initialTemperatureCelsius),
+      breed:
+          breed == null && nullToAbsent ? const Value.absent() : Value(breed),
+      notes:
+          notes == null && nullToAbsent ? const Value.absent() : Value(notes),
+    );
+  }
+
+  factory LocalBroodingBatche.fromJson(Map<String, dynamic> json,
+      {ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return LocalBroodingBatche(
+      id: serializer.fromJson<String>(json['id']),
+      batchNumber: serializer.fromJson<String>(json['batchNumber']),
+      penName: serializer.fromJson<String>(json['penName']),
+      chickSource: serializer.fromJson<String>(json['chickSource']),
+      hatcheryBatchId: serializer.fromJson<String?>(json['hatcheryBatchId']),
+      initialCount: serializer.fromJson<int>(json['initialCount']),
+      currentCount: serializer.fromJson<int>(json['currentCount']),
+      startDate: serializer.fromJson<DateTime>(json['startDate']),
+      targetGraduationDate:
+          serializer.fromJson<DateTime>(json['targetGraduationDate']),
+      status: serializer.fromJson<String>(json['status']),
+      initialChickCost: serializer.fromJson<double>(json['initialChickCost']),
+      initialTemperatureCelsius:
+          serializer.fromJson<double>(json['initialTemperatureCelsius']),
+      breed: serializer.fromJson<String?>(json['breed']),
+      notes: serializer.fromJson<String?>(json['notes']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'batchNumber': serializer.toJson<String>(batchNumber),
+      'penName': serializer.toJson<String>(penName),
+      'chickSource': serializer.toJson<String>(chickSource),
+      'hatcheryBatchId': serializer.toJson<String?>(hatcheryBatchId),
+      'initialCount': serializer.toJson<int>(initialCount),
+      'currentCount': serializer.toJson<int>(currentCount),
+      'startDate': serializer.toJson<DateTime>(startDate),
+      'targetGraduationDate': serializer.toJson<DateTime>(targetGraduationDate),
+      'status': serializer.toJson<String>(status),
+      'initialChickCost': serializer.toJson<double>(initialChickCost),
+      'initialTemperatureCelsius':
+          serializer.toJson<double>(initialTemperatureCelsius),
+      'breed': serializer.toJson<String?>(breed),
+      'notes': serializer.toJson<String?>(notes),
+    };
+  }
+
+  LocalBroodingBatche copyWith(
+          {String? id,
+          String? batchNumber,
+          String? penName,
+          String? chickSource,
+          Value<String?> hatcheryBatchId = const Value.absent(),
+          int? initialCount,
+          int? currentCount,
+          DateTime? startDate,
+          DateTime? targetGraduationDate,
+          String? status,
+          double? initialChickCost,
+          double? initialTemperatureCelsius,
+          Value<String?> breed = const Value.absent(),
+          Value<String?> notes = const Value.absent()}) =>
+      LocalBroodingBatche(
+        id: id ?? this.id,
+        batchNumber: batchNumber ?? this.batchNumber,
+        penName: penName ?? this.penName,
+        chickSource: chickSource ?? this.chickSource,
+        hatcheryBatchId: hatcheryBatchId.present
+            ? hatcheryBatchId.value
+            : this.hatcheryBatchId,
+        initialCount: initialCount ?? this.initialCount,
+        currentCount: currentCount ?? this.currentCount,
+        startDate: startDate ?? this.startDate,
+        targetGraduationDate: targetGraduationDate ?? this.targetGraduationDate,
+        status: status ?? this.status,
+        initialChickCost: initialChickCost ?? this.initialChickCost,
+        initialTemperatureCelsius:
+            initialTemperatureCelsius ?? this.initialTemperatureCelsius,
+        breed: breed.present ? breed.value : this.breed,
+        notes: notes.present ? notes.value : this.notes,
+      );
+  LocalBroodingBatche copyWithCompanion(LocalBroodingBatchesCompanion data) {
+    return LocalBroodingBatche(
+      id: data.id.present ? data.id.value : this.id,
+      batchNumber:
+          data.batchNumber.present ? data.batchNumber.value : this.batchNumber,
+      penName: data.penName.present ? data.penName.value : this.penName,
+      chickSource:
+          data.chickSource.present ? data.chickSource.value : this.chickSource,
+      hatcheryBatchId: data.hatcheryBatchId.present
+          ? data.hatcheryBatchId.value
+          : this.hatcheryBatchId,
+      initialCount: data.initialCount.present
+          ? data.initialCount.value
+          : this.initialCount,
+      currentCount: data.currentCount.present
+          ? data.currentCount.value
+          : this.currentCount,
+      startDate: data.startDate.present ? data.startDate.value : this.startDate,
+      targetGraduationDate: data.targetGraduationDate.present
+          ? data.targetGraduationDate.value
+          : this.targetGraduationDate,
+      status: data.status.present ? data.status.value : this.status,
+      initialChickCost: data.initialChickCost.present
+          ? data.initialChickCost.value
+          : this.initialChickCost,
+      initialTemperatureCelsius: data.initialTemperatureCelsius.present
+          ? data.initialTemperatureCelsius.value
+          : this.initialTemperatureCelsius,
+      breed: data.breed.present ? data.breed.value : this.breed,
+      notes: data.notes.present ? data.notes.value : this.notes,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('LocalBroodingBatche(')
+          ..write('id: $id, ')
+          ..write('batchNumber: $batchNumber, ')
+          ..write('penName: $penName, ')
+          ..write('chickSource: $chickSource, ')
+          ..write('hatcheryBatchId: $hatcheryBatchId, ')
+          ..write('initialCount: $initialCount, ')
+          ..write('currentCount: $currentCount, ')
+          ..write('startDate: $startDate, ')
+          ..write('targetGraduationDate: $targetGraduationDate, ')
+          ..write('status: $status, ')
+          ..write('initialChickCost: $initialChickCost, ')
+          ..write('initialTemperatureCelsius: $initialTemperatureCelsius, ')
+          ..write('breed: $breed, ')
+          ..write('notes: $notes')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+      id,
+      batchNumber,
+      penName,
+      chickSource,
+      hatcheryBatchId,
+      initialCount,
+      currentCount,
+      startDate,
+      targetGraduationDate,
+      status,
+      initialChickCost,
+      initialTemperatureCelsius,
+      breed,
+      notes);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is LocalBroodingBatche &&
+          other.id == this.id &&
+          other.batchNumber == this.batchNumber &&
+          other.penName == this.penName &&
+          other.chickSource == this.chickSource &&
+          other.hatcheryBatchId == this.hatcheryBatchId &&
+          other.initialCount == this.initialCount &&
+          other.currentCount == this.currentCount &&
+          other.startDate == this.startDate &&
+          other.targetGraduationDate == this.targetGraduationDate &&
+          other.status == this.status &&
+          other.initialChickCost == this.initialChickCost &&
+          other.initialTemperatureCelsius == this.initialTemperatureCelsius &&
+          other.breed == this.breed &&
+          other.notes == this.notes);
+}
+
+class LocalBroodingBatchesCompanion
+    extends UpdateCompanion<LocalBroodingBatche> {
+  final Value<String> id;
+  final Value<String> batchNumber;
+  final Value<String> penName;
+  final Value<String> chickSource;
+  final Value<String?> hatcheryBatchId;
+  final Value<int> initialCount;
+  final Value<int> currentCount;
+  final Value<DateTime> startDate;
+  final Value<DateTime> targetGraduationDate;
+  final Value<String> status;
+  final Value<double> initialChickCost;
+  final Value<double> initialTemperatureCelsius;
+  final Value<String?> breed;
+  final Value<String?> notes;
+  final Value<int> rowid;
+  const LocalBroodingBatchesCompanion({
+    this.id = const Value.absent(),
+    this.batchNumber = const Value.absent(),
+    this.penName = const Value.absent(),
+    this.chickSource = const Value.absent(),
+    this.hatcheryBatchId = const Value.absent(),
+    this.initialCount = const Value.absent(),
+    this.currentCount = const Value.absent(),
+    this.startDate = const Value.absent(),
+    this.targetGraduationDate = const Value.absent(),
+    this.status = const Value.absent(),
+    this.initialChickCost = const Value.absent(),
+    this.initialTemperatureCelsius = const Value.absent(),
+    this.breed = const Value.absent(),
+    this.notes = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  LocalBroodingBatchesCompanion.insert({
+    required String id,
+    required String batchNumber,
+    required String penName,
+    required String chickSource,
+    this.hatcheryBatchId = const Value.absent(),
+    required int initialCount,
+    required int currentCount,
+    required DateTime startDate,
+    required DateTime targetGraduationDate,
+    required String status,
+    this.initialChickCost = const Value.absent(),
+    this.initialTemperatureCelsius = const Value.absent(),
+    this.breed = const Value.absent(),
+    this.notes = const Value.absent(),
+    this.rowid = const Value.absent(),
+  })  : id = Value(id),
+        batchNumber = Value(batchNumber),
+        penName = Value(penName),
+        chickSource = Value(chickSource),
+        initialCount = Value(initialCount),
+        currentCount = Value(currentCount),
+        startDate = Value(startDate),
+        targetGraduationDate = Value(targetGraduationDate),
+        status = Value(status);
+  static Insertable<LocalBroodingBatche> custom({
+    Expression<String>? id,
+    Expression<String>? batchNumber,
+    Expression<String>? penName,
+    Expression<String>? chickSource,
+    Expression<String>? hatcheryBatchId,
+    Expression<int>? initialCount,
+    Expression<int>? currentCount,
+    Expression<DateTime>? startDate,
+    Expression<DateTime>? targetGraduationDate,
+    Expression<String>? status,
+    Expression<double>? initialChickCost,
+    Expression<double>? initialTemperatureCelsius,
+    Expression<String>? breed,
+    Expression<String>? notes,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (batchNumber != null) 'batch_number': batchNumber,
+      if (penName != null) 'pen_name': penName,
+      if (chickSource != null) 'chick_source': chickSource,
+      if (hatcheryBatchId != null) 'hatchery_batch_id': hatcheryBatchId,
+      if (initialCount != null) 'initial_count': initialCount,
+      if (currentCount != null) 'current_count': currentCount,
+      if (startDate != null) 'start_date': startDate,
+      if (targetGraduationDate != null)
+        'target_graduation_date': targetGraduationDate,
+      if (status != null) 'status': status,
+      if (initialChickCost != null) 'initial_chick_cost': initialChickCost,
+      if (initialTemperatureCelsius != null)
+        'initial_temperature_celsius': initialTemperatureCelsius,
+      if (breed != null) 'breed': breed,
+      if (notes != null) 'notes': notes,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  LocalBroodingBatchesCompanion copyWith(
+      {Value<String>? id,
+      Value<String>? batchNumber,
+      Value<String>? penName,
+      Value<String>? chickSource,
+      Value<String?>? hatcheryBatchId,
+      Value<int>? initialCount,
+      Value<int>? currentCount,
+      Value<DateTime>? startDate,
+      Value<DateTime>? targetGraduationDate,
+      Value<String>? status,
+      Value<double>? initialChickCost,
+      Value<double>? initialTemperatureCelsius,
+      Value<String?>? breed,
+      Value<String?>? notes,
+      Value<int>? rowid}) {
+    return LocalBroodingBatchesCompanion(
+      id: id ?? this.id,
+      batchNumber: batchNumber ?? this.batchNumber,
+      penName: penName ?? this.penName,
+      chickSource: chickSource ?? this.chickSource,
+      hatcheryBatchId: hatcheryBatchId ?? this.hatcheryBatchId,
+      initialCount: initialCount ?? this.initialCount,
+      currentCount: currentCount ?? this.currentCount,
+      startDate: startDate ?? this.startDate,
+      targetGraduationDate: targetGraduationDate ?? this.targetGraduationDate,
+      status: status ?? this.status,
+      initialChickCost: initialChickCost ?? this.initialChickCost,
+      initialTemperatureCelsius:
+          initialTemperatureCelsius ?? this.initialTemperatureCelsius,
+      breed: breed ?? this.breed,
+      notes: notes ?? this.notes,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (batchNumber.present) {
+      map['batch_number'] = Variable<String>(batchNumber.value);
+    }
+    if (penName.present) {
+      map['pen_name'] = Variable<String>(penName.value);
+    }
+    if (chickSource.present) {
+      map['chick_source'] = Variable<String>(chickSource.value);
+    }
+    if (hatcheryBatchId.present) {
+      map['hatchery_batch_id'] = Variable<String>(hatcheryBatchId.value);
+    }
+    if (initialCount.present) {
+      map['initial_count'] = Variable<int>(initialCount.value);
+    }
+    if (currentCount.present) {
+      map['current_count'] = Variable<int>(currentCount.value);
+    }
+    if (startDate.present) {
+      map['start_date'] = Variable<DateTime>(startDate.value);
+    }
+    if (targetGraduationDate.present) {
+      map['target_graduation_date'] =
+          Variable<DateTime>(targetGraduationDate.value);
+    }
+    if (status.present) {
+      map['status'] = Variable<String>(status.value);
+    }
+    if (initialChickCost.present) {
+      map['initial_chick_cost'] = Variable<double>(initialChickCost.value);
+    }
+    if (initialTemperatureCelsius.present) {
+      map['initial_temperature_celsius'] =
+          Variable<double>(initialTemperatureCelsius.value);
+    }
+    if (breed.present) {
+      map['breed'] = Variable<String>(breed.value);
+    }
+    if (notes.present) {
+      map['notes'] = Variable<String>(notes.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('LocalBroodingBatchesCompanion(')
+          ..write('id: $id, ')
+          ..write('batchNumber: $batchNumber, ')
+          ..write('penName: $penName, ')
+          ..write('chickSource: $chickSource, ')
+          ..write('hatcheryBatchId: $hatcheryBatchId, ')
+          ..write('initialCount: $initialCount, ')
+          ..write('currentCount: $currentCount, ')
+          ..write('startDate: $startDate, ')
+          ..write('targetGraduationDate: $targetGraduationDate, ')
+          ..write('status: $status, ')
+          ..write('initialChickCost: $initialChickCost, ')
+          ..write('initialTemperatureCelsius: $initialTemperatureCelsius, ')
+          ..write('breed: $breed, ')
+          ..write('notes: $notes, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $LocalBroodingLogsTable extends LocalBroodingLogs
+    with TableInfo<$LocalBroodingLogsTable, LocalBroodingLog> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $LocalBroodingLogsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+      'id', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _broodingBatchIdMeta =
+      const VerificationMeta('broodingBatchId');
+  @override
+  late final GeneratedColumn<String> broodingBatchId = GeneratedColumn<String>(
+      'brooding_batch_id', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _logDateMeta =
+      const VerificationMeta('logDate');
+  @override
+  late final GeneratedColumn<DateTime> logDate = GeneratedColumn<DateTime>(
+      'log_date', aliasedName, false,
+      type: DriftSqlType.dateTime, requiredDuringInsert: true);
+  static const VerificationMeta _temperatureCelsiusMeta =
+      const VerificationMeta('temperatureCelsius');
+  @override
+  late final GeneratedColumn<double> temperatureCelsius =
+      GeneratedColumn<double>('temperature_celsius', aliasedName, true,
+          type: DriftSqlType.double, requiredDuringInsert: false);
+  static const VerificationMeta _heatingStatusMeta =
+      const VerificationMeta('heatingStatus');
+  @override
+  late final GeneratedColumn<String> heatingStatus = GeneratedColumn<String>(
+      'heating_status', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _humidityPercentMeta =
+      const VerificationMeta('humidityPercent');
+  @override
+  late final GeneratedColumn<double> humidityPercent = GeneratedColumn<double>(
+      'humidity_percent', aliasedName, true,
+      type: DriftSqlType.double, requiredDuringInsert: false);
+  static const VerificationMeta _starterFeedKgMeta =
+      const VerificationMeta('starterFeedKg');
+  @override
+  late final GeneratedColumn<double> starterFeedKg = GeneratedColumn<double>(
+      'starter_feed_kg', aliasedName, false,
+      type: DriftSqlType.double,
+      requiredDuringInsert: false,
+      defaultValue: const Constant(0.0));
+  static const VerificationMeta _feedCostMeta =
+      const VerificationMeta('feedCost');
+  @override
+  late final GeneratedColumn<double> feedCost = GeneratedColumn<double>(
+      'feed_cost', aliasedName, false,
+      type: DriftSqlType.double,
+      requiredDuringInsert: false,
+      defaultValue: const Constant(0.0));
+  static const VerificationMeta _mortalityCountMeta =
+      const VerificationMeta('mortalityCount');
+  @override
+  late final GeneratedColumn<int> mortalityCount = GeneratedColumn<int>(
+      'mortality_count', aliasedName, false,
+      type: DriftSqlType.int,
+      requiredDuringInsert: false,
+      defaultValue: const Constant(0));
+  static const VerificationMeta _cullCountMeta =
+      const VerificationMeta('cullCount');
+  @override
+  late final GeneratedColumn<int> cullCount = GeneratedColumn<int>(
+      'cull_count', aliasedName, false,
+      type: DriftSqlType.int,
+      requiredDuringInsert: false,
+      defaultValue: const Constant(0));
+  static const VerificationMeta _medicationGivenMeta =
+      const VerificationMeta('medicationGiven');
+  @override
+  late final GeneratedColumn<String> medicationGiven = GeneratedColumn<String>(
+      'medication_given', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _medicationCostMeta =
+      const VerificationMeta('medicationCost');
+  @override
+  late final GeneratedColumn<double> medicationCost = GeneratedColumn<double>(
+      'medication_cost', aliasedName, false,
+      type: DriftSqlType.double,
+      requiredDuringInsert: false,
+      defaultValue: const Constant(0.0));
+  static const VerificationMeta _averageWeightGramsMeta =
+      const VerificationMeta('averageWeightGrams');
+  @override
+  late final GeneratedColumn<double> averageWeightGrams =
+      GeneratedColumn<double>('average_weight_grams', aliasedName, true,
+          type: DriftSqlType.double, requiredDuringInsert: false);
+  static const VerificationMeta _notesMeta = const VerificationMeta('notes');
+  @override
+  late final GeneratedColumn<String> notes = GeneratedColumn<String>(
+      'notes', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  @override
+  List<GeneratedColumn> get $columns => [
+        id,
+        broodingBatchId,
+        logDate,
+        temperatureCelsius,
+        heatingStatus,
+        humidityPercent,
+        starterFeedKg,
+        feedCost,
+        mortalityCount,
+        cullCount,
+        medicationGiven,
+        medicationCost,
+        averageWeightGrams,
+        notes
+      ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'local_brooding_logs';
+  @override
+  VerificationContext validateIntegrity(Insertable<LocalBroodingLog> instance,
+      {bool isInserting = false}) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('brooding_batch_id')) {
+      context.handle(
+          _broodingBatchIdMeta,
+          broodingBatchId.isAcceptableOrUnknown(
+              data['brooding_batch_id']!, _broodingBatchIdMeta));
+    } else if (isInserting) {
+      context.missing(_broodingBatchIdMeta);
+    }
+    if (data.containsKey('log_date')) {
+      context.handle(_logDateMeta,
+          logDate.isAcceptableOrUnknown(data['log_date']!, _logDateMeta));
+    } else if (isInserting) {
+      context.missing(_logDateMeta);
+    }
+    if (data.containsKey('temperature_celsius')) {
+      context.handle(
+          _temperatureCelsiusMeta,
+          temperatureCelsius.isAcceptableOrUnknown(
+              data['temperature_celsius']!, _temperatureCelsiusMeta));
+    }
+    if (data.containsKey('heating_status')) {
+      context.handle(
+          _heatingStatusMeta,
+          heatingStatus.isAcceptableOrUnknown(
+              data['heating_status']!, _heatingStatusMeta));
+    }
+    if (data.containsKey('humidity_percent')) {
+      context.handle(
+          _humidityPercentMeta,
+          humidityPercent.isAcceptableOrUnknown(
+              data['humidity_percent']!, _humidityPercentMeta));
+    }
+    if (data.containsKey('starter_feed_kg')) {
+      context.handle(
+          _starterFeedKgMeta,
+          starterFeedKg.isAcceptableOrUnknown(
+              data['starter_feed_kg']!, _starterFeedKgMeta));
+    }
+    if (data.containsKey('feed_cost')) {
+      context.handle(_feedCostMeta,
+          feedCost.isAcceptableOrUnknown(data['feed_cost']!, _feedCostMeta));
+    }
+    if (data.containsKey('mortality_count')) {
+      context.handle(
+          _mortalityCountMeta,
+          mortalityCount.isAcceptableOrUnknown(
+              data['mortality_count']!, _mortalityCountMeta));
+    }
+    if (data.containsKey('cull_count')) {
+      context.handle(_cullCountMeta,
+          cullCount.isAcceptableOrUnknown(data['cull_count']!, _cullCountMeta));
+    }
+    if (data.containsKey('medication_given')) {
+      context.handle(
+          _medicationGivenMeta,
+          medicationGiven.isAcceptableOrUnknown(
+              data['medication_given']!, _medicationGivenMeta));
+    }
+    if (data.containsKey('medication_cost')) {
+      context.handle(
+          _medicationCostMeta,
+          medicationCost.isAcceptableOrUnknown(
+              data['medication_cost']!, _medicationCostMeta));
+    }
+    if (data.containsKey('average_weight_grams')) {
+      context.handle(
+          _averageWeightGramsMeta,
+          averageWeightGrams.isAcceptableOrUnknown(
+              data['average_weight_grams']!, _averageWeightGramsMeta));
+    }
+    if (data.containsKey('notes')) {
+      context.handle(
+          _notesMeta, notes.isAcceptableOrUnknown(data['notes']!, _notesMeta));
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  LocalBroodingLog map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return LocalBroodingLog(
+      id: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}id'])!,
+      broodingBatchId: attachedDatabase.typeMapping.read(
+          DriftSqlType.string, data['${effectivePrefix}brooding_batch_id'])!,
+      logDate: attachedDatabase.typeMapping
+          .read(DriftSqlType.dateTime, data['${effectivePrefix}log_date'])!,
+      temperatureCelsius: attachedDatabase.typeMapping.read(
+          DriftSqlType.double, data['${effectivePrefix}temperature_celsius']),
+      heatingStatus: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}heating_status']),
+      humidityPercent: attachedDatabase.typeMapping.read(
+          DriftSqlType.double, data['${effectivePrefix}humidity_percent']),
+      starterFeedKg: attachedDatabase.typeMapping.read(
+          DriftSqlType.double, data['${effectivePrefix}starter_feed_kg'])!,
+      feedCost: attachedDatabase.typeMapping
+          .read(DriftSqlType.double, data['${effectivePrefix}feed_cost'])!,
+      mortalityCount: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}mortality_count'])!,
+      cullCount: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}cull_count'])!,
+      medicationGiven: attachedDatabase.typeMapping.read(
+          DriftSqlType.string, data['${effectivePrefix}medication_given']),
+      medicationCost: attachedDatabase.typeMapping.read(
+          DriftSqlType.double, data['${effectivePrefix}medication_cost'])!,
+      averageWeightGrams: attachedDatabase.typeMapping.read(
+          DriftSqlType.double, data['${effectivePrefix}average_weight_grams']),
+      notes: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}notes']),
+    );
+  }
+
+  @override
+  $LocalBroodingLogsTable createAlias(String alias) {
+    return $LocalBroodingLogsTable(attachedDatabase, alias);
+  }
+}
+
+class LocalBroodingLog extends DataClass
+    implements Insertable<LocalBroodingLog> {
+  final String id;
+  final String broodingBatchId;
+  final DateTime logDate;
+  final double? temperatureCelsius;
+  final String? heatingStatus;
+  final double? humidityPercent;
+  final double starterFeedKg;
+  final double feedCost;
+  final int mortalityCount;
+  final int cullCount;
+  final String? medicationGiven;
+  final double medicationCost;
+  final double? averageWeightGrams;
+  final String? notes;
+  const LocalBroodingLog(
+      {required this.id,
+      required this.broodingBatchId,
+      required this.logDate,
+      this.temperatureCelsius,
+      this.heatingStatus,
+      this.humidityPercent,
+      required this.starterFeedKg,
+      required this.feedCost,
+      required this.mortalityCount,
+      required this.cullCount,
+      this.medicationGiven,
+      required this.medicationCost,
+      this.averageWeightGrams,
+      this.notes});
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['brooding_batch_id'] = Variable<String>(broodingBatchId);
+    map['log_date'] = Variable<DateTime>(logDate);
+    if (!nullToAbsent || temperatureCelsius != null) {
+      map['temperature_celsius'] = Variable<double>(temperatureCelsius);
+    }
+    if (!nullToAbsent || heatingStatus != null) {
+      map['heating_status'] = Variable<String>(heatingStatus);
+    }
+    if (!nullToAbsent || humidityPercent != null) {
+      map['humidity_percent'] = Variable<double>(humidityPercent);
+    }
+    map['starter_feed_kg'] = Variable<double>(starterFeedKg);
+    map['feed_cost'] = Variable<double>(feedCost);
+    map['mortality_count'] = Variable<int>(mortalityCount);
+    map['cull_count'] = Variable<int>(cullCount);
+    if (!nullToAbsent || medicationGiven != null) {
+      map['medication_given'] = Variable<String>(medicationGiven);
+    }
+    map['medication_cost'] = Variable<double>(medicationCost);
+    if (!nullToAbsent || averageWeightGrams != null) {
+      map['average_weight_grams'] = Variable<double>(averageWeightGrams);
+    }
+    if (!nullToAbsent || notes != null) {
+      map['notes'] = Variable<String>(notes);
+    }
+    return map;
+  }
+
+  LocalBroodingLogsCompanion toCompanion(bool nullToAbsent) {
+    return LocalBroodingLogsCompanion(
+      id: Value(id),
+      broodingBatchId: Value(broodingBatchId),
+      logDate: Value(logDate),
+      temperatureCelsius: temperatureCelsius == null && nullToAbsent
+          ? const Value.absent()
+          : Value(temperatureCelsius),
+      heatingStatus: heatingStatus == null && nullToAbsent
+          ? const Value.absent()
+          : Value(heatingStatus),
+      humidityPercent: humidityPercent == null && nullToAbsent
+          ? const Value.absent()
+          : Value(humidityPercent),
+      starterFeedKg: Value(starterFeedKg),
+      feedCost: Value(feedCost),
+      mortalityCount: Value(mortalityCount),
+      cullCount: Value(cullCount),
+      medicationGiven: medicationGiven == null && nullToAbsent
+          ? const Value.absent()
+          : Value(medicationGiven),
+      medicationCost: Value(medicationCost),
+      averageWeightGrams: averageWeightGrams == null && nullToAbsent
+          ? const Value.absent()
+          : Value(averageWeightGrams),
+      notes:
+          notes == null && nullToAbsent ? const Value.absent() : Value(notes),
+    );
+  }
+
+  factory LocalBroodingLog.fromJson(Map<String, dynamic> json,
+      {ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return LocalBroodingLog(
+      id: serializer.fromJson<String>(json['id']),
+      broodingBatchId: serializer.fromJson<String>(json['broodingBatchId']),
+      logDate: serializer.fromJson<DateTime>(json['logDate']),
+      temperatureCelsius:
+          serializer.fromJson<double?>(json['temperatureCelsius']),
+      heatingStatus: serializer.fromJson<String?>(json['heatingStatus']),
+      humidityPercent: serializer.fromJson<double?>(json['humidityPercent']),
+      starterFeedKg: serializer.fromJson<double>(json['starterFeedKg']),
+      feedCost: serializer.fromJson<double>(json['feedCost']),
+      mortalityCount: serializer.fromJson<int>(json['mortalityCount']),
+      cullCount: serializer.fromJson<int>(json['cullCount']),
+      medicationGiven: serializer.fromJson<String?>(json['medicationGiven']),
+      medicationCost: serializer.fromJson<double>(json['medicationCost']),
+      averageWeightGrams:
+          serializer.fromJson<double?>(json['averageWeightGrams']),
+      notes: serializer.fromJson<String?>(json['notes']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'broodingBatchId': serializer.toJson<String>(broodingBatchId),
+      'logDate': serializer.toJson<DateTime>(logDate),
+      'temperatureCelsius': serializer.toJson<double?>(temperatureCelsius),
+      'heatingStatus': serializer.toJson<String?>(heatingStatus),
+      'humidityPercent': serializer.toJson<double?>(humidityPercent),
+      'starterFeedKg': serializer.toJson<double>(starterFeedKg),
+      'feedCost': serializer.toJson<double>(feedCost),
+      'mortalityCount': serializer.toJson<int>(mortalityCount),
+      'cullCount': serializer.toJson<int>(cullCount),
+      'medicationGiven': serializer.toJson<String?>(medicationGiven),
+      'medicationCost': serializer.toJson<double>(medicationCost),
+      'averageWeightGrams': serializer.toJson<double?>(averageWeightGrams),
+      'notes': serializer.toJson<String?>(notes),
+    };
+  }
+
+  LocalBroodingLog copyWith(
+          {String? id,
+          String? broodingBatchId,
+          DateTime? logDate,
+          Value<double?> temperatureCelsius = const Value.absent(),
+          Value<String?> heatingStatus = const Value.absent(),
+          Value<double?> humidityPercent = const Value.absent(),
+          double? starterFeedKg,
+          double? feedCost,
+          int? mortalityCount,
+          int? cullCount,
+          Value<String?> medicationGiven = const Value.absent(),
+          double? medicationCost,
+          Value<double?> averageWeightGrams = const Value.absent(),
+          Value<String?> notes = const Value.absent()}) =>
+      LocalBroodingLog(
+        id: id ?? this.id,
+        broodingBatchId: broodingBatchId ?? this.broodingBatchId,
+        logDate: logDate ?? this.logDate,
+        temperatureCelsius: temperatureCelsius.present
+            ? temperatureCelsius.value
+            : this.temperatureCelsius,
+        heatingStatus:
+            heatingStatus.present ? heatingStatus.value : this.heatingStatus,
+        humidityPercent: humidityPercent.present
+            ? humidityPercent.value
+            : this.humidityPercent,
+        starterFeedKg: starterFeedKg ?? this.starterFeedKg,
+        feedCost: feedCost ?? this.feedCost,
+        mortalityCount: mortalityCount ?? this.mortalityCount,
+        cullCount: cullCount ?? this.cullCount,
+        medicationGiven: medicationGiven.present
+            ? medicationGiven.value
+            : this.medicationGiven,
+        medicationCost: medicationCost ?? this.medicationCost,
+        averageWeightGrams: averageWeightGrams.present
+            ? averageWeightGrams.value
+            : this.averageWeightGrams,
+        notes: notes.present ? notes.value : this.notes,
+      );
+  LocalBroodingLog copyWithCompanion(LocalBroodingLogsCompanion data) {
+    return LocalBroodingLog(
+      id: data.id.present ? data.id.value : this.id,
+      broodingBatchId: data.broodingBatchId.present
+          ? data.broodingBatchId.value
+          : this.broodingBatchId,
+      logDate: data.logDate.present ? data.logDate.value : this.logDate,
+      temperatureCelsius: data.temperatureCelsius.present
+          ? data.temperatureCelsius.value
+          : this.temperatureCelsius,
+      heatingStatus: data.heatingStatus.present
+          ? data.heatingStatus.value
+          : this.heatingStatus,
+      humidityPercent: data.humidityPercent.present
+          ? data.humidityPercent.value
+          : this.humidityPercent,
+      starterFeedKg: data.starterFeedKg.present
+          ? data.starterFeedKg.value
+          : this.starterFeedKg,
+      feedCost: data.feedCost.present ? data.feedCost.value : this.feedCost,
+      mortalityCount: data.mortalityCount.present
+          ? data.mortalityCount.value
+          : this.mortalityCount,
+      cullCount: data.cullCount.present ? data.cullCount.value : this.cullCount,
+      medicationGiven: data.medicationGiven.present
+          ? data.medicationGiven.value
+          : this.medicationGiven,
+      medicationCost: data.medicationCost.present
+          ? data.medicationCost.value
+          : this.medicationCost,
+      averageWeightGrams: data.averageWeightGrams.present
+          ? data.averageWeightGrams.value
+          : this.averageWeightGrams,
+      notes: data.notes.present ? data.notes.value : this.notes,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('LocalBroodingLog(')
+          ..write('id: $id, ')
+          ..write('broodingBatchId: $broodingBatchId, ')
+          ..write('logDate: $logDate, ')
+          ..write('temperatureCelsius: $temperatureCelsius, ')
+          ..write('heatingStatus: $heatingStatus, ')
+          ..write('humidityPercent: $humidityPercent, ')
+          ..write('starterFeedKg: $starterFeedKg, ')
+          ..write('feedCost: $feedCost, ')
+          ..write('mortalityCount: $mortalityCount, ')
+          ..write('cullCount: $cullCount, ')
+          ..write('medicationGiven: $medicationGiven, ')
+          ..write('medicationCost: $medicationCost, ')
+          ..write('averageWeightGrams: $averageWeightGrams, ')
+          ..write('notes: $notes')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+      id,
+      broodingBatchId,
+      logDate,
+      temperatureCelsius,
+      heatingStatus,
+      humidityPercent,
+      starterFeedKg,
+      feedCost,
+      mortalityCount,
+      cullCount,
+      medicationGiven,
+      medicationCost,
+      averageWeightGrams,
+      notes);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is LocalBroodingLog &&
+          other.id == this.id &&
+          other.broodingBatchId == this.broodingBatchId &&
+          other.logDate == this.logDate &&
+          other.temperatureCelsius == this.temperatureCelsius &&
+          other.heatingStatus == this.heatingStatus &&
+          other.humidityPercent == this.humidityPercent &&
+          other.starterFeedKg == this.starterFeedKg &&
+          other.feedCost == this.feedCost &&
+          other.mortalityCount == this.mortalityCount &&
+          other.cullCount == this.cullCount &&
+          other.medicationGiven == this.medicationGiven &&
+          other.medicationCost == this.medicationCost &&
+          other.averageWeightGrams == this.averageWeightGrams &&
+          other.notes == this.notes);
+}
+
+class LocalBroodingLogsCompanion extends UpdateCompanion<LocalBroodingLog> {
+  final Value<String> id;
+  final Value<String> broodingBatchId;
+  final Value<DateTime> logDate;
+  final Value<double?> temperatureCelsius;
+  final Value<String?> heatingStatus;
+  final Value<double?> humidityPercent;
+  final Value<double> starterFeedKg;
+  final Value<double> feedCost;
+  final Value<int> mortalityCount;
+  final Value<int> cullCount;
+  final Value<String?> medicationGiven;
+  final Value<double> medicationCost;
+  final Value<double?> averageWeightGrams;
+  final Value<String?> notes;
+  final Value<int> rowid;
+  const LocalBroodingLogsCompanion({
+    this.id = const Value.absent(),
+    this.broodingBatchId = const Value.absent(),
+    this.logDate = const Value.absent(),
+    this.temperatureCelsius = const Value.absent(),
+    this.heatingStatus = const Value.absent(),
+    this.humidityPercent = const Value.absent(),
+    this.starterFeedKg = const Value.absent(),
+    this.feedCost = const Value.absent(),
+    this.mortalityCount = const Value.absent(),
+    this.cullCount = const Value.absent(),
+    this.medicationGiven = const Value.absent(),
+    this.medicationCost = const Value.absent(),
+    this.averageWeightGrams = const Value.absent(),
+    this.notes = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  LocalBroodingLogsCompanion.insert({
+    required String id,
+    required String broodingBatchId,
+    required DateTime logDate,
+    this.temperatureCelsius = const Value.absent(),
+    this.heatingStatus = const Value.absent(),
+    this.humidityPercent = const Value.absent(),
+    this.starterFeedKg = const Value.absent(),
+    this.feedCost = const Value.absent(),
+    this.mortalityCount = const Value.absent(),
+    this.cullCount = const Value.absent(),
+    this.medicationGiven = const Value.absent(),
+    this.medicationCost = const Value.absent(),
+    this.averageWeightGrams = const Value.absent(),
+    this.notes = const Value.absent(),
+    this.rowid = const Value.absent(),
+  })  : id = Value(id),
+        broodingBatchId = Value(broodingBatchId),
+        logDate = Value(logDate);
+  static Insertable<LocalBroodingLog> custom({
+    Expression<String>? id,
+    Expression<String>? broodingBatchId,
+    Expression<DateTime>? logDate,
+    Expression<double>? temperatureCelsius,
+    Expression<String>? heatingStatus,
+    Expression<double>? humidityPercent,
+    Expression<double>? starterFeedKg,
+    Expression<double>? feedCost,
+    Expression<int>? mortalityCount,
+    Expression<int>? cullCount,
+    Expression<String>? medicationGiven,
+    Expression<double>? medicationCost,
+    Expression<double>? averageWeightGrams,
+    Expression<String>? notes,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (broodingBatchId != null) 'brooding_batch_id': broodingBatchId,
+      if (logDate != null) 'log_date': logDate,
+      if (temperatureCelsius != null) 'temperature_celsius': temperatureCelsius,
+      if (heatingStatus != null) 'heating_status': heatingStatus,
+      if (humidityPercent != null) 'humidity_percent': humidityPercent,
+      if (starterFeedKg != null) 'starter_feed_kg': starterFeedKg,
+      if (feedCost != null) 'feed_cost': feedCost,
+      if (mortalityCount != null) 'mortality_count': mortalityCount,
+      if (cullCount != null) 'cull_count': cullCount,
+      if (medicationGiven != null) 'medication_given': medicationGiven,
+      if (medicationCost != null) 'medication_cost': medicationCost,
+      if (averageWeightGrams != null)
+        'average_weight_grams': averageWeightGrams,
+      if (notes != null) 'notes': notes,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  LocalBroodingLogsCompanion copyWith(
+      {Value<String>? id,
+      Value<String>? broodingBatchId,
+      Value<DateTime>? logDate,
+      Value<double?>? temperatureCelsius,
+      Value<String?>? heatingStatus,
+      Value<double?>? humidityPercent,
+      Value<double>? starterFeedKg,
+      Value<double>? feedCost,
+      Value<int>? mortalityCount,
+      Value<int>? cullCount,
+      Value<String?>? medicationGiven,
+      Value<double>? medicationCost,
+      Value<double?>? averageWeightGrams,
+      Value<String?>? notes,
+      Value<int>? rowid}) {
+    return LocalBroodingLogsCompanion(
+      id: id ?? this.id,
+      broodingBatchId: broodingBatchId ?? this.broodingBatchId,
+      logDate: logDate ?? this.logDate,
+      temperatureCelsius: temperatureCelsius ?? this.temperatureCelsius,
+      heatingStatus: heatingStatus ?? this.heatingStatus,
+      humidityPercent: humidityPercent ?? this.humidityPercent,
+      starterFeedKg: starterFeedKg ?? this.starterFeedKg,
+      feedCost: feedCost ?? this.feedCost,
+      mortalityCount: mortalityCount ?? this.mortalityCount,
+      cullCount: cullCount ?? this.cullCount,
+      medicationGiven: medicationGiven ?? this.medicationGiven,
+      medicationCost: medicationCost ?? this.medicationCost,
+      averageWeightGrams: averageWeightGrams ?? this.averageWeightGrams,
+      notes: notes ?? this.notes,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (broodingBatchId.present) {
+      map['brooding_batch_id'] = Variable<String>(broodingBatchId.value);
+    }
+    if (logDate.present) {
+      map['log_date'] = Variable<DateTime>(logDate.value);
+    }
+    if (temperatureCelsius.present) {
+      map['temperature_celsius'] = Variable<double>(temperatureCelsius.value);
+    }
+    if (heatingStatus.present) {
+      map['heating_status'] = Variable<String>(heatingStatus.value);
+    }
+    if (humidityPercent.present) {
+      map['humidity_percent'] = Variable<double>(humidityPercent.value);
+    }
+    if (starterFeedKg.present) {
+      map['starter_feed_kg'] = Variable<double>(starterFeedKg.value);
+    }
+    if (feedCost.present) {
+      map['feed_cost'] = Variable<double>(feedCost.value);
+    }
+    if (mortalityCount.present) {
+      map['mortality_count'] = Variable<int>(mortalityCount.value);
+    }
+    if (cullCount.present) {
+      map['cull_count'] = Variable<int>(cullCount.value);
+    }
+    if (medicationGiven.present) {
+      map['medication_given'] = Variable<String>(medicationGiven.value);
+    }
+    if (medicationCost.present) {
+      map['medication_cost'] = Variable<double>(medicationCost.value);
+    }
+    if (averageWeightGrams.present) {
+      map['average_weight_grams'] = Variable<double>(averageWeightGrams.value);
+    }
+    if (notes.present) {
+      map['notes'] = Variable<String>(notes.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('LocalBroodingLogsCompanion(')
+          ..write('id: $id, ')
+          ..write('broodingBatchId: $broodingBatchId, ')
+          ..write('logDate: $logDate, ')
+          ..write('temperatureCelsius: $temperatureCelsius, ')
+          ..write('heatingStatus: $heatingStatus, ')
+          ..write('humidityPercent: $humidityPercent, ')
+          ..write('starterFeedKg: $starterFeedKg, ')
+          ..write('feedCost: $feedCost, ')
+          ..write('mortalityCount: $mortalityCount, ')
+          ..write('cullCount: $cullCount, ')
+          ..write('medicationGiven: $medicationGiven, ')
+          ..write('medicationCost: $medicationCost, ')
+          ..write('averageWeightGrams: $averageWeightGrams, ')
+          ..write('notes: $notes, ')
+          ..write('rowid: $rowid')
           ..write(')'))
         .toString();
   }
@@ -4129,6 +7028,14 @@ class $LocalFeedItemsTable extends LocalFeedItems
   late final GeneratedColumn<String> unit = GeneratedColumn<String>(
       'unit', aliasedName, false,
       type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _purchaseUnitMeta =
+      const VerificationMeta('purchaseUnit');
+  @override
+  late final GeneratedColumn<String> purchaseUnit = GeneratedColumn<String>(
+      'purchase_unit', aliasedName, false,
+      type: DriftSqlType.string,
+      requiredDuringInsert: false,
+      defaultValue: const Constant('bag'));
   static const VerificationMeta _currentStockMeta =
       const VerificationMeta('currentStock');
   @override
@@ -4185,6 +7092,7 @@ class $LocalFeedItemsTable extends LocalFeedItems
         name,
         category,
         unit,
+        purchaseUnit,
         currentStock,
         reorderThreshold,
         costPerUnit,
@@ -4225,6 +7133,12 @@ class $LocalFeedItemsTable extends LocalFeedItems
           _unitMeta, unit.isAcceptableOrUnknown(data['unit']!, _unitMeta));
     } else if (isInserting) {
       context.missing(_unitMeta);
+    }
+    if (data.containsKey('purchase_unit')) {
+      context.handle(
+          _purchaseUnitMeta,
+          purchaseUnit.isAcceptableOrUnknown(
+              data['purchase_unit']!, _purchaseUnitMeta));
     }
     if (data.containsKey('current_stock')) {
       context.handle(
@@ -4287,6 +7201,8 @@ class $LocalFeedItemsTable extends LocalFeedItems
           .read(DriftSqlType.string, data['${effectivePrefix}category'])!,
       unit: attachedDatabase.typeMapping
           .read(DriftSqlType.string, data['${effectivePrefix}unit'])!,
+      purchaseUnit: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}purchase_unit'])!,
       currentStock: attachedDatabase.typeMapping
           .read(DriftSqlType.double, data['${effectivePrefix}current_stock'])!,
       reorderThreshold: attachedDatabase.typeMapping.read(
@@ -4315,6 +7231,7 @@ class LocalFeedItem extends DataClass implements Insertable<LocalFeedItem> {
   final String name;
   final String category;
   final String unit;
+  final String purchaseUnit;
   final double currentStock;
   final double reorderThreshold;
   final double costPerUnit;
@@ -4327,6 +7244,7 @@ class LocalFeedItem extends DataClass implements Insertable<LocalFeedItem> {
       required this.name,
       required this.category,
       required this.unit,
+      required this.purchaseUnit,
       required this.currentStock,
       required this.reorderThreshold,
       required this.costPerUnit,
@@ -4341,6 +7259,7 @@ class LocalFeedItem extends DataClass implements Insertable<LocalFeedItem> {
     map['name'] = Variable<String>(name);
     map['category'] = Variable<String>(category);
     map['unit'] = Variable<String>(unit);
+    map['purchase_unit'] = Variable<String>(purchaseUnit);
     map['current_stock'] = Variable<double>(currentStock);
     map['reorder_threshold'] = Variable<double>(reorderThreshold);
     map['cost_per_unit'] = Variable<double>(costPerUnit);
@@ -4359,6 +7278,7 @@ class LocalFeedItem extends DataClass implements Insertable<LocalFeedItem> {
       name: Value(name),
       category: Value(category),
       unit: Value(unit),
+      purchaseUnit: Value(purchaseUnit),
       currentStock: Value(currentStock),
       reorderThreshold: Value(reorderThreshold),
       costPerUnit: Value(costPerUnit),
@@ -4379,6 +7299,7 @@ class LocalFeedItem extends DataClass implements Insertable<LocalFeedItem> {
       name: serializer.fromJson<String>(json['name']),
       category: serializer.fromJson<String>(json['category']),
       unit: serializer.fromJson<String>(json['unit']),
+      purchaseUnit: serializer.fromJson<String>(json['purchaseUnit']),
       currentStock: serializer.fromJson<double>(json['currentStock']),
       reorderThreshold: serializer.fromJson<double>(json['reorderThreshold']),
       costPerUnit: serializer.fromJson<double>(json['costPerUnit']),
@@ -4396,6 +7317,7 @@ class LocalFeedItem extends DataClass implements Insertable<LocalFeedItem> {
       'name': serializer.toJson<String>(name),
       'category': serializer.toJson<String>(category),
       'unit': serializer.toJson<String>(unit),
+      'purchaseUnit': serializer.toJson<String>(purchaseUnit),
       'currentStock': serializer.toJson<double>(currentStock),
       'reorderThreshold': serializer.toJson<double>(reorderThreshold),
       'costPerUnit': serializer.toJson<double>(costPerUnit),
@@ -4411,6 +7333,7 @@ class LocalFeedItem extends DataClass implements Insertable<LocalFeedItem> {
           String? name,
           String? category,
           String? unit,
+          String? purchaseUnit,
           double? currentStock,
           double? reorderThreshold,
           double? costPerUnit,
@@ -4423,6 +7346,7 @@ class LocalFeedItem extends DataClass implements Insertable<LocalFeedItem> {
         name: name ?? this.name,
         category: category ?? this.category,
         unit: unit ?? this.unit,
+        purchaseUnit: purchaseUnit ?? this.purchaseUnit,
         currentStock: currentStock ?? this.currentStock,
         reorderThreshold: reorderThreshold ?? this.reorderThreshold,
         costPerUnit: costPerUnit ?? this.costPerUnit,
@@ -4437,6 +7361,9 @@ class LocalFeedItem extends DataClass implements Insertable<LocalFeedItem> {
       name: data.name.present ? data.name.value : this.name,
       category: data.category.present ? data.category.value : this.category,
       unit: data.unit.present ? data.unit.value : this.unit,
+      purchaseUnit: data.purchaseUnit.present
+          ? data.purchaseUnit.value
+          : this.purchaseUnit,
       currentStock: data.currentStock.present
           ? data.currentStock.value
           : this.currentStock,
@@ -4461,6 +7388,7 @@ class LocalFeedItem extends DataClass implements Insertable<LocalFeedItem> {
           ..write('name: $name, ')
           ..write('category: $category, ')
           ..write('unit: $unit, ')
+          ..write('purchaseUnit: $purchaseUnit, ')
           ..write('currentStock: $currentStock, ')
           ..write('reorderThreshold: $reorderThreshold, ')
           ..write('costPerUnit: $costPerUnit, ')
@@ -4478,6 +7406,7 @@ class LocalFeedItem extends DataClass implements Insertable<LocalFeedItem> {
       name,
       category,
       unit,
+      purchaseUnit,
       currentStock,
       reorderThreshold,
       costPerUnit,
@@ -4493,6 +7422,7 @@ class LocalFeedItem extends DataClass implements Insertable<LocalFeedItem> {
           other.name == this.name &&
           other.category == this.category &&
           other.unit == this.unit &&
+          other.purchaseUnit == this.purchaseUnit &&
           other.currentStock == this.currentStock &&
           other.reorderThreshold == this.reorderThreshold &&
           other.costPerUnit == this.costPerUnit &&
@@ -4507,6 +7437,7 @@ class LocalFeedItemsCompanion extends UpdateCompanion<LocalFeedItem> {
   final Value<String> name;
   final Value<String> category;
   final Value<String> unit;
+  final Value<String> purchaseUnit;
   final Value<double> currentStock;
   final Value<double> reorderThreshold;
   final Value<double> costPerUnit;
@@ -4520,6 +7451,7 @@ class LocalFeedItemsCompanion extends UpdateCompanion<LocalFeedItem> {
     this.name = const Value.absent(),
     this.category = const Value.absent(),
     this.unit = const Value.absent(),
+    this.purchaseUnit = const Value.absent(),
     this.currentStock = const Value.absent(),
     this.reorderThreshold = const Value.absent(),
     this.costPerUnit = const Value.absent(),
@@ -4534,6 +7466,7 @@ class LocalFeedItemsCompanion extends UpdateCompanion<LocalFeedItem> {
     required String name,
     required String category,
     required String unit,
+    this.purchaseUnit = const Value.absent(),
     required double currentStock,
     required double reorderThreshold,
     required double costPerUnit,
@@ -4554,6 +7487,7 @@ class LocalFeedItemsCompanion extends UpdateCompanion<LocalFeedItem> {
     Expression<String>? name,
     Expression<String>? category,
     Expression<String>? unit,
+    Expression<String>? purchaseUnit,
     Expression<double>? currentStock,
     Expression<double>? reorderThreshold,
     Expression<double>? costPerUnit,
@@ -4568,6 +7502,7 @@ class LocalFeedItemsCompanion extends UpdateCompanion<LocalFeedItem> {
       if (name != null) 'name': name,
       if (category != null) 'category': category,
       if (unit != null) 'unit': unit,
+      if (purchaseUnit != null) 'purchase_unit': purchaseUnit,
       if (currentStock != null) 'current_stock': currentStock,
       if (reorderThreshold != null) 'reorder_threshold': reorderThreshold,
       if (costPerUnit != null) 'cost_per_unit': costPerUnit,
@@ -4584,6 +7519,7 @@ class LocalFeedItemsCompanion extends UpdateCompanion<LocalFeedItem> {
       Value<String>? name,
       Value<String>? category,
       Value<String>? unit,
+      Value<String>? purchaseUnit,
       Value<double>? currentStock,
       Value<double>? reorderThreshold,
       Value<double>? costPerUnit,
@@ -4597,6 +7533,7 @@ class LocalFeedItemsCompanion extends UpdateCompanion<LocalFeedItem> {
       name: name ?? this.name,
       category: category ?? this.category,
       unit: unit ?? this.unit,
+      purchaseUnit: purchaseUnit ?? this.purchaseUnit,
       currentStock: currentStock ?? this.currentStock,
       reorderThreshold: reorderThreshold ?? this.reorderThreshold,
       costPerUnit: costPerUnit ?? this.costPerUnit,
@@ -4622,6 +7559,9 @@ class LocalFeedItemsCompanion extends UpdateCompanion<LocalFeedItem> {
     }
     if (unit.present) {
       map['unit'] = Variable<String>(unit.value);
+    }
+    if (purchaseUnit.present) {
+      map['purchase_unit'] = Variable<String>(purchaseUnit.value);
     }
     if (currentStock.present) {
       map['current_stock'] = Variable<double>(currentStock.value);
@@ -4657,6 +7597,7 @@ class LocalFeedItemsCompanion extends UpdateCompanion<LocalFeedItem> {
           ..write('name: $name, ')
           ..write('category: $category, ')
           ..write('unit: $unit, ')
+          ..write('purchaseUnit: $purchaseUnit, ')
           ..write('currentStock: $currentStock, ')
           ..write('reorderThreshold: $reorderThreshold, ')
           ..write('costPerUnit: $costPerUnit, ')
@@ -10328,6 +13269,16 @@ class $LocalSalaryAdvancesTable extends LocalSalaryAdvances
       defaultConstraints: GeneratedColumn.constraintIsAlways(
           'CHECK ("is_fully_repaid" IN (0, 1))'),
       defaultValue: const Constant(false));
+  static const VerificationMeta _isOneOffAdvanceMeta =
+      const VerificationMeta('isOneOffAdvance');
+  @override
+  late final GeneratedColumn<bool> isOneOffAdvance = GeneratedColumn<bool>(
+      'is_one_off_advance', aliasedName, false,
+      type: DriftSqlType.bool,
+      requiredDuringInsert: false,
+      defaultConstraints: GeneratedColumn.constraintIsAlways(
+          'CHECK ("is_one_off_advance" IN (0, 1))'),
+      defaultValue: const Constant(false));
   static const VerificationMeta _notesMeta = const VerificationMeta('notes');
   @override
   late final GeneratedColumn<String> notes = GeneratedColumn<String>(
@@ -10342,6 +13293,7 @@ class $LocalSalaryAdvancesTable extends LocalSalaryAdvances
         totalRepaid,
         collectionDate,
         isFullyRepaid,
+        isOneOffAdvance,
         notes
       ];
   @override
@@ -10401,6 +13353,12 @@ class $LocalSalaryAdvancesTable extends LocalSalaryAdvances
           isFullyRepaid.isAcceptableOrUnknown(
               data['is_fully_repaid']!, _isFullyRepaidMeta));
     }
+    if (data.containsKey('is_one_off_advance')) {
+      context.handle(
+          _isOneOffAdvanceMeta,
+          isOneOffAdvance.isAcceptableOrUnknown(
+              data['is_one_off_advance']!, _isOneOffAdvanceMeta));
+    }
     if (data.containsKey('notes')) {
       context.handle(
           _notesMeta, notes.isAcceptableOrUnknown(data['notes']!, _notesMeta));
@@ -10428,6 +13386,8 @@ class $LocalSalaryAdvancesTable extends LocalSalaryAdvances
           DriftSqlType.dateTime, data['${effectivePrefix}collection_date'])!,
       isFullyRepaid: attachedDatabase.typeMapping
           .read(DriftSqlType.bool, data['${effectivePrefix}is_fully_repaid'])!,
+      isOneOffAdvance: attachedDatabase.typeMapping.read(
+          DriftSqlType.bool, data['${effectivePrefix}is_one_off_advance'])!,
       notes: attachedDatabase.typeMapping
           .read(DriftSqlType.string, data['${effectivePrefix}notes']),
     );
@@ -10448,6 +13408,7 @@ class LocalSalaryAdvance extends DataClass
   final double totalRepaid;
   final DateTime collectionDate;
   final bool isFullyRepaid;
+  final bool isOneOffAdvance;
   final String? notes;
   const LocalSalaryAdvance(
       {required this.id,
@@ -10457,6 +13418,7 @@ class LocalSalaryAdvance extends DataClass
       required this.totalRepaid,
       required this.collectionDate,
       required this.isFullyRepaid,
+      required this.isOneOffAdvance,
       this.notes});
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -10468,6 +13430,7 @@ class LocalSalaryAdvance extends DataClass
     map['total_repaid'] = Variable<double>(totalRepaid);
     map['collection_date'] = Variable<DateTime>(collectionDate);
     map['is_fully_repaid'] = Variable<bool>(isFullyRepaid);
+    map['is_one_off_advance'] = Variable<bool>(isOneOffAdvance);
     if (!nullToAbsent || notes != null) {
       map['notes'] = Variable<String>(notes);
     }
@@ -10483,6 +13446,7 @@ class LocalSalaryAdvance extends DataClass
       totalRepaid: Value(totalRepaid),
       collectionDate: Value(collectionDate),
       isFullyRepaid: Value(isFullyRepaid),
+      isOneOffAdvance: Value(isOneOffAdvance),
       notes:
           notes == null && nullToAbsent ? const Value.absent() : Value(notes),
     );
@@ -10499,6 +13463,7 @@ class LocalSalaryAdvance extends DataClass
       totalRepaid: serializer.fromJson<double>(json['totalRepaid']),
       collectionDate: serializer.fromJson<DateTime>(json['collectionDate']),
       isFullyRepaid: serializer.fromJson<bool>(json['isFullyRepaid']),
+      isOneOffAdvance: serializer.fromJson<bool>(json['isOneOffAdvance']),
       notes: serializer.fromJson<String?>(json['notes']),
     );
   }
@@ -10513,6 +13478,7 @@ class LocalSalaryAdvance extends DataClass
       'totalRepaid': serializer.toJson<double>(totalRepaid),
       'collectionDate': serializer.toJson<DateTime>(collectionDate),
       'isFullyRepaid': serializer.toJson<bool>(isFullyRepaid),
+      'isOneOffAdvance': serializer.toJson<bool>(isOneOffAdvance),
       'notes': serializer.toJson<String?>(notes),
     };
   }
@@ -10525,6 +13491,7 @@ class LocalSalaryAdvance extends DataClass
           double? totalRepaid,
           DateTime? collectionDate,
           bool? isFullyRepaid,
+          bool? isOneOffAdvance,
           Value<String?> notes = const Value.absent()}) =>
       LocalSalaryAdvance(
         id: id ?? this.id,
@@ -10534,6 +13501,7 @@ class LocalSalaryAdvance extends DataClass
         totalRepaid: totalRepaid ?? this.totalRepaid,
         collectionDate: collectionDate ?? this.collectionDate,
         isFullyRepaid: isFullyRepaid ?? this.isFullyRepaid,
+        isOneOffAdvance: isOneOffAdvance ?? this.isOneOffAdvance,
         notes: notes.present ? notes.value : this.notes,
       );
   LocalSalaryAdvance copyWithCompanion(LocalSalaryAdvancesCompanion data) {
@@ -10554,6 +13522,9 @@ class LocalSalaryAdvance extends DataClass
       isFullyRepaid: data.isFullyRepaid.present
           ? data.isFullyRepaid.value
           : this.isFullyRepaid,
+      isOneOffAdvance: data.isOneOffAdvance.present
+          ? data.isOneOffAdvance.value
+          : this.isOneOffAdvance,
       notes: data.notes.present ? data.notes.value : this.notes,
     );
   }
@@ -10568,6 +13539,7 @@ class LocalSalaryAdvance extends DataClass
           ..write('totalRepaid: $totalRepaid, ')
           ..write('collectionDate: $collectionDate, ')
           ..write('isFullyRepaid: $isFullyRepaid, ')
+          ..write('isOneOffAdvance: $isOneOffAdvance, ')
           ..write('notes: $notes')
           ..write(')'))
         .toString();
@@ -10575,7 +13547,7 @@ class LocalSalaryAdvance extends DataClass
 
   @override
   int get hashCode => Object.hash(id, staffId, advanceAmount, monthlyDeduction,
-      totalRepaid, collectionDate, isFullyRepaid, notes);
+      totalRepaid, collectionDate, isFullyRepaid, isOneOffAdvance, notes);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -10587,6 +13559,7 @@ class LocalSalaryAdvance extends DataClass
           other.totalRepaid == this.totalRepaid &&
           other.collectionDate == this.collectionDate &&
           other.isFullyRepaid == this.isFullyRepaid &&
+          other.isOneOffAdvance == this.isOneOffAdvance &&
           other.notes == this.notes);
 }
 
@@ -10598,6 +13571,7 @@ class LocalSalaryAdvancesCompanion extends UpdateCompanion<LocalSalaryAdvance> {
   final Value<double> totalRepaid;
   final Value<DateTime> collectionDate;
   final Value<bool> isFullyRepaid;
+  final Value<bool> isOneOffAdvance;
   final Value<String?> notes;
   final Value<int> rowid;
   const LocalSalaryAdvancesCompanion({
@@ -10608,6 +13582,7 @@ class LocalSalaryAdvancesCompanion extends UpdateCompanion<LocalSalaryAdvance> {
     this.totalRepaid = const Value.absent(),
     this.collectionDate = const Value.absent(),
     this.isFullyRepaid = const Value.absent(),
+    this.isOneOffAdvance = const Value.absent(),
     this.notes = const Value.absent(),
     this.rowid = const Value.absent(),
   });
@@ -10619,6 +13594,7 @@ class LocalSalaryAdvancesCompanion extends UpdateCompanion<LocalSalaryAdvance> {
     this.totalRepaid = const Value.absent(),
     required DateTime collectionDate,
     this.isFullyRepaid = const Value.absent(),
+    this.isOneOffAdvance = const Value.absent(),
     this.notes = const Value.absent(),
     this.rowid = const Value.absent(),
   })  : id = Value(id),
@@ -10634,6 +13610,7 @@ class LocalSalaryAdvancesCompanion extends UpdateCompanion<LocalSalaryAdvance> {
     Expression<double>? totalRepaid,
     Expression<DateTime>? collectionDate,
     Expression<bool>? isFullyRepaid,
+    Expression<bool>? isOneOffAdvance,
     Expression<String>? notes,
     Expression<int>? rowid,
   }) {
@@ -10645,6 +13622,7 @@ class LocalSalaryAdvancesCompanion extends UpdateCompanion<LocalSalaryAdvance> {
       if (totalRepaid != null) 'total_repaid': totalRepaid,
       if (collectionDate != null) 'collection_date': collectionDate,
       if (isFullyRepaid != null) 'is_fully_repaid': isFullyRepaid,
+      if (isOneOffAdvance != null) 'is_one_off_advance': isOneOffAdvance,
       if (notes != null) 'notes': notes,
       if (rowid != null) 'rowid': rowid,
     });
@@ -10658,6 +13636,7 @@ class LocalSalaryAdvancesCompanion extends UpdateCompanion<LocalSalaryAdvance> {
       Value<double>? totalRepaid,
       Value<DateTime>? collectionDate,
       Value<bool>? isFullyRepaid,
+      Value<bool>? isOneOffAdvance,
       Value<String?>? notes,
       Value<int>? rowid}) {
     return LocalSalaryAdvancesCompanion(
@@ -10668,6 +13647,7 @@ class LocalSalaryAdvancesCompanion extends UpdateCompanion<LocalSalaryAdvance> {
       totalRepaid: totalRepaid ?? this.totalRepaid,
       collectionDate: collectionDate ?? this.collectionDate,
       isFullyRepaid: isFullyRepaid ?? this.isFullyRepaid,
+      isOneOffAdvance: isOneOffAdvance ?? this.isOneOffAdvance,
       notes: notes ?? this.notes,
       rowid: rowid ?? this.rowid,
     );
@@ -10697,6 +13677,9 @@ class LocalSalaryAdvancesCompanion extends UpdateCompanion<LocalSalaryAdvance> {
     if (isFullyRepaid.present) {
       map['is_fully_repaid'] = Variable<bool>(isFullyRepaid.value);
     }
+    if (isOneOffAdvance.present) {
+      map['is_one_off_advance'] = Variable<bool>(isOneOffAdvance.value);
+    }
     if (notes.present) {
       map['notes'] = Variable<String>(notes.value);
     }
@@ -10716,6 +13699,7 @@ class LocalSalaryAdvancesCompanion extends UpdateCompanion<LocalSalaryAdvance> {
           ..write('totalRepaid: $totalRepaid, ')
           ..write('collectionDate: $collectionDate, ')
           ..write('isFullyRepaid: $isFullyRepaid, ')
+          ..write('isOneOffAdvance: $isOneOffAdvance, ')
           ..write('notes: $notes, ')
           ..write('rowid: $rowid')
           ..write(')'))
@@ -12127,6 +15111,16 @@ abstract class _$LocalDatabase extends GeneratedDatabase {
       $LocalPoultryBatchesTable(this);
   late final $LocalPoultryLogsTable localPoultryLogs =
       $LocalPoultryLogsTable(this);
+  late final $LocalPoultryTreatmentsTable localPoultryTreatments =
+      $LocalPoultryTreatmentsTable(this);
+  late final $LocalPoultryFeedLogsTable localPoultryFeedLogs =
+      $LocalPoultryFeedLogsTable(this);
+  late final $LocalPoultryAdjustmentsTable localPoultryAdjustments =
+      $LocalPoultryAdjustmentsTable(this);
+  late final $LocalBroodingBatchesTable localBroodingBatches =
+      $LocalBroodingBatchesTable(this);
+  late final $LocalBroodingLogsTable localBroodingLogs =
+      $LocalBroodingLogsTable(this);
   late final $LocalAlertsTable localAlerts = $LocalAlertsTable(this);
   late final $SyncQueueTable syncQueue = $SyncQueueTable(this);
   late final $LocalFeedItemsTable localFeedItems = $LocalFeedItemsTable(this);
@@ -12171,6 +15165,11 @@ abstract class _$LocalDatabase extends GeneratedDatabase {
         localTasks,
         localPoultryBatches,
         localPoultryLogs,
+        localPoultryTreatments,
+        localPoultryFeedLogs,
+        localPoultryAdjustments,
+        localBroodingBatches,
+        localBroodingLogs,
         localAlerts,
         syncQueue,
         localFeedItems,
@@ -12623,8 +15622,6 @@ typedef $$LocalMilkRecordsTableCreateCompanionBuilder
   required DateTime recordDate,
   required String milkingSession,
   required double quantityLiters,
-  Value<double?> fatPercentage,
-  Value<double?> proteinPercentage,
   Value<bool> isWithdrawn,
   Value<int> rowid,
 });
@@ -12635,8 +15632,6 @@ typedef $$LocalMilkRecordsTableUpdateCompanionBuilder
   Value<DateTime> recordDate,
   Value<String> milkingSession,
   Value<double> quantityLiters,
-  Value<double?> fatPercentage,
-  Value<double?> proteinPercentage,
   Value<bool> isWithdrawn,
   Value<int> rowid,
 });
@@ -12665,13 +15660,6 @@ class $$LocalMilkRecordsTableFilterComposer
 
   ColumnFilters<double> get quantityLiters => $composableBuilder(
       column: $table.quantityLiters,
-      builder: (column) => ColumnFilters(column));
-
-  ColumnFilters<double> get fatPercentage => $composableBuilder(
-      column: $table.fatPercentage, builder: (column) => ColumnFilters(column));
-
-  ColumnFilters<double> get proteinPercentage => $composableBuilder(
-      column: $table.proteinPercentage,
       builder: (column) => ColumnFilters(column));
 
   ColumnFilters<bool> get isWithdrawn => $composableBuilder(
@@ -12704,14 +15692,6 @@ class $$LocalMilkRecordsTableOrderingComposer
       column: $table.quantityLiters,
       builder: (column) => ColumnOrderings(column));
 
-  ColumnOrderings<double> get fatPercentage => $composableBuilder(
-      column: $table.fatPercentage,
-      builder: (column) => ColumnOrderings(column));
-
-  ColumnOrderings<double> get proteinPercentage => $composableBuilder(
-      column: $table.proteinPercentage,
-      builder: (column) => ColumnOrderings(column));
-
   ColumnOrderings<bool> get isWithdrawn => $composableBuilder(
       column: $table.isWithdrawn, builder: (column) => ColumnOrderings(column));
 }
@@ -12739,12 +15719,6 @@ class $$LocalMilkRecordsTableAnnotationComposer
 
   GeneratedColumn<double> get quantityLiters => $composableBuilder(
       column: $table.quantityLiters, builder: (column) => column);
-
-  GeneratedColumn<double> get fatPercentage => $composableBuilder(
-      column: $table.fatPercentage, builder: (column) => column);
-
-  GeneratedColumn<double> get proteinPercentage => $composableBuilder(
-      column: $table.proteinPercentage, builder: (column) => column);
 
   GeneratedColumn<bool> get isWithdrawn => $composableBuilder(
       column: $table.isWithdrawn, builder: (column) => column);
@@ -12782,8 +15756,6 @@ class $$LocalMilkRecordsTableTableManager extends RootTableManager<
             Value<DateTime> recordDate = const Value.absent(),
             Value<String> milkingSession = const Value.absent(),
             Value<double> quantityLiters = const Value.absent(),
-            Value<double?> fatPercentage = const Value.absent(),
-            Value<double?> proteinPercentage = const Value.absent(),
             Value<bool> isWithdrawn = const Value.absent(),
             Value<int> rowid = const Value.absent(),
           }) =>
@@ -12793,8 +15765,6 @@ class $$LocalMilkRecordsTableTableManager extends RootTableManager<
             recordDate: recordDate,
             milkingSession: milkingSession,
             quantityLiters: quantityLiters,
-            fatPercentage: fatPercentage,
-            proteinPercentage: proteinPercentage,
             isWithdrawn: isWithdrawn,
             rowid: rowid,
           ),
@@ -12804,8 +15774,6 @@ class $$LocalMilkRecordsTableTableManager extends RootTableManager<
             required DateTime recordDate,
             required String milkingSession,
             required double quantityLiters,
-            Value<double?> fatPercentage = const Value.absent(),
-            Value<double?> proteinPercentage = const Value.absent(),
             Value<bool> isWithdrawn = const Value.absent(),
             Value<int> rowid = const Value.absent(),
           }) =>
@@ -12815,8 +15783,6 @@ class $$LocalMilkRecordsTableTableManager extends RootTableManager<
             recordDate: recordDate,
             milkingSession: milkingSession,
             quantityLiters: quantityLiters,
-            fatPercentage: fatPercentage,
-            proteinPercentage: proteinPercentage,
             isWithdrawn: isWithdrawn,
             rowid: rowid,
           ),
@@ -13366,6 +16332,9 @@ typedef $$LocalPoultryBatchesTableCreateCompanionBuilder
   required int currentCount,
   required DateTime startDate,
   required String status,
+  Value<String?> breed,
+  Value<String?> purpose,
+  Value<double> acquisitionCost,
   Value<int> rowid,
 });
 typedef $$LocalPoultryBatchesTableUpdateCompanionBuilder
@@ -13377,6 +16346,9 @@ typedef $$LocalPoultryBatchesTableUpdateCompanionBuilder
   Value<int> currentCount,
   Value<DateTime> startDate,
   Value<String> status,
+  Value<String?> breed,
+  Value<String?> purpose,
+  Value<double> acquisitionCost,
   Value<int> rowid,
 });
 
@@ -13409,6 +16381,16 @@ class $$LocalPoultryBatchesTableFilterComposer
 
   ColumnFilters<String> get status => $composableBuilder(
       column: $table.status, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get breed => $composableBuilder(
+      column: $table.breed, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get purpose => $composableBuilder(
+      column: $table.purpose, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<double> get acquisitionCost => $composableBuilder(
+      column: $table.acquisitionCost,
+      builder: (column) => ColumnFilters(column));
 }
 
 class $$LocalPoultryBatchesTableOrderingComposer
@@ -13442,6 +16424,16 @@ class $$LocalPoultryBatchesTableOrderingComposer
 
   ColumnOrderings<String> get status => $composableBuilder(
       column: $table.status, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get breed => $composableBuilder(
+      column: $table.breed, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get purpose => $composableBuilder(
+      column: $table.purpose, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<double> get acquisitionCost => $composableBuilder(
+      column: $table.acquisitionCost,
+      builder: (column) => ColumnOrderings(column));
 }
 
 class $$LocalPoultryBatchesTableAnnotationComposer
@@ -13473,6 +16465,15 @@ class $$LocalPoultryBatchesTableAnnotationComposer
 
   GeneratedColumn<String> get status =>
       $composableBuilder(column: $table.status, builder: (column) => column);
+
+  GeneratedColumn<String> get breed =>
+      $composableBuilder(column: $table.breed, builder: (column) => column);
+
+  GeneratedColumn<String> get purpose =>
+      $composableBuilder(column: $table.purpose, builder: (column) => column);
+
+  GeneratedColumn<double> get acquisitionCost => $composableBuilder(
+      column: $table.acquisitionCost, builder: (column) => column);
 }
 
 class $$LocalPoultryBatchesTableTableManager extends RootTableManager<
@@ -13512,6 +16513,9 @@ class $$LocalPoultryBatchesTableTableManager extends RootTableManager<
             Value<int> currentCount = const Value.absent(),
             Value<DateTime> startDate = const Value.absent(),
             Value<String> status = const Value.absent(),
+            Value<String?> breed = const Value.absent(),
+            Value<String?> purpose = const Value.absent(),
+            Value<double> acquisitionCost = const Value.absent(),
             Value<int> rowid = const Value.absent(),
           }) =>
               LocalPoultryBatchesCompanion(
@@ -13522,6 +16526,9 @@ class $$LocalPoultryBatchesTableTableManager extends RootTableManager<
             currentCount: currentCount,
             startDate: startDate,
             status: status,
+            breed: breed,
+            purpose: purpose,
+            acquisitionCost: acquisitionCost,
             rowid: rowid,
           ),
           createCompanionCallback: ({
@@ -13532,6 +16539,9 @@ class $$LocalPoultryBatchesTableTableManager extends RootTableManager<
             required int currentCount,
             required DateTime startDate,
             required String status,
+            Value<String?> breed = const Value.absent(),
+            Value<String?> purpose = const Value.absent(),
+            Value<double> acquisitionCost = const Value.absent(),
             Value<int> rowid = const Value.absent(),
           }) =>
               LocalPoultryBatchesCompanion.insert(
@@ -13542,6 +16552,9 @@ class $$LocalPoultryBatchesTableTableManager extends RootTableManager<
             currentCount: currentCount,
             startDate: startDate,
             status: status,
+            breed: breed,
+            purpose: purpose,
+            acquisitionCost: acquisitionCost,
             rowid: rowid,
           ),
           withReferenceMapper: (p0) => p0
@@ -13750,6 +16763,1386 @@ typedef $$LocalPoultryLogsTableProcessedTableManager = ProcessedTableManager<
       BaseReferences<_$LocalDatabase, $LocalPoultryLogsTable, LocalPoultryLog>
     ),
     LocalPoultryLog,
+    PrefetchHooks Function()>;
+typedef $$LocalPoultryTreatmentsTableCreateCompanionBuilder
+    = LocalPoultryTreatmentsCompanion Function({
+  required String id,
+  required String batchId,
+  Value<String?> medicationId,
+  required String medicationName,
+  required double quantityUsed,
+  required String unit,
+  Value<double> costPerUnit,
+  Value<double> totalCost,
+  required DateTime treatmentDate,
+  Value<String?> notes,
+  Value<int> rowid,
+});
+typedef $$LocalPoultryTreatmentsTableUpdateCompanionBuilder
+    = LocalPoultryTreatmentsCompanion Function({
+  Value<String> id,
+  Value<String> batchId,
+  Value<String?> medicationId,
+  Value<String> medicationName,
+  Value<double> quantityUsed,
+  Value<String> unit,
+  Value<double> costPerUnit,
+  Value<double> totalCost,
+  Value<DateTime> treatmentDate,
+  Value<String?> notes,
+  Value<int> rowid,
+});
+
+class $$LocalPoultryTreatmentsTableFilterComposer
+    extends Composer<_$LocalDatabase, $LocalPoultryTreatmentsTable> {
+  $$LocalPoultryTreatmentsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get id => $composableBuilder(
+      column: $table.id, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get batchId => $composableBuilder(
+      column: $table.batchId, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get medicationId => $composableBuilder(
+      column: $table.medicationId, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get medicationName => $composableBuilder(
+      column: $table.medicationName,
+      builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<double> get quantityUsed => $composableBuilder(
+      column: $table.quantityUsed, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get unit => $composableBuilder(
+      column: $table.unit, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<double> get costPerUnit => $composableBuilder(
+      column: $table.costPerUnit, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<double> get totalCost => $composableBuilder(
+      column: $table.totalCost, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<DateTime> get treatmentDate => $composableBuilder(
+      column: $table.treatmentDate, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get notes => $composableBuilder(
+      column: $table.notes, builder: (column) => ColumnFilters(column));
+}
+
+class $$LocalPoultryTreatmentsTableOrderingComposer
+    extends Composer<_$LocalDatabase, $LocalPoultryTreatmentsTable> {
+  $$LocalPoultryTreatmentsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get id => $composableBuilder(
+      column: $table.id, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get batchId => $composableBuilder(
+      column: $table.batchId, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get medicationId => $composableBuilder(
+      column: $table.medicationId,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get medicationName => $composableBuilder(
+      column: $table.medicationName,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<double> get quantityUsed => $composableBuilder(
+      column: $table.quantityUsed,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get unit => $composableBuilder(
+      column: $table.unit, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<double> get costPerUnit => $composableBuilder(
+      column: $table.costPerUnit, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<double> get totalCost => $composableBuilder(
+      column: $table.totalCost, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<DateTime> get treatmentDate => $composableBuilder(
+      column: $table.treatmentDate,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get notes => $composableBuilder(
+      column: $table.notes, builder: (column) => ColumnOrderings(column));
+}
+
+class $$LocalPoultryTreatmentsTableAnnotationComposer
+    extends Composer<_$LocalDatabase, $LocalPoultryTreatmentsTable> {
+  $$LocalPoultryTreatmentsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get batchId =>
+      $composableBuilder(column: $table.batchId, builder: (column) => column);
+
+  GeneratedColumn<String> get medicationId => $composableBuilder(
+      column: $table.medicationId, builder: (column) => column);
+
+  GeneratedColumn<String> get medicationName => $composableBuilder(
+      column: $table.medicationName, builder: (column) => column);
+
+  GeneratedColumn<double> get quantityUsed => $composableBuilder(
+      column: $table.quantityUsed, builder: (column) => column);
+
+  GeneratedColumn<String> get unit =>
+      $composableBuilder(column: $table.unit, builder: (column) => column);
+
+  GeneratedColumn<double> get costPerUnit => $composableBuilder(
+      column: $table.costPerUnit, builder: (column) => column);
+
+  GeneratedColumn<double> get totalCost =>
+      $composableBuilder(column: $table.totalCost, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get treatmentDate => $composableBuilder(
+      column: $table.treatmentDate, builder: (column) => column);
+
+  GeneratedColumn<String> get notes =>
+      $composableBuilder(column: $table.notes, builder: (column) => column);
+}
+
+class $$LocalPoultryTreatmentsTableTableManager extends RootTableManager<
+    _$LocalDatabase,
+    $LocalPoultryTreatmentsTable,
+    LocalPoultryTreatment,
+    $$LocalPoultryTreatmentsTableFilterComposer,
+    $$LocalPoultryTreatmentsTableOrderingComposer,
+    $$LocalPoultryTreatmentsTableAnnotationComposer,
+    $$LocalPoultryTreatmentsTableCreateCompanionBuilder,
+    $$LocalPoultryTreatmentsTableUpdateCompanionBuilder,
+    (
+      LocalPoultryTreatment,
+      BaseReferences<_$LocalDatabase, $LocalPoultryTreatmentsTable,
+          LocalPoultryTreatment>
+    ),
+    LocalPoultryTreatment,
+    PrefetchHooks Function()> {
+  $$LocalPoultryTreatmentsTableTableManager(
+      _$LocalDatabase db, $LocalPoultryTreatmentsTable table)
+      : super(TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$LocalPoultryTreatmentsTableFilterComposer(
+                  $db: db, $table: table),
+          createOrderingComposer: () =>
+              $$LocalPoultryTreatmentsTableOrderingComposer(
+                  $db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$LocalPoultryTreatmentsTableAnnotationComposer(
+                  $db: db, $table: table),
+          updateCompanionCallback: ({
+            Value<String> id = const Value.absent(),
+            Value<String> batchId = const Value.absent(),
+            Value<String?> medicationId = const Value.absent(),
+            Value<String> medicationName = const Value.absent(),
+            Value<double> quantityUsed = const Value.absent(),
+            Value<String> unit = const Value.absent(),
+            Value<double> costPerUnit = const Value.absent(),
+            Value<double> totalCost = const Value.absent(),
+            Value<DateTime> treatmentDate = const Value.absent(),
+            Value<String?> notes = const Value.absent(),
+            Value<int> rowid = const Value.absent(),
+          }) =>
+              LocalPoultryTreatmentsCompanion(
+            id: id,
+            batchId: batchId,
+            medicationId: medicationId,
+            medicationName: medicationName,
+            quantityUsed: quantityUsed,
+            unit: unit,
+            costPerUnit: costPerUnit,
+            totalCost: totalCost,
+            treatmentDate: treatmentDate,
+            notes: notes,
+            rowid: rowid,
+          ),
+          createCompanionCallback: ({
+            required String id,
+            required String batchId,
+            Value<String?> medicationId = const Value.absent(),
+            required String medicationName,
+            required double quantityUsed,
+            required String unit,
+            Value<double> costPerUnit = const Value.absent(),
+            Value<double> totalCost = const Value.absent(),
+            required DateTime treatmentDate,
+            Value<String?> notes = const Value.absent(),
+            Value<int> rowid = const Value.absent(),
+          }) =>
+              LocalPoultryTreatmentsCompanion.insert(
+            id: id,
+            batchId: batchId,
+            medicationId: medicationId,
+            medicationName: medicationName,
+            quantityUsed: quantityUsed,
+            unit: unit,
+            costPerUnit: costPerUnit,
+            totalCost: totalCost,
+            treatmentDate: treatmentDate,
+            notes: notes,
+            rowid: rowid,
+          ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ));
+}
+
+typedef $$LocalPoultryTreatmentsTableProcessedTableManager
+    = ProcessedTableManager<
+        _$LocalDatabase,
+        $LocalPoultryTreatmentsTable,
+        LocalPoultryTreatment,
+        $$LocalPoultryTreatmentsTableFilterComposer,
+        $$LocalPoultryTreatmentsTableOrderingComposer,
+        $$LocalPoultryTreatmentsTableAnnotationComposer,
+        $$LocalPoultryTreatmentsTableCreateCompanionBuilder,
+        $$LocalPoultryTreatmentsTableUpdateCompanionBuilder,
+        (
+          LocalPoultryTreatment,
+          BaseReferences<_$LocalDatabase, $LocalPoultryTreatmentsTable,
+              LocalPoultryTreatment>
+        ),
+        LocalPoultryTreatment,
+        PrefetchHooks Function()>;
+typedef $$LocalPoultryFeedLogsTableCreateCompanionBuilder
+    = LocalPoultryFeedLogsCompanion Function({
+  required String id,
+  required String batchId,
+  required String feedSourceType,
+  Value<String?> feedItemId,
+  Value<String?> formulaId,
+  required String feedName,
+  required double quantityKg,
+  Value<double> costPerKg,
+  Value<double> totalCost,
+  required DateTime logDate,
+  Value<String?> notes,
+  Value<int> rowid,
+});
+typedef $$LocalPoultryFeedLogsTableUpdateCompanionBuilder
+    = LocalPoultryFeedLogsCompanion Function({
+  Value<String> id,
+  Value<String> batchId,
+  Value<String> feedSourceType,
+  Value<String?> feedItemId,
+  Value<String?> formulaId,
+  Value<String> feedName,
+  Value<double> quantityKg,
+  Value<double> costPerKg,
+  Value<double> totalCost,
+  Value<DateTime> logDate,
+  Value<String?> notes,
+  Value<int> rowid,
+});
+
+class $$LocalPoultryFeedLogsTableFilterComposer
+    extends Composer<_$LocalDatabase, $LocalPoultryFeedLogsTable> {
+  $$LocalPoultryFeedLogsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get id => $composableBuilder(
+      column: $table.id, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get batchId => $composableBuilder(
+      column: $table.batchId, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get feedSourceType => $composableBuilder(
+      column: $table.feedSourceType,
+      builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get feedItemId => $composableBuilder(
+      column: $table.feedItemId, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get formulaId => $composableBuilder(
+      column: $table.formulaId, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get feedName => $composableBuilder(
+      column: $table.feedName, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<double> get quantityKg => $composableBuilder(
+      column: $table.quantityKg, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<double> get costPerKg => $composableBuilder(
+      column: $table.costPerKg, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<double> get totalCost => $composableBuilder(
+      column: $table.totalCost, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<DateTime> get logDate => $composableBuilder(
+      column: $table.logDate, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get notes => $composableBuilder(
+      column: $table.notes, builder: (column) => ColumnFilters(column));
+}
+
+class $$LocalPoultryFeedLogsTableOrderingComposer
+    extends Composer<_$LocalDatabase, $LocalPoultryFeedLogsTable> {
+  $$LocalPoultryFeedLogsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get id => $composableBuilder(
+      column: $table.id, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get batchId => $composableBuilder(
+      column: $table.batchId, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get feedSourceType => $composableBuilder(
+      column: $table.feedSourceType,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get feedItemId => $composableBuilder(
+      column: $table.feedItemId, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get formulaId => $composableBuilder(
+      column: $table.formulaId, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get feedName => $composableBuilder(
+      column: $table.feedName, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<double> get quantityKg => $composableBuilder(
+      column: $table.quantityKg, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<double> get costPerKg => $composableBuilder(
+      column: $table.costPerKg, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<double> get totalCost => $composableBuilder(
+      column: $table.totalCost, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<DateTime> get logDate => $composableBuilder(
+      column: $table.logDate, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get notes => $composableBuilder(
+      column: $table.notes, builder: (column) => ColumnOrderings(column));
+}
+
+class $$LocalPoultryFeedLogsTableAnnotationComposer
+    extends Composer<_$LocalDatabase, $LocalPoultryFeedLogsTable> {
+  $$LocalPoultryFeedLogsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get batchId =>
+      $composableBuilder(column: $table.batchId, builder: (column) => column);
+
+  GeneratedColumn<String> get feedSourceType => $composableBuilder(
+      column: $table.feedSourceType, builder: (column) => column);
+
+  GeneratedColumn<String> get feedItemId => $composableBuilder(
+      column: $table.feedItemId, builder: (column) => column);
+
+  GeneratedColumn<String> get formulaId =>
+      $composableBuilder(column: $table.formulaId, builder: (column) => column);
+
+  GeneratedColumn<String> get feedName =>
+      $composableBuilder(column: $table.feedName, builder: (column) => column);
+
+  GeneratedColumn<double> get quantityKg => $composableBuilder(
+      column: $table.quantityKg, builder: (column) => column);
+
+  GeneratedColumn<double> get costPerKg =>
+      $composableBuilder(column: $table.costPerKg, builder: (column) => column);
+
+  GeneratedColumn<double> get totalCost =>
+      $composableBuilder(column: $table.totalCost, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get logDate =>
+      $composableBuilder(column: $table.logDate, builder: (column) => column);
+
+  GeneratedColumn<String> get notes =>
+      $composableBuilder(column: $table.notes, builder: (column) => column);
+}
+
+class $$LocalPoultryFeedLogsTableTableManager extends RootTableManager<
+    _$LocalDatabase,
+    $LocalPoultryFeedLogsTable,
+    LocalPoultryFeedLog,
+    $$LocalPoultryFeedLogsTableFilterComposer,
+    $$LocalPoultryFeedLogsTableOrderingComposer,
+    $$LocalPoultryFeedLogsTableAnnotationComposer,
+    $$LocalPoultryFeedLogsTableCreateCompanionBuilder,
+    $$LocalPoultryFeedLogsTableUpdateCompanionBuilder,
+    (
+      LocalPoultryFeedLog,
+      BaseReferences<_$LocalDatabase, $LocalPoultryFeedLogsTable,
+          LocalPoultryFeedLog>
+    ),
+    LocalPoultryFeedLog,
+    PrefetchHooks Function()> {
+  $$LocalPoultryFeedLogsTableTableManager(
+      _$LocalDatabase db, $LocalPoultryFeedLogsTable table)
+      : super(TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$LocalPoultryFeedLogsTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$LocalPoultryFeedLogsTableOrderingComposer(
+                  $db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$LocalPoultryFeedLogsTableAnnotationComposer(
+                  $db: db, $table: table),
+          updateCompanionCallback: ({
+            Value<String> id = const Value.absent(),
+            Value<String> batchId = const Value.absent(),
+            Value<String> feedSourceType = const Value.absent(),
+            Value<String?> feedItemId = const Value.absent(),
+            Value<String?> formulaId = const Value.absent(),
+            Value<String> feedName = const Value.absent(),
+            Value<double> quantityKg = const Value.absent(),
+            Value<double> costPerKg = const Value.absent(),
+            Value<double> totalCost = const Value.absent(),
+            Value<DateTime> logDate = const Value.absent(),
+            Value<String?> notes = const Value.absent(),
+            Value<int> rowid = const Value.absent(),
+          }) =>
+              LocalPoultryFeedLogsCompanion(
+            id: id,
+            batchId: batchId,
+            feedSourceType: feedSourceType,
+            feedItemId: feedItemId,
+            formulaId: formulaId,
+            feedName: feedName,
+            quantityKg: quantityKg,
+            costPerKg: costPerKg,
+            totalCost: totalCost,
+            logDate: logDate,
+            notes: notes,
+            rowid: rowid,
+          ),
+          createCompanionCallback: ({
+            required String id,
+            required String batchId,
+            required String feedSourceType,
+            Value<String?> feedItemId = const Value.absent(),
+            Value<String?> formulaId = const Value.absent(),
+            required String feedName,
+            required double quantityKg,
+            Value<double> costPerKg = const Value.absent(),
+            Value<double> totalCost = const Value.absent(),
+            required DateTime logDate,
+            Value<String?> notes = const Value.absent(),
+            Value<int> rowid = const Value.absent(),
+          }) =>
+              LocalPoultryFeedLogsCompanion.insert(
+            id: id,
+            batchId: batchId,
+            feedSourceType: feedSourceType,
+            feedItemId: feedItemId,
+            formulaId: formulaId,
+            feedName: feedName,
+            quantityKg: quantityKg,
+            costPerKg: costPerKg,
+            totalCost: totalCost,
+            logDate: logDate,
+            notes: notes,
+            rowid: rowid,
+          ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ));
+}
+
+typedef $$LocalPoultryFeedLogsTableProcessedTableManager
+    = ProcessedTableManager<
+        _$LocalDatabase,
+        $LocalPoultryFeedLogsTable,
+        LocalPoultryFeedLog,
+        $$LocalPoultryFeedLogsTableFilterComposer,
+        $$LocalPoultryFeedLogsTableOrderingComposer,
+        $$LocalPoultryFeedLogsTableAnnotationComposer,
+        $$LocalPoultryFeedLogsTableCreateCompanionBuilder,
+        $$LocalPoultryFeedLogsTableUpdateCompanionBuilder,
+        (
+          LocalPoultryFeedLog,
+          BaseReferences<_$LocalDatabase, $LocalPoultryFeedLogsTable,
+              LocalPoultryFeedLog>
+        ),
+        LocalPoultryFeedLog,
+        PrefetchHooks Function()>;
+typedef $$LocalPoultryAdjustmentsTableCreateCompanionBuilder
+    = LocalPoultryAdjustmentsCompanion Function({
+  required String id,
+  required String batchId,
+  required String adjustmentType,
+  required int headCount,
+  required DateTime adjustmentDate,
+  Value<String?> reasonNotes,
+  Value<int> rowid,
+});
+typedef $$LocalPoultryAdjustmentsTableUpdateCompanionBuilder
+    = LocalPoultryAdjustmentsCompanion Function({
+  Value<String> id,
+  Value<String> batchId,
+  Value<String> adjustmentType,
+  Value<int> headCount,
+  Value<DateTime> adjustmentDate,
+  Value<String?> reasonNotes,
+  Value<int> rowid,
+});
+
+class $$LocalPoultryAdjustmentsTableFilterComposer
+    extends Composer<_$LocalDatabase, $LocalPoultryAdjustmentsTable> {
+  $$LocalPoultryAdjustmentsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get id => $composableBuilder(
+      column: $table.id, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get batchId => $composableBuilder(
+      column: $table.batchId, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get adjustmentType => $composableBuilder(
+      column: $table.adjustmentType,
+      builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<int> get headCount => $composableBuilder(
+      column: $table.headCount, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<DateTime> get adjustmentDate => $composableBuilder(
+      column: $table.adjustmentDate,
+      builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get reasonNotes => $composableBuilder(
+      column: $table.reasonNotes, builder: (column) => ColumnFilters(column));
+}
+
+class $$LocalPoultryAdjustmentsTableOrderingComposer
+    extends Composer<_$LocalDatabase, $LocalPoultryAdjustmentsTable> {
+  $$LocalPoultryAdjustmentsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get id => $composableBuilder(
+      column: $table.id, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get batchId => $composableBuilder(
+      column: $table.batchId, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get adjustmentType => $composableBuilder(
+      column: $table.adjustmentType,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<int> get headCount => $composableBuilder(
+      column: $table.headCount, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<DateTime> get adjustmentDate => $composableBuilder(
+      column: $table.adjustmentDate,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get reasonNotes => $composableBuilder(
+      column: $table.reasonNotes, builder: (column) => ColumnOrderings(column));
+}
+
+class $$LocalPoultryAdjustmentsTableAnnotationComposer
+    extends Composer<_$LocalDatabase, $LocalPoultryAdjustmentsTable> {
+  $$LocalPoultryAdjustmentsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get batchId =>
+      $composableBuilder(column: $table.batchId, builder: (column) => column);
+
+  GeneratedColumn<String> get adjustmentType => $composableBuilder(
+      column: $table.adjustmentType, builder: (column) => column);
+
+  GeneratedColumn<int> get headCount =>
+      $composableBuilder(column: $table.headCount, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get adjustmentDate => $composableBuilder(
+      column: $table.adjustmentDate, builder: (column) => column);
+
+  GeneratedColumn<String> get reasonNotes => $composableBuilder(
+      column: $table.reasonNotes, builder: (column) => column);
+}
+
+class $$LocalPoultryAdjustmentsTableTableManager extends RootTableManager<
+    _$LocalDatabase,
+    $LocalPoultryAdjustmentsTable,
+    LocalPoultryAdjustment,
+    $$LocalPoultryAdjustmentsTableFilterComposer,
+    $$LocalPoultryAdjustmentsTableOrderingComposer,
+    $$LocalPoultryAdjustmentsTableAnnotationComposer,
+    $$LocalPoultryAdjustmentsTableCreateCompanionBuilder,
+    $$LocalPoultryAdjustmentsTableUpdateCompanionBuilder,
+    (
+      LocalPoultryAdjustment,
+      BaseReferences<_$LocalDatabase, $LocalPoultryAdjustmentsTable,
+          LocalPoultryAdjustment>
+    ),
+    LocalPoultryAdjustment,
+    PrefetchHooks Function()> {
+  $$LocalPoultryAdjustmentsTableTableManager(
+      _$LocalDatabase db, $LocalPoultryAdjustmentsTable table)
+      : super(TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$LocalPoultryAdjustmentsTableFilterComposer(
+                  $db: db, $table: table),
+          createOrderingComposer: () =>
+              $$LocalPoultryAdjustmentsTableOrderingComposer(
+                  $db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$LocalPoultryAdjustmentsTableAnnotationComposer(
+                  $db: db, $table: table),
+          updateCompanionCallback: ({
+            Value<String> id = const Value.absent(),
+            Value<String> batchId = const Value.absent(),
+            Value<String> adjustmentType = const Value.absent(),
+            Value<int> headCount = const Value.absent(),
+            Value<DateTime> adjustmentDate = const Value.absent(),
+            Value<String?> reasonNotes = const Value.absent(),
+            Value<int> rowid = const Value.absent(),
+          }) =>
+              LocalPoultryAdjustmentsCompanion(
+            id: id,
+            batchId: batchId,
+            adjustmentType: adjustmentType,
+            headCount: headCount,
+            adjustmentDate: adjustmentDate,
+            reasonNotes: reasonNotes,
+            rowid: rowid,
+          ),
+          createCompanionCallback: ({
+            required String id,
+            required String batchId,
+            required String adjustmentType,
+            required int headCount,
+            required DateTime adjustmentDate,
+            Value<String?> reasonNotes = const Value.absent(),
+            Value<int> rowid = const Value.absent(),
+          }) =>
+              LocalPoultryAdjustmentsCompanion.insert(
+            id: id,
+            batchId: batchId,
+            adjustmentType: adjustmentType,
+            headCount: headCount,
+            adjustmentDate: adjustmentDate,
+            reasonNotes: reasonNotes,
+            rowid: rowid,
+          ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ));
+}
+
+typedef $$LocalPoultryAdjustmentsTableProcessedTableManager
+    = ProcessedTableManager<
+        _$LocalDatabase,
+        $LocalPoultryAdjustmentsTable,
+        LocalPoultryAdjustment,
+        $$LocalPoultryAdjustmentsTableFilterComposer,
+        $$LocalPoultryAdjustmentsTableOrderingComposer,
+        $$LocalPoultryAdjustmentsTableAnnotationComposer,
+        $$LocalPoultryAdjustmentsTableCreateCompanionBuilder,
+        $$LocalPoultryAdjustmentsTableUpdateCompanionBuilder,
+        (
+          LocalPoultryAdjustment,
+          BaseReferences<_$LocalDatabase, $LocalPoultryAdjustmentsTable,
+              LocalPoultryAdjustment>
+        ),
+        LocalPoultryAdjustment,
+        PrefetchHooks Function()>;
+typedef $$LocalBroodingBatchesTableCreateCompanionBuilder
+    = LocalBroodingBatchesCompanion Function({
+  required String id,
+  required String batchNumber,
+  required String penName,
+  required String chickSource,
+  Value<String?> hatcheryBatchId,
+  required int initialCount,
+  required int currentCount,
+  required DateTime startDate,
+  required DateTime targetGraduationDate,
+  required String status,
+  Value<double> initialChickCost,
+  Value<double> initialTemperatureCelsius,
+  Value<String?> breed,
+  Value<String?> notes,
+  Value<int> rowid,
+});
+typedef $$LocalBroodingBatchesTableUpdateCompanionBuilder
+    = LocalBroodingBatchesCompanion Function({
+  Value<String> id,
+  Value<String> batchNumber,
+  Value<String> penName,
+  Value<String> chickSource,
+  Value<String?> hatcheryBatchId,
+  Value<int> initialCount,
+  Value<int> currentCount,
+  Value<DateTime> startDate,
+  Value<DateTime> targetGraduationDate,
+  Value<String> status,
+  Value<double> initialChickCost,
+  Value<double> initialTemperatureCelsius,
+  Value<String?> breed,
+  Value<String?> notes,
+  Value<int> rowid,
+});
+
+class $$LocalBroodingBatchesTableFilterComposer
+    extends Composer<_$LocalDatabase, $LocalBroodingBatchesTable> {
+  $$LocalBroodingBatchesTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get id => $composableBuilder(
+      column: $table.id, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get batchNumber => $composableBuilder(
+      column: $table.batchNumber, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get penName => $composableBuilder(
+      column: $table.penName, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get chickSource => $composableBuilder(
+      column: $table.chickSource, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get hatcheryBatchId => $composableBuilder(
+      column: $table.hatcheryBatchId,
+      builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<int> get initialCount => $composableBuilder(
+      column: $table.initialCount, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<int> get currentCount => $composableBuilder(
+      column: $table.currentCount, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<DateTime> get startDate => $composableBuilder(
+      column: $table.startDate, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<DateTime> get targetGraduationDate => $composableBuilder(
+      column: $table.targetGraduationDate,
+      builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get status => $composableBuilder(
+      column: $table.status, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<double> get initialChickCost => $composableBuilder(
+      column: $table.initialChickCost,
+      builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<double> get initialTemperatureCelsius => $composableBuilder(
+      column: $table.initialTemperatureCelsius,
+      builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get breed => $composableBuilder(
+      column: $table.breed, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get notes => $composableBuilder(
+      column: $table.notes, builder: (column) => ColumnFilters(column));
+}
+
+class $$LocalBroodingBatchesTableOrderingComposer
+    extends Composer<_$LocalDatabase, $LocalBroodingBatchesTable> {
+  $$LocalBroodingBatchesTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get id => $composableBuilder(
+      column: $table.id, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get batchNumber => $composableBuilder(
+      column: $table.batchNumber, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get penName => $composableBuilder(
+      column: $table.penName, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get chickSource => $composableBuilder(
+      column: $table.chickSource, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get hatcheryBatchId => $composableBuilder(
+      column: $table.hatcheryBatchId,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<int> get initialCount => $composableBuilder(
+      column: $table.initialCount,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<int> get currentCount => $composableBuilder(
+      column: $table.currentCount,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<DateTime> get startDate => $composableBuilder(
+      column: $table.startDate, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<DateTime> get targetGraduationDate => $composableBuilder(
+      column: $table.targetGraduationDate,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get status => $composableBuilder(
+      column: $table.status, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<double> get initialChickCost => $composableBuilder(
+      column: $table.initialChickCost,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<double> get initialTemperatureCelsius => $composableBuilder(
+      column: $table.initialTemperatureCelsius,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get breed => $composableBuilder(
+      column: $table.breed, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get notes => $composableBuilder(
+      column: $table.notes, builder: (column) => ColumnOrderings(column));
+}
+
+class $$LocalBroodingBatchesTableAnnotationComposer
+    extends Composer<_$LocalDatabase, $LocalBroodingBatchesTable> {
+  $$LocalBroodingBatchesTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get batchNumber => $composableBuilder(
+      column: $table.batchNumber, builder: (column) => column);
+
+  GeneratedColumn<String> get penName =>
+      $composableBuilder(column: $table.penName, builder: (column) => column);
+
+  GeneratedColumn<String> get chickSource => $composableBuilder(
+      column: $table.chickSource, builder: (column) => column);
+
+  GeneratedColumn<String> get hatcheryBatchId => $composableBuilder(
+      column: $table.hatcheryBatchId, builder: (column) => column);
+
+  GeneratedColumn<int> get initialCount => $composableBuilder(
+      column: $table.initialCount, builder: (column) => column);
+
+  GeneratedColumn<int> get currentCount => $composableBuilder(
+      column: $table.currentCount, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get startDate =>
+      $composableBuilder(column: $table.startDate, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get targetGraduationDate => $composableBuilder(
+      column: $table.targetGraduationDate, builder: (column) => column);
+
+  GeneratedColumn<String> get status =>
+      $composableBuilder(column: $table.status, builder: (column) => column);
+
+  GeneratedColumn<double> get initialChickCost => $composableBuilder(
+      column: $table.initialChickCost, builder: (column) => column);
+
+  GeneratedColumn<double> get initialTemperatureCelsius => $composableBuilder(
+      column: $table.initialTemperatureCelsius, builder: (column) => column);
+
+  GeneratedColumn<String> get breed =>
+      $composableBuilder(column: $table.breed, builder: (column) => column);
+
+  GeneratedColumn<String> get notes =>
+      $composableBuilder(column: $table.notes, builder: (column) => column);
+}
+
+class $$LocalBroodingBatchesTableTableManager extends RootTableManager<
+    _$LocalDatabase,
+    $LocalBroodingBatchesTable,
+    LocalBroodingBatche,
+    $$LocalBroodingBatchesTableFilterComposer,
+    $$LocalBroodingBatchesTableOrderingComposer,
+    $$LocalBroodingBatchesTableAnnotationComposer,
+    $$LocalBroodingBatchesTableCreateCompanionBuilder,
+    $$LocalBroodingBatchesTableUpdateCompanionBuilder,
+    (
+      LocalBroodingBatche,
+      BaseReferences<_$LocalDatabase, $LocalBroodingBatchesTable,
+          LocalBroodingBatche>
+    ),
+    LocalBroodingBatche,
+    PrefetchHooks Function()> {
+  $$LocalBroodingBatchesTableTableManager(
+      _$LocalDatabase db, $LocalBroodingBatchesTable table)
+      : super(TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$LocalBroodingBatchesTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$LocalBroodingBatchesTableOrderingComposer(
+                  $db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$LocalBroodingBatchesTableAnnotationComposer(
+                  $db: db, $table: table),
+          updateCompanionCallback: ({
+            Value<String> id = const Value.absent(),
+            Value<String> batchNumber = const Value.absent(),
+            Value<String> penName = const Value.absent(),
+            Value<String> chickSource = const Value.absent(),
+            Value<String?> hatcheryBatchId = const Value.absent(),
+            Value<int> initialCount = const Value.absent(),
+            Value<int> currentCount = const Value.absent(),
+            Value<DateTime> startDate = const Value.absent(),
+            Value<DateTime> targetGraduationDate = const Value.absent(),
+            Value<String> status = const Value.absent(),
+            Value<double> initialChickCost = const Value.absent(),
+            Value<double> initialTemperatureCelsius = const Value.absent(),
+            Value<String?> breed = const Value.absent(),
+            Value<String?> notes = const Value.absent(),
+            Value<int> rowid = const Value.absent(),
+          }) =>
+              LocalBroodingBatchesCompanion(
+            id: id,
+            batchNumber: batchNumber,
+            penName: penName,
+            chickSource: chickSource,
+            hatcheryBatchId: hatcheryBatchId,
+            initialCount: initialCount,
+            currentCount: currentCount,
+            startDate: startDate,
+            targetGraduationDate: targetGraduationDate,
+            status: status,
+            initialChickCost: initialChickCost,
+            initialTemperatureCelsius: initialTemperatureCelsius,
+            breed: breed,
+            notes: notes,
+            rowid: rowid,
+          ),
+          createCompanionCallback: ({
+            required String id,
+            required String batchNumber,
+            required String penName,
+            required String chickSource,
+            Value<String?> hatcheryBatchId = const Value.absent(),
+            required int initialCount,
+            required int currentCount,
+            required DateTime startDate,
+            required DateTime targetGraduationDate,
+            required String status,
+            Value<double> initialChickCost = const Value.absent(),
+            Value<double> initialTemperatureCelsius = const Value.absent(),
+            Value<String?> breed = const Value.absent(),
+            Value<String?> notes = const Value.absent(),
+            Value<int> rowid = const Value.absent(),
+          }) =>
+              LocalBroodingBatchesCompanion.insert(
+            id: id,
+            batchNumber: batchNumber,
+            penName: penName,
+            chickSource: chickSource,
+            hatcheryBatchId: hatcheryBatchId,
+            initialCount: initialCount,
+            currentCount: currentCount,
+            startDate: startDate,
+            targetGraduationDate: targetGraduationDate,
+            status: status,
+            initialChickCost: initialChickCost,
+            initialTemperatureCelsius: initialTemperatureCelsius,
+            breed: breed,
+            notes: notes,
+            rowid: rowid,
+          ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ));
+}
+
+typedef $$LocalBroodingBatchesTableProcessedTableManager
+    = ProcessedTableManager<
+        _$LocalDatabase,
+        $LocalBroodingBatchesTable,
+        LocalBroodingBatche,
+        $$LocalBroodingBatchesTableFilterComposer,
+        $$LocalBroodingBatchesTableOrderingComposer,
+        $$LocalBroodingBatchesTableAnnotationComposer,
+        $$LocalBroodingBatchesTableCreateCompanionBuilder,
+        $$LocalBroodingBatchesTableUpdateCompanionBuilder,
+        (
+          LocalBroodingBatche,
+          BaseReferences<_$LocalDatabase, $LocalBroodingBatchesTable,
+              LocalBroodingBatche>
+        ),
+        LocalBroodingBatche,
+        PrefetchHooks Function()>;
+typedef $$LocalBroodingLogsTableCreateCompanionBuilder
+    = LocalBroodingLogsCompanion Function({
+  required String id,
+  required String broodingBatchId,
+  required DateTime logDate,
+  Value<double?> temperatureCelsius,
+  Value<String?> heatingStatus,
+  Value<double?> humidityPercent,
+  Value<double> starterFeedKg,
+  Value<double> feedCost,
+  Value<int> mortalityCount,
+  Value<int> cullCount,
+  Value<String?> medicationGiven,
+  Value<double> medicationCost,
+  Value<double?> averageWeightGrams,
+  Value<String?> notes,
+  Value<int> rowid,
+});
+typedef $$LocalBroodingLogsTableUpdateCompanionBuilder
+    = LocalBroodingLogsCompanion Function({
+  Value<String> id,
+  Value<String> broodingBatchId,
+  Value<DateTime> logDate,
+  Value<double?> temperatureCelsius,
+  Value<String?> heatingStatus,
+  Value<double?> humidityPercent,
+  Value<double> starterFeedKg,
+  Value<double> feedCost,
+  Value<int> mortalityCount,
+  Value<int> cullCount,
+  Value<String?> medicationGiven,
+  Value<double> medicationCost,
+  Value<double?> averageWeightGrams,
+  Value<String?> notes,
+  Value<int> rowid,
+});
+
+class $$LocalBroodingLogsTableFilterComposer
+    extends Composer<_$LocalDatabase, $LocalBroodingLogsTable> {
+  $$LocalBroodingLogsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get id => $composableBuilder(
+      column: $table.id, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get broodingBatchId => $composableBuilder(
+      column: $table.broodingBatchId,
+      builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<DateTime> get logDate => $composableBuilder(
+      column: $table.logDate, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<double> get temperatureCelsius => $composableBuilder(
+      column: $table.temperatureCelsius,
+      builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get heatingStatus => $composableBuilder(
+      column: $table.heatingStatus, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<double> get humidityPercent => $composableBuilder(
+      column: $table.humidityPercent,
+      builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<double> get starterFeedKg => $composableBuilder(
+      column: $table.starterFeedKg, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<double> get feedCost => $composableBuilder(
+      column: $table.feedCost, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<int> get mortalityCount => $composableBuilder(
+      column: $table.mortalityCount,
+      builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<int> get cullCount => $composableBuilder(
+      column: $table.cullCount, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get medicationGiven => $composableBuilder(
+      column: $table.medicationGiven,
+      builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<double> get medicationCost => $composableBuilder(
+      column: $table.medicationCost,
+      builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<double> get averageWeightGrams => $composableBuilder(
+      column: $table.averageWeightGrams,
+      builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get notes => $composableBuilder(
+      column: $table.notes, builder: (column) => ColumnFilters(column));
+}
+
+class $$LocalBroodingLogsTableOrderingComposer
+    extends Composer<_$LocalDatabase, $LocalBroodingLogsTable> {
+  $$LocalBroodingLogsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get id => $composableBuilder(
+      column: $table.id, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get broodingBatchId => $composableBuilder(
+      column: $table.broodingBatchId,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<DateTime> get logDate => $composableBuilder(
+      column: $table.logDate, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<double> get temperatureCelsius => $composableBuilder(
+      column: $table.temperatureCelsius,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get heatingStatus => $composableBuilder(
+      column: $table.heatingStatus,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<double> get humidityPercent => $composableBuilder(
+      column: $table.humidityPercent,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<double> get starterFeedKg => $composableBuilder(
+      column: $table.starterFeedKg,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<double> get feedCost => $composableBuilder(
+      column: $table.feedCost, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<int> get mortalityCount => $composableBuilder(
+      column: $table.mortalityCount,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<int> get cullCount => $composableBuilder(
+      column: $table.cullCount, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get medicationGiven => $composableBuilder(
+      column: $table.medicationGiven,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<double> get medicationCost => $composableBuilder(
+      column: $table.medicationCost,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<double> get averageWeightGrams => $composableBuilder(
+      column: $table.averageWeightGrams,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get notes => $composableBuilder(
+      column: $table.notes, builder: (column) => ColumnOrderings(column));
+}
+
+class $$LocalBroodingLogsTableAnnotationComposer
+    extends Composer<_$LocalDatabase, $LocalBroodingLogsTable> {
+  $$LocalBroodingLogsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get broodingBatchId => $composableBuilder(
+      column: $table.broodingBatchId, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get logDate =>
+      $composableBuilder(column: $table.logDate, builder: (column) => column);
+
+  GeneratedColumn<double> get temperatureCelsius => $composableBuilder(
+      column: $table.temperatureCelsius, builder: (column) => column);
+
+  GeneratedColumn<String> get heatingStatus => $composableBuilder(
+      column: $table.heatingStatus, builder: (column) => column);
+
+  GeneratedColumn<double> get humidityPercent => $composableBuilder(
+      column: $table.humidityPercent, builder: (column) => column);
+
+  GeneratedColumn<double> get starterFeedKg => $composableBuilder(
+      column: $table.starterFeedKg, builder: (column) => column);
+
+  GeneratedColumn<double> get feedCost =>
+      $composableBuilder(column: $table.feedCost, builder: (column) => column);
+
+  GeneratedColumn<int> get mortalityCount => $composableBuilder(
+      column: $table.mortalityCount, builder: (column) => column);
+
+  GeneratedColumn<int> get cullCount =>
+      $composableBuilder(column: $table.cullCount, builder: (column) => column);
+
+  GeneratedColumn<String> get medicationGiven => $composableBuilder(
+      column: $table.medicationGiven, builder: (column) => column);
+
+  GeneratedColumn<double> get medicationCost => $composableBuilder(
+      column: $table.medicationCost, builder: (column) => column);
+
+  GeneratedColumn<double> get averageWeightGrams => $composableBuilder(
+      column: $table.averageWeightGrams, builder: (column) => column);
+
+  GeneratedColumn<String> get notes =>
+      $composableBuilder(column: $table.notes, builder: (column) => column);
+}
+
+class $$LocalBroodingLogsTableTableManager extends RootTableManager<
+    _$LocalDatabase,
+    $LocalBroodingLogsTable,
+    LocalBroodingLog,
+    $$LocalBroodingLogsTableFilterComposer,
+    $$LocalBroodingLogsTableOrderingComposer,
+    $$LocalBroodingLogsTableAnnotationComposer,
+    $$LocalBroodingLogsTableCreateCompanionBuilder,
+    $$LocalBroodingLogsTableUpdateCompanionBuilder,
+    (
+      LocalBroodingLog,
+      BaseReferences<_$LocalDatabase, $LocalBroodingLogsTable, LocalBroodingLog>
+    ),
+    LocalBroodingLog,
+    PrefetchHooks Function()> {
+  $$LocalBroodingLogsTableTableManager(
+      _$LocalDatabase db, $LocalBroodingLogsTable table)
+      : super(TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$LocalBroodingLogsTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$LocalBroodingLogsTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$LocalBroodingLogsTableAnnotationComposer(
+                  $db: db, $table: table),
+          updateCompanionCallback: ({
+            Value<String> id = const Value.absent(),
+            Value<String> broodingBatchId = const Value.absent(),
+            Value<DateTime> logDate = const Value.absent(),
+            Value<double?> temperatureCelsius = const Value.absent(),
+            Value<String?> heatingStatus = const Value.absent(),
+            Value<double?> humidityPercent = const Value.absent(),
+            Value<double> starterFeedKg = const Value.absent(),
+            Value<double> feedCost = const Value.absent(),
+            Value<int> mortalityCount = const Value.absent(),
+            Value<int> cullCount = const Value.absent(),
+            Value<String?> medicationGiven = const Value.absent(),
+            Value<double> medicationCost = const Value.absent(),
+            Value<double?> averageWeightGrams = const Value.absent(),
+            Value<String?> notes = const Value.absent(),
+            Value<int> rowid = const Value.absent(),
+          }) =>
+              LocalBroodingLogsCompanion(
+            id: id,
+            broodingBatchId: broodingBatchId,
+            logDate: logDate,
+            temperatureCelsius: temperatureCelsius,
+            heatingStatus: heatingStatus,
+            humidityPercent: humidityPercent,
+            starterFeedKg: starterFeedKg,
+            feedCost: feedCost,
+            mortalityCount: mortalityCount,
+            cullCount: cullCount,
+            medicationGiven: medicationGiven,
+            medicationCost: medicationCost,
+            averageWeightGrams: averageWeightGrams,
+            notes: notes,
+            rowid: rowid,
+          ),
+          createCompanionCallback: ({
+            required String id,
+            required String broodingBatchId,
+            required DateTime logDate,
+            Value<double?> temperatureCelsius = const Value.absent(),
+            Value<String?> heatingStatus = const Value.absent(),
+            Value<double?> humidityPercent = const Value.absent(),
+            Value<double> starterFeedKg = const Value.absent(),
+            Value<double> feedCost = const Value.absent(),
+            Value<int> mortalityCount = const Value.absent(),
+            Value<int> cullCount = const Value.absent(),
+            Value<String?> medicationGiven = const Value.absent(),
+            Value<double> medicationCost = const Value.absent(),
+            Value<double?> averageWeightGrams = const Value.absent(),
+            Value<String?> notes = const Value.absent(),
+            Value<int> rowid = const Value.absent(),
+          }) =>
+              LocalBroodingLogsCompanion.insert(
+            id: id,
+            broodingBatchId: broodingBatchId,
+            logDate: logDate,
+            temperatureCelsius: temperatureCelsius,
+            heatingStatus: heatingStatus,
+            humidityPercent: humidityPercent,
+            starterFeedKg: starterFeedKg,
+            feedCost: feedCost,
+            mortalityCount: mortalityCount,
+            cullCount: cullCount,
+            medicationGiven: medicationGiven,
+            medicationCost: medicationCost,
+            averageWeightGrams: averageWeightGrams,
+            notes: notes,
+            rowid: rowid,
+          ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ));
+}
+
+typedef $$LocalBroodingLogsTableProcessedTableManager = ProcessedTableManager<
+    _$LocalDatabase,
+    $LocalBroodingLogsTable,
+    LocalBroodingLog,
+    $$LocalBroodingLogsTableFilterComposer,
+    $$LocalBroodingLogsTableOrderingComposer,
+    $$LocalBroodingLogsTableAnnotationComposer,
+    $$LocalBroodingLogsTableCreateCompanionBuilder,
+    $$LocalBroodingLogsTableUpdateCompanionBuilder,
+    (
+      LocalBroodingLog,
+      BaseReferences<_$LocalDatabase, $LocalBroodingLogsTable, LocalBroodingLog>
+    ),
+    LocalBroodingLog,
     PrefetchHooks Function()>;
 typedef $$LocalAlertsTableCreateCompanionBuilder = LocalAlertsCompanion
     Function({
@@ -14170,6 +18563,7 @@ typedef $$LocalFeedItemsTableCreateCompanionBuilder = LocalFeedItemsCompanion
   required String name,
   required String category,
   required String unit,
+  Value<String> purchaseUnit,
   required double currentStock,
   required double reorderThreshold,
   required double costPerUnit,
@@ -14185,6 +18579,7 @@ typedef $$LocalFeedItemsTableUpdateCompanionBuilder = LocalFeedItemsCompanion
   Value<String> name,
   Value<String> category,
   Value<String> unit,
+  Value<String> purchaseUnit,
   Value<double> currentStock,
   Value<double> reorderThreshold,
   Value<double> costPerUnit,
@@ -14215,6 +18610,9 @@ class $$LocalFeedItemsTableFilterComposer
 
   ColumnFilters<String> get unit => $composableBuilder(
       column: $table.unit, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get purchaseUnit => $composableBuilder(
+      column: $table.purchaseUnit, builder: (column) => ColumnFilters(column));
 
   ColumnFilters<double> get currentStock => $composableBuilder(
       column: $table.currentStock, builder: (column) => ColumnFilters(column));
@@ -14259,6 +18657,10 @@ class $$LocalFeedItemsTableOrderingComposer
 
   ColumnOrderings<String> get unit => $composableBuilder(
       column: $table.unit, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get purchaseUnit => $composableBuilder(
+      column: $table.purchaseUnit,
+      builder: (column) => ColumnOrderings(column));
 
   ColumnOrderings<double> get currentStock => $composableBuilder(
       column: $table.currentStock,
@@ -14305,6 +18707,9 @@ class $$LocalFeedItemsTableAnnotationComposer
 
   GeneratedColumn<String> get unit =>
       $composableBuilder(column: $table.unit, builder: (column) => column);
+
+  GeneratedColumn<String> get purchaseUnit => $composableBuilder(
+      column: $table.purchaseUnit, builder: (column) => column);
 
   GeneratedColumn<double> get currentStock => $composableBuilder(
       column: $table.currentStock, builder: (column) => column);
@@ -14359,6 +18764,7 @@ class $$LocalFeedItemsTableTableManager extends RootTableManager<
             Value<String> name = const Value.absent(),
             Value<String> category = const Value.absent(),
             Value<String> unit = const Value.absent(),
+            Value<String> purchaseUnit = const Value.absent(),
             Value<double> currentStock = const Value.absent(),
             Value<double> reorderThreshold = const Value.absent(),
             Value<double> costPerUnit = const Value.absent(),
@@ -14373,6 +18779,7 @@ class $$LocalFeedItemsTableTableManager extends RootTableManager<
             name: name,
             category: category,
             unit: unit,
+            purchaseUnit: purchaseUnit,
             currentStock: currentStock,
             reorderThreshold: reorderThreshold,
             costPerUnit: costPerUnit,
@@ -14387,6 +18794,7 @@ class $$LocalFeedItemsTableTableManager extends RootTableManager<
             required String name,
             required String category,
             required String unit,
+            Value<String> purchaseUnit = const Value.absent(),
             required double currentStock,
             required double reorderThreshold,
             required double costPerUnit,
@@ -14401,6 +18809,7 @@ class $$LocalFeedItemsTableTableManager extends RootTableManager<
             name: name,
             category: category,
             unit: unit,
+            purchaseUnit: purchaseUnit,
             currentStock: currentStock,
             reorderThreshold: reorderThreshold,
             costPerUnit: costPerUnit,
@@ -17238,6 +21647,7 @@ typedef $$LocalSalaryAdvancesTableCreateCompanionBuilder
   Value<double> totalRepaid,
   required DateTime collectionDate,
   Value<bool> isFullyRepaid,
+  Value<bool> isOneOffAdvance,
   Value<String?> notes,
   Value<int> rowid,
 });
@@ -17250,6 +21660,7 @@ typedef $$LocalSalaryAdvancesTableUpdateCompanionBuilder
   Value<double> totalRepaid,
   Value<DateTime> collectionDate,
   Value<bool> isFullyRepaid,
+  Value<bool> isOneOffAdvance,
   Value<String?> notes,
   Value<int> rowid,
 });
@@ -17285,6 +21696,10 @@ class $$LocalSalaryAdvancesTableFilterComposer
 
   ColumnFilters<bool> get isFullyRepaid => $composableBuilder(
       column: $table.isFullyRepaid, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<bool> get isOneOffAdvance => $composableBuilder(
+      column: $table.isOneOffAdvance,
+      builder: (column) => ColumnFilters(column));
 
   ColumnFilters<String> get notes => $composableBuilder(
       column: $table.notes, builder: (column) => ColumnFilters(column));
@@ -17324,6 +21739,10 @@ class $$LocalSalaryAdvancesTableOrderingComposer
       column: $table.isFullyRepaid,
       builder: (column) => ColumnOrderings(column));
 
+  ColumnOrderings<bool> get isOneOffAdvance => $composableBuilder(
+      column: $table.isOneOffAdvance,
+      builder: (column) => ColumnOrderings(column));
+
   ColumnOrderings<String> get notes => $composableBuilder(
       column: $table.notes, builder: (column) => ColumnOrderings(column));
 }
@@ -17357,6 +21776,9 @@ class $$LocalSalaryAdvancesTableAnnotationComposer
 
   GeneratedColumn<bool> get isFullyRepaid => $composableBuilder(
       column: $table.isFullyRepaid, builder: (column) => column);
+
+  GeneratedColumn<bool> get isOneOffAdvance => $composableBuilder(
+      column: $table.isOneOffAdvance, builder: (column) => column);
 
   GeneratedColumn<String> get notes =>
       $composableBuilder(column: $table.notes, builder: (column) => column);
@@ -17399,6 +21821,7 @@ class $$LocalSalaryAdvancesTableTableManager extends RootTableManager<
             Value<double> totalRepaid = const Value.absent(),
             Value<DateTime> collectionDate = const Value.absent(),
             Value<bool> isFullyRepaid = const Value.absent(),
+            Value<bool> isOneOffAdvance = const Value.absent(),
             Value<String?> notes = const Value.absent(),
             Value<int> rowid = const Value.absent(),
           }) =>
@@ -17410,6 +21833,7 @@ class $$LocalSalaryAdvancesTableTableManager extends RootTableManager<
             totalRepaid: totalRepaid,
             collectionDate: collectionDate,
             isFullyRepaid: isFullyRepaid,
+            isOneOffAdvance: isOneOffAdvance,
             notes: notes,
             rowid: rowid,
           ),
@@ -17421,6 +21845,7 @@ class $$LocalSalaryAdvancesTableTableManager extends RootTableManager<
             Value<double> totalRepaid = const Value.absent(),
             required DateTime collectionDate,
             Value<bool> isFullyRepaid = const Value.absent(),
+            Value<bool> isOneOffAdvance = const Value.absent(),
             Value<String?> notes = const Value.absent(),
             Value<int> rowid = const Value.absent(),
           }) =>
@@ -17432,6 +21857,7 @@ class $$LocalSalaryAdvancesTableTableManager extends RootTableManager<
             totalRepaid: totalRepaid,
             collectionDate: collectionDate,
             isFullyRepaid: isFullyRepaid,
+            isOneOffAdvance: isOneOffAdvance,
             notes: notes,
             rowid: rowid,
           ),
@@ -18168,6 +22594,18 @@ class $LocalDatabaseManager {
       $$LocalPoultryBatchesTableTableManager(_db, _db.localPoultryBatches);
   $$LocalPoultryLogsTableTableManager get localPoultryLogs =>
       $$LocalPoultryLogsTableTableManager(_db, _db.localPoultryLogs);
+  $$LocalPoultryTreatmentsTableTableManager get localPoultryTreatments =>
+      $$LocalPoultryTreatmentsTableTableManager(
+          _db, _db.localPoultryTreatments);
+  $$LocalPoultryFeedLogsTableTableManager get localPoultryFeedLogs =>
+      $$LocalPoultryFeedLogsTableTableManager(_db, _db.localPoultryFeedLogs);
+  $$LocalPoultryAdjustmentsTableTableManager get localPoultryAdjustments =>
+      $$LocalPoultryAdjustmentsTableTableManager(
+          _db, _db.localPoultryAdjustments);
+  $$LocalBroodingBatchesTableTableManager get localBroodingBatches =>
+      $$LocalBroodingBatchesTableTableManager(_db, _db.localBroodingBatches);
+  $$LocalBroodingLogsTableTableManager get localBroodingLogs =>
+      $$LocalBroodingLogsTableTableManager(_db, _db.localBroodingLogs);
   $$LocalAlertsTableTableManager get localAlerts =>
       $$LocalAlertsTableTableManager(_db, _db.localAlerts);
   $$SyncQueueTableTableManager get syncQueue =>

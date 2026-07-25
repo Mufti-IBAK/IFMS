@@ -66,7 +66,7 @@ class ApiClient {
           return s.length == 36 && s.contains('-');
         }
 
-        if (options.method == 'PATCH' || options.method == 'DELETE') {
+        if (options.method == 'PATCH' || options.method == 'DELETE' || options.method == 'PUT') {
           final segments = path.split('/');
           if (segments.length > 2) {
             String id;
@@ -232,7 +232,8 @@ class ApiClient {
     await _storage.delete(key: 'refresh_token');
   }
 
-  static bool isNetworkError(DioException e) {
+  static bool isNetworkError(Object? e) {
+    if (e is! DioException) return false;
     return e.type == DioExceptionType.connectionTimeout ||
         e.type == DioExceptionType.sendTimeout ||
         e.type == DioExceptionType.receiveTimeout ||

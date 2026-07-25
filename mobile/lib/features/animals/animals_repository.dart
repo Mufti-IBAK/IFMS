@@ -172,6 +172,7 @@ class AnimalsRepository {
             color: updateData.containsKey('color') ? Value(updateData['color']) : const Value.absent(),
             uniqueMarks: updateData.containsKey('unique_marks') ? Value(updateData['unique_marks']) : const Value.absent(),
             purpose: updateData.containsKey('purpose') ? Value(updateData['purpose']) : const Value.absent(),
+            pedigreeType: updateData.containsKey('pedigree_type') ? Value(updateData['pedigree_type']) : const Value.absent(),
             imagePath: imagePath != null ? Value(imagePath) : const Value.absent(),
           )
         );

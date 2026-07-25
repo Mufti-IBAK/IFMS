@@ -12,9 +12,6 @@ class HistoryTrackingScreen extends StatefulWidget {
 }
 
 class _HistoryTrackingScreenState extends State<HistoryTrackingScreen> {
-  List<dynamic> _logs = [];
-  bool _isLoading = true;
-
   String _selectedModule = 'All';
   String _selectedAction = 'All';
 
@@ -26,35 +23,6 @@ class _HistoryTrackingScreenState extends State<HistoryTrackingScreen> {
   @override
   void initState() {
     super.initState();
-    _loadLogs();
-  }
-
-  Future<void> _loadLogs() async {
-    setState(() => _isLoading = true);
-    try {
-      final moduleFilter = _selectedModule == 'All' ? null : _selectedModule.toLowerCase();
-      final actionFilter = _selectedAction == 'All' ? null : _selectedAction;
-
-      final logs = await sl<AuditRepository>().getAuditLogs(
-        moduleFilter: moduleFilter,
-        actionFilter: actionFilter,
-      );
-      
-      setState(() {
-        _logs = logs;
-        _isLoading = false;
-      });
-    } catch (e) {
-      setState(() => _isLoading = false);
-    }
-  }
-
-  List<dynamic> get _filteredLogs {
-    return _logs.where((log) {
-      final matchModule = _selectedModule == 'All' || log.moduleName.toLowerCase() == _selectedModule.toLowerCase();
-      final matchAction = _selectedAction == 'All' || log.actionType.toUpperCase() == _selectedAction.toUpperCase();
-      return matchModule && matchAction;
-    }).toList();
   }
 
   IconData _getModuleIcon(String module) {
@@ -91,89 +59,90 @@ class _HistoryTrackingScreenState extends State<HistoryTrackingScreen> {
 
   Widget _buildFilterBar() {
     return Container(
-      padding: const EdgeInsets.symmetric(vertical: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
-        color: Theme.of(context).scaffoldBackgroundColor,
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 4,
-            offset: const Offset(0, 2),
-          ),
-        ],
+        color: Colors.white,
+        border: Border(bottom: BorderSide(color: Colors.grey.shade200)),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      child: Row(
         children: [
-          SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: Row(
-              children: _actions.map((action) {
-                final isSelected = _selectedAction == action;
-                return Padding(
-                  padding: const EdgeInsets.only(right: 8),
-                  child: FilterChip(
-                    selected: isSelected,
-                    label: Text(action, style: TextStyle(
-                      color: isSelected ? Colors.white : AppColors.primary,
-                      fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                      fontSize: 12,
-                    )),
-                    backgroundColor: Colors.white,
-                    selectedColor: _getActionColor(action == 'All' ? 'CREATE' : action).withValues(alpha: 0.8),
-                    checkmarkColor: Colors.white,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(20),
-                      side: BorderSide(color: isSelected ? Colors.transparent : AppColors.primary.withValues(alpha: 0.2)),
-                    ),
-                    onSelected: (val) {
-                      setState(() => _selectedAction = action);
-                      _loadLogs();
-                    },
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text('Action Type', style: TextStyle(fontSize: 12, color: Colors.grey, fontWeight: FontWeight.bold)),
+                const SizedBox(height: 4),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12),
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade50,
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: Colors.grey.shade300),
                   ),
-                );
-              }).toList(),
+                  child: DropdownButtonHideUnderline(
+                    child: DropdownButton<String>(
+                      isExpanded: true,
+                      value: _selectedAction,
+                      icon: const Icon(Icons.arrow_drop_down, color: AppColors.primary),
+                      items: _actions.map((action) {
+                        return DropdownMenuItem<String>(
+                          value: action,
+                          child: Text(action, style: const TextStyle(fontSize: 14)),
+                        );
+                      }).toList(),
+                      onChanged: (val) {
+                        if (val != null) {
+                          setState(() => _selectedAction = val);
+                        }
+                      },
+                    ),
+                  ),
+                ),
+              ],
             ),
           ),
-          const SizedBox(height: 8),
-          SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: Row(
-              children: _modules.map((module) {
-                final isSelected = _selectedModule == module;
-                return Padding(
-                  padding: const EdgeInsets.only(right: 8),
-                  child: FilterChip(
-                    selected: isSelected,
-                    label: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        if (module != 'All') ...[
-                          Icon(_getModuleIcon(module), size: 14, color: isSelected ? Colors.white : Colors.grey[700]),
-                          const SizedBox(width: 4),
-                        ],
-                        Text(module, style: TextStyle(
-                          color: isSelected ? Colors.white : Colors.grey[800],
-                          fontSize: 12,
-                        )),
-                      ],
-                    ),
-                    backgroundColor: Colors.grey[100],
-                    selectedColor: AppColors.secondary,
-                    checkmarkColor: Colors.white,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(20),
-                      side: BorderSide(color: isSelected ? Colors.transparent : Colors.grey[300]!),
-                    ),
-                    onSelected: (val) {
-                      setState(() => _selectedModule = module);
-                      _loadLogs();
-                    },
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text('Module', style: TextStyle(fontSize: 12, color: Colors.grey, fontWeight: FontWeight.bold)),
+                const SizedBox(height: 4),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12),
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade50,
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: Colors.grey.shade300),
                   ),
-                );
-              }).toList(),
+                  child: DropdownButtonHideUnderline(
+                    child: DropdownButton<String>(
+                      isExpanded: true,
+                      value: _selectedModule,
+                      icon: const Icon(Icons.arrow_drop_down, color: AppColors.primary),
+                      items: _modules.map((module) {
+                        return DropdownMenuItem<String>(
+                          value: module,
+                          child: Row(
+                            children: [
+                              if (module != 'All') ...[
+                                Icon(_getModuleIcon(module), size: 16, color: AppColors.primary),
+                                const SizedBox(width: 8),
+                              ],
+                              Text(module, style: const TextStyle(fontSize: 14)),
+                            ],
+                          ),
+                        );
+                      }).toList(),
+                      onChanged: (val) {
+                        if (val != null) {
+                          setState(() => _selectedModule = val);
+                        }
+                      },
+                    ),
+                  ),
+                ),
+              ],
             ),
           ),
         ],
@@ -375,8 +344,6 @@ class _HistoryTrackingScreenState extends State<HistoryTrackingScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final filtered = _filteredLogs;
-
     return Scaffold(
       appBar: AppBar(
         title: const Text('FARM ACTIVITY TIMELINE', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, letterSpacing: 1.2)),
@@ -388,49 +355,59 @@ class _HistoryTrackingScreenState extends State<HistoryTrackingScreen> {
         children: [
           _buildFilterBar(),
           Expanded(
-            child: _isLoading
-                ? const Center(child: CircularProgressIndicator())
-                : RefreshIndicator(
-                    onRefresh: _loadLogs,
-                    color: AppColors.primary,
-                    child: filtered.isEmpty
-                        ? ListView(
-                            physics: const AlwaysScrollableScrollPhysics(),
-                            children: [
-                              SizedBox(
-                                height: MediaQuery.of(context).size.height * 0.6,
-                                child: Column(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    Icon(Icons.history, size: 80, color: Colors.grey[300]),
-                                    const SizedBox(height: 16),
-                                    Text(
-                                      'No activity recorded yet',
-                                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.grey[600]),
-                                    ),
-                                    const SizedBox(height: 8),
-                                    Text(
-                                      'Activities will appear here when actions are taken in the system.',
-                                      style: TextStyle(color: Colors.grey[500]),
-                                      textAlign: TextAlign.center,
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ],
-                          )
-                        : ListView.builder(
-                            padding: const EdgeInsets.only(top: 16, bottom: 32),
-                            itemCount: filtered.length,
-                            itemBuilder: (context, index) {
-                              return _buildTimelineItem(
-                                filtered[index],
-                                index == 0,
-                                index == filtered.length - 1,
-                              );
-                            },
-                          ),
-                  ),
+            child: StreamBuilder<List<dynamic>>(
+              stream: sl<AuditRepository>().watchAuditLogs(
+                moduleFilter: _selectedModule == 'All' ? null : _selectedModule,
+                actionFilter: _selectedAction == 'All' ? null : _selectedAction,
+              ),
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting && !snapshot.hasData) {
+                  return const Center(child: CircularProgressIndicator(color: AppColors.primary));
+                }
+                
+                final logs = snapshot.data ?? [];
+                
+                if (logs.isEmpty) {
+                  return ListView(
+                    physics: const AlwaysScrollableScrollPhysics(),
+                    children: [
+                      SizedBox(
+                        height: MediaQuery.of(context).size.height * 0.6,
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(Icons.history, size: 80, color: Colors.grey[300]),
+                            const SizedBox(height: 16),
+                            Text(
+                              'No activity recorded yet',
+                              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.grey[600]),
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              'Activities will appear here when actions are taken in the system.',
+                              style: TextStyle(color: Colors.grey[500]),
+                              textAlign: TextAlign.center,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  );
+                }
+
+                return ListView.builder(
+                  padding: const EdgeInsets.only(top: 16, bottom: 32),
+                  itemCount: logs.length,
+                  itemBuilder: (context, index) {
+                    return _buildTimelineItem(
+                      logs[index],
+                      index == 0,
+                      index == logs.length - 1,
+                    );
+                  },
+                );
+              },
+            ),
           ),
         ],
       ),

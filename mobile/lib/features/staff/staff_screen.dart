@@ -10,6 +10,7 @@ import 'staff_bloc.dart';
 
 import 'staff_profile_screen.dart';
 import '../../core/database/local_db.dart';
+import '../../core/di/service_locator.dart';
 
 class StaffScreen extends StatefulWidget {
   const StaffScreen({super.key});
@@ -301,18 +302,52 @@ class _StaffScreenState extends State<StaffScreen> with SingleTickerProviderStat
                 const SizedBox(width: 16),
                 Expanded(
                   child: ElevatedButton(
-                    onPressed: () {
+                    onPressed: () async {
+                      final staffList = state.staff;
+                      final budget = state.budget;
+                      final messenger = ScaffoldMessenger.of(context);
+                      
                       context.read<StaffBloc>().add(ProcessPayroll(DateTime.now()));
                       Navigator.pop(ctx);
                       
-                      // Generate and preview the PDF
+                      final db = sl<LocalDatabase>();
+                      final activeAdvances = await (db.select(db.localSalaryAdvances)..where((t) => t.isFullyRepaid.equals(false))).get();
+                      
+                      final enrichedStaff = staffList.map((member) {
+                        final staffAdv = activeAdvances.where((a) => a.staffId == member.id).toList();
+                        double oneOffAdvance = 0.0;
+                        double loanDeduction = 0.0;
+                        double remainingLoanBalance = 0.0;
+                        
+                        for (final a in staffAdv) {
+                          if (a.isOneOffAdvance) {
+                            oneOffAdvance += a.monthlyDeduction;
+                          } else {
+                            loanDeduction += a.monthlyDeduction;
+                            remainingLoanBalance += (a.advanceAmount - a.totalRepaid);
+                          }
+                        }
+                        
+                        final netPay = (member.baseSalary - oneOffAdvance - loanDeduction);
+                        
+                        return {
+                          'name': member.name,
+                          'role': member.role,
+                          'base_salary': member.baseSalary,
+                          'one_off_advance': oneOffAdvance,
+                          'loan_deduction': loanDeduction,
+                          'remaining_loan_balance': remainingLoanBalance,
+                          'net_pay': netPay < 0 ? 0.0 : netPay,
+                        };
+                      }).toList();
+
                       PayrollPdfService.generatePayrollPdf(
-                        staff: state.staff,
-                        budget: state.budget,
+                        staff: enrichedStaff,
+                        budget: budget,
                         farmName: 'Mufti-IBAK/IFMS',
                       );
                       
-                      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Payroll processing started')));
+                      messenger.showSnackBar(const SnackBar(content: Text('Payroll processing started')));
                     },
                     style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary, foregroundColor: Colors.white),
                     child: const Text('Run Payroll'),
@@ -493,7 +528,7 @@ class _StaffScreenState extends State<StaffScreen> with SingleTickerProviderStat
                 const SizedBox(height: 12),
                 GestureDetector(
                   onTap: () async {
-                    final date = await showDatePicker(
+                    final date = await showDatePicker(builder: (context, child) => Theme(data: Theme.of(context).copyWith(useMaterial3: false), child: MediaQuery(data: MediaQuery.of(context).copyWith(textScaleFactor: 1.0), child: child!)), 
                       context: context,
                       initialDate: selectedStartDate ?? DateTime.now(),
                       firstDate: DateTime(2000),
@@ -508,10 +543,15 @@ class _StaffScreenState extends State<StaffScreen> with SingleTickerProviderStat
                       children: [
                         const Icon(Icons.calendar_today, color: Colors.grey),
                         const SizedBox(width: 12),
-                        Text(selectedStartDate != null ? DateFormat('MMM dd, yyyy').format(selectedStartDate!) : 'Employment Start Date'),
+                        Text(selectedStartDate != null ? DateFormat('MMM dd, yyyy').format(selectedStartDate!) : 'Date of Assumption of Duty'),
                       ],
                     ),
                   ),
+                ),
+                const SizedBox(height: 4),
+                const Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 4),
+                  child: Text('* Specifically refers to the Date of Assumption of Duty', style: TextStyle(fontSize: 11, color: Colors.black54)),
                 ),
                 const SizedBox(height: 12),
                 TextField(controller: salaryCtrl, decoration: const InputDecoration(labelText: 'Base Salary', prefixIcon: Icon(Icons.payments)), keyboardType: TextInputType.number),
@@ -735,7 +775,7 @@ class _StaffScreenState extends State<StaffScreen> with SingleTickerProviderStat
                     _showSalaryAdvanceDialog(context, staffId, name);
                   },
                   icon: const Icon(Icons.money),
-                  label: const Text('Request Salary Advance'),
+                  label: const Text('Request Loan'),
                   style: OutlinedButton.styleFrom(
                     padding: const EdgeInsets.symmetric(vertical: 16),
                     foregroundColor: AppColors.primary,
@@ -792,7 +832,7 @@ class _StaffScreenState extends State<StaffScreen> with SingleTickerProviderStat
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('Record Salary Advance for $staffName', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                  Text('Record Loan for $staffName', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
                   const SizedBox(height: 24),
                   TextField(
                     controller: amountCtrl,
@@ -848,7 +888,7 @@ class _StaffScreenState extends State<StaffScreen> with SingleTickerProviderStat
                   ],
                   GestureDetector(
                     onTap: () async {
-                      final date = await showDatePicker(
+                      final date = await showDatePicker(builder: (context, child) => Theme(data: Theme.of(context).copyWith(useMaterial3: false), child: MediaQuery(data: MediaQuery.of(context).copyWith(textScaleFactor: 1.0), child: child!)), 
                         context: context,
                         initialDate: collectionDate,
                         firstDate: DateTime(2020),
@@ -894,7 +934,7 @@ class _StaffScreenState extends State<StaffScreen> with SingleTickerProviderStat
                         }));
                         Navigator.pop(ctx);
                         ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(content: Text('Salary advance of ₦${NumberFormat('#,##0').format(amt)} recorded (₦${NumberFormat('#,##0').format(monthlyDeduction)}/mo for $months mos)')),
+                          SnackBar(content: Text('Loan of ₦${NumberFormat('#,##0').format(amt)} recorded (₦${NumberFormat('#,##0').format(monthlyDeduction)}/mo for $months mos)')),
                         );
                       },
                       style: ElevatedButton.styleFrom(
