@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 import 'package:drift/drift.dart' show OrderingTerm, OrderingMode;
@@ -25,6 +26,7 @@ class PoultryScreen extends StatefulWidget {
 
 class _PoultryScreenState extends State<PoultryScreen> with SingleTickerProviderStateMixin {
   late TabController _tabController;
+  bool _isFabExtended = true;
 
   @override
   void initState() {
@@ -57,13 +59,23 @@ class _PoultryScreenState extends State<PoultryScreen> with SingleTickerProvider
             final activeBatches = state.batches.where((b) => b.status == 'active').toList();
             final closedBatches = state.batches.where((b) => b.status == 'closed').toList();
 
-            return TabBarView(
-              controller: _tabController,
-              children: [
-                _buildBatchList(context, activeBatches, true),
-                _buildBroodingTab(context),
-                _buildBatchList(context, closedBatches, false),
-              ],
+            return NotificationListener<UserScrollNotification>(
+              onNotification: (notification) {
+                if (notification.direction == ScrollDirection.reverse) {
+                  if (_isFabExtended) setState(() => _isFabExtended = false);
+                } else if (notification.direction == ScrollDirection.forward) {
+                  if (!_isFabExtended) setState(() => _isFabExtended = true);
+                }
+                return true;
+              },
+              child: TabBarView(
+                controller: _tabController,
+                children: [
+                  _buildBatchList(context, activeBatches, true),
+                  _buildBroodingTab(context),
+                  _buildBatchList(context, closedBatches, false),
+                ],
+              ),
             );
           }
           return const Center(child: Text('Error loading poultry data.'));
@@ -71,6 +83,7 @@ class _PoultryScreenState extends State<PoultryScreen> with SingleTickerProvider
       ),
       floatingActionButton: _tabController.index == 1
           ? FloatingActionButton.extended(
+              isExtended: _isFabExtended,
               onPressed: () {
                 showModalBottomSheet(
                   context: context,
@@ -85,6 +98,7 @@ class _PoultryScreenState extends State<PoultryScreen> with SingleTickerProvider
             )
           : _tabController.index == 0
               ? FloatingActionButton.extended(
+                  isExtended: _isFabExtended,
                   onPressed: () => _showStartBatchDialog(context),
                   label: const Text('Start Main Flock Batch'),
                   icon: const Icon(Icons.add),

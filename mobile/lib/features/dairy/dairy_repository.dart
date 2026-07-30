@@ -14,7 +14,9 @@ class DairyRepository {
 
   static double defaultMilkPrice = 500.0;
 
-  DairyRepository(this.db, this.apiClient);
+  DairyRepository(this.db, this.apiClient) {
+    getDefaultMilkPrice();
+  }
 
   Future<void> setDefaultMilkPrice(double price) async {
     defaultMilkPrice = price;
@@ -265,7 +267,7 @@ class DairyRepository {
       if (match != null) {
         totalSoldLiters += double.tryParse(match.group(1)!) ?? 0.0;
       } else {
-        totalSoldLiters += (tx.amount > 0 ? (tx.amount / 500.0) : 0.0);
+        totalSoldLiters += (tx.amount > 0 ? (tx.amount / (defaultMilkPrice > 0 ? defaultMilkPrice : 500.0)) : 0.0);
       }
     }
 

@@ -5,9 +5,9 @@ from pydantic import BaseModel, Field
 
 class TransactionCreate(BaseModel):
     transaction_type: str = Field(..., pattern="^(income|expense)$")
-    category: str = Field(..., pattern="^(milk_sales|animal_sales|poultry_sales|hatchery_sales|feed|medication|labor|equipment|utilities|misc)$")
+    category: str = Field(..., pattern="^(milk_sales|animal_sales|poultry_sales|hatchery_sales|feed|feed_purchase|medication|medical_treatment|animal_purchase|poultry_outlay|hatchery_outlay|labor|equipment|utilities|misc)$")
     amount: float = Field(..., gt=0.0)
-    related_entity_type: Optional[str] = Field(None, pattern="^(animal|poultry_batch|hatchery_batch)$")
+    related_entity_type: Optional[str] = Field(None, pattern="^(animal|poultry_batch|hatchery_batch|inventory|medication|farm)$")
     related_entity_id: Optional[UUID] = None
     description: Optional[str] = None
     transaction_date: date

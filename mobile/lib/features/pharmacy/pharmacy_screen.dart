@@ -7,6 +7,7 @@ import '../../core/database/local_db.dart';
 import '../animals/animals_repository.dart';
 import '../poultry/poultry_repository.dart';
 import 'pharmacy_bloc.dart';
+import '../../core/utils/dosage_calculator.dart';
 
 class PharmacyScreen extends StatefulWidget {
   const PharmacyScreen({super.key});
@@ -76,8 +77,10 @@ class _PharmacyScreenState extends State<PharmacyScreen> with SingleTickerProvid
               labelColor: Colors.white,
               unselectedLabelColor: Colors.white70,
               indicatorColor: AppColors.secondary,
+              labelStyle: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold),
+              unselectedLabelStyle: const TextStyle(fontSize: 11),
               tabs: const [
-                Tab(icon: Icon(Icons.medication), text: 'Meds Stock'),
+                Tab(icon: Icon(Icons.medication), text: 'Rx Stock'),
                 Tab(icon: Icon(Icons.history_edu), text: 'Treatments'),
                 Tab(icon: Icon(Icons.analytics), text: 'Audit Logs'),
               ],
@@ -177,52 +180,63 @@ class _PharmacyScreenState extends State<PharmacyScreen> with SingleTickerProvid
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Text(med.name, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-                                Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                                  decoration: BoxDecoration(
-                                    color: _getCategoryColor(med.category).withValues(alpha: 0.1),
-                                    borderRadius: BorderRadius.circular(8),
-                                  ),
+                                Expanded(
                                   child: Text(
-                                    _getCategoryDisplayName(med.category).toUpperCase(),
-                                    style: TextStyle(
-                                      color: _getCategoryColor(med.category),
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 10,
-                                    ),
+                                    med.name,
+                                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
                                   ),
                                 ),
-                                if (med.concentration != null && med.concentration!.isNotEmpty) ...[
-                                  const SizedBox(width: 6),
-                                  Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                                    decoration: BoxDecoration(
-                                      color: Colors.blue.withValues(alpha: 0.1),
-                                      borderRadius: BorderRadius.circular(12),
+                                const SizedBox(width: 8),
+                                Wrap(
+                                  spacing: 4,
+                                  runSpacing: 4,
+                                  alignment: WrapAlignment.end,
+                                  children: [
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                      decoration: BoxDecoration(
+                                        color: _getCategoryColor(med.category).withValues(alpha: 0.1),
+                                        borderRadius: BorderRadius.circular(8),
+                                      ),
+                                      child: Text(
+                                        _getCategoryDisplayName(med.category).toUpperCase(),
+                                        style: TextStyle(
+                                          color: _getCategoryColor(med.category),
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 10,
+                                        ),
+                                      ),
                                     ),
-                                    child: Text(
-                                      med.concentration!,
-                                      style: const TextStyle(color: Colors.blue, fontWeight: FontWeight.bold, fontSize: 10),
-                                    ),
-                                  ),
-                                ],
-                                if (med.dosageRateText != null && med.dosageRateText!.isNotEmpty) ...[
-                                  const SizedBox(width: 6),
-                                  Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                                    decoration: BoxDecoration(
-                                      color: Colors.teal.withValues(alpha: 0.1),
-                                      borderRadius: BorderRadius.circular(12),
-                                    ),
-                                    child: Text(
-                                      'Dose: ${med.dosageRateText!}',
-                                      style: const TextStyle(color: Colors.teal, fontWeight: FontWeight.bold, fontSize: 10),
-                                    ),
-                                  ),
-                                ],
+                                    if (med.concentration != null && med.concentration!.isNotEmpty)
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                        decoration: BoxDecoration(
+                                          color: Colors.blue.withValues(alpha: 0.1),
+                                          borderRadius: BorderRadius.circular(12),
+                                        ),
+                                        child: Text(
+                                          med.concentration!,
+                                          style: const TextStyle(color: Colors.blue, fontWeight: FontWeight.bold, fontSize: 10),
+                                        ),
+                                      ),
+                                    if (med.dosageRateText != null && med.dosageRateText!.isNotEmpty)
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                        decoration: BoxDecoration(
+                                          color: Colors.teal.withValues(alpha: 0.1),
+                                          borderRadius: BorderRadius.circular(12),
+                                        ),
+                                        child: Text(
+                                          'Dose: ${med.dosageRateText!}',
+                                          style: const TextStyle(color: Colors.teal, fontWeight: FontWeight.bold, fontSize: 10),
+                                        ),
+                                      ),
+                                  ],
+                                ),
                               ],
                             ),
                             const SizedBox(height: 8),
@@ -565,19 +579,22 @@ class _PharmacyScreenState extends State<PharmacyScreen> with SingleTickerProvid
     final supplierCtrl = TextEditingController();
     final milkWithdrawCtrl = TextEditingController(text: '0');
     final meatWithdrawCtrl = TextEditingController(text: '0');
-    final concentrationCtrl = TextEditingController();
-    final dosageMlCtrl = TextEditingController(text: '10');
-    String selectedDosagePreset = '10mg_kg';
+    final concValCtrl = TextEditingController(text: '2.5');
+    String concUnit = '%'; // '%', 'mg_ml', 'mg_tab', 'mg_g'
+    final dosageMlCtrl = TextEditingController(text: '7.5');
+    String selectedDosagePreset = '7.5mg_kg';
 
     // Wholesale Pricing Fields
     final numPacksCtrl = TextEditingController(text: '1');
     final costPackCtrl = TextEditingController();
     final unitsPackCtrl = TextEditingController(text: '100');
 
-    String category = 'antibiotic';
+    String category = 'dewormer';
     String unit = 'ml';
-    String purchaseUnitType = 'box';
+    String purchaseUnitType = 'bottle';
     DateTime? expiryDate;
+
+    int currentStep = 0; // 0: Basics, 1: Dosing & Safety, 2: Pricing & Stock
 
     showModalBottomSheet(
       context: context,
@@ -595,266 +612,581 @@ class _PharmacyScreenState extends State<PharmacyScreen> with SingleTickerProvid
             final double computedUnitCost = unitsPack > 0 ? (costPack / unitsPack) : 0.0;
             final double totalCost = numPacks * costPack;
 
+            // Concentration & Dosage auto-calculations
+            final double rawConcVal = double.tryParse(concValCtrl.text) ?? 0.0;
+            final double rateMgKg = double.tryParse(dosageMlCtrl.text) ?? 0.0;
+
+            double? concMgPerMl;
+            String concDisplayText = '';
+
+            if (rawConcVal > 0) {
+              if (concUnit == '%') {
+                concMgPerMl = rawConcVal * 10.0; // 2.5% = 25 mg/ml
+                concDisplayText = '$rawConcVal% (${concMgPerMl.toStringAsFixed(1)} mg/ml)';
+              } else if (concUnit == 'mg_ml') {
+                concMgPerMl = rawConcVal;
+                concDisplayText = '${rawConcVal.toStringAsFixed(1)} mg/ml';
+              } else if (concUnit == 'mg_tab') {
+                concMgPerMl = rawConcVal;
+                concDisplayText = '${rawConcVal.toStringAsFixed(1)} mg/tab';
+              } else {
+                concMgPerMl = rawConcVal;
+                concDisplayText = '${rawConcVal.toStringAsFixed(1)} mg/g';
+              }
+            }
+
+            // Live sample formula breakdown for a 42kg animal
+            double? sampleActiveMg;
+            double? sampleVolumeMl;
+            if (rateMgKg > 0) {
+              sampleActiveMg = 42.0 * rateMgKg;
+              if (concMgPerMl != null && concMgPerMl > 0) {
+                sampleVolumeMl = sampleActiveMg / concMgPerMl;
+              }
+            }
+
+            final sheetHeight = MediaQuery.of(context).size.height * 0.82;
+
             return Container(
+              height: sheetHeight,
               decoration: const BoxDecoration(
                 color: Colors.white,
                 borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
               ),
-              padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom, left: 24, right: 24, top: 24),
-              child: SingleChildScrollView(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text('Add New Medication', style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
-                    const SizedBox(height: 16),
-                    const Text('Medication General Details', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: AppColors.primary)),
-                    const Divider(),
-                    TextField(textCapitalization: TextCapitalization.sentences, controller: nameCtrl,
-                      decoration: const InputDecoration(labelText: 'Medication Name *', hintText: 'e.g. Oxytetracycline 20%'),
+              padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
+              child: Column(
+                children: [
+                  // Modal Header with Drag Handle & Step Tabs
+                  Container(
+                    padding: const EdgeInsets.fromLTRB(20, 10, 20, 12),
+                    decoration: BoxDecoration(
+                      color: Colors.grey.shade50,
+                      borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+                      border: Border(bottom: BorderSide(color: Colors.grey.shade200)),
                     ),
-                    const SizedBox(height: 8),
-                    Row(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
                       children: [
-                        Expanded(
-                          child: DropdownButtonFormField<String>(
-                            initialValue: category,
-                            decoration: const InputDecoration(labelText: 'Vet Category *'),
-                            isExpanded: true,
-                            items: const [
-                              DropdownMenuItem(value: 'antibiotic', child: Text('Antibiotic / Antimicrobial')),
-                              DropdownMenuItem(value: 'vaccine', child: Text('Vaccine')),
-                              DropdownMenuItem(value: 'dewormer', child: Text('Dewormer / Anthelmintic')),
-                              DropdownMenuItem(value: 'ectoparasiticide', child: Text('Ectoparasiticide (Tick/Flea)')),
-                              DropdownMenuItem(value: 'nsaid', child: Text('NSAID (Anti-inflammatory/Pain)')),
-                              DropdownMenuItem(value: 'hormone', child: Text('Hormone / Breeding')),
-                              DropdownMenuItem(value: 'supplement', child: Text('Supplement / Vitamin')),
-                              DropdownMenuItem(value: 'antiseptic', child: Text('Antiseptic / Disinfectant')),
-                              DropdownMenuItem(value: 'rehydration', child: Text('Rehydration / IV Fluids')),
-                              DropdownMenuItem(value: 'anesthetic', child: Text('Anesthetic / Sedative')),
-                              DropdownMenuItem(value: 'other', child: Text('Other / Miscellaneous')),
-                            ],
-                            onChanged: (v) => category = v!,
+                        Container(
+                          width: 36,
+                          height: 4,
+                          decoration: BoxDecoration(
+                            color: Colors.grey.shade300,
+                            borderRadius: BorderRadius.circular(2),
                           ),
                         ),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: TextField(
-                            controller: concentrationCtrl,
-                            textCapitalization: TextCapitalization.sentences,
-                            decoration: const InputDecoration(
-                              labelText: 'Concentration',
-                              hintText: 'e.g. 100 mg/ml or 10%',
+                        const SizedBox(height: 10),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            const Row(
+                              children: [
+                                Icon(Icons.medication_liquid, color: AppColors.primary, size: 20),
+                                SizedBox(width: 8),
+                                Text(
+                                  'Add New Medication',
+                                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                                ),
+                              ],
                             ),
-                          ),
+                            IconButton(
+                              icon: const Icon(Icons.close, size: 20),
+                              onPressed: () => Navigator.pop(dialogCtx),
+                              visualDensity: VisualDensity.compact,
+                              padding: EdgeInsets.zero,
+                              constraints: const BoxConstraints(),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 12),
+                        // 3 Step Tabs
+                        Row(
+                          children: [
+                            _buildStepTab(
+                              index: 0,
+                              title: '1. General',
+                              icon: Icons.info_outline,
+                              isActive: currentStep == 0,
+                              isCompleted: currentStep > 0,
+                              onTap: () => setStateDialog(() => currentStep = 0),
+                            ),
+                            const SizedBox(width: 6),
+                            _buildStepTab(
+                              index: 1,
+                              title: '2. Dosing',
+                              icon: Icons.science_outlined,
+                              isActive: currentStep == 1,
+                              isCompleted: currentStep > 1,
+                              onTap: () {
+                                if (nameCtrl.text.trim().isEmpty) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(content: Text('Please enter Medication Name first'), backgroundColor: AppColors.error),
+                                  );
+                                  return;
+                                }
+                                setStateDialog(() => currentStep = 1);
+                              },
+                            ),
+                            const SizedBox(width: 6),
+                            _buildStepTab(
+                              index: 2,
+                              title: '3. Pricing',
+                              icon: Icons.inventory_2_outlined,
+                              isActive: currentStep == 2,
+                              isCompleted: false,
+                              onTap: () {
+                                if (nameCtrl.text.trim().isEmpty) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(content: Text('Please enter Medication Name first'), backgroundColor: AppColors.error),
+                                  );
+                                  return;
+                                }
+                                setStateDialog(() => currentStep = 2);
+                              },
+                            ),
+                          ],
                         ),
                       ],
                     ),
-                    const SizedBox(height: 8),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: DropdownButtonFormField<String>(
-                            initialValue: unit,
-                            decoration: const InputDecoration(labelText: 'Dose Admin Unit *'),
-                            isExpanded: true,
-                            items: const [
-                              DropdownMenuItem(value: 'ml', child: Text('Milliliters (ml)')),
-                              DropdownMenuItem(value: 'mg', child: Text('Milligrams (mg)')),
-                              DropdownMenuItem(value: 'g', child: Text('Grams (g)')),
-                              DropdownMenuItem(value: 'tabs', child: Text('Tablets (tabs)')),
-                              DropdownMenuItem(value: 'doses', child: Text('Doses')),
-                              DropdownMenuItem(value: 'vials', child: Text('Vials')),
-                              DropdownMenuItem(value: 'ampoules', child: Text('Ampoules')),
-                              DropdownMenuItem(value: 'sachets', child: Text('Sachets')),
-                              DropdownMenuItem(value: 'bolus', child: Text('Bolus')),
-                            ],
-                            onChanged: (v) => setStateDialog(() => unit = v!),
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: TextField(textCapitalization: TextCapitalization.sentences, controller: thresholdCtrl,
-                            keyboardType: TextInputType.number,
-                            decoration: const InputDecoration(labelText: 'Reorder At *', suffixText: 'units'),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 12),
-                    const Text('Dosage Rate (Active Ingredient mg / kg bodyweight)', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: AppColors.primary)),
-                    const Divider(),
-                    Wrap(
-                      spacing: 6,
-                      runSpacing: 6,
-                      children: [
-                        ChoiceChip(
-                          label: const Text('0.2 mg/kg (Ivermectin)'),
-                          selected: selectedDosagePreset == '0.2mg_kg',
-                          onSelected: (sel) {
-                            if (sel) {
-                              setStateDialog(() {
-                                selectedDosagePreset = '0.2mg_kg';
-                                dosageMlCtrl.text = '0.2';
-                              });
-                            }
-                          },
-                        ),
-                        ChoiceChip(
-                          label: const Text('7.5 mg/kg (Levamisole)'),
-                          selected: selectedDosagePreset == '7.5mg_kg',
-                          onSelected: (sel) {
-                            if (sel) {
-                              setStateDialog(() {
-                                selectedDosagePreset = '7.5mg_kg';
-                                dosageMlCtrl.text = '7.5';
-                              });
-                            }
-                          },
-                        ),
-                        ChoiceChip(
-                          label: const Text('10 mg/kg (Albendazole/Fenbendazole)'),
-                          selected: selectedDosagePreset == '10mg_kg',
-                          onSelected: (sel) {
-                            if (sel) {
-                              setStateDialog(() {
-                                selectedDosagePreset = '10mg_kg';
-                                dosageMlCtrl.text = '10';
-                              });
-                            }
-                          },
-                        ),
-                        ChoiceChip(
-                          label: const Text('20 mg/kg (LA Oxytet)'),
-                          selected: selectedDosagePreset == '20mg_kg',
-                          onSelected: (sel) {
-                            if (sel) {
-                              setStateDialog(() {
-                                selectedDosagePreset = '20mg_kg';
-                                dosageMlCtrl.text = '20';
-                              });
-                            }
-                          },
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 8),
-                    TextField(
-                      controller: dosageMlCtrl,
-                      keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                      decoration: const InputDecoration(
-                        labelText: 'Dosage Rate (mg / kg bodyweight) *',
-                        hintText: 'e.g. 10.0',
-                        suffixText: 'mg / kg',
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    const Text('Wholesale Purchase & Unit Cost Auto-Calc', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: AppColors.primary)),
-                    const Divider(),
-                    DropdownButtonFormField<String>(
-                      initialValue: purchaseUnitType,
-                      decoration: const InputDecoration(labelText: 'Purchase Package Type *'),
-                      isExpanded: true,
-                      items: const [
-                        DropdownMenuItem(value: 'pack', child: Text('Pack')),
-                        DropdownMenuItem(value: 'box', child: Text('Box')),
-                        DropdownMenuItem(value: 'bottle', child: Text('Bottle')),
-                        DropdownMenuItem(value: 'vial', child: Text('Vial')),
-                        DropdownMenuItem(value: 'ampoule', child: Text('Ampoule')),
-                        DropdownMenuItem(value: 'sachet', child: Text('Sachet')),
-                        DropdownMenuItem(value: 'tub', child: Text('Tub')),
-                      ],
-                      onChanged: (v) => purchaseUnitType = v!,
-                    ),
-                    const SizedBox(height: 8),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: TextField(textCapitalization: TextCapitalization.sentences, controller: numPacksCtrl,
-                            keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                            decoration: const InputDecoration(labelText: 'Packs/Boxes Bought *'),
-                            onChanged: (v) => setStateDialog(() {}),
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: TextField(textCapitalization: TextCapitalization.sentences, controller: costPackCtrl,
-                            keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                            decoration: const InputDecoration(labelText: 'Cost Per Pack (₦) *'),
-                            onChanged: (v) => setStateDialog(() {}),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 8),
-                    TextField(textCapitalization: TextCapitalization.sentences, controller: unitsPackCtrl,
-                      keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                      decoration: InputDecoration(
-                        labelText: 'Size / Dose Units inside each Pack *',
-                        hintText: 'e.g. 500 if 500 ml per bottle',
-                        suffixText: unit,
-                      ),
-                      onChanged: (v) => setStateDialog(() {}),
-                    ),
-                    const SizedBox(height: 12),
-                    // Summary Calculation Preview Card
-                    Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: Colors.green.withValues(alpha: 0.08),
-                        borderRadius: BorderRadius.circular(10),
-                        border: Border.all(color: Colors.green.withValues(alpha: 0.25)),
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
+                  ),
+
+                  // Linear Step Progress Bar
+                  LinearProgressIndicator(
+                    value: (currentStep + 1) / 3.0,
+                    backgroundColor: Colors.grey.shade200,
+                    valueColor: const AlwaysStoppedAnimation<Color>(AppColors.primary),
+                    minHeight: 3,
+                  ),
+
+                  // Step Content Body
+                  Expanded(
+                    child: SingleChildScrollView(
+                      padding: const EdgeInsets.all(20),
+                      child: IndexedStack(
+                        index: currentStep,
                         children: [
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          // ══ STEP 0: BASICS & CONCENTRATION ══
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              const Expanded(
-                                child: Text('Calculated Dose Unit Cost:', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w500)),
+                              const Text('Step 1: General Details & Strength', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: AppColors.primary)),
+                              const SizedBox(height: 12),
+                              TextField(
+                                textCapitalization: TextCapitalization.sentences,
+                                controller: nameCtrl,
+                                decoration: const InputDecoration(
+                                  labelText: 'Medication Name *',
+                                  hintText: 'e.g. Levamisole 2.5% or Oxytetracycline 20%',
+                                  prefixIcon: Icon(Icons.medication, size: 20),
+                                ),
                               ),
-                              const SizedBox(width: 8),
-                              Flexible(
-                                child: Text(
-                                  '₦ ${computedUnitCost.toStringAsFixed(2)} / $unit',
-                                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Colors.green),
-                                  overflow: TextOverflow.ellipsis,
+                              const SizedBox(height: 12),
+                              DropdownButtonFormField<String>(
+                                initialValue: category,
+                                decoration: const InputDecoration(
+                                  labelText: 'Vet Category *',
+                                  prefixIcon: Icon(Icons.category, size: 20),
+                                ),
+                                isExpanded: true,
+                                items: const [
+                                  DropdownMenuItem(value: 'antibiotic', child: Text('Antibiotic / Antimicrobial')),
+                                  DropdownMenuItem(value: 'vaccine', child: Text('Vaccine')),
+                                  DropdownMenuItem(value: 'dewormer', child: Text('Dewormer / Anthelmintic')),
+                                  DropdownMenuItem(value: 'ectoparasiticide', child: Text('Ectoparasiticide (Tick/Flea)')),
+                                  DropdownMenuItem(value: 'nsaid', child: Text('NSAID (Anti-inflammatory/Pain)')),
+                                  DropdownMenuItem(value: 'hormone', child: Text('Hormone / Breeding')),
+                                  DropdownMenuItem(value: 'supplement', child: Text('Supplement / Vitamin')),
+                                  DropdownMenuItem(value: 'antiseptic', child: Text('Antiseptic / Disinfectant')),
+                                  DropdownMenuItem(value: 'rehydration', child: Text('Rehydration / IV Fluids')),
+                                  DropdownMenuItem(value: 'anesthetic', child: Text('Anesthetic / Sedative')),
+                                  DropdownMenuItem(value: 'other', child: Text('Other / Miscellaneous')),
+                                ],
+                                onChanged: (v) => setStateDialog(() => category = v!),
+                              ),
+                              const SizedBox(height: 14),
+                              const Text('Drug Concentration (% or mg/ml)', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                              const SizedBox(height: 6),
+                              Row(
+                                children: [
+                                  Expanded(
+                                    flex: 2,
+                                    child: TextField(
+                                      controller: concValCtrl,
+                                      keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                                      decoration: const InputDecoration(
+                                        labelText: 'Concentration Value *',
+                                        hintText: 'e.g. 2.5 or 25',
+                                      ),
+                                      onChanged: (v) => setStateDialog(() {}),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Expanded(
+                                    flex: 3,
+                                    child: DropdownButtonFormField<String>(
+                                      initialValue: concUnit,
+                                      decoration: const InputDecoration(labelText: 'Unit *'),
+                                      isExpanded: true,
+                                      items: const [
+                                        DropdownMenuItem(value: '%', child: Text('% (Percentage)')),
+                                        DropdownMenuItem(value: 'mg_ml', child: Text('mg/ml (Liquid Conc.)')),
+                                        DropdownMenuItem(value: 'mg_tab', child: Text('mg/tab (Tablet Strength)')),
+                                        DropdownMenuItem(value: 'mg_g', child: Text('mg/g (Powder Conc.)')),
+                                      ],
+                                      onChanged: (v) => setStateDialog(() => concUnit = v!),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              if (concMgPerMl != null) ...[
+                                const SizedBox(height: 8),
+                                Container(
+                                  width: double.infinity,
+                                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                                  decoration: BoxDecoration(
+                                    color: Colors.teal.shade50,
+                                    borderRadius: BorderRadius.circular(8),
+                                    border: Border.all(color: Colors.teal.shade200),
+                                  ),
+                                  child: Text(
+                                    '💡 Active Concentration: ${concMgPerMl.toStringAsFixed(1)} mg/ml ${concUnit == "%" ? "(from $rawConcVal% × 10)" : ""}',
+                                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: Colors.teal.shade800),
+                                  ),
+                                ),
+                              ],
+                              const SizedBox(height: 14),
+                              Row(
+                                children: [
+                                  Expanded(
+                                    child: DropdownButtonFormField<String>(
+                                      initialValue: unit,
+                                      decoration: const InputDecoration(labelText: 'Dose Admin Unit *'),
+                                      isExpanded: true,
+                                      items: const [
+                                        DropdownMenuItem(value: 'ml', child: Text('Milliliters (ml)')),
+                                        DropdownMenuItem(value: 'mg', child: Text('Milligrams (mg)')),
+                                        DropdownMenuItem(value: 'g', child: Text('Grams (g)')),
+                                        DropdownMenuItem(value: 'tabs', child: Text('Tablets (tabs)')),
+                                        DropdownMenuItem(value: 'doses', child: Text('Doses')),
+                                        DropdownMenuItem(value: 'vials', child: Text('Vials')),
+                                        DropdownMenuItem(value: 'ampoules', child: Text('Ampoules')),
+                                        DropdownMenuItem(value: 'sachets', child: Text('Sachets')),
+                                        DropdownMenuItem(value: 'bolus', child: Text('Bolus')),
+                                      ],
+                                      onChanged: (v) => setStateDialog(() => unit = v!),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Expanded(
+                                    child: TextField(
+                                      textCapitalization: TextCapitalization.sentences,
+                                      controller: thresholdCtrl,
+                                      keyboardType: TextInputType.number,
+                                      decoration: const InputDecoration(labelText: 'Reorder At *', suffixText: 'units'),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+
+                          // ══ STEP 1: DOSING RATE & SAFETY ══
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text('Step 2: Dosing Rate & Withdrawal Safety', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: AppColors.primary)),
+                              const SizedBox(height: 10),
+                              const Text('Active Ingredient Rate (mg / kg bodyweight)', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.grey)),
+                              const SizedBox(height: 6),
+                              Wrap(
+                                spacing: 6,
+                                runSpacing: 6,
+                                children: [
+                                  ChoiceChip(
+                                    label: const Text('0.2 mg/kg (Ivermectin)'),
+                                    selected: selectedDosagePreset == '0.2mg_kg',
+                                    onSelected: (sel) {
+                                      if (sel) {
+                                        setStateDialog(() {
+                                          selectedDosagePreset = '0.2mg_kg';
+                                          dosageMlCtrl.text = '0.2';
+                                        });
+                                      }
+                                    },
+                                  ),
+                                  ChoiceChip(
+                                    label: const Text('7.5 mg/kg (Levamisole)'),
+                                    selected: selectedDosagePreset == '7.5mg_kg',
+                                    onSelected: (sel) {
+                                      if (sel) {
+                                        setStateDialog(() {
+                                          selectedDosagePreset = '7.5mg_kg';
+                                          dosageMlCtrl.text = '7.5';
+                                        });
+                                      }
+                                    },
+                                  ),
+                                  ChoiceChip(
+                                    label: const Text('10 mg/kg (Albendazole)'),
+                                    selected: selectedDosagePreset == '10mg_kg',
+                                    onSelected: (sel) {
+                                      if (sel) {
+                                        setStateDialog(() {
+                                          selectedDosagePreset = '10mg_kg';
+                                          dosageMlCtrl.text = '10';
+                                        });
+                                      }
+                                    },
+                                  ),
+                                  ChoiceChip(
+                                    label: const Text('20 mg/kg (LA Oxytet)'),
+                                    selected: selectedDosagePreset == '20mg_kg',
+                                    onSelected: (sel) {
+                                      if (sel) {
+                                        setStateDialog(() {
+                                          selectedDosagePreset = '20mg_kg';
+                                          dosageMlCtrl.text = '20';
+                                        });
+                                      }
+                                    },
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 8),
+                              TextField(
+                                controller: dosageMlCtrl,
+                                keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                                decoration: const InputDecoration(
+                                  labelText: 'Dosage Rate (mg / kg bodyweight) *',
+                                  hintText: 'e.g. 7.5',
+                                  suffixText: 'mg / kg',
+                                ),
+                                onChanged: (v) => setStateDialog(() {}),
+                              ),
+                              if (sampleActiveMg != null && sampleVolumeMl != null) ...[
+                                const SizedBox(height: 10),
+                                Container(
+                                  width: double.infinity,
+                                  padding: const EdgeInsets.all(12),
+                                  decoration: BoxDecoration(
+                                    color: AppColors.primary.withValues(alpha: 0.08),
+                                    borderRadius: BorderRadius.circular(10),
+                                    border: Border.all(color: AppColors.primary.withValues(alpha: 0.25)),
+                                  ),
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      const Row(
+                                        children: [
+                                          Icon(Icons.check_circle_outline, color: AppColors.primary, size: 16),
+                                          SizedBox(width: 6),
+                                          Text(
+                                            'Formula Verification (42 kg animal sample)',
+                                            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: AppColors.primary),
+                                          ),
+                                        ],
+                                      ),
+                                      const SizedBox(height: 4),
+                                      Text('• Active drug needed: 42 kg × $rateMgKg mg/kg = ${sampleActiveMg.toStringAsFixed(1)} mg', style: const TextStyle(fontSize: 11)),
+                                      Text(
+                                        '• Dose volume: ${sampleActiveMg.toStringAsFixed(1)} mg ÷ ${concMgPerMl!.toStringAsFixed(1)} mg/ml = ${sampleVolumeMl.toStringAsFixed(1)} $unit',
+                                        style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.teal.shade800),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                              const SizedBox(height: 14),
+                              Row(
+                                children: [
+                                  Expanded(
+                                    child: TextField(
+                                      textCapitalization: TextCapitalization.sentences,
+                                      controller: milkWithdrawCtrl,
+                                      keyboardType: TextInputType.number,
+                                      decoration: const InputDecoration(labelText: 'Milk Withdrawal (Days)'),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Expanded(
+                                    child: TextField(
+                                      textCapitalization: TextCapitalization.sentences,
+                                      controller: meatWithdrawCtrl,
+                                      keyboardType: TextInputType.number,
+                                      decoration: const InputDecoration(labelText: 'Meat Withdrawal (Days)'),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 10),
+                              TextField(
+                                textCapitalization: TextCapitalization.sentences,
+                                controller: supplierCtrl,
+                                decoration: const InputDecoration(
+                                  labelText: 'Supplier Name',
+                                  prefixIcon: Icon(Icons.local_shipping_outlined, size: 20),
+                                ),
+                              ),
+                              const SizedBox(height: 10),
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                                decoration: BoxDecoration(
+                                  border: Border.all(color: Colors.grey.shade300),
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: Row(
+                                  children: [
+                                    const Icon(Icons.calendar_today, size: 18, color: Colors.grey),
+                                    const SizedBox(width: 8),
+                                    Expanded(
+                                      child: Text(
+                                        expiryDate == null
+                                            ? 'No Expiry Date Selected'
+                                            : 'Expires: ${DateFormat('yyyy-MM-dd').format(expiryDate!)}',
+                                        style: const TextStyle(fontSize: 13),
+                                      ),
+                                    ),
+                                    TextButton(
+                                      onPressed: () async {
+                                        final picked = await showDatePicker(
+                                          builder: (context, child) => Theme(
+                                            data: Theme.of(context).copyWith(useMaterial3: false),
+                                            child: MediaQuery(
+                                              data: MediaQuery.of(context).copyWith(textScaleFactor: 1.0),
+                                              child: child!,
+                                            ),
+                                          ),
+                                          context: context,
+                                          initialDate: DateTime.now().add(const Duration(days: 365)),
+                                          firstDate: DateTime.now(),
+                                          lastDate: DateTime.now().add(const Duration(days: 3650)),
+                                        );
+                                        if (picked != null) {
+                                          setStateDialog(() => expiryDate = picked);
+                                        }
+                                      },
+                                      child: const Text('Pick Expiry'),
+                                    ),
+                                  ],
                                 ),
                               ),
                             ],
                           ),
-                          const SizedBox(height: 4),
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+
+                          // ══ STEP 2: PRICING & STOCK ══
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              const Expanded(
-                                child: Text('Total Opening Stock Added:', style: TextStyle(fontSize: 11)),
-                              ),
-                              const SizedBox(width: 8),
-                              Flexible(
-                                child: Text(
-                                  '${computedStock.toStringAsFixed(1)} $unit',
-                                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
-                                  overflow: TextOverflow.ellipsis,
+                              const Text('Step 3: Wholesale Pricing & Opening Stock', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: AppColors.primary)),
+                              const SizedBox(height: 12),
+                              DropdownButtonFormField<String>(
+                                initialValue: purchaseUnitType,
+                                decoration: const InputDecoration(
+                                  labelText: 'Purchase Package Type *',
+                                  prefixIcon: Icon(Icons.all_inbox, size: 20),
                                 ),
+                                isExpanded: true,
+                                items: const [
+                                  DropdownMenuItem(value: 'pack', child: Text('Pack')),
+                                  DropdownMenuItem(value: 'box', child: Text('Box')),
+                                  DropdownMenuItem(value: 'bottle', child: Text('Bottle')),
+                                  DropdownMenuItem(value: 'vial', child: Text('Vial')),
+                                  DropdownMenuItem(value: 'ampoule', child: Text('Ampoule')),
+                                  DropdownMenuItem(value: 'sachet', child: Text('Sachet')),
+                                  DropdownMenuItem(value: 'tub', child: Text('Tub')),
+                                ],
+                                onChanged: (v) => setStateDialog(() => purchaseUnitType = v!),
                               ),
-                            ],
-                          ),
-                          const SizedBox(height: 4),
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              const Expanded(
-                                child: Text('Total Purchase Outlay:', style: TextStyle(fontSize: 11)),
+                              const SizedBox(height: 10),
+                              Row(
+                                children: [
+                                  Expanded(
+                                    child: TextField(
+                                      textCapitalization: TextCapitalization.sentences,
+                                      controller: numPacksCtrl,
+                                      keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                                      decoration: const InputDecoration(labelText: 'Packs/Boxes Bought *'),
+                                      onChanged: (v) => setStateDialog(() {}),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Expanded(
+                                    child: TextField(
+                                      textCapitalization: TextCapitalization.sentences,
+                                      controller: costPackCtrl,
+                                      keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                                      decoration: const InputDecoration(labelText: 'Cost Per Pack (₦) *'),
+                                      onChanged: (v) => setStateDialog(() {}),
+                                    ),
+                                  ),
+                                ],
                               ),
-                              const SizedBox(width: 8),
-                              Flexible(
-                                child: Text(
-                                  '₦ ${totalCost.toStringAsFixed(2)}',
-                                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
-                                  overflow: TextOverflow.ellipsis,
+                              const SizedBox(height: 10),
+                              TextField(
+                                textCapitalization: TextCapitalization.sentences,
+                                controller: unitsPackCtrl,
+                                keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                                decoration: InputDecoration(
+                                  labelText: 'Size / Dose Units inside each Pack *',
+                                  hintText: 'e.g. 500 if 500 ml per bottle',
+                                  suffixText: unit,
+                                ),
+                                onChanged: (v) => setStateDialog(() {}),
+                              ),
+                              const SizedBox(height: 14),
+                              // Financial & Inventory Summary Card
+                              Container(
+                                width: double.infinity,
+                                padding: const EdgeInsets.all(14),
+                                decoration: BoxDecoration(
+                                  color: Colors.green.shade50,
+                                  borderRadius: BorderRadius.circular(12),
+                                  border: Border.all(color: Colors.green.shade300),
+                                ),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    const Row(
+                                      children: [
+                                        Icon(Icons.calculate_outlined, color: Colors.green, size: 18),
+                                        SizedBox(width: 6),
+                                        Text('Inventory & Valuation Preview', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Colors.green)),
+                                      ],
+                                    ),
+                                    const Divider(),
+                                    Row(
+                                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                      children: [
+                                        const Text('Calculated Dose Unit Cost:', style: TextStyle(fontSize: 12)),
+                                        Text(
+                                          '₦ ${computedUnitCost.toStringAsFixed(2)} / $unit',
+                                          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Colors.green.shade800),
+                                        ),
+                                      ],
+                                    ),
+                                    const SizedBox(height: 4),
+                                    Row(
+                                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                      children: [
+                                        const Text('Total Opening Stock Added:', style: TextStyle(fontSize: 12)),
+                                        Text(
+                                          '${computedStock.toStringAsFixed(1)} $unit',
+                                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
+                                        ),
+                                      ],
+                                    ),
+                                    const SizedBox(height: 4),
+                                    Row(
+                                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                      children: [
+                                        const Text('Total Outlay Purchase Cost:', style: TextStyle(fontSize: 12)),
+                                        Text(
+                                          '₦ ${totalCost.toStringAsFixed(2)}',
+                                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
+                                        ),
+                                      ],
+                                    ),
+                                  ],
                                 ),
                               ),
                             ],
@@ -862,111 +1194,180 @@ class _PharmacyScreenState extends State<PharmacyScreen> with SingleTickerProvid
                         ],
                       ),
                     ),
-                    const SizedBox(height: 16),
-                    const Text('Withdrawal Safety & Logistics', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: AppColors.primary)),
-                    const Divider(),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: TextField(textCapitalization: TextCapitalization.sentences, controller: milkWithdrawCtrl,
-                            keyboardType: TextInputType.number,
-                            decoration: const InputDecoration(labelText: 'Milk Withdrawal (Days)'),
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: TextField(textCapitalization: TextCapitalization.sentences, controller: meatWithdrawCtrl,
-                            keyboardType: TextInputType.number,
-                            decoration: const InputDecoration(labelText: 'Meat Withdrawal (Days)'),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 8),
-                    TextField(textCapitalization: TextCapitalization.sentences, controller: supplierCtrl, decoration: const InputDecoration(labelText: 'Supplier Name')),
-                    const SizedBox(height: 12),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: Text(
-                            expiryDate == null
-                                ? 'No Expiry Date Selected'
-                                : 'Expires: ${DateFormat('yyyy-MM-dd').format(expiryDate!)}',
-                            style: const TextStyle(fontSize: 13),
-                          ),
-                        ),
-                        TextButton(
-                          onPressed: () async {
-                            final picked = await showDatePicker(builder: (context, child) => Theme(data: Theme.of(context).copyWith(useMaterial3: false), child: MediaQuery(data: MediaQuery.of(context).copyWith(textScaleFactor: 1.0), child: child!)), 
-                              context: context,
-                              initialDate: DateTime.now().add(const Duration(days: 365)),
-                              firstDate: DateTime.now(),
-                              lastDate: DateTime.now().add(const Duration(days: 3650)),
-                            );
-                            if (picked != null) {
-                              setStateDialog(() => expiryDate = picked);
-                            }
-                          },
-                          child: const Text('Pick Expiry'),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 16),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: OutlinedButton(
-                            onPressed: () => Navigator.pop(dialogCtx),
-                            style: OutlinedButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 16)),
-                            child: const Text('Cancel'),
-                          ),
-                        ),
-                        const SizedBox(width: 16),
-                        Expanded(
-                          child: ElevatedButton(
-                            onPressed: () {
-                              if (nameCtrl.text.isEmpty || numPacksCtrl.text.isEmpty || costPackCtrl.text.isEmpty || unitsPackCtrl.text.isEmpty) {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(content: Text('Please fill all required fields'), backgroundColor: AppColors.error),
-                                );
-                                return;
-                              }
-                              final dMg = double.tryParse(dosageMlCtrl.text) ?? 10.0;
-                              final ratePerKg = dMg > 0 ? dMg : null;
-                              final rateText = '$dMg mg/kg';
+                  ),
 
-                              BlocProvider.of<PharmacyBloc>(context).add(AddMedication({
-                                'name': nameCtrl.text.trim(),
-                                'category': category,
-                                'unit': unit,
-                                'current_stock': computedStock.toString(),
-                                'reorder_threshold': thresholdCtrl.text.trim(),
-                                'cost_per_unit': computedUnitCost.toString(),
-                                'batch_number': null,
-                                'milk_withdrawal_days': milkWithdrawCtrl.text.trim(),
-                                'meat_withdrawal_days': meatWithdrawCtrl.text.trim(),
-                                'supplier': supplierCtrl.text.trim().isNotEmpty ? supplierCtrl.text.trim() : null,
-                                'expiry_date': expiryDate?.toIso8601String(),
-                                'concentration': concentrationCtrl.text.trim().isNotEmpty ? concentrationCtrl.text.trim() : null,
-                                'dosage_rate_per_kg': ratePerKg,
-                                'dosage_rate_text': rateText,
-                              }));
-                              Navigator.pop(dialogCtx);
-                            },
-                            style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary, foregroundColor: Colors.white, padding: const EdgeInsets.symmetric(vertical: 16)),
-                            child: const Text('Save Medication'),
-                          ),
+                  // Bottom Modal Action Bar
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.05),
+                          blurRadius: 10,
+                          offset: const Offset(0, -3),
                         ),
                       ],
                     ),
-                    const SizedBox(height: 24),
-                  ],
-                ),
+                    child: Row(
+                      children: [
+                        if (currentStep > 0)
+                          Expanded(
+                            child: OutlinedButton.icon(
+                              onPressed: () => setStateDialog(() => currentStep--),
+                              icon: const Icon(Icons.arrow_back, size: 16),
+                              label: const Text('Back'),
+                              style: OutlinedButton.styleFrom(
+                                padding: const EdgeInsets.symmetric(vertical: 14),
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                              ),
+                            ),
+                          )
+                        else
+                          Expanded(
+                            child: OutlinedButton(
+                              onPressed: () => Navigator.pop(dialogCtx),
+                              style: OutlinedButton.styleFrom(
+                                padding: const EdgeInsets.symmetric(vertical: 14),
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                              ),
+                              child: const Text('Cancel'),
+                            ),
+                          ),
+                        const SizedBox(width: 12),
+                        if (currentStep < 2)
+                          Expanded(
+                            child: ElevatedButton.icon(
+                              onPressed: () {
+                                if (currentStep == 0 && nameCtrl.text.trim().isEmpty) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(content: Text('Please enter Medication Name first'), backgroundColor: AppColors.error),
+                                  );
+                                  return;
+                                }
+                                setStateDialog(() => currentStep++);
+                              },
+                              icon: const Icon(Icons.arrow_forward, size: 16),
+                              label: const Text('Next'),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: AppColors.primary,
+                                foregroundColor: Colors.white,
+                                padding: const EdgeInsets.symmetric(vertical: 14),
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                              ),
+                            ),
+                          )
+                        else
+                          Expanded(
+                            child: ElevatedButton.icon(
+                              onPressed: () {
+                                if (nameCtrl.text.isEmpty || numPacksCtrl.text.isEmpty || costPackCtrl.text.isEmpty || unitsPackCtrl.text.isEmpty) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(content: Text('Please fill all required fields'), backgroundColor: AppColors.error),
+                                  );
+                                  return;
+                                }
+                                final dMg = double.tryParse(dosageMlCtrl.text) ?? 7.5;
+                                final ratePerKg = dMg > 0 ? dMg : null;
+                                final rateText = '$dMg mg/kg';
+
+                                BlocProvider.of<PharmacyBloc>(context).add(AddMedication({
+                                  'name': nameCtrl.text.trim(),
+                                  'category': category,
+                                  'unit': unit,
+                                  'current_stock': computedStock.toString(),
+                                  'reorder_threshold': thresholdCtrl.text.trim(),
+                                  'cost_per_unit': computedUnitCost.toString(),
+                                  'batch_number': null,
+                                  'milk_withdrawal_days': milkWithdrawCtrl.text.trim(),
+                                  'meat_withdrawal_days': meatWithdrawCtrl.text.trim(),
+                                  'supplier': supplierCtrl.text.trim().isNotEmpty ? supplierCtrl.text.trim() : null,
+                                  'expiry_date': expiryDate?.toIso8601String(),
+                                  'concentration': concDisplayText.isNotEmpty ? concDisplayText : null,
+                                  'concentration_value': rawConcVal > 0 ? rawConcVal : null,
+                                  'concentration_unit': concUnit,
+                                  'concentration_mg_per_ml': concMgPerMl,
+                                  'dosage_rate_per_kg': ratePerKg,
+                                  'dosage_rate_text': rateText,
+                                }));
+                                Navigator.pop(dialogCtx);
+                              },
+                              icon: const Icon(Icons.check_circle_outline, size: 18),
+                              label: const Text('Save Medication'),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: AppColors.primary,
+                                foregroundColor: Colors.white,
+                                padding: const EdgeInsets.symmetric(vertical: 14),
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                              ),
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
+                ],
               ),
             );
           },
         );
       },
+    );
+  }
+
+  Widget _buildStepTab({
+    required int index,
+    required String title,
+    required IconData icon,
+    required bool isActive,
+    required bool isCompleted,
+    required VoidCallback onTap,
+  }) {
+    final color = isActive
+        ? AppColors.primary
+        : (isCompleted ? Colors.teal : Colors.grey.shade600);
+
+    return Expanded(
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(10),
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
+          decoration: BoxDecoration(
+            color: isActive
+                ? AppColors.primary.withValues(alpha: 0.12)
+                : (isCompleted ? Colors.teal.withValues(alpha: 0.08) : Colors.transparent),
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(
+              color: isActive
+                  ? AppColors.primary
+                  : (isCompleted ? Colors.teal.withValues(alpha: 0.4) : Colors.grey.shade300),
+              width: isActive ? 1.5 : 1,
+            ),
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                isCompleted ? Icons.check_circle : icon,
+                size: 14,
+                color: color,
+              ),
+              const SizedBox(width: 4),
+              Flexible(
+                child: Text(
+                  title,
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: isActive || isCompleted ? FontWeight.bold : FontWeight.w500,
+                    color: color,
+                  ),
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 
@@ -1476,11 +1877,28 @@ class _PharmacyScreenState extends State<PharmacyScreen> with SingleTickerProvid
                 final selAnimal = activeAnimals.firstWhere((a) => a['id'] == selectedAnimalId, orElse: () => {});
                 final double? animWeight = selAnimal['weight'] != null ? double.tryParse(selAnimal['weight'].toString()) : null;
                 
-                double? recDose;
-                if (animWeight != null && animWeight > 0 && matchMed.dosageRatePerKg != null && matchMed.dosageRatePerKg! > 0) {
-                  recDose = animWeight * matchMed.dosageRatePerKg!;
-                  if (doseCtrl.text.isEmpty) {
-                    doseCtrl.text = recDose.toStringAsFixed(1);
+                double rateMgKg = matchMed.dosageRatePerKg ?? 0.0;
+                if (rateMgKg <= 0 && matchMed.dosageRateText != null) {
+                  final rateMatch = RegExp(r'([0-9]+(?:\.[0-9]+)?)').firstMatch(matchMed.dosageRateText!);
+                  if (rateMatch != null) {
+                    rateMgKg = double.tryParse(rateMatch.group(1)!) ?? 0.0;
+                  }
+                }
+
+                DosageResult? doseCalc;
+                if (animWeight != null && animWeight > 0 && rateMgKg > 0) {
+                  doseCalc = DosageCalculator.calculate(
+                    weightKg: animWeight,
+                    dosageRatePerKg: rateMgKg,
+                    concentrationValue: matchMed.concentrationValue,
+                    concentrationUnit: matchMed.concentrationUnit,
+                    concentrationMgPerMl: matchMed.concentrationMgPerMl,
+                    medicationUnit: matchMed.unit,
+                    concentrationText: matchMed.concentration,
+                  );
+
+                  if (doseCtrl.text.isEmpty && doseCalc.volumeToAdminister != null && doseCalc.volumeToAdminister! > 0) {
+                    doseCtrl.text = doseCalc.volumeToAdminister!.toStringAsFixed(1);
                   }
                 }
 
@@ -1522,7 +1940,7 @@ class _PharmacyScreenState extends State<PharmacyScreen> with SingleTickerProvid
                             doseCtrl.clear();
                           }),
                         ),
-                        if (recDose != null && recDose > 0) ...[
+                        if (doseCalc != null) ...[
                           const SizedBox(height: 10),
                           Container(
                             width: double.infinity,
@@ -1532,16 +1950,31 @@ class _PharmacyScreenState extends State<PharmacyScreen> with SingleTickerProvid
                               borderRadius: BorderRadius.circular(10),
                               border: Border.all(color: AppColors.primary.withValues(alpha: 0.25)),
                             ),
-                            child: Row(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                const Icon(Icons.calculate_outlined, color: AppColors.primary, size: 20),
-                                const SizedBox(width: 8),
-                                Expanded(
-                                  child: Text(
-                                    '💡 Smart Calculated Dose for #${selAnimal['tag']} (${animWeight}kg) @ ${matchMed.dosageRateText ?? "${matchMed.dosageRatePerKg} ml/kg"}: ${recDose.toStringAsFixed(1)} ${matchMed.unit}',
-                                    style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: AppColors.primary),
-                                  ),
+                                Row(
+                                  children: [
+                                    const Icon(Icons.calculate_outlined, color: AppColors.primary, size: 20),
+                                    const SizedBox(width: 8),
+                                    Expanded(
+                                      child: Text(
+                                        '💡 Smart Calculated Dosage for #${selAnimal['tag']} (${animWeight}kg):',
+                                        style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: AppColors.primary),
+                                      ),
+                                    ),
+                                  ],
                                 ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  '• Active drug needed: $animWeight kg × ${rateMgKg.toStringAsFixed(1)} mg/kg = ${doseCalc.activeMgNeeded.toStringAsFixed(1)} mg',
+                                  style: const TextStyle(fontSize: 11),
+                                ),
+                                if (doseCalc.volumeToAdminister != null && doseCalc.volumeToAdminister! > 0)
+                                  Text(
+                                    '• Recommended Dose: ${doseCalc.volumeToAdminister!.toStringAsFixed(1)} ${doseCalc.unit}',
+                                    style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.teal),
+                                  ),
                               ],
                             ),
                           ),

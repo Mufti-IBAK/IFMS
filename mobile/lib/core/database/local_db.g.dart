@@ -10527,6 +10527,24 @@ class $LocalMedicationsTable extends LocalMedications
   late final GeneratedColumn<String> concentration = GeneratedColumn<String>(
       'concentration', aliasedName, true,
       type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _concentrationMgPerMlMeta =
+      const VerificationMeta('concentrationMgPerMl');
+  @override
+  late final GeneratedColumn<double> concentrationMgPerMl =
+      GeneratedColumn<double>('concentration_mg_per_ml', aliasedName, true,
+          type: DriftSqlType.double, requiredDuringInsert: false);
+  static const VerificationMeta _concentrationValueMeta =
+      const VerificationMeta('concentrationValue');
+  @override
+  late final GeneratedColumn<double> concentrationValue =
+      GeneratedColumn<double>('concentration_value', aliasedName, true,
+          type: DriftSqlType.double, requiredDuringInsert: false);
+  static const VerificationMeta _concentrationUnitMeta =
+      const VerificationMeta('concentrationUnit');
+  @override
+  late final GeneratedColumn<String> concentrationUnit =
+      GeneratedColumn<String>('concentration_unit', aliasedName, true,
+          type: DriftSqlType.string, requiredDuringInsert: false);
   static const VerificationMeta _isActiveMeta =
       const VerificationMeta('isActive');
   @override
@@ -10554,6 +10572,9 @@ class $LocalMedicationsTable extends LocalMedications
         dosageRatePerKg,
         dosageRateText,
         concentration,
+        concentrationMgPerMl,
+        concentrationValue,
+        concentrationUnit,
         isActive
       ];
   @override
@@ -10653,6 +10674,24 @@ class $LocalMedicationsTable extends LocalMedications
           concentration.isAcceptableOrUnknown(
               data['concentration']!, _concentrationMeta));
     }
+    if (data.containsKey('concentration_mg_per_ml')) {
+      context.handle(
+          _concentrationMgPerMlMeta,
+          concentrationMgPerMl.isAcceptableOrUnknown(
+              data['concentration_mg_per_ml']!, _concentrationMgPerMlMeta));
+    }
+    if (data.containsKey('concentration_value')) {
+      context.handle(
+          _concentrationValueMeta,
+          concentrationValue.isAcceptableOrUnknown(
+              data['concentration_value']!, _concentrationValueMeta));
+    }
+    if (data.containsKey('concentration_unit')) {
+      context.handle(
+          _concentrationUnitMeta,
+          concentrationUnit.isAcceptableOrUnknown(
+              data['concentration_unit']!, _concentrationUnitMeta));
+    }
     if (data.containsKey('is_active')) {
       context.handle(_isActiveMeta,
           isActive.isAcceptableOrUnknown(data['is_active']!, _isActiveMeta));
@@ -10696,6 +10735,13 @@ class $LocalMedicationsTable extends LocalMedications
           DriftSqlType.string, data['${effectivePrefix}dosage_rate_text']),
       concentration: attachedDatabase.typeMapping
           .read(DriftSqlType.string, data['${effectivePrefix}concentration']),
+      concentrationMgPerMl: attachedDatabase.typeMapping.read(
+          DriftSqlType.double,
+          data['${effectivePrefix}concentration_mg_per_ml']),
+      concentrationValue: attachedDatabase.typeMapping.read(
+          DriftSqlType.double, data['${effectivePrefix}concentration_value']),
+      concentrationUnit: attachedDatabase.typeMapping.read(
+          DriftSqlType.string, data['${effectivePrefix}concentration_unit']),
       isActive: attachedDatabase.typeMapping
           .read(DriftSqlType.bool, data['${effectivePrefix}is_active'])!,
     );
@@ -10723,6 +10769,9 @@ class LocalMedication extends DataClass implements Insertable<LocalMedication> {
   final double? dosageRatePerKg;
   final String? dosageRateText;
   final String? concentration;
+  final double? concentrationMgPerMl;
+  final double? concentrationValue;
+  final String? concentrationUnit;
   final bool isActive;
   const LocalMedication(
       {required this.id,
@@ -10740,6 +10789,9 @@ class LocalMedication extends DataClass implements Insertable<LocalMedication> {
       this.dosageRatePerKg,
       this.dosageRateText,
       this.concentration,
+      this.concentrationMgPerMl,
+      this.concentrationValue,
+      this.concentrationUnit,
       required this.isActive});
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -10770,6 +10822,15 @@ class LocalMedication extends DataClass implements Insertable<LocalMedication> {
     }
     if (!nullToAbsent || concentration != null) {
       map['concentration'] = Variable<String>(concentration);
+    }
+    if (!nullToAbsent || concentrationMgPerMl != null) {
+      map['concentration_mg_per_ml'] = Variable<double>(concentrationMgPerMl);
+    }
+    if (!nullToAbsent || concentrationValue != null) {
+      map['concentration_value'] = Variable<double>(concentrationValue);
+    }
+    if (!nullToAbsent || concentrationUnit != null) {
+      map['concentration_unit'] = Variable<String>(concentrationUnit);
     }
     map['is_active'] = Variable<bool>(isActive);
     return map;
@@ -10804,6 +10865,15 @@ class LocalMedication extends DataClass implements Insertable<LocalMedication> {
       concentration: concentration == null && nullToAbsent
           ? const Value.absent()
           : Value(concentration),
+      concentrationMgPerMl: concentrationMgPerMl == null && nullToAbsent
+          ? const Value.absent()
+          : Value(concentrationMgPerMl),
+      concentrationValue: concentrationValue == null && nullToAbsent
+          ? const Value.absent()
+          : Value(concentrationValue),
+      concentrationUnit: concentrationUnit == null && nullToAbsent
+          ? const Value.absent()
+          : Value(concentrationUnit),
       isActive: Value(isActive),
     );
   }
@@ -10827,6 +10897,12 @@ class LocalMedication extends DataClass implements Insertable<LocalMedication> {
       dosageRatePerKg: serializer.fromJson<double?>(json['dosageRatePerKg']),
       dosageRateText: serializer.fromJson<String?>(json['dosageRateText']),
       concentration: serializer.fromJson<String?>(json['concentration']),
+      concentrationMgPerMl:
+          serializer.fromJson<double?>(json['concentrationMgPerMl']),
+      concentrationValue:
+          serializer.fromJson<double?>(json['concentrationValue']),
+      concentrationUnit:
+          serializer.fromJson<String?>(json['concentrationUnit']),
       isActive: serializer.fromJson<bool>(json['isActive']),
     );
   }
@@ -10849,6 +10925,9 @@ class LocalMedication extends DataClass implements Insertable<LocalMedication> {
       'dosageRatePerKg': serializer.toJson<double?>(dosageRatePerKg),
       'dosageRateText': serializer.toJson<String?>(dosageRateText),
       'concentration': serializer.toJson<String?>(concentration),
+      'concentrationMgPerMl': serializer.toJson<double?>(concentrationMgPerMl),
+      'concentrationValue': serializer.toJson<double?>(concentrationValue),
+      'concentrationUnit': serializer.toJson<String?>(concentrationUnit),
       'isActive': serializer.toJson<bool>(isActive),
     };
   }
@@ -10869,6 +10948,9 @@ class LocalMedication extends DataClass implements Insertable<LocalMedication> {
           Value<double?> dosageRatePerKg = const Value.absent(),
           Value<String?> dosageRateText = const Value.absent(),
           Value<String?> concentration = const Value.absent(),
+          Value<double?> concentrationMgPerMl = const Value.absent(),
+          Value<double?> concentrationValue = const Value.absent(),
+          Value<String?> concentrationUnit = const Value.absent(),
           bool? isActive}) =>
       LocalMedication(
         id: id ?? this.id,
@@ -10890,6 +10972,15 @@ class LocalMedication extends DataClass implements Insertable<LocalMedication> {
             dosageRateText.present ? dosageRateText.value : this.dosageRateText,
         concentration:
             concentration.present ? concentration.value : this.concentration,
+        concentrationMgPerMl: concentrationMgPerMl.present
+            ? concentrationMgPerMl.value
+            : this.concentrationMgPerMl,
+        concentrationValue: concentrationValue.present
+            ? concentrationValue.value
+            : this.concentrationValue,
+        concentrationUnit: concentrationUnit.present
+            ? concentrationUnit.value
+            : this.concentrationUnit,
         isActive: isActive ?? this.isActive,
       );
   LocalMedication copyWithCompanion(LocalMedicationsCompanion data) {
@@ -10926,6 +11017,15 @@ class LocalMedication extends DataClass implements Insertable<LocalMedication> {
       concentration: data.concentration.present
           ? data.concentration.value
           : this.concentration,
+      concentrationMgPerMl: data.concentrationMgPerMl.present
+          ? data.concentrationMgPerMl.value
+          : this.concentrationMgPerMl,
+      concentrationValue: data.concentrationValue.present
+          ? data.concentrationValue.value
+          : this.concentrationValue,
+      concentrationUnit: data.concentrationUnit.present
+          ? data.concentrationUnit.value
+          : this.concentrationUnit,
       isActive: data.isActive.present ? data.isActive.value : this.isActive,
     );
   }
@@ -10948,6 +11048,9 @@ class LocalMedication extends DataClass implements Insertable<LocalMedication> {
           ..write('dosageRatePerKg: $dosageRatePerKg, ')
           ..write('dosageRateText: $dosageRateText, ')
           ..write('concentration: $concentration, ')
+          ..write('concentrationMgPerMl: $concentrationMgPerMl, ')
+          ..write('concentrationValue: $concentrationValue, ')
+          ..write('concentrationUnit: $concentrationUnit, ')
           ..write('isActive: $isActive')
           ..write(')'))
         .toString();
@@ -10970,6 +11073,9 @@ class LocalMedication extends DataClass implements Insertable<LocalMedication> {
       dosageRatePerKg,
       dosageRateText,
       concentration,
+      concentrationMgPerMl,
+      concentrationValue,
+      concentrationUnit,
       isActive);
   @override
   bool operator ==(Object other) =>
@@ -10990,6 +11096,9 @@ class LocalMedication extends DataClass implements Insertable<LocalMedication> {
           other.dosageRatePerKg == this.dosageRatePerKg &&
           other.dosageRateText == this.dosageRateText &&
           other.concentration == this.concentration &&
+          other.concentrationMgPerMl == this.concentrationMgPerMl &&
+          other.concentrationValue == this.concentrationValue &&
+          other.concentrationUnit == this.concentrationUnit &&
           other.isActive == this.isActive);
 }
 
@@ -11009,6 +11118,9 @@ class LocalMedicationsCompanion extends UpdateCompanion<LocalMedication> {
   final Value<double?> dosageRatePerKg;
   final Value<String?> dosageRateText;
   final Value<String?> concentration;
+  final Value<double?> concentrationMgPerMl;
+  final Value<double?> concentrationValue;
+  final Value<String?> concentrationUnit;
   final Value<bool> isActive;
   final Value<int> rowid;
   const LocalMedicationsCompanion({
@@ -11027,6 +11139,9 @@ class LocalMedicationsCompanion extends UpdateCompanion<LocalMedication> {
     this.dosageRatePerKg = const Value.absent(),
     this.dosageRateText = const Value.absent(),
     this.concentration = const Value.absent(),
+    this.concentrationMgPerMl = const Value.absent(),
+    this.concentrationValue = const Value.absent(),
+    this.concentrationUnit = const Value.absent(),
     this.isActive = const Value.absent(),
     this.rowid = const Value.absent(),
   });
@@ -11046,6 +11161,9 @@ class LocalMedicationsCompanion extends UpdateCompanion<LocalMedication> {
     this.dosageRatePerKg = const Value.absent(),
     this.dosageRateText = const Value.absent(),
     this.concentration = const Value.absent(),
+    this.concentrationMgPerMl = const Value.absent(),
+    this.concentrationValue = const Value.absent(),
+    this.concentrationUnit = const Value.absent(),
     this.isActive = const Value.absent(),
     this.rowid = const Value.absent(),
   })  : id = Value(id),
@@ -11068,6 +11186,9 @@ class LocalMedicationsCompanion extends UpdateCompanion<LocalMedication> {
     Expression<double>? dosageRatePerKg,
     Expression<String>? dosageRateText,
     Expression<String>? concentration,
+    Expression<double>? concentrationMgPerMl,
+    Expression<double>? concentrationValue,
+    Expression<String>? concentrationUnit,
     Expression<bool>? isActive,
     Expression<int>? rowid,
   }) {
@@ -11089,6 +11210,10 @@ class LocalMedicationsCompanion extends UpdateCompanion<LocalMedication> {
       if (dosageRatePerKg != null) 'dosage_rate_per_kg': dosageRatePerKg,
       if (dosageRateText != null) 'dosage_rate_text': dosageRateText,
       if (concentration != null) 'concentration': concentration,
+      if (concentrationMgPerMl != null)
+        'concentration_mg_per_ml': concentrationMgPerMl,
+      if (concentrationValue != null) 'concentration_value': concentrationValue,
+      if (concentrationUnit != null) 'concentration_unit': concentrationUnit,
       if (isActive != null) 'is_active': isActive,
       if (rowid != null) 'rowid': rowid,
     });
@@ -11110,6 +11235,9 @@ class LocalMedicationsCompanion extends UpdateCompanion<LocalMedication> {
       Value<double?>? dosageRatePerKg,
       Value<String?>? dosageRateText,
       Value<String?>? concentration,
+      Value<double?>? concentrationMgPerMl,
+      Value<double?>? concentrationValue,
+      Value<String?>? concentrationUnit,
       Value<bool>? isActive,
       Value<int>? rowid}) {
     return LocalMedicationsCompanion(
@@ -11128,6 +11256,9 @@ class LocalMedicationsCompanion extends UpdateCompanion<LocalMedication> {
       dosageRatePerKg: dosageRatePerKg ?? this.dosageRatePerKg,
       dosageRateText: dosageRateText ?? this.dosageRateText,
       concentration: concentration ?? this.concentration,
+      concentrationMgPerMl: concentrationMgPerMl ?? this.concentrationMgPerMl,
+      concentrationValue: concentrationValue ?? this.concentrationValue,
+      concentrationUnit: concentrationUnit ?? this.concentrationUnit,
       isActive: isActive ?? this.isActive,
       rowid: rowid ?? this.rowid,
     );
@@ -11181,6 +11312,16 @@ class LocalMedicationsCompanion extends UpdateCompanion<LocalMedication> {
     if (concentration.present) {
       map['concentration'] = Variable<String>(concentration.value);
     }
+    if (concentrationMgPerMl.present) {
+      map['concentration_mg_per_ml'] =
+          Variable<double>(concentrationMgPerMl.value);
+    }
+    if (concentrationValue.present) {
+      map['concentration_value'] = Variable<double>(concentrationValue.value);
+    }
+    if (concentrationUnit.present) {
+      map['concentration_unit'] = Variable<String>(concentrationUnit.value);
+    }
     if (isActive.present) {
       map['is_active'] = Variable<bool>(isActive.value);
     }
@@ -11208,6 +11349,9 @@ class LocalMedicationsCompanion extends UpdateCompanion<LocalMedication> {
           ..write('dosageRatePerKg: $dosageRatePerKg, ')
           ..write('dosageRateText: $dosageRateText, ')
           ..write('concentration: $concentration, ')
+          ..write('concentrationMgPerMl: $concentrationMgPerMl, ')
+          ..write('concentrationValue: $concentrationValue, ')
+          ..write('concentrationUnit: $concentrationUnit, ')
           ..write('isActive: $isActive, ')
           ..write('rowid: $rowid')
           ..write(')'))
@@ -12928,6 +13072,44 @@ class $LocalStaffQueriesTable extends LocalStaffQueries
   late final GeneratedColumn<DateTime> issueDate = GeneratedColumn<DateTime>(
       'issue_date', aliasedName, false,
       type: DriftSqlType.dateTime, requiredDuringInsert: true);
+  static const VerificationMeta _categoryMeta =
+      const VerificationMeta('category');
+  @override
+  late final GeneratedColumn<String> category = GeneratedColumn<String>(
+      'category', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _isTaskDelegatedMeta =
+      const VerificationMeta('isTaskDelegated');
+  @override
+  late final GeneratedColumn<bool> isTaskDelegated = GeneratedColumn<bool>(
+      'is_task_delegated', aliasedName, false,
+      type: DriftSqlType.bool,
+      requiredDuringInsert: false,
+      defaultConstraints: GeneratedColumn.constraintIsAlways(
+          'CHECK ("is_task_delegated" IN (0, 1))'),
+      defaultValue: const Constant(false));
+  static const VerificationMeta _substituteStaffIdMeta =
+      const VerificationMeta('substituteStaffId');
+  @override
+  late final GeneratedColumn<String> substituteStaffId =
+      GeneratedColumn<String>('substitute_staff_id', aliasedName, true,
+          type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _substituteNotesMeta =
+      const VerificationMeta('substituteNotes');
+  @override
+  late final GeneratedColumn<String> substituteNotes = GeneratedColumn<String>(
+      'substitute_notes', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _isCompensationTransferredMeta =
+      const VerificationMeta('isCompensationTransferred');
+  @override
+  late final GeneratedColumn<bool> isCompensationTransferred =
+      GeneratedColumn<bool>('is_compensation_transferred', aliasedName, false,
+          type: DriftSqlType.bool,
+          requiredDuringInsert: false,
+          defaultConstraints: GeneratedColumn.constraintIsAlways(
+              'CHECK ("is_compensation_transferred" IN (0, 1))'),
+          defaultValue: const Constant(false));
   @override
   List<GeneratedColumn> get $columns => [
         id,
@@ -12938,7 +13120,12 @@ class $LocalStaffQueriesTable extends LocalStaffQueries
         isResolved,
         resolutionNotes,
         resolvedAt,
-        issueDate
+        issueDate,
+        category,
+        isTaskDelegated,
+        substituteStaffId,
+        substituteNotes,
+        isCompensationTransferred
       ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -13003,6 +13190,35 @@ class $LocalStaffQueriesTable extends LocalStaffQueries
     } else if (isInserting) {
       context.missing(_issueDateMeta);
     }
+    if (data.containsKey('category')) {
+      context.handle(_categoryMeta,
+          category.isAcceptableOrUnknown(data['category']!, _categoryMeta));
+    }
+    if (data.containsKey('is_task_delegated')) {
+      context.handle(
+          _isTaskDelegatedMeta,
+          isTaskDelegated.isAcceptableOrUnknown(
+              data['is_task_delegated']!, _isTaskDelegatedMeta));
+    }
+    if (data.containsKey('substitute_staff_id')) {
+      context.handle(
+          _substituteStaffIdMeta,
+          substituteStaffId.isAcceptableOrUnknown(
+              data['substitute_staff_id']!, _substituteStaffIdMeta));
+    }
+    if (data.containsKey('substitute_notes')) {
+      context.handle(
+          _substituteNotesMeta,
+          substituteNotes.isAcceptableOrUnknown(
+              data['substitute_notes']!, _substituteNotesMeta));
+    }
+    if (data.containsKey('is_compensation_transferred')) {
+      context.handle(
+          _isCompensationTransferredMeta,
+          isCompensationTransferred.isAcceptableOrUnknown(
+              data['is_compensation_transferred']!,
+              _isCompensationTransferredMeta));
+    }
     return context;
   }
 
@@ -13030,6 +13246,17 @@ class $LocalStaffQueriesTable extends LocalStaffQueries
           .read(DriftSqlType.dateTime, data['${effectivePrefix}resolved_at']),
       issueDate: attachedDatabase.typeMapping
           .read(DriftSqlType.dateTime, data['${effectivePrefix}issue_date'])!,
+      category: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}category']),
+      isTaskDelegated: attachedDatabase.typeMapping.read(
+          DriftSqlType.bool, data['${effectivePrefix}is_task_delegated'])!,
+      substituteStaffId: attachedDatabase.typeMapping.read(
+          DriftSqlType.string, data['${effectivePrefix}substitute_staff_id']),
+      substituteNotes: attachedDatabase.typeMapping.read(
+          DriftSqlType.string, data['${effectivePrefix}substitute_notes']),
+      isCompensationTransferred: attachedDatabase.typeMapping.read(
+          DriftSqlType.bool,
+          data['${effectivePrefix}is_compensation_transferred'])!,
     );
   }
 
@@ -13049,6 +13276,11 @@ class LocalStaffQuery extends DataClass implements Insertable<LocalStaffQuery> {
   final String? resolutionNotes;
   final DateTime? resolvedAt;
   final DateTime issueDate;
+  final String? category;
+  final bool isTaskDelegated;
+  final String? substituteStaffId;
+  final String? substituteNotes;
+  final bool isCompensationTransferred;
   const LocalStaffQuery(
       {required this.id,
       required this.staffId,
@@ -13058,7 +13290,12 @@ class LocalStaffQuery extends DataClass implements Insertable<LocalStaffQuery> {
       required this.isResolved,
       this.resolutionNotes,
       this.resolvedAt,
-      required this.issueDate});
+      required this.issueDate,
+      this.category,
+      required this.isTaskDelegated,
+      this.substituteStaffId,
+      this.substituteNotes,
+      required this.isCompensationTransferred});
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
@@ -13077,6 +13314,18 @@ class LocalStaffQuery extends DataClass implements Insertable<LocalStaffQuery> {
       map['resolved_at'] = Variable<DateTime>(resolvedAt);
     }
     map['issue_date'] = Variable<DateTime>(issueDate);
+    if (!nullToAbsent || category != null) {
+      map['category'] = Variable<String>(category);
+    }
+    map['is_task_delegated'] = Variable<bool>(isTaskDelegated);
+    if (!nullToAbsent || substituteStaffId != null) {
+      map['substitute_staff_id'] = Variable<String>(substituteStaffId);
+    }
+    if (!nullToAbsent || substituteNotes != null) {
+      map['substitute_notes'] = Variable<String>(substituteNotes);
+    }
+    map['is_compensation_transferred'] =
+        Variable<bool>(isCompensationTransferred);
     return map;
   }
 
@@ -13097,6 +13346,17 @@ class LocalStaffQuery extends DataClass implements Insertable<LocalStaffQuery> {
           ? const Value.absent()
           : Value(resolvedAt),
       issueDate: Value(issueDate),
+      category: category == null && nullToAbsent
+          ? const Value.absent()
+          : Value(category),
+      isTaskDelegated: Value(isTaskDelegated),
+      substituteStaffId: substituteStaffId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(substituteStaffId),
+      substituteNotes: substituteNotes == null && nullToAbsent
+          ? const Value.absent()
+          : Value(substituteNotes),
+      isCompensationTransferred: Value(isCompensationTransferred),
     );
   }
 
@@ -13113,6 +13373,13 @@ class LocalStaffQuery extends DataClass implements Insertable<LocalStaffQuery> {
       resolutionNotes: serializer.fromJson<String?>(json['resolutionNotes']),
       resolvedAt: serializer.fromJson<DateTime?>(json['resolvedAt']),
       issueDate: serializer.fromJson<DateTime>(json['issueDate']),
+      category: serializer.fromJson<String?>(json['category']),
+      isTaskDelegated: serializer.fromJson<bool>(json['isTaskDelegated']),
+      substituteStaffId:
+          serializer.fromJson<String?>(json['substituteStaffId']),
+      substituteNotes: serializer.fromJson<String?>(json['substituteNotes']),
+      isCompensationTransferred:
+          serializer.fromJson<bool>(json['isCompensationTransferred']),
     );
   }
   @override
@@ -13128,6 +13395,12 @@ class LocalStaffQuery extends DataClass implements Insertable<LocalStaffQuery> {
       'resolutionNotes': serializer.toJson<String?>(resolutionNotes),
       'resolvedAt': serializer.toJson<DateTime?>(resolvedAt),
       'issueDate': serializer.toJson<DateTime>(issueDate),
+      'category': serializer.toJson<String?>(category),
+      'isTaskDelegated': serializer.toJson<bool>(isTaskDelegated),
+      'substituteStaffId': serializer.toJson<String?>(substituteStaffId),
+      'substituteNotes': serializer.toJson<String?>(substituteNotes),
+      'isCompensationTransferred':
+          serializer.toJson<bool>(isCompensationTransferred),
     };
   }
 
@@ -13140,7 +13413,12 @@ class LocalStaffQuery extends DataClass implements Insertable<LocalStaffQuery> {
           bool? isResolved,
           Value<String?> resolutionNotes = const Value.absent(),
           Value<DateTime?> resolvedAt = const Value.absent(),
-          DateTime? issueDate}) =>
+          DateTime? issueDate,
+          Value<String?> category = const Value.absent(),
+          bool? isTaskDelegated,
+          Value<String?> substituteStaffId = const Value.absent(),
+          Value<String?> substituteNotes = const Value.absent(),
+          bool? isCompensationTransferred}) =>
       LocalStaffQuery(
         id: id ?? this.id,
         staffId: staffId ?? this.staffId,
@@ -13153,6 +13431,16 @@ class LocalStaffQuery extends DataClass implements Insertable<LocalStaffQuery> {
             : this.resolutionNotes,
         resolvedAt: resolvedAt.present ? resolvedAt.value : this.resolvedAt,
         issueDate: issueDate ?? this.issueDate,
+        category: category.present ? category.value : this.category,
+        isTaskDelegated: isTaskDelegated ?? this.isTaskDelegated,
+        substituteStaffId: substituteStaffId.present
+            ? substituteStaffId.value
+            : this.substituteStaffId,
+        substituteNotes: substituteNotes.present
+            ? substituteNotes.value
+            : this.substituteNotes,
+        isCompensationTransferred:
+            isCompensationTransferred ?? this.isCompensationTransferred,
       );
   LocalStaffQuery copyWithCompanion(LocalStaffQueriesCompanion data) {
     return LocalStaffQuery(
@@ -13172,6 +13460,19 @@ class LocalStaffQuery extends DataClass implements Insertable<LocalStaffQuery> {
       resolvedAt:
           data.resolvedAt.present ? data.resolvedAt.value : this.resolvedAt,
       issueDate: data.issueDate.present ? data.issueDate.value : this.issueDate,
+      category: data.category.present ? data.category.value : this.category,
+      isTaskDelegated: data.isTaskDelegated.present
+          ? data.isTaskDelegated.value
+          : this.isTaskDelegated,
+      substituteStaffId: data.substituteStaffId.present
+          ? data.substituteStaffId.value
+          : this.substituteStaffId,
+      substituteNotes: data.substituteNotes.present
+          ? data.substituteNotes.value
+          : this.substituteNotes,
+      isCompensationTransferred: data.isCompensationTransferred.present
+          ? data.isCompensationTransferred.value
+          : this.isCompensationTransferred,
     );
   }
 
@@ -13186,14 +13487,32 @@ class LocalStaffQuery extends DataClass implements Insertable<LocalStaffQuery> {
           ..write('isResolved: $isResolved, ')
           ..write('resolutionNotes: $resolutionNotes, ')
           ..write('resolvedAt: $resolvedAt, ')
-          ..write('issueDate: $issueDate')
+          ..write('issueDate: $issueDate, ')
+          ..write('category: $category, ')
+          ..write('isTaskDelegated: $isTaskDelegated, ')
+          ..write('substituteStaffId: $substituteStaffId, ')
+          ..write('substituteNotes: $substituteNotes, ')
+          ..write('isCompensationTransferred: $isCompensationTransferred')
           ..write(')'))
         .toString();
   }
 
   @override
-  int get hashCode => Object.hash(id, staffId, title, description,
-      deductionAmount, isResolved, resolutionNotes, resolvedAt, issueDate);
+  int get hashCode => Object.hash(
+      id,
+      staffId,
+      title,
+      description,
+      deductionAmount,
+      isResolved,
+      resolutionNotes,
+      resolvedAt,
+      issueDate,
+      category,
+      isTaskDelegated,
+      substituteStaffId,
+      substituteNotes,
+      isCompensationTransferred);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -13206,7 +13525,12 @@ class LocalStaffQuery extends DataClass implements Insertable<LocalStaffQuery> {
           other.isResolved == this.isResolved &&
           other.resolutionNotes == this.resolutionNotes &&
           other.resolvedAt == this.resolvedAt &&
-          other.issueDate == this.issueDate);
+          other.issueDate == this.issueDate &&
+          other.category == this.category &&
+          other.isTaskDelegated == this.isTaskDelegated &&
+          other.substituteStaffId == this.substituteStaffId &&
+          other.substituteNotes == this.substituteNotes &&
+          other.isCompensationTransferred == this.isCompensationTransferred);
 }
 
 class LocalStaffQueriesCompanion extends UpdateCompanion<LocalStaffQuery> {
@@ -13219,6 +13543,11 @@ class LocalStaffQueriesCompanion extends UpdateCompanion<LocalStaffQuery> {
   final Value<String?> resolutionNotes;
   final Value<DateTime?> resolvedAt;
   final Value<DateTime> issueDate;
+  final Value<String?> category;
+  final Value<bool> isTaskDelegated;
+  final Value<String?> substituteStaffId;
+  final Value<String?> substituteNotes;
+  final Value<bool> isCompensationTransferred;
   final Value<int> rowid;
   const LocalStaffQueriesCompanion({
     this.id = const Value.absent(),
@@ -13230,6 +13559,11 @@ class LocalStaffQueriesCompanion extends UpdateCompanion<LocalStaffQuery> {
     this.resolutionNotes = const Value.absent(),
     this.resolvedAt = const Value.absent(),
     this.issueDate = const Value.absent(),
+    this.category = const Value.absent(),
+    this.isTaskDelegated = const Value.absent(),
+    this.substituteStaffId = const Value.absent(),
+    this.substituteNotes = const Value.absent(),
+    this.isCompensationTransferred = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   LocalStaffQueriesCompanion.insert({
@@ -13242,6 +13576,11 @@ class LocalStaffQueriesCompanion extends UpdateCompanion<LocalStaffQuery> {
     this.resolutionNotes = const Value.absent(),
     this.resolvedAt = const Value.absent(),
     required DateTime issueDate,
+    this.category = const Value.absent(),
+    this.isTaskDelegated = const Value.absent(),
+    this.substituteStaffId = const Value.absent(),
+    this.substituteNotes = const Value.absent(),
+    this.isCompensationTransferred = const Value.absent(),
     this.rowid = const Value.absent(),
   })  : id = Value(id),
         staffId = Value(staffId),
@@ -13257,6 +13596,11 @@ class LocalStaffQueriesCompanion extends UpdateCompanion<LocalStaffQuery> {
     Expression<String>? resolutionNotes,
     Expression<DateTime>? resolvedAt,
     Expression<DateTime>? issueDate,
+    Expression<String>? category,
+    Expression<bool>? isTaskDelegated,
+    Expression<String>? substituteStaffId,
+    Expression<String>? substituteNotes,
+    Expression<bool>? isCompensationTransferred,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
@@ -13269,6 +13613,12 @@ class LocalStaffQueriesCompanion extends UpdateCompanion<LocalStaffQuery> {
       if (resolutionNotes != null) 'resolution_notes': resolutionNotes,
       if (resolvedAt != null) 'resolved_at': resolvedAt,
       if (issueDate != null) 'issue_date': issueDate,
+      if (category != null) 'category': category,
+      if (isTaskDelegated != null) 'is_task_delegated': isTaskDelegated,
+      if (substituteStaffId != null) 'substitute_staff_id': substituteStaffId,
+      if (substituteNotes != null) 'substitute_notes': substituteNotes,
+      if (isCompensationTransferred != null)
+        'is_compensation_transferred': isCompensationTransferred,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -13283,6 +13633,11 @@ class LocalStaffQueriesCompanion extends UpdateCompanion<LocalStaffQuery> {
       Value<String?>? resolutionNotes,
       Value<DateTime?>? resolvedAt,
       Value<DateTime>? issueDate,
+      Value<String?>? category,
+      Value<bool>? isTaskDelegated,
+      Value<String?>? substituteStaffId,
+      Value<String?>? substituteNotes,
+      Value<bool>? isCompensationTransferred,
       Value<int>? rowid}) {
     return LocalStaffQueriesCompanion(
       id: id ?? this.id,
@@ -13294,6 +13649,12 @@ class LocalStaffQueriesCompanion extends UpdateCompanion<LocalStaffQuery> {
       resolutionNotes: resolutionNotes ?? this.resolutionNotes,
       resolvedAt: resolvedAt ?? this.resolvedAt,
       issueDate: issueDate ?? this.issueDate,
+      category: category ?? this.category,
+      isTaskDelegated: isTaskDelegated ?? this.isTaskDelegated,
+      substituteStaffId: substituteStaffId ?? this.substituteStaffId,
+      substituteNotes: substituteNotes ?? this.substituteNotes,
+      isCompensationTransferred:
+          isCompensationTransferred ?? this.isCompensationTransferred,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -13328,6 +13689,22 @@ class LocalStaffQueriesCompanion extends UpdateCompanion<LocalStaffQuery> {
     if (issueDate.present) {
       map['issue_date'] = Variable<DateTime>(issueDate.value);
     }
+    if (category.present) {
+      map['category'] = Variable<String>(category.value);
+    }
+    if (isTaskDelegated.present) {
+      map['is_task_delegated'] = Variable<bool>(isTaskDelegated.value);
+    }
+    if (substituteStaffId.present) {
+      map['substitute_staff_id'] = Variable<String>(substituteStaffId.value);
+    }
+    if (substituteNotes.present) {
+      map['substitute_notes'] = Variable<String>(substituteNotes.value);
+    }
+    if (isCompensationTransferred.present) {
+      map['is_compensation_transferred'] =
+          Variable<bool>(isCompensationTransferred.value);
+    }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
     }
@@ -13346,6 +13723,11 @@ class LocalStaffQueriesCompanion extends UpdateCompanion<LocalStaffQuery> {
           ..write('resolutionNotes: $resolutionNotes, ')
           ..write('resolvedAt: $resolvedAt, ')
           ..write('issueDate: $issueDate, ')
+          ..write('category: $category, ')
+          ..write('isTaskDelegated: $isTaskDelegated, ')
+          ..write('substituteStaffId: $substituteStaffId, ')
+          ..write('substituteNotes: $substituteNotes, ')
+          ..write('isCompensationTransferred: $isCompensationTransferred, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -13415,6 +13797,13 @@ class $LocalSalaryAdvancesTable extends LocalSalaryAdvances
       defaultConstraints: GeneratedColumn.constraintIsAlways(
           'CHECK ("is_one_off_advance" IN (0, 1))'),
       defaultValue: const Constant(false));
+  static const VerificationMeta _statusMeta = const VerificationMeta('status');
+  @override
+  late final GeneratedColumn<String> status = GeneratedColumn<String>(
+      'status', aliasedName, false,
+      type: DriftSqlType.string,
+      requiredDuringInsert: false,
+      defaultValue: const Constant('active'));
   static const VerificationMeta _notesMeta = const VerificationMeta('notes');
   @override
   late final GeneratedColumn<String> notes = GeneratedColumn<String>(
@@ -13430,6 +13819,7 @@ class $LocalSalaryAdvancesTable extends LocalSalaryAdvances
         collectionDate,
         isFullyRepaid,
         isOneOffAdvance,
+        status,
         notes
       ];
   @override
@@ -13495,6 +13885,10 @@ class $LocalSalaryAdvancesTable extends LocalSalaryAdvances
           isOneOffAdvance.isAcceptableOrUnknown(
               data['is_one_off_advance']!, _isOneOffAdvanceMeta));
     }
+    if (data.containsKey('status')) {
+      context.handle(_statusMeta,
+          status.isAcceptableOrUnknown(data['status']!, _statusMeta));
+    }
     if (data.containsKey('notes')) {
       context.handle(
           _notesMeta, notes.isAcceptableOrUnknown(data['notes']!, _notesMeta));
@@ -13524,6 +13918,8 @@ class $LocalSalaryAdvancesTable extends LocalSalaryAdvances
           .read(DriftSqlType.bool, data['${effectivePrefix}is_fully_repaid'])!,
       isOneOffAdvance: attachedDatabase.typeMapping.read(
           DriftSqlType.bool, data['${effectivePrefix}is_one_off_advance'])!,
+      status: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}status'])!,
       notes: attachedDatabase.typeMapping
           .read(DriftSqlType.string, data['${effectivePrefix}notes']),
     );
@@ -13545,6 +13941,7 @@ class LocalSalaryAdvance extends DataClass
   final DateTime collectionDate;
   final bool isFullyRepaid;
   final bool isOneOffAdvance;
+  final String status;
   final String? notes;
   const LocalSalaryAdvance(
       {required this.id,
@@ -13555,6 +13952,7 @@ class LocalSalaryAdvance extends DataClass
       required this.collectionDate,
       required this.isFullyRepaid,
       required this.isOneOffAdvance,
+      required this.status,
       this.notes});
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -13567,6 +13965,7 @@ class LocalSalaryAdvance extends DataClass
     map['collection_date'] = Variable<DateTime>(collectionDate);
     map['is_fully_repaid'] = Variable<bool>(isFullyRepaid);
     map['is_one_off_advance'] = Variable<bool>(isOneOffAdvance);
+    map['status'] = Variable<String>(status);
     if (!nullToAbsent || notes != null) {
       map['notes'] = Variable<String>(notes);
     }
@@ -13583,6 +13982,7 @@ class LocalSalaryAdvance extends DataClass
       collectionDate: Value(collectionDate),
       isFullyRepaid: Value(isFullyRepaid),
       isOneOffAdvance: Value(isOneOffAdvance),
+      status: Value(status),
       notes:
           notes == null && nullToAbsent ? const Value.absent() : Value(notes),
     );
@@ -13600,6 +14000,7 @@ class LocalSalaryAdvance extends DataClass
       collectionDate: serializer.fromJson<DateTime>(json['collectionDate']),
       isFullyRepaid: serializer.fromJson<bool>(json['isFullyRepaid']),
       isOneOffAdvance: serializer.fromJson<bool>(json['isOneOffAdvance']),
+      status: serializer.fromJson<String>(json['status']),
       notes: serializer.fromJson<String?>(json['notes']),
     );
   }
@@ -13615,6 +14016,7 @@ class LocalSalaryAdvance extends DataClass
       'collectionDate': serializer.toJson<DateTime>(collectionDate),
       'isFullyRepaid': serializer.toJson<bool>(isFullyRepaid),
       'isOneOffAdvance': serializer.toJson<bool>(isOneOffAdvance),
+      'status': serializer.toJson<String>(status),
       'notes': serializer.toJson<String?>(notes),
     };
   }
@@ -13628,6 +14030,7 @@ class LocalSalaryAdvance extends DataClass
           DateTime? collectionDate,
           bool? isFullyRepaid,
           bool? isOneOffAdvance,
+          String? status,
           Value<String?> notes = const Value.absent()}) =>
       LocalSalaryAdvance(
         id: id ?? this.id,
@@ -13638,6 +14041,7 @@ class LocalSalaryAdvance extends DataClass
         collectionDate: collectionDate ?? this.collectionDate,
         isFullyRepaid: isFullyRepaid ?? this.isFullyRepaid,
         isOneOffAdvance: isOneOffAdvance ?? this.isOneOffAdvance,
+        status: status ?? this.status,
         notes: notes.present ? notes.value : this.notes,
       );
   LocalSalaryAdvance copyWithCompanion(LocalSalaryAdvancesCompanion data) {
@@ -13661,6 +14065,7 @@ class LocalSalaryAdvance extends DataClass
       isOneOffAdvance: data.isOneOffAdvance.present
           ? data.isOneOffAdvance.value
           : this.isOneOffAdvance,
+      status: data.status.present ? data.status.value : this.status,
       notes: data.notes.present ? data.notes.value : this.notes,
     );
   }
@@ -13676,14 +14081,24 @@ class LocalSalaryAdvance extends DataClass
           ..write('collectionDate: $collectionDate, ')
           ..write('isFullyRepaid: $isFullyRepaid, ')
           ..write('isOneOffAdvance: $isOneOffAdvance, ')
+          ..write('status: $status, ')
           ..write('notes: $notes')
           ..write(')'))
         .toString();
   }
 
   @override
-  int get hashCode => Object.hash(id, staffId, advanceAmount, monthlyDeduction,
-      totalRepaid, collectionDate, isFullyRepaid, isOneOffAdvance, notes);
+  int get hashCode => Object.hash(
+      id,
+      staffId,
+      advanceAmount,
+      monthlyDeduction,
+      totalRepaid,
+      collectionDate,
+      isFullyRepaid,
+      isOneOffAdvance,
+      status,
+      notes);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -13696,6 +14111,7 @@ class LocalSalaryAdvance extends DataClass
           other.collectionDate == this.collectionDate &&
           other.isFullyRepaid == this.isFullyRepaid &&
           other.isOneOffAdvance == this.isOneOffAdvance &&
+          other.status == this.status &&
           other.notes == this.notes);
 }
 
@@ -13708,6 +14124,7 @@ class LocalSalaryAdvancesCompanion extends UpdateCompanion<LocalSalaryAdvance> {
   final Value<DateTime> collectionDate;
   final Value<bool> isFullyRepaid;
   final Value<bool> isOneOffAdvance;
+  final Value<String> status;
   final Value<String?> notes;
   final Value<int> rowid;
   const LocalSalaryAdvancesCompanion({
@@ -13719,6 +14136,7 @@ class LocalSalaryAdvancesCompanion extends UpdateCompanion<LocalSalaryAdvance> {
     this.collectionDate = const Value.absent(),
     this.isFullyRepaid = const Value.absent(),
     this.isOneOffAdvance = const Value.absent(),
+    this.status = const Value.absent(),
     this.notes = const Value.absent(),
     this.rowid = const Value.absent(),
   });
@@ -13731,6 +14149,7 @@ class LocalSalaryAdvancesCompanion extends UpdateCompanion<LocalSalaryAdvance> {
     required DateTime collectionDate,
     this.isFullyRepaid = const Value.absent(),
     this.isOneOffAdvance = const Value.absent(),
+    this.status = const Value.absent(),
     this.notes = const Value.absent(),
     this.rowid = const Value.absent(),
   })  : id = Value(id),
@@ -13747,6 +14166,7 @@ class LocalSalaryAdvancesCompanion extends UpdateCompanion<LocalSalaryAdvance> {
     Expression<DateTime>? collectionDate,
     Expression<bool>? isFullyRepaid,
     Expression<bool>? isOneOffAdvance,
+    Expression<String>? status,
     Expression<String>? notes,
     Expression<int>? rowid,
   }) {
@@ -13759,6 +14179,7 @@ class LocalSalaryAdvancesCompanion extends UpdateCompanion<LocalSalaryAdvance> {
       if (collectionDate != null) 'collection_date': collectionDate,
       if (isFullyRepaid != null) 'is_fully_repaid': isFullyRepaid,
       if (isOneOffAdvance != null) 'is_one_off_advance': isOneOffAdvance,
+      if (status != null) 'status': status,
       if (notes != null) 'notes': notes,
       if (rowid != null) 'rowid': rowid,
     });
@@ -13773,6 +14194,7 @@ class LocalSalaryAdvancesCompanion extends UpdateCompanion<LocalSalaryAdvance> {
       Value<DateTime>? collectionDate,
       Value<bool>? isFullyRepaid,
       Value<bool>? isOneOffAdvance,
+      Value<String>? status,
       Value<String?>? notes,
       Value<int>? rowid}) {
     return LocalSalaryAdvancesCompanion(
@@ -13784,6 +14206,7 @@ class LocalSalaryAdvancesCompanion extends UpdateCompanion<LocalSalaryAdvance> {
       collectionDate: collectionDate ?? this.collectionDate,
       isFullyRepaid: isFullyRepaid ?? this.isFullyRepaid,
       isOneOffAdvance: isOneOffAdvance ?? this.isOneOffAdvance,
+      status: status ?? this.status,
       notes: notes ?? this.notes,
       rowid: rowid ?? this.rowid,
     );
@@ -13816,6 +14239,9 @@ class LocalSalaryAdvancesCompanion extends UpdateCompanion<LocalSalaryAdvance> {
     if (isOneOffAdvance.present) {
       map['is_one_off_advance'] = Variable<bool>(isOneOffAdvance.value);
     }
+    if (status.present) {
+      map['status'] = Variable<String>(status.value);
+    }
     if (notes.present) {
       map['notes'] = Variable<String>(notes.value);
     }
@@ -13836,6 +14262,7 @@ class LocalSalaryAdvancesCompanion extends UpdateCompanion<LocalSalaryAdvance> {
           ..write('collectionDate: $collectionDate, ')
           ..write('isFullyRepaid: $isFullyRepaid, ')
           ..write('isOneOffAdvance: $isOneOffAdvance, ')
+          ..write('status: $status, ')
           ..write('notes: $notes, ')
           ..write('rowid: $rowid')
           ..write(')'))
@@ -20462,6 +20889,9 @@ typedef $$LocalMedicationsTableCreateCompanionBuilder
   Value<double?> dosageRatePerKg,
   Value<String?> dosageRateText,
   Value<String?> concentration,
+  Value<double?> concentrationMgPerMl,
+  Value<double?> concentrationValue,
+  Value<String?> concentrationUnit,
   Value<bool> isActive,
   Value<int> rowid,
 });
@@ -20482,6 +20912,9 @@ typedef $$LocalMedicationsTableUpdateCompanionBuilder
   Value<double?> dosageRatePerKg,
   Value<String?> dosageRateText,
   Value<String?> concentration,
+  Value<double?> concentrationMgPerMl,
+  Value<double?> concentrationValue,
+  Value<String?> concentrationUnit,
   Value<bool> isActive,
   Value<int> rowid,
 });
@@ -20544,6 +20977,18 @@ class $$LocalMedicationsTableFilterComposer
 
   ColumnFilters<String> get concentration => $composableBuilder(
       column: $table.concentration, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<double> get concentrationMgPerMl => $composableBuilder(
+      column: $table.concentrationMgPerMl,
+      builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<double> get concentrationValue => $composableBuilder(
+      column: $table.concentrationValue,
+      builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get concentrationUnit => $composableBuilder(
+      column: $table.concentrationUnit,
+      builder: (column) => ColumnFilters(column));
 
   ColumnFilters<bool> get isActive => $composableBuilder(
       column: $table.isActive, builder: (column) => ColumnFilters(column));
@@ -20610,6 +21055,18 @@ class $$LocalMedicationsTableOrderingComposer
       column: $table.concentration,
       builder: (column) => ColumnOrderings(column));
 
+  ColumnOrderings<double> get concentrationMgPerMl => $composableBuilder(
+      column: $table.concentrationMgPerMl,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<double> get concentrationValue => $composableBuilder(
+      column: $table.concentrationValue,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get concentrationUnit => $composableBuilder(
+      column: $table.concentrationUnit,
+      builder: (column) => ColumnOrderings(column));
+
   ColumnOrderings<bool> get isActive => $composableBuilder(
       column: $table.isActive, builder: (column) => ColumnOrderings(column));
 }
@@ -20668,6 +21125,15 @@ class $$LocalMedicationsTableAnnotationComposer
   GeneratedColumn<String> get concentration => $composableBuilder(
       column: $table.concentration, builder: (column) => column);
 
+  GeneratedColumn<double> get concentrationMgPerMl => $composableBuilder(
+      column: $table.concentrationMgPerMl, builder: (column) => column);
+
+  GeneratedColumn<double> get concentrationValue => $composableBuilder(
+      column: $table.concentrationValue, builder: (column) => column);
+
+  GeneratedColumn<String> get concentrationUnit => $composableBuilder(
+      column: $table.concentrationUnit, builder: (column) => column);
+
   GeneratedColumn<bool> get isActive =>
       $composableBuilder(column: $table.isActive, builder: (column) => column);
 }
@@ -20714,6 +21180,9 @@ class $$LocalMedicationsTableTableManager extends RootTableManager<
             Value<double?> dosageRatePerKg = const Value.absent(),
             Value<String?> dosageRateText = const Value.absent(),
             Value<String?> concentration = const Value.absent(),
+            Value<double?> concentrationMgPerMl = const Value.absent(),
+            Value<double?> concentrationValue = const Value.absent(),
+            Value<String?> concentrationUnit = const Value.absent(),
             Value<bool> isActive = const Value.absent(),
             Value<int> rowid = const Value.absent(),
           }) =>
@@ -20733,6 +21202,9 @@ class $$LocalMedicationsTableTableManager extends RootTableManager<
             dosageRatePerKg: dosageRatePerKg,
             dosageRateText: dosageRateText,
             concentration: concentration,
+            concentrationMgPerMl: concentrationMgPerMl,
+            concentrationValue: concentrationValue,
+            concentrationUnit: concentrationUnit,
             isActive: isActive,
             rowid: rowid,
           ),
@@ -20752,6 +21224,9 @@ class $$LocalMedicationsTableTableManager extends RootTableManager<
             Value<double?> dosageRatePerKg = const Value.absent(),
             Value<String?> dosageRateText = const Value.absent(),
             Value<String?> concentration = const Value.absent(),
+            Value<double?> concentrationMgPerMl = const Value.absent(),
+            Value<double?> concentrationValue = const Value.absent(),
+            Value<String?> concentrationUnit = const Value.absent(),
             Value<bool> isActive = const Value.absent(),
             Value<int> rowid = const Value.absent(),
           }) =>
@@ -20771,6 +21246,9 @@ class $$LocalMedicationsTableTableManager extends RootTableManager<
             dosageRatePerKg: dosageRatePerKg,
             dosageRateText: dosageRateText,
             concentration: concentration,
+            concentrationMgPerMl: concentrationMgPerMl,
+            concentrationValue: concentrationValue,
+            concentrationUnit: concentrationUnit,
             isActive: isActive,
             rowid: rowid,
           ),
@@ -21596,6 +22074,11 @@ typedef $$LocalStaffQueriesTableCreateCompanionBuilder
   Value<String?> resolutionNotes,
   Value<DateTime?> resolvedAt,
   required DateTime issueDate,
+  Value<String?> category,
+  Value<bool> isTaskDelegated,
+  Value<String?> substituteStaffId,
+  Value<String?> substituteNotes,
+  Value<bool> isCompensationTransferred,
   Value<int> rowid,
 });
 typedef $$LocalStaffQueriesTableUpdateCompanionBuilder
@@ -21609,6 +22092,11 @@ typedef $$LocalStaffQueriesTableUpdateCompanionBuilder
   Value<String?> resolutionNotes,
   Value<DateTime?> resolvedAt,
   Value<DateTime> issueDate,
+  Value<String?> category,
+  Value<bool> isTaskDelegated,
+  Value<String?> substituteStaffId,
+  Value<String?> substituteNotes,
+  Value<bool> isCompensationTransferred,
   Value<int> rowid,
 });
 
@@ -21649,6 +22137,25 @@ class $$LocalStaffQueriesTableFilterComposer
 
   ColumnFilters<DateTime> get issueDate => $composableBuilder(
       column: $table.issueDate, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get category => $composableBuilder(
+      column: $table.category, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<bool> get isTaskDelegated => $composableBuilder(
+      column: $table.isTaskDelegated,
+      builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get substituteStaffId => $composableBuilder(
+      column: $table.substituteStaffId,
+      builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get substituteNotes => $composableBuilder(
+      column: $table.substituteNotes,
+      builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<bool> get isCompensationTransferred => $composableBuilder(
+      column: $table.isCompensationTransferred,
+      builder: (column) => ColumnFilters(column));
 }
 
 class $$LocalStaffQueriesTableOrderingComposer
@@ -21688,6 +22195,25 @@ class $$LocalStaffQueriesTableOrderingComposer
 
   ColumnOrderings<DateTime> get issueDate => $composableBuilder(
       column: $table.issueDate, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get category => $composableBuilder(
+      column: $table.category, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<bool> get isTaskDelegated => $composableBuilder(
+      column: $table.isTaskDelegated,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get substituteStaffId => $composableBuilder(
+      column: $table.substituteStaffId,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get substituteNotes => $composableBuilder(
+      column: $table.substituteNotes,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<bool> get isCompensationTransferred => $composableBuilder(
+      column: $table.isCompensationTransferred,
+      builder: (column) => ColumnOrderings(column));
 }
 
 class $$LocalStaffQueriesTableAnnotationComposer
@@ -21725,6 +22251,21 @@ class $$LocalStaffQueriesTableAnnotationComposer
 
   GeneratedColumn<DateTime> get issueDate =>
       $composableBuilder(column: $table.issueDate, builder: (column) => column);
+
+  GeneratedColumn<String> get category =>
+      $composableBuilder(column: $table.category, builder: (column) => column);
+
+  GeneratedColumn<bool> get isTaskDelegated => $composableBuilder(
+      column: $table.isTaskDelegated, builder: (column) => column);
+
+  GeneratedColumn<String> get substituteStaffId => $composableBuilder(
+      column: $table.substituteStaffId, builder: (column) => column);
+
+  GeneratedColumn<String> get substituteNotes => $composableBuilder(
+      column: $table.substituteNotes, builder: (column) => column);
+
+  GeneratedColumn<bool> get isCompensationTransferred => $composableBuilder(
+      column: $table.isCompensationTransferred, builder: (column) => column);
 }
 
 class $$LocalStaffQueriesTableTableManager extends RootTableManager<
@@ -21764,6 +22305,11 @@ class $$LocalStaffQueriesTableTableManager extends RootTableManager<
             Value<String?> resolutionNotes = const Value.absent(),
             Value<DateTime?> resolvedAt = const Value.absent(),
             Value<DateTime> issueDate = const Value.absent(),
+            Value<String?> category = const Value.absent(),
+            Value<bool> isTaskDelegated = const Value.absent(),
+            Value<String?> substituteStaffId = const Value.absent(),
+            Value<String?> substituteNotes = const Value.absent(),
+            Value<bool> isCompensationTransferred = const Value.absent(),
             Value<int> rowid = const Value.absent(),
           }) =>
               LocalStaffQueriesCompanion(
@@ -21776,6 +22322,11 @@ class $$LocalStaffQueriesTableTableManager extends RootTableManager<
             resolutionNotes: resolutionNotes,
             resolvedAt: resolvedAt,
             issueDate: issueDate,
+            category: category,
+            isTaskDelegated: isTaskDelegated,
+            substituteStaffId: substituteStaffId,
+            substituteNotes: substituteNotes,
+            isCompensationTransferred: isCompensationTransferred,
             rowid: rowid,
           ),
           createCompanionCallback: ({
@@ -21788,6 +22339,11 @@ class $$LocalStaffQueriesTableTableManager extends RootTableManager<
             Value<String?> resolutionNotes = const Value.absent(),
             Value<DateTime?> resolvedAt = const Value.absent(),
             required DateTime issueDate,
+            Value<String?> category = const Value.absent(),
+            Value<bool> isTaskDelegated = const Value.absent(),
+            Value<String?> substituteStaffId = const Value.absent(),
+            Value<String?> substituteNotes = const Value.absent(),
+            Value<bool> isCompensationTransferred = const Value.absent(),
             Value<int> rowid = const Value.absent(),
           }) =>
               LocalStaffQueriesCompanion.insert(
@@ -21800,6 +22356,11 @@ class $$LocalStaffQueriesTableTableManager extends RootTableManager<
             resolutionNotes: resolutionNotes,
             resolvedAt: resolvedAt,
             issueDate: issueDate,
+            category: category,
+            isTaskDelegated: isTaskDelegated,
+            substituteStaffId: substituteStaffId,
+            substituteNotes: substituteNotes,
+            isCompensationTransferred: isCompensationTransferred,
             rowid: rowid,
           ),
           withReferenceMapper: (p0) => p0
@@ -21834,6 +22395,7 @@ typedef $$LocalSalaryAdvancesTableCreateCompanionBuilder
   required DateTime collectionDate,
   Value<bool> isFullyRepaid,
   Value<bool> isOneOffAdvance,
+  Value<String> status,
   Value<String?> notes,
   Value<int> rowid,
 });
@@ -21847,6 +22409,7 @@ typedef $$LocalSalaryAdvancesTableUpdateCompanionBuilder
   Value<DateTime> collectionDate,
   Value<bool> isFullyRepaid,
   Value<bool> isOneOffAdvance,
+  Value<String> status,
   Value<String?> notes,
   Value<int> rowid,
 });
@@ -21886,6 +22449,9 @@ class $$LocalSalaryAdvancesTableFilterComposer
   ColumnFilters<bool> get isOneOffAdvance => $composableBuilder(
       column: $table.isOneOffAdvance,
       builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get status => $composableBuilder(
+      column: $table.status, builder: (column) => ColumnFilters(column));
 
   ColumnFilters<String> get notes => $composableBuilder(
       column: $table.notes, builder: (column) => ColumnFilters(column));
@@ -21929,6 +22495,9 @@ class $$LocalSalaryAdvancesTableOrderingComposer
       column: $table.isOneOffAdvance,
       builder: (column) => ColumnOrderings(column));
 
+  ColumnOrderings<String> get status => $composableBuilder(
+      column: $table.status, builder: (column) => ColumnOrderings(column));
+
   ColumnOrderings<String> get notes => $composableBuilder(
       column: $table.notes, builder: (column) => ColumnOrderings(column));
 }
@@ -21965,6 +22534,9 @@ class $$LocalSalaryAdvancesTableAnnotationComposer
 
   GeneratedColumn<bool> get isOneOffAdvance => $composableBuilder(
       column: $table.isOneOffAdvance, builder: (column) => column);
+
+  GeneratedColumn<String> get status =>
+      $composableBuilder(column: $table.status, builder: (column) => column);
 
   GeneratedColumn<String> get notes =>
       $composableBuilder(column: $table.notes, builder: (column) => column);
@@ -22008,6 +22580,7 @@ class $$LocalSalaryAdvancesTableTableManager extends RootTableManager<
             Value<DateTime> collectionDate = const Value.absent(),
             Value<bool> isFullyRepaid = const Value.absent(),
             Value<bool> isOneOffAdvance = const Value.absent(),
+            Value<String> status = const Value.absent(),
             Value<String?> notes = const Value.absent(),
             Value<int> rowid = const Value.absent(),
           }) =>
@@ -22020,6 +22593,7 @@ class $$LocalSalaryAdvancesTableTableManager extends RootTableManager<
             collectionDate: collectionDate,
             isFullyRepaid: isFullyRepaid,
             isOneOffAdvance: isOneOffAdvance,
+            status: status,
             notes: notes,
             rowid: rowid,
           ),
@@ -22032,6 +22606,7 @@ class $$LocalSalaryAdvancesTableTableManager extends RootTableManager<
             required DateTime collectionDate,
             Value<bool> isFullyRepaid = const Value.absent(),
             Value<bool> isOneOffAdvance = const Value.absent(),
+            Value<String> status = const Value.absent(),
             Value<String?> notes = const Value.absent(),
             Value<int> rowid = const Value.absent(),
           }) =>
@@ -22044,6 +22619,7 @@ class $$LocalSalaryAdvancesTableTableManager extends RootTableManager<
             collectionDate: collectionDate,
             isFullyRepaid: isFullyRepaid,
             isOneOffAdvance: isOneOffAdvance,
+            status: status,
             notes: notes,
             rowid: rowid,
           ),

@@ -169,6 +169,7 @@ class HatcheryRepository {
   Future<void> addEvent(String batchId, Map<String, dynamic> eventData) async {
     final uuid = const Uuid().v4();
     eventData['id'] = uuid;
+    eventData['batch_id'] = batchId;
 
     final eventType = eventData['event_type'];
     final eventDate = DateTime.parse(eventData['event_date']);

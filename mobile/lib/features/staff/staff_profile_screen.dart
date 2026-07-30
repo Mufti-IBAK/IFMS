@@ -540,6 +540,41 @@ class _StaffProfileScreenState extends State<StaffProfileScreen> {
                                   ),
                                   const SizedBox(height: 4),
                                   Text('Repaid: ${currencyFormat.format(adv.totalRepaid)} of ${currencyFormat.format(adv.advanceAmount)}', style: const TextStyle(fontSize: 11, color: Colors.grey)),
+                                  if (!adv.isFullyRepaid) ...[
+                                    const SizedBox(height: 8),
+                                    Row(
+                                      mainAxisAlignment: MainAxisAlignment.end,
+                                      children: [
+                                        OutlinedButton.icon(
+                                          onPressed: () {
+                                            context.read<StaffBloc>().add(UpdateSalaryAdvanceStatus(adv.id, 'cleared'));
+                                            ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Loan marked fully cleared')));
+                                          },
+                                          icon: const Icon(Icons.check_circle, size: 14, color: Colors.green),
+                                          label: const Text('Mark Cleared', style: TextStyle(fontSize: 11, color: Colors.green)),
+                                          style: OutlinedButton.styleFrom(
+                                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                            minimumSize: Size.zero,
+                                            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                                          ),
+                                        ),
+                                        const SizedBox(width: 8),
+                                        OutlinedButton.icon(
+                                          onPressed: () {
+                                            context.read<StaffBloc>().add(UpdateSalaryAdvanceStatus(adv.id, 'forfeited'));
+                                            ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Loan marked forfeited')));
+                                          },
+                                          icon: const Icon(Icons.cancel, size: 14, color: Colors.red),
+                                          label: const Text('Forfeit', style: TextStyle(fontSize: 11, color: Colors.red)),
+                                          style: OutlinedButton.styleFrom(
+                                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                            minimumSize: Size.zero,
+                                            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ],
                                 ],
                               ),
                             ),

@@ -173,6 +173,39 @@ class InventoryRepository {
         details: apiData,
       );
     } catch (_) {}
+
+    // Auto-post expense to financial ledger for initial feed stock
+    final totalOutlay = stockKg * costKg;
+    if (totalOutlay > 0) {
+      final txUuid = const Uuid().v4();
+      final now = DateTime.now();
+      await db.into(db.localTransactions).insertOnConflictUpdate(LocalTransactionsCompanion.insert(
+        id: txUuid,
+        transactionType: 'expense',
+        category: 'feed_purchase',
+        amount: totalOutlay,
+        currency: const Value('NGN'),
+        relatedEntityType: const Value('inventory'),
+        relatedEntityId: Value(uuid),
+        description: Value('Initial Feed Purchase: ${itemData['name']} ($stockKg kg)'),
+        transactionDate: now,
+        isReconciled: const Value(false),
+      ));
+
+      try {
+        await apiClient.dio.post('/finance/transaction', data: {
+          'id': txUuid,
+          'transaction_type': 'expense',
+          'category': 'feed_purchase',
+          'amount': totalOutlay,
+          'currency': 'NGN',
+          'related_entity_type': 'inventory',
+          'related_entity_id': uuid,
+          'description': 'Initial Feed Purchase: ${itemData['name']} ($stockKg kg)',
+          'transaction_date': now.toIso8601String().split('T')[0],
+        });
+      } catch (_) {}
+    }
   }
 
   Future<void> updateFeedItem(String id, Map<String, dynamic> itemData) async {

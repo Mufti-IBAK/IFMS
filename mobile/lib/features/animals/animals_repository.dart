@@ -81,7 +81,24 @@ class AnimalsRepository {
           localData['image_path'] = imagePath;
         }
         await _updateLocalCache([localData]);
-        
+
+        final acqCost = double.tryParse((animalData['acquisition_cost'] ?? 0).toString()) ?? 0.0;
+        if (acqCost > 0) {
+          final txUuid = const Uuid().v4();
+          await db.into(db.localTransactions).insertOnConflictUpdate(LocalTransactionsCompanion.insert(
+            id: txUuid,
+            transactionType: 'expense',
+            category: 'animal_purchase',
+            amount: acqCost,
+            currency: const Value('NGN'),
+            relatedEntityType: const Value('animal'),
+            relatedEntityId: Value(uuid),
+            description: Value('Acquisition cost for ${animalData['tag_id']} (${animalData['species']})'),
+            transactionDate: DateTime.now(),
+            isReconciled: const Value(false),
+          ));
+        }
+
         await db.into(db.syncQueue).insert(SyncQueueCompanion.insert(
           endpoint: '/animals',
           method: 'POST',
@@ -150,13 +167,17 @@ class AnimalsRepository {
         await _updateLocalCache([freshResponse.data[0]]);
       }
 
+      final existingAnimal = await (db.select(db.localAnimals)..where((t) => t.id.equals(id))).getSingleOrNull();
+      final tagLabel = updateData['tag_id'] ?? existingAnimal?.tagId ?? id;
+      final speciesLabel = updateData['species'] ?? existingAnimal?.species ?? 'Animal';
+
       sl<AuditRepository>().logAction(
         userName: 'Farm Manager',
         actionType: 'UPDATE',
         moduleName: 'animals',
         entityId: id,
-        entityName: 'Animal Tag #${updateData['tag_id'] ?? id}',
-        description: 'Updated details for animal #${updateData['tag_id'] ?? id}',
+        entityName: '$speciesLabel (#$tagLabel)',
+        description: 'Updated details for $speciesLabel (#$tagLabel)',
         details: updateData,
       );
     } catch (e) {
@@ -193,6 +214,10 @@ class AnimalsRepository {
   }
 
   Future<void> deleteAnimal(String id) async {
+    final existingAnimal = await (db.select(db.localAnimals)..where((t) => t.id.equals(id))).getSingleOrNull();
+    final tagLabel = existingAnimal?.tagId ?? id;
+    final speciesLabel = existingAnimal?.species ?? 'Animal';
+
     try {
       await apiClient.dio.delete('/animals/$id');
       await (db.delete(db.localAnimals)..where((t) => t.id.equals(id))).go();
@@ -202,8 +227,8 @@ class AnimalsRepository {
         actionType: 'DELETE',
         moduleName: 'animals',
         entityId: id,
-        entityName: 'Animal ID $id',
-        description: 'Deleted animal record $id',
+        entityName: '$speciesLabel (#$tagLabel)',
+        description: 'Deleted record for $speciesLabel (#$tagLabel)',
       );
     } catch (e) {
       if (e is DioException && ApiClient.isNetworkError(e)) {
@@ -237,7 +262,7 @@ class AnimalsRepository {
 
     try {
       // Sync to Server first
-      await apiClient.dio.post('/animal_events', data: data); // Path rewritten by ApiClient interceptor for this anyway, but keeping standard
+      await apiClient.dio.post('/animal_events', data: data);
       
       if (eventType == 'medical_report') {
         final outcome = payload['outcome'] as Map<String, dynamic>?;
@@ -302,5 +327,64 @@ class AnimalsRepository {
       }
       throw Exception('Failed to log event: $e');
     }
+  }
+
+  Future<void> recordAnimalSale({
+    required String animalId,
+    required double salePrice,
+    String? buyer,
+    DateTime? saleDate,
+  }) async {
+    final animal = await (db.select(db.localAnimals)..where((t) => t.id.equals(animalId))).getSingleOrNull();
+    final tagId = animal?.tagId ?? animalId;
+    final species = animal?.species ?? 'Livestock';
+    final date = saleDate ?? DateTime.now();
+
+    // 1. Update animal status to sold
+    await (db.update(db.localAnimals)..where((t) => t.id.equals(animalId))).write(
+      const LocalAnimalsCompanion(
+        status: Value('sold'),
+      ),
+    );
+
+    // 2. Insert income transaction into localTransactions
+    final txUuid = const Uuid().v4();
+    await db.into(db.localTransactions).insertOnConflictUpdate(LocalTransactionsCompanion.insert(
+      id: txUuid,
+      transactionType: 'income',
+      category: 'animal_sales',
+      amount: salePrice,
+      currency: const Value('NGN'),
+      relatedEntityType: const Value('animal'),
+      relatedEntityId: Value(animalId),
+      description: Value('Animal Sale: $species (#$tagId)${buyer != null && buyer.isNotEmpty ? ' to $buyer' : ''}'),
+      transactionDate: date,
+      isReconciled: const Value(false),
+    ));
+
+    // 3. Online sync to backend
+    try {
+      await apiClient.dio.patch('/animals?id=eq.$animalId', data: {'status': 'sold'});
+      await apiClient.dio.post('/finance/transaction', data: {
+        'id': txUuid,
+        'transaction_type': 'income',
+        'category': 'animal_sales',
+        'amount': salePrice,
+        'currency': 'NGN',
+        'related_entity_type': 'animal',
+        'related_entity_id': animalId,
+        'description': 'Animal Sale: $species (#$tagId)${buyer != null && buyer.isNotEmpty ? ' to $buyer' : ''}',
+        'transaction_date': date.toIso8601String().split('T')[0],
+      });
+    } catch (_) {}
+
+    sl<AuditRepository>().logAction(
+      userName: 'Farm Manager',
+      actionType: 'UPDATE',
+      moduleName: 'animals',
+      entityId: animalId,
+      entityName: '$species (#$tagId)',
+      description: 'Recorded animal sale of ₦$salePrice for tag #$tagId',
+    );
   }
 }

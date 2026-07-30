@@ -345,6 +345,9 @@ class LocalMedications extends Table {
   RealColumn get dosageRatePerKg => real().nullable()(); // Numeric ml per kg (e.g. 0.02 for 1ml/50kg)
   TextColumn get dosageRateText => text().nullable()();  // Readable text (e.g. "1 ml / 50 kg")
   TextColumn get concentration => text().nullable()();   // Concentration (e.g. "100 mg/ml" or "10%")
+  RealColumn get concentrationMgPerMl => real().nullable()(); // Exact normalized mg/ml (e.g. 25.0 for 2.5%)
+  RealColumn get concentrationValue => real().nullable()(); // Numeric input value (e.g. 2.5)
+  TextColumn get concentrationUnit => text().nullable()(); // Unit ("%", "mg_ml", "mg_tab", "mg_g")
   BoolColumn get isActive => boolean().withDefault(const Constant(true))();
 
   @override
@@ -409,6 +412,7 @@ class LocalSalaryAdvances extends Table {
   DateTimeColumn get collectionDate => dateTime()();  // when advance was collected
   BoolColumn get isFullyRepaid => boolean().withDefault(const Constant(false))();
   BoolColumn get isOneOffAdvance => boolean().withDefault(const Constant(false))();
+  TextColumn get status => text().withDefault(const Constant('active'))(); // "active", "cleared", "forfeited"
   TextColumn get notes => text().nullable()();
 
   @override
@@ -425,6 +429,11 @@ class LocalStaffQueries extends Table {
   TextColumn get resolutionNotes => text().nullable()();
   DateTimeColumn get resolvedAt => dateTime().nullable()();
   DateTimeColumn get issueDate => dateTime()();
+  TextColumn get category => text().nullable()(); // "lateness", "misconduct", "duty_absence", "negligence", "safety_violation", "poor_attitude", "other"
+  BoolColumn get isTaskDelegated => boolean().withDefault(const Constant(false))();
+  TextColumn get substituteStaffId => text().nullable()();
+  TextColumn get substituteNotes => text().nullable()();
+  BoolColumn get isCompensationTransferred => boolean().withDefault(const Constant(false))();
 
   @override
   Set<Column> get primaryKey => {id};
@@ -510,7 +519,7 @@ class LocalDatabase extends _$LocalDatabase {
   LocalDatabase([QueryExecutor? executor]) : super(executor ?? _openConnection());
 
   @override
-  int get schemaVersion => 28;
+  int get schemaVersion => 29;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -636,14 +645,7 @@ class LocalDatabase extends _$LocalDatabase {
           await m.addColumn(localFeedItems, localFeedItems.purchaseUnit);
         } catch (_) {}
       }
-      // --- V28: Medication dosage & concentration ---
-      if (from < 28) {
-        try {
-          await m.addColumn(localMedications, localMedications.dosageRatePerKg);
-          await m.addColumn(localMedications, localMedications.dosageRateText);
-          await m.addColumn(localMedications, localMedications.concentration);
-        } catch (_) {}
-      }
+      // --- V28 & V29: Schema upgrades handled safely in beforeOpen customStatements ---
     },
     beforeOpen: (details) async {
       // Ensure purchase_unit column exists in local_feed_items table
@@ -658,6 +660,33 @@ class LocalDatabase extends _$LocalDatabase {
       } catch (_) {}
       try {
         await customStatement("ALTER TABLE local_medications ADD COLUMN concentration TEXT;");
+      } catch (_) {}
+      try {
+        await customStatement("ALTER TABLE local_medications ADD COLUMN concentration_mg_per_ml REAL;");
+      } catch (_) {}
+      try {
+        await customStatement("ALTER TABLE local_medications ADD COLUMN concentration_value REAL;");
+      } catch (_) {}
+      try {
+        await customStatement("ALTER TABLE local_medications ADD COLUMN concentration_unit TEXT;");
+      } catch (_) {}
+      try {
+        await customStatement("ALTER TABLE local_salary_advances ADD COLUMN status TEXT DEFAULT 'active';");
+      } catch (_) {}
+      try {
+        await customStatement("ALTER TABLE local_staff_queries ADD COLUMN category TEXT;");
+      } catch (_) {}
+      try {
+        await customStatement("ALTER TABLE local_staff_queries ADD COLUMN is_task_delegated INTEGER DEFAULT 0;");
+      } catch (_) {}
+      try {
+        await customStatement("ALTER TABLE local_staff_queries ADD COLUMN substitute_staff_id TEXT;");
+      } catch (_) {}
+      try {
+        await customStatement("ALTER TABLE local_staff_queries ADD COLUMN substitute_notes TEXT;");
+      } catch (_) {}
+      try {
+        await customStatement("ALTER TABLE local_staff_queries ADD COLUMN is_compensation_transferred INTEGER DEFAULT 0;");
       } catch (_) {}
 
       // Create high-performance indexing for SQLite queries

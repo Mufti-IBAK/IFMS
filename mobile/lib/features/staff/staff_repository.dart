@@ -238,6 +238,7 @@ class StaffRepository {
 
   Future<void> issueQuery(String staffId, Map<String, dynamic> data) async {
     final uuid = const Uuid().v4();
+    final isDelegated = data['is_task_delegated'] == true;
     final apiData = {
       'id': uuid,
       'staff_id': staffId,
@@ -246,6 +247,11 @@ class StaffRepository {
       'deduction_amount': double.parse((data['deduction_amount'] ?? 0.0).toString()),
       'is_resolved': false,
       'issue_date': data['issue_date'] ?? DateTime.now().toIso8601String(),
+      'category': data['category'],
+      'is_task_delegated': isDelegated,
+      'substitute_staff_id': data['substitute_staff_id'],
+      'substitute_notes': data['substitute_notes'],
+      'is_compensation_transferred': isDelegated,
     };
 
     try {
@@ -258,7 +264,12 @@ class StaffRepository {
         description: Value(data['description'] as String?),
         deductionAmount: Value(double.parse((data['deduction_amount'] ?? 0.0).toString())),
         isResolved: const Value(false),
-        issueDate: DateTime.parse(apiData['issue_date']!),
+        issueDate: DateTime.parse(apiData['issue_date'] as String),
+        category: Value(data['category'] as String?),
+        isTaskDelegated: Value(isDelegated),
+        substituteStaffId: Value(data['substitute_staff_id'] as String?),
+        substituteNotes: Value(data['substitute_notes'] as String?),
+        isCompensationTransferred: Value(isDelegated),
       ));
     } catch (e) {
       if (e is DioException && ApiClient.isNetworkError(e)) {
@@ -269,7 +280,12 @@ class StaffRepository {
           description: Value(data['description'] as String?),
           deductionAmount: Value(double.parse((data['deduction_amount'] ?? 0.0).toString())),
           isResolved: const Value(false),
-          issueDate: DateTime.parse(apiData['issue_date']!),
+          issueDate: DateTime.parse(apiData['issue_date'] as String),
+          category: Value(data['category'] as String?),
+          isTaskDelegated: Value(isDelegated),
+          substituteStaffId: Value(data['substitute_staff_id'] as String?),
+          substituteNotes: Value(data['substitute_notes'] as String?),
+          isCompensationTransferred: Value(isDelegated),
         ));
 
         await db.into(db.syncQueue).insert(SyncQueueCompanion.insert(
@@ -284,6 +300,34 @@ class StaffRepository {
         throw Exception(e.response?.data?['message'] ?? e.response?.data?['details'] ?? 'Failed to issue query: ${e.message}');
       }
       throw Exception('Failed to issue query: $e');
+    }
+  }
+
+  Future<void> updateSalaryAdvanceStatus(String advanceId, String status) async {
+    final bool isFully = (status == 'cleared' || status == 'forfeited');
+    
+    final adv = await (db.select(db.localSalaryAdvances)..where((t) => t.id.equals(advanceId))).getSingleOrNull();
+    if (adv != null) {
+      double repaid = adv.totalRepaid;
+      if (status == 'cleared') {
+        repaid = adv.advanceAmount;
+      }
+      
+      await (db.update(db.localSalaryAdvances)..where((t) => t.id.equals(advanceId))).write(
+        LocalSalaryAdvancesCompanion(
+          status: Value(status),
+          isFullyRepaid: Value(isFully),
+          totalRepaid: Value(repaid),
+        ),
+      );
+      
+      try {
+        await apiClient.dio.patch('/staff/salary-advances?id=eq.$advanceId', data: {
+          'status': status,
+          'is_fully_repaid': isFully,
+          'total_repaid': repaid,
+        });
+      } catch (_) {}
     }
   }
 

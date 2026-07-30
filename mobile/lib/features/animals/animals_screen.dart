@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
@@ -28,6 +29,7 @@ class _AnimalsScreenState extends State<AnimalsScreen> {
   String _searchQuery = '';
   String _sortBy = 'tag_id';
   bool _sortAscending = true;
+  bool _isFabExtended = true;
   final TextEditingController _searchController = TextEditingController();
 
   @override
@@ -290,10 +292,19 @@ class _AnimalsScreenState extends State<AnimalsScreen> {
                 Expanded(
                   child: items.isEmpty
                       ? const Center(child: Text('No matching animals found.'))
-                      : ListView.builder(
-                          itemCount: items.length,
-                          padding: const EdgeInsets.symmetric(horizontal: 16),
-                          itemBuilder: (context, index) {
+                      : NotificationListener<UserScrollNotification>(
+                          onNotification: (notification) {
+                            if (notification.direction == ScrollDirection.reverse) {
+                              if (_isFabExtended) setState(() => _isFabExtended = false);
+                            } else if (notification.direction == ScrollDirection.forward) {
+                              if (!_isFabExtended) setState(() => _isFabExtended = true);
+                            }
+                            return true;
+                          },
+                          child: ListView.builder(
+                            itemCount: items.length,
+                            padding: const EdgeInsets.symmetric(horizontal: 16),
+                            itemBuilder: (context, index) {
                             final item = items[index];
 
                             // Section Header UI
@@ -590,6 +601,7 @@ class _AnimalsScreenState extends State<AnimalsScreen> {
                           );
                           },
                         ),
+                      ),
                 ),
               ],
             );
@@ -601,10 +613,13 @@ class _AnimalsScreenState extends State<AnimalsScreen> {
           return const Center(child: Text('No animals recorded.'));
         },
       ),
-      floatingActionButton: FloatingActionButton(
+      floatingActionButton: FloatingActionButton.extended(
+        isExtended: _isFabExtended,
         onPressed: () => _showAddAnimalDialog(context),
         backgroundColor: AppColors.primary,
-        child: const Icon(Icons.add, color: Colors.white),
+        foregroundColor: Colors.white,
+        icon: const Icon(Icons.add),
+        label: const Text('Add Animal'),
       ),
     );
   }

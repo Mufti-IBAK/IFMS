@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 import '../../core/theme/app_colors.dart';
@@ -8,6 +9,7 @@ import '../../core/database/local_db.dart';
 import 'dairy_bloc.dart';
 import 'dairy_repository.dart';
 import 'widgets/add_milk_entry_sheet.dart';
+import '../../core/utils/dairy_pdf_export_service.dart';
 
 class DairyScreen extends StatefulWidget {
   const DairyScreen({super.key});
@@ -18,6 +20,7 @@ class DairyScreen extends StatefulWidget {
 
 class _DairyScreenState extends State<DairyScreen> with SingleTickerProviderStateMixin {
   late TabController _tabController;
+  bool _isFabExtended = true;
 
   @override
   void initState() {
@@ -42,6 +45,22 @@ class _DairyScreenState extends State<DairyScreen> with SingleTickerProviderStat
         title: const Text('MILK PRODUCTION REGISTRY'),
         backgroundColor: AppColors.primary,
         foregroundColor: Colors.white,
+        actions: [
+          BlocBuilder<DairyBloc, DairyState>(
+            builder: (context, state) {
+              if (state is DairyLoaded) {
+                return IconButton(
+                  icon: const Icon(Icons.picture_as_pdf),
+                  tooltip: 'Export PDF Analysis Report',
+                  onPressed: () {
+                    DairyPdfExportService.exportDairyReportPdf(dairyData: state);
+                  },
+                );
+              }
+              return const SizedBox.shrink();
+            },
+          ),
+        ],
         bottom: TabBar(
           controller: _tabController,
           labelColor: Colors.white,
@@ -76,13 +95,23 @@ class _DairyScreenState extends State<DairyScreen> with SingleTickerProviderStat
             return const Center(child: CircularProgressIndicator());
           }
           if (state is DairyLoaded) {
-            return TabBarView(
-              controller: _tabController,
-              children: [
-                _buildDashboardTab(state),
-                _buildStoreAndSalesTab(state),
-                _buildAnalyticsTab(state),
-              ],
+            return NotificationListener<UserScrollNotification>(
+              onNotification: (notification) {
+                if (notification.direction == ScrollDirection.reverse) {
+                  if (_isFabExtended) setState(() => _isFabExtended = false);
+                } else if (notification.direction == ScrollDirection.forward) {
+                  if (!_isFabExtended) setState(() => _isFabExtended = true);
+                }
+                return true;
+              },
+              child: TabBarView(
+                controller: _tabController,
+                children: [
+                  _buildDashboardTab(state),
+                  _buildStoreAndSalesTab(state),
+                  _buildAnalyticsTab(state),
+                ],
+              ),
             );
           }
           return const Center(child: Text('Initialize Dairy Data'));
@@ -90,6 +119,7 @@ class _DairyScreenState extends State<DairyScreen> with SingleTickerProviderStat
       ),
       floatingActionButton: _tabController.index == 0
           ? FloatingActionButton.extended(
+              isExtended: _isFabExtended,
               onPressed: () {
                 final dairyState = context.read<DairyBloc>().state;
                 final activeDate = dairyState is DairyLoaded ? dairyState.selectedDashboardDate : null;
@@ -283,6 +313,21 @@ class _DairyScreenState extends State<DairyScreen> with SingleTickerProviderStat
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
+        // Export PDF Action Banner
+        ElevatedButton.icon(
+          onPressed: () {
+            DairyPdfExportService.exportDairyReportPdf(dairyData: state);
+          },
+          icon: const Icon(Icons.picture_as_pdf, color: Colors.white),
+          label: const Text('EXPORT PDF ANALYSIS REPORT', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white, fontSize: 13)),
+          style: ElevatedButton.styleFrom(
+            backgroundColor: AppColors.primary,
+            padding: const EdgeInsets.symmetric(vertical: 14),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          ),
+        ),
+        const SizedBox(height: 16),
+
         // Time Filter Selector
         Center(
           child: SegmentedButton<AnalyticsFilter>(
@@ -710,9 +755,8 @@ class _DairyScreenState extends State<DairyScreen> with SingleTickerProviderStat
             onPressed: () async {
               final price = double.tryParse(priceCtrl.text) ?? 500.0;
               await sl<DairyRepository>().setDefaultMilkPrice(price);
-              if (dialogCtx.mounted) Navigator.pop(dialogCtx);
               if (context.mounted) {
-                setState(() {});
+                context.read<DairyBloc>().add(LoadDairyData());
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
                     content: Text('Default milk price set to ₦${price.toStringAsFixed(0)} / Liter'),
@@ -720,6 +764,7 @@ class _DairyScreenState extends State<DairyScreen> with SingleTickerProviderStat
                   ),
                 );
               }
+              if (dialogCtx.mounted) Navigator.pop(dialogCtx);
             },
             style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary, foregroundColor: Colors.white),
             child: const Text('SAVE PRICE'),

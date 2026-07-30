@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 import 'package:image_picker/image_picker.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/services/payroll_pdf_service.dart';
+import '../../core/utils/staff_pdf_export_service.dart';
 import '../../core/widgets/app_dropdown.dart';
 import 'staff_bloc.dart';
 
@@ -43,6 +44,26 @@ class _StaffScreenState extends State<StaffScreen> with SingleTickerProviderStat
     return Scaffold(
       appBar: AppBar(
         title: const Text('LABOR & OPERATIONS MANAGEMENT'),
+        actions: [
+          BlocBuilder<StaffBloc, StaffState>(
+            builder: (context, state) {
+              if (state is StaffLoaded) {
+                return IconButton(
+                  icon: const Icon(Icons.picture_as_pdf, color: Colors.white),
+                  tooltip: 'Export Staff & Payroll Report (PDF)',
+                  onPressed: () {
+                    StaffPdfExportService.exportStaffReportPdf(
+                      staffList: state.staff,
+                      queries: state.queries,
+                      budget: state.budget,
+                    );
+                  },
+                );
+              }
+              return const SizedBox.shrink();
+            },
+          ),
+        ],
         bottom: TabBar(
           controller: _tabController,
           labelColor: Colors.white,
@@ -616,8 +637,12 @@ class _StaffScreenState extends State<StaffScreen> with SingleTickerProviderStat
     if (state is! StaffLoaded) return;
 
     String? selectedStaffId;
+    String? selectedCategory = 'lateness';
+    bool isTaskDelegated = false;
+    String? substituteStaffId;
     final titleCtrl = TextEditingController();
     final deductionCtrl = TextEditingController(text: '0.0');
+    final substituteNotesCtrl = TextEditingController();
 
     showModalBottomSheet(
       context: context,
@@ -630,59 +655,133 @@ class _StaffScreenState extends State<StaffScreen> with SingleTickerProviderStat
             borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
           ),
           padding: EdgeInsets.only(bottom: MediaQuery.of(ctx).viewInsets.bottom, left: 24, right: 24, top: 24),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text('Issue Disciplinary Query', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: AppColors.error)),
-              const SizedBox(height: 8),
-              const Text('Record an infraction and set a pending deduction amount.', style: TextStyle(color: Colors.grey)),
-              const SizedBox(height: 24),
-              AppDropdownFormField<String>(
-                labelText: 'Select Staff Member *',
-                prefixIcon: const Icon(Icons.person),
-                value: selectedStaffId,
-                items: state.staff.map((s) {
-                  final id = s is Map ? s['id'] : (s as dynamic).id;
-                  final name = s is Map ? s['name'] : (s as dynamic).name;
-                  return DropdownMenuItem<String>(value: id.toString(), child: Text(name));
-                }).toList(),
-                onChanged: (val) => setDiagState(() => selectedStaffId = val),
-              ),
-              const SizedBox(height: 16),
-              TextField(textCapitalization: TextCapitalization.sentences, controller: titleCtrl,
-                decoration: const InputDecoration(labelText: 'Reason / Infraction', prefixIcon: Icon(Icons.report), border: OutlineInputBorder()),
-              ),
-              const SizedBox(height: 16),
-              TextField(textCapitalization: TextCapitalization.sentences, controller: deductionCtrl,
-                decoration: const InputDecoration(labelText: 'Deduction Amount (₦)', prefixIcon: Icon(Icons.money_off), border: OutlineInputBorder()),
-                keyboardType: TextInputType.number,
-              ),
-              const SizedBox(height: 32),
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: () {
-                    if (selectedStaffId != null) {
-                      context.read<StaffBloc>().add(IssueStaffQuery(selectedStaffId!, {
-                        'title': titleCtrl.text,
-                        'deduction_amount': double.tryParse(deductionCtrl.text) ?? 0.0,
-                        'issue_date': DateTime.now().toIso8601String().substring(0, 10),
-                      }));
-                      Navigator.pop(ctx);
-                      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Query Issued Successfully')));
-                    }
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.error,
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                  ),
-                  child: const Text('Issue Query'),
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text('Issue Disciplinary Query', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: AppColors.error)),
+                const SizedBox(height: 8),
+                const Text('Record an infraction, set penalty deductions, or assign substitute coverage.', style: TextStyle(color: Colors.grey)),
+                const SizedBox(height: 24),
+                AppDropdownFormField<String>(
+                  labelText: 'Select Offending Staff Member *',
+                  prefixIcon: const Icon(Icons.person),
+                  value: selectedStaffId,
+                  items: state.staff.map((s) {
+                    final id = s is Map ? s['id'] : (s as dynamic).id;
+                    final name = s is Map ? s['name'] : (s as dynamic).name;
+                    return DropdownMenuItem<String>(value: id.toString(), child: Text(name));
+                  }).toList(),
+                  onChanged: (val) => setDiagState(() => selectedStaffId = val),
                 ),
-              ),
-              const SizedBox(height: 16),
-            ],
+                const SizedBox(height: 16),
+                AppDropdownFormField<String>(
+                  labelText: 'Infraction Category',
+                  prefixIcon: const Icon(Icons.category),
+                  value: selectedCategory,
+                  items: const [
+                    DropdownMenuItem(value: 'lateness', child: Text('Lateness / Tardiness')),
+                    DropdownMenuItem(value: 'misconduct', child: Text('Misconduct / Insubordination')),
+                    DropdownMenuItem(value: 'duty_absence', child: Text('Duty Absence / Abandonment')),
+                    DropdownMenuItem(value: 'negligence', child: Text('Negligence / Property Damage')),
+                    DropdownMenuItem(value: 'safety_violation', child: Text('Safety / Protocol Violation')),
+                    DropdownMenuItem(value: 'poor_attitude', child: Text('Poor Attitude / Unprofessionalism')),
+                    DropdownMenuItem(value: 'other', child: Text('Other Infraction')),
+                  ],
+                  onChanged: (val) => setDiagState(() => selectedCategory = val),
+                ),
+                const SizedBox(height: 16),
+                TextField(textCapitalization: TextCapitalization.sentences, controller: titleCtrl,
+                  decoration: const InputDecoration(labelText: 'Specific Details / Title', prefixIcon: Icon(Icons.report), border: OutlineInputBorder()),
+                ),
+                const SizedBox(height: 16),
+                TextField(textCapitalization: TextCapitalization.sentences, controller: deductionCtrl,
+                  decoration: const InputDecoration(labelText: 'Penalty Deduction Amount (₦)', prefixIcon: Icon(Icons.money_off), border: OutlineInputBorder()),
+                  keyboardType: TextInputType.number,
+                ),
+                const SizedBox(height: 16),
+                SwitchListTile(
+                  title: const Text('Delegate Duty to Substitute Worker', style: TextStyle(fontWeight: FontWeight.bold)),
+                  subtitle: const Text('Transfer penalty deduction to substitute as bonus compensation'),
+                  value: isTaskDelegated,
+                  activeColor: AppColors.primary,
+                  onChanged: (val) => setDiagState(() => isTaskDelegated = val),
+                ),
+                if (isTaskDelegated) ...[
+                  const SizedBox(height: 12),
+                  AppDropdownFormField<String>(
+                    labelText: 'Select Substitute Staff Member *',
+                    prefixIcon: const Icon(Icons.person_add),
+                    value: substituteStaffId,
+                    items: state.staff.where((s) {
+                      final id = s is Map ? s['id'] : (s as dynamic).id;
+                      return id.toString() != selectedStaffId;
+                    }).map((s) {
+                      final id = s is Map ? s['id'] : (s as dynamic).id;
+                      final name = s is Map ? s['name'] : (s as dynamic).name;
+                      return DropdownMenuItem<String>(value: id.toString(), child: Text(name));
+                    }).toList(),
+                    onChanged: (val) => setDiagState(() => substituteStaffId = val),
+                  ),
+                  const SizedBox(height: 12),
+                  TextField(
+                    textCapitalization: TextCapitalization.sentences,
+                    controller: substituteNotesCtrl,
+                    decoration: const InputDecoration(labelText: 'Delegated Tasks / Instructions', prefixIcon: Icon(Icons.task), border: OutlineInputBorder()),
+                  ),
+                  const SizedBox(height: 12),
+                  Card(
+                    color: Colors.amber.shade50,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                    child: Padding(
+                      padding: const EdgeInsets.all(12),
+                      child: Row(
+                          children: const [
+                            Icon(Icons.sync_alt, color: Colors.amber),
+                            SizedBox(width: 12),
+                            Expanded(
+                              child: Text(
+                                'Bonus Transfer Active: The penalty deduction will be credited directly to the substitute worker during monthly payroll.',
+                                style: TextStyle(fontSize: 12, color: Colors.amber),
+                              ),
+                            ),
+                          ],
+                      ),
+                    ),
+                  ),
+                ],
+                const SizedBox(height: 24),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: () {
+                      if (selectedStaffId != null) {
+                        context.read<StaffBloc>().add(IssueStaffQuery(selectedStaffId!, {
+                          'title': titleCtrl.text.isEmpty ? 'Disciplinary Query' : titleCtrl.text,
+                          'deduction_amount': double.tryParse(deductionCtrl.text) ?? 0.0,
+                          'issue_date': DateTime.now().toIso8601String().substring(0, 10),
+                          'category': selectedCategory,
+                          'is_task_delegated': isTaskDelegated,
+                          'substitute_staff_id': isTaskDelegated ? substituteStaffId : null,
+                          'substitute_notes': isTaskDelegated ? substituteNotesCtrl.text : null,
+                          'is_compensation_transferred': isTaskDelegated,
+                        }));
+                        Navigator.pop(ctx);
+                        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Query & Delegation Recorded Successfully')));
+                      }
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.error,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                    ),
+                    child: const Text('Issue Query & Save'),
+                  ),
+                ),
+                const SizedBox(height: 24),
+              ],
+            ),
           ),
         ),
       ),

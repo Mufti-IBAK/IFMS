@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 import 'package:uuid/uuid.dart';
@@ -16,6 +17,7 @@ class TasksScreen extends StatefulWidget {
 class _TasksScreenState extends State<TasksScreen> {
   String _filterScope = 'current_month'; // 'current_month', 'selected_month', 'all_time'
   DateTime _selectedMonth = DateTime(DateTime.now().year, DateTime.now().month);
+  bool _isFabExtended = true;
 
   @override
   void initState() {
@@ -207,12 +209,22 @@ class _TasksScreenState extends State<TasksScreen> {
                       ),
                     ),
                   Expanded(
-                    child: TabBarView(
-                      children: [
-                        _buildTaskTabList(todayTasks, 'No tasks scheduled for today.'),
-                        _buildTaskTabList(upcomingTasks, 'No upcoming tasks.'),
-                        _buildTaskTabList(completedTasks, 'No completed tasks yet.'),
-                      ],
+                    child: NotificationListener<UserScrollNotification>(
+                      onNotification: (notification) {
+                        if (notification.direction == ScrollDirection.reverse) {
+                          if (_isFabExtended) setState(() => _isFabExtended = false);
+                        } else if (notification.direction == ScrollDirection.forward) {
+                          if (!_isFabExtended) setState(() => _isFabExtended = true);
+                        }
+                        return true;
+                      },
+                      child: TabBarView(
+                        children: [
+                          _buildTaskTabList(todayTasks, 'No tasks scheduled for today.'),
+                          _buildTaskTabList(upcomingTasks, 'No upcoming tasks.'),
+                          _buildTaskTabList(completedTasks, 'No completed tasks yet.'),
+                        ],
+                      ),
                     ),
                   ),
                 ],
@@ -224,6 +236,7 @@ class _TasksScreenState extends State<TasksScreen> {
           },
         ),
         floatingActionButton: FloatingActionButton.extended(
+          isExtended: _isFabExtended,
           onPressed: () => _showAddTaskSheet(context),
           label: const Text('Add Task'),
           icon: const Icon(Icons.add),

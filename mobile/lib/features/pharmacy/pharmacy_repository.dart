@@ -26,6 +26,9 @@ class PharmacyRepository {
     final dosageRatePerKg = data['dosage_rate_per_kg'] != null ? double.tryParse(data['dosage_rate_per_kg'].toString()) : null;
     final dosageRateText = data['dosage_rate_text'] as String?;
     final concentration = data['concentration'] as String?;
+    final concentrationMgPerMl = data['concentration_mg_per_ml'] != null ? double.tryParse(data['concentration_mg_per_ml'].toString()) : null;
+    final concentrationValue = data['concentration_value'] != null ? double.tryParse(data['concentration_value'].toString()) : null;
+    final concentrationUnit = data['concentration_unit'] as String?;
 
     await db.into(db.localMedications).insertOnConflictUpdate(LocalMedicationsCompanion.insert(
       id: uuid,
@@ -43,6 +46,9 @@ class PharmacyRepository {
       dosageRatePerKg: Value(dosageRatePerKg),
       dosageRateText: Value(dosageRateText),
       concentration: Value(concentration),
+      concentrationMgPerMl: Value(concentrationMgPerMl),
+      concentrationValue: Value(concentrationValue),
+      concentrationUnit: Value(concentrationUnit),
       isActive: const Value(true),
     ));
 
@@ -65,12 +71,16 @@ class PharmacyRepository {
         'dosage_rate_per_kg': dosageRatePerKg,
         'dosage_rate_text': dosageRateText,
         'concentration': concentration,
+        'concentration_mg_per_ml': concentrationMgPerMl,
+        'concentration_value': concentrationValue,
+        'concentration_unit': concentrationUnit,
         'is_active': true,
       });
     } catch (_) {}
 
     // Log the initial stock if greater than zero
     final initialStock = double.parse(data['current_stock'].toString());
+    final costPerUnit = double.parse(data['cost_per_unit'].toString());
     if (initialStock > 0) {
       await db.into(db.localMedicationLogs).insertOnConflictUpdate(LocalMedicationLogsCompanion.insert(
         id: '${uuid}_init',
@@ -81,6 +91,41 @@ class PharmacyRepository {
         logDate: DateTime.now(),
         notes: const Value('Initial stock entry upon creation'),
       ));
+
+      // Auto-post expense to financial ledger
+      final totalOutlay = initialStock * costPerUnit;
+      if (totalOutlay > 0) {
+        final txUuid = const Uuid().v4();
+        final now = DateTime.now();
+        await db.into(db.localTransactions).insertOnConflictUpdate(LocalTransactionsCompanion.insert(
+          id: txUuid,
+          transactionType: 'expense',
+          category: 'medication',
+          amount: totalOutlay,
+          currency: const Value('NGN'),
+          relatedEntityType: const Value('medication'),
+          relatedEntityId: Value(uuid),
+          description: Value('Initial Stock Purchase: ${data['name']} ($initialStock ${data['unit']})'),
+          transactionDate: now,
+          isReconciled: const Value(false),
+        ));
+
+        // Online sync to backend finance
+        try {
+          final apiClient = sl<ApiClient>();
+          await apiClient.dio.post('/finance/transaction', data: {
+            'id': txUuid,
+            'transaction_type': 'expense',
+            'category': 'medication',
+            'amount': totalOutlay,
+            'currency': 'NGN',
+            'related_entity_type': 'medication',
+            'related_entity_id': uuid,
+            'description': 'Initial Stock Purchase: ${data['name']} ($initialStock ${data['unit']})',
+            'transaction_date': now.toIso8601String().split('T')[0],
+          });
+        } catch (_) {}
+      }
     }
 
     sl<NotificationService>().showLocalNotification(
@@ -93,6 +138,14 @@ class PharmacyRepository {
   Future<void> updateMedication(String id, Map<String, dynamic> data) async {
     final dosageRatePerKg = data.containsKey('dosage_rate_per_kg')
         ? (data['dosage_rate_per_kg'] != null ? double.tryParse(data['dosage_rate_per_kg'].toString()) : null)
+        : null;
+
+    final concentrationMgPerMl = data.containsKey('concentration_mg_per_ml')
+        ? (data['concentration_mg_per_ml'] != null ? double.tryParse(data['concentration_mg_per_ml'].toString()) : null)
+        : null;
+
+    final concentrationValue = data.containsKey('concentration_value')
+        ? (data['concentration_value'] != null ? double.tryParse(data['concentration_value'].toString()) : null)
         : null;
 
     await (db.update(db.localMedications)..where((t) => t.id.equals(id)))
@@ -110,6 +163,9 @@ class PharmacyRepository {
       dosageRatePerKg: data.containsKey('dosage_rate_per_kg') ? Value(dosageRatePerKg) : const Value.absent(),
       dosageRateText: data.containsKey('dosage_rate_text') ? Value(data['dosage_rate_text']) : const Value.absent(),
       concentration: data.containsKey('concentration') ? Value(data['concentration']) : const Value.absent(),
+      concentrationMgPerMl: data.containsKey('concentration_mg_per_ml') ? Value(concentrationMgPerMl) : const Value.absent(),
+      concentrationValue: data.containsKey('concentration_value') ? Value(concentrationValue) : const Value.absent(),
+      concentrationUnit: data.containsKey('concentration_unit') ? Value(data['concentration_unit']) : const Value.absent(),
       isActive: data.containsKey('is_active') ? Value(data['is_active']) : const Value.absent(),
     ));
 
@@ -130,6 +186,9 @@ class PharmacyRepository {
       if (data.containsKey('dosage_rate_per_kg')) patchData['dosage_rate_per_kg'] = dosageRatePerKg;
       if (data.containsKey('dosage_rate_text')) patchData['dosage_rate_text'] = data['dosage_rate_text'];
       if (data.containsKey('concentration')) patchData['concentration'] = data['concentration'];
+      if (data.containsKey('concentration_mg_per_ml')) patchData['concentration_mg_per_ml'] = concentrationMgPerMl;
+      if (data.containsKey('concentration_value')) patchData['concentration_value'] = concentrationValue;
+      if (data.containsKey('concentration_unit')) patchData['concentration_unit'] = data['concentration_unit'];
       if (data.containsKey('is_active')) patchData['is_active'] = data['is_active'];
 
       if (patchData.isNotEmpty) {
@@ -192,6 +251,46 @@ class PharmacyRepository {
       category: const Value('pharmacy'),
       isActionable: const Value(false),
     ));
+
+    // Auto-post expense to financial ledger on medication purchase / restock
+    if (changeType == 'purchase' && quantityChange > 0) {
+      final unitCost = data.containsKey('cost_per_unit')
+          ? double.parse(data['cost_per_unit'].toString())
+          : medication.costPerUnit;
+      final totalCost = quantityChange * unitCost;
+
+      if (totalCost > 0) {
+        final txUuid = const Uuid().v4();
+        final now = DateTime.now();
+        await db.into(db.localTransactions).insertOnConflictUpdate(LocalTransactionsCompanion.insert(
+          id: txUuid,
+          transactionType: 'expense',
+          category: 'medication',
+          amount: totalCost,
+          currency: const Value('NGN'),
+          relatedEntityType: const Value('medication'),
+          relatedEntityId: Value(medicationId),
+          description: Value('Restocked $quantityChange ${medication.unit} of ${medication.name}'),
+          transactionDate: now,
+          isReconciled: const Value(false),
+        ));
+
+        try {
+          final apiClient = sl<ApiClient>();
+          await apiClient.dio.post('/finance/transaction', data: {
+            'id': txUuid,
+            'transaction_type': 'expense',
+            'category': 'medication',
+            'amount': totalCost,
+            'currency': 'NGN',
+            'related_entity_type': 'medication',
+            'related_entity_id': medicationId,
+            'description': 'Restocked $quantityChange ${medication.unit} of ${medication.name}',
+            'transaction_date': now.toIso8601String().split('T')[0],
+          });
+        } catch (_) {}
+      }
+    }
   }
 
   // ──────────────────────────────────────────────

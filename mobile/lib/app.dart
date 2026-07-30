@@ -482,13 +482,13 @@ class HomeScreen extends StatelessWidget {
                 ),
                 _insightKpiCard(
                   context,
-                  title: 'Total Milk Production',
+                  title: "Today's Milk Production",
                   icon: Icons.water_drop,
                   color: Colors.teal,
                   route: '/dairy',
                   valueWidget: BlocBuilder<DairyBloc, DairyState>(
                     builder: (context, state) {
-                      final yieldVal = state is DairyLoaded ? state.allTimeMilkTotal : 0.0;
+                      final yieldVal = state is DairyLoaded ? state.totalMilkDashboard : 0.0;
                       return Text('${yieldVal.toStringAsFixed(1)} Litres', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold));
                     },
                   ),

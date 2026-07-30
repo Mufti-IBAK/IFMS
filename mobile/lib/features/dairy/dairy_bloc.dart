@@ -276,6 +276,7 @@ class DairyBloc extends Bloc<DairyEvent, DairyState> {
 
   Future<void> _loadAllData(Emitter<DairyState> emit) async {
     try {
+      await dairyRepo.getDefaultMilkPrice();
       final animals = await animalsRepo.getAnimals();
       final tagMap = <String, String>{for (var a in animals) a.id: a.tagId};
 
@@ -284,18 +285,18 @@ class DairyBloc extends Bloc<DairyEvent, DairyState> {
       DateTime dEnd;
       if (_dashboardFilter == AnalyticsFilter.daily) {
         dStart = DateTime(_dashboardDate.year, _dashboardDate.month, _dashboardDate.day);
-        dEnd = DateTime(_dashboardDate.year, _dashboardDate.month, _dashboardDate.day, 23, 59, 59);
+        dEnd = dStart.add(const Duration(days: 1));
       } else if (_dashboardFilter == AnalyticsFilter.weekly) {
         // Week starts on Monday
         int weekday = _dashboardDate.weekday;
         dStart = DateTime(_dashboardDate.year, _dashboardDate.month, _dashboardDate.day - (weekday - 1));
-        dEnd = dStart.add(const Duration(days: 6, hours: 23, minutes: 59, seconds: 59));
+        dEnd = dStart.add(const Duration(days: 7));
       } else {
         dStart = DateTime(_dashboardDate.year, _dashboardDate.month, 1);
         int nextMonth = _dashboardDate.month + 1;
         int year = _dashboardDate.year;
         if (nextMonth > 12) { nextMonth = 1; year++; }
-        dEnd = DateTime(year, nextMonth, 1).subtract(const Duration(seconds: 1));
+        dEnd = DateTime(year, nextMonth, 1);
       }
 
       final dashboardRecords = await dairyRepo.getRecordsByDateRange(dStart, dEnd);

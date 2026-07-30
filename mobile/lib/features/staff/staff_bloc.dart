@@ -46,6 +46,12 @@ class CreateSalaryAdvance extends StaffEvent {
   CreateSalaryAdvance(this.staffId, this.data);
 }
 
+class UpdateSalaryAdvanceStatus extends StaffEvent {
+  final String advanceId;
+  final String status;
+  UpdateSalaryAdvanceStatus(this.advanceId, this.status);
+}
+
 // STATES
 abstract class StaffState {}
 
@@ -153,6 +159,15 @@ class StaffBloc extends Bloc<StaffEvent, StaffState> {
       try {
         event.data['staff_id'] = event.staffId;
         await repository.createAdvance(event.data);
+        add(LoadStaffData());
+      } catch (e) {
+        emit(StaffError(e.toString()));
+      }
+    });
+
+    on<UpdateSalaryAdvanceStatus>((event, emit) async {
+      try {
+        await repository.updateSalaryAdvanceStatus(event.advanceId, event.status);
         add(LoadStaffData());
       } catch (e) {
         emit(StaffError(e.toString()));

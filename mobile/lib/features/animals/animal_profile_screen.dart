@@ -19,6 +19,7 @@ import 'animals_bloc.dart';
 import 'package:ifms_mobile/core/widgets/animal_silhouette.dart';
 import '../../core/widgets/error_display.dart';
 import 'widgets/medical_report_sheet.dart';
+import '../../core/utils/dosage_calculator.dart';
 
 class AnimalProfileScreen extends StatefulWidget {
   final dynamic animal;
@@ -1531,27 +1532,26 @@ class _AnimalProfileScreenState extends State<AnimalProfileScreen> with SingleTi
           }
 
           final double? animWeight = _weight != null ? double.tryParse(_weight.toString()) : null;
-          double? activeMg;
-          double? adminVol;
+          DosageResult? doseCalc;
 
-          if (selectedDrug != null && animWeight != null && animWeight > 0 && selectedDrug.dosageRatePerKg != null && selectedDrug.dosageRatePerKg! > 0) {
-            final rateMgKg = selectedDrug.dosageRatePerKg!;
-            activeMg = animWeight * rateMgKg;
-
-            // Try to extract numeric concentration mg/ml or mg/tablet from concentration string
-            final concText = selectedDrug.concentration ?? '';
-            double? concMgPerUnit;
-            final match = RegExp(r'([0-9]+(?:\.[0-9]+)?)').firstMatch(concText);
-            if (match != null) {
-              final parsed = double.tryParse(match.group(1)!);
-              if (parsed != null && parsed > 0) {
-                concMgPerUnit = concText.contains('%') ? parsed * 10.0 : parsed;
-              }
+          double rateMgKg = selectedDrug?.dosageRatePerKg ?? 0.0;
+          if (rateMgKg <= 0 && selectedDrug?.dosageRateText != null) {
+            final rateMatch = RegExp(r'([0-9]+(?:\.[0-9]+)?)').firstMatch(selectedDrug!.dosageRateText!);
+            if (rateMatch != null) {
+              rateMgKg = double.tryParse(rateMatch.group(1)!) ?? 0.0;
             }
+          }
 
-            if (concMgPerUnit != null && concMgPerUnit > 0) {
-              adminVol = activeMg / concMgPerUnit;
-            }
+          if (selectedDrug != null && animWeight != null && animWeight > 0 && rateMgKg > 0) {
+            doseCalc = DosageCalculator.calculate(
+              weightKg: animWeight,
+              dosageRatePerKg: rateMgKg,
+              concentrationValue: selectedDrug.concentrationValue,
+              concentrationUnit: selectedDrug.concentrationUnit,
+              concentrationMgPerMl: selectedDrug.concentrationMgPerMl,
+              medicationUnit: selectedDrug.unit,
+              concentrationText: selectedDrug.concentration,
+            );
           }
 
           return Container(
@@ -1646,7 +1646,7 @@ class _AnimalProfileScreenState extends State<AnimalProfileScreen> with SingleTi
                             const SizedBox(height: 2),
                             Text('Dosage Rate: ${selectedDrug.dosageRateText}', style: const TextStyle(fontSize: 11)),
                           ],
-                          if (activeMg != null && activeMg > 0) ...[
+                          if (doseCalc != null && doseCalc.activeMgNeeded > 0) ...[
                             const SizedBox(height: 8),
                             Container(
                               padding: const EdgeInsets.all(10),
@@ -1671,13 +1671,13 @@ class _AnimalProfileScreenState extends State<AnimalProfileScreen> with SingleTi
                                   ),
                                   const SizedBox(height: 4),
                                   Text(
-                                    '• Active Ingredient Needed: ${activeMg.toStringAsFixed(1)} mg',
+                                    '• Active Ingredient Needed: ${doseCalc.activeMgNeeded.toStringAsFixed(1)} mg',
                                     style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600),
                                   ),
-                                  if (adminVol != null && adminVol > 0) ...[
+                                  if (doseCalc.volumeToAdminister != null && doseCalc.volumeToAdminister! > 0) ...[
                                     const SizedBox(height: 2),
                                     Text(
-                                      '• Volume/Amount to Administer: ${adminVol.toStringAsFixed(1)} ${selectedDrug.unit}',
+                                      '• Volume/Amount to Administer: ${doseCalc.volumeToAdminister!.toStringAsFixed(1)} ${doseCalc.unit}',
                                       style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.teal),
                                     ),
                                   ],
@@ -1739,8 +1739,10 @@ class _AnimalProfileScreenState extends State<AnimalProfileScreen> with SingleTi
                           return;
                         }
 
+                        final activeMg = doseCalc?.activeMgNeeded;
+                        final adminVol = doseCalc?.volumeToAdminister;
                         final activeMgVal = activeMg != null ? '${activeMg.toStringAsFixed(1)} mg' : null;
-                        final adminVolVal = adminVol != null ? '${adminVol.toStringAsFixed(1)} ${selectedDrug?.unit ?? "units"}' : null;
+                        final adminVolVal = adminVol != null ? '${adminVol.toStringAsFixed(1)} ${doseCalc?.unit ?? selectedDrug?.unit ?? "units"}' : null;
                         final concVal = selectedDrug?.concentration;
                         final rateVal = selectedDrug?.dosageRateText;
 

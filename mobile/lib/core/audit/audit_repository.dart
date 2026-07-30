@@ -121,9 +121,10 @@ class AuditRepository {
 
   /// Watch audit logs as a real-time stream.
   Stream<List<LocalAuditLog>> watchAuditLogs({
-    int limit = 100,
+    int limit = 150,
     String? moduleFilter,
     String? actionFilter,
+    String? searchQuery,
   }) {
     var query = db.select(db.localAuditLogs)
       ..orderBy([(t) => OrderingTerm.desc(t.timestamp)])
@@ -134,6 +135,10 @@ class AuditRepository {
     }
     if (actionFilter != null && actionFilter.isNotEmpty && actionFilter.toUpperCase() != 'ALL') {
       query = query..where((t) => t.actionType.equals(actionFilter.toUpperCase()));
+    }
+    if (searchQuery != null && searchQuery.trim().isNotEmpty) {
+      final pattern = '%${searchQuery.trim().toLowerCase()}%';
+      query = query..where((t) => t.description.lower().like(pattern) | t.entityLabel.lower().like(pattern) | t.userName.lower().like(pattern));
     }
 
     return query.watch();
