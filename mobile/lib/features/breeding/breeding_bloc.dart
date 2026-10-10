@@ -1,5 +1,7 @@
+import 'dart:async';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../core/database/local_db.dart';
+import '../../core/sync/sync_event_bus.dart';
 import 'breeding_repository.dart';
 
 // Events
@@ -56,9 +58,19 @@ class BreedingError extends BreedingState {
 // Bloc
 class BreedingBloc extends Bloc<BreedingEvent, BreedingState> {
   final BreedingRepository repository;
+  String? _lastAnimalId;
+  StreamSubscription<SyncCompletedEvent>? _syncSubscription;
 
   BreedingBloc(this.repository) : super(BreedingInitial()) {
+    _syncSubscription = SyncEventBus().stream.listen((event) {
+      if (event.containsAny(['breeding_events']) && _lastAnimalId != null) {
+        add(LoadBreedingHistory(_lastAnimalId!));
+      }
+    });
+
     on<LoadBreedingHistory>((event, emit) async {
+      _lastAnimalId = event.animalId;
+
       emit(BreedingLoading());
       try {
         final events = await repository.getBreedingEventsForAnimal(event.animalId);
@@ -90,5 +102,11 @@ class BreedingBloc extends Bloc<BreedingEvent, BreedingState> {
         emit(BreedingError(e.toString()));
       }
     });
+  }
+
+  @override
+  Future<void> close() {
+    _syncSubscription?.cancel();
+    return super.close();
   }
 }

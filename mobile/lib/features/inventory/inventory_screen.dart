@@ -1036,7 +1036,7 @@ class _InventoryScreenState extends State<InventoryScreen> with SingleTickerProv
                             value: contentUnit,
                             labelText: 'Content Unit *',
                             items: ['kg', 'liters', 'grams', 'ml', 'pcs']
-                                .map((u) => DropdownMenuItem(value: u, child: Text(u))).toList(),
+                                .map((u) => DropdownMenuItem(value: u, child: Text(u, overflow: TextOverflow.ellipsis))).toList(),
                             onChanged: (v) {
                               if (v != null) setDialogState(() => contentUnit = v);
                             },
@@ -1048,7 +1048,7 @@ class _InventoryScreenState extends State<InventoryScreen> with SingleTickerProv
                             value: purchaseUnit,
                             labelText: 'Purchase Unit *',
                             items: ['bag', 'bottle', 'bucket', 'drum', 'sachet', 'carton', 'can', 'pack']
-                                .map((u) => DropdownMenuItem(value: u, child: Text(u))).toList(),
+                                .map((u) => DropdownMenuItem(value: u, child: Text(u, overflow: TextOverflow.ellipsis))).toList(),
                             onChanged: (v) {
                               if (v != null) setDialogState(() => purchaseUnit = v);
                             },
@@ -1101,8 +1101,8 @@ class _InventoryScreenState extends State<InventoryScreen> with SingleTickerProv
                             value: stockUnitMode,
                             labelText: 'Stock Unit *',
                             items: [
-                              DropdownMenuItem(value: 'purchase', child: Text(purchaseUnit)),
-                              DropdownMenuItem(value: 'content', child: Text(contentUnit)),
+                              DropdownMenuItem(value: 'purchase', child: Text(purchaseUnit, overflow: TextOverflow.ellipsis)),
+                              DropdownMenuItem(value: 'content', child: Text(contentUnit, overflow: TextOverflow.ellipsis)),
                             ],
                             onChanged: (v) {
                               if (v != null) setDialogState(() => stockUnitMode = v);
@@ -1232,7 +1232,7 @@ class _InventoryScreenState extends State<InventoryScreen> with SingleTickerProv
                             value: contentUnit,
                             labelText: 'Content Unit *',
                             items: ['kg', 'liters', 'grams', 'ml', 'pcs']
-                                .map((u) => DropdownMenuItem(value: u, child: Text(u))).toList(),
+                                .map((u) => DropdownMenuItem(value: u, child: Text(u, overflow: TextOverflow.ellipsis))).toList(),
                             onChanged: (v) {
                               if (v != null) setDialogState(() => contentUnit = v);
                             },
@@ -1244,7 +1244,7 @@ class _InventoryScreenState extends State<InventoryScreen> with SingleTickerProv
                             value: purchaseUnit,
                             labelText: 'Purchase Unit *',
                             items: ['bag', 'bottle', 'bucket', 'drum', 'sachet', 'carton', 'can', 'pack']
-                                .map((u) => DropdownMenuItem(value: u, child: Text(u))).toList(),
+                                .map((u) => DropdownMenuItem(value: u, child: Text(u, overflow: TextOverflow.ellipsis))).toList(),
                             onChanged: (v) {
                               if (v != null) setDialogState(() => purchaseUnit = v);
                             },
@@ -1423,15 +1423,19 @@ class _InventoryScreenState extends State<InventoryScreen> with SingleTickerProv
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     DropdownButtonFormField<String>(
+                      isExpanded: true,
+
                       initialValue: selectedItemId,
                       decoration: const InputDecoration(labelText: 'Feed Ingredient *'),
                       items: (_cachedItems ?? []).map<DropdownMenuItem<String>>((i) {
-                        return DropdownMenuItem(value: i['id'] as String, child: Text(i['name'] as String));
+                        return DropdownMenuItem(value: i['id'] as String, child: Text(i['name'] as String, overflow: TextOverflow.ellipsis));
                       }).toList(),
                       onChanged: (v) => setDialogState(() => selectedItemId = v),
                     ),
                     const SizedBox(height: 12),
                     DropdownButtonFormField<String>(
+                      isExpanded: true,
+
                       initialValue: changeType,
                       decoration: const InputDecoration(labelText: 'Entry Type'),
                       items: ['purchase', 'return', 'adjustment', 'waste'].map((t) {
@@ -1520,13 +1524,15 @@ class _InventoryScreenState extends State<InventoryScreen> with SingleTickerProv
                     TextField(textCapitalization: TextCapitalization.sentences, controller: nameCtrl, decoration: const InputDecoration(labelText: 'Formula Name *', hintText: 'e.g. Broiler Starter')),
                     const SizedBox(height: 12),
                     DropdownButtonFormField<String>(
+                      isExpanded: true,
+
                       initialValue: batchUnit,
                       decoration: const InputDecoration(labelText: 'Standard Batch Size'),
                       items: const [
                         DropdownMenuItem(value: 'per_tonne', child: Text('Per Tonne (1000 kg)')),
-                        DropdownMenuItem(value: 'per_100kg', child: Text('Per 100 kg')),
-                        DropdownMenuItem(value: 'per_50kg', child: Text('Per 50 kg')),
-                        DropdownMenuItem(value: 'per_1kg', child: Text('Per 1 kg')),
+                        DropdownMenuItem(value: 'per_100kg', child: Text('Per 100 kg', overflow: TextOverflow.ellipsis)),
+                        DropdownMenuItem(value: 'per_50kg', child: Text('Per 50 kg', overflow: TextOverflow.ellipsis)),
+                        DropdownMenuItem(value: 'per_1kg', child: Text('Per 1 kg', overflow: TextOverflow.ellipsis)),
                       ],
                       onChanged: (v) { if (v != null) setDialogState(() => batchUnit = v); },
                     ),
@@ -1621,7 +1627,7 @@ class _InventoryScreenState extends State<InventoryScreen> with SingleTickerProv
                       items: feedItems.map<DropdownMenuItem<String>>((i) {
                         final id = i['id']?.toString() ?? '';
                         final name = i['name']?.toString() ?? 'Unnamed';
-                        return DropdownMenuItem(value: id, child: Text(name));
+                        return DropdownMenuItem(value: id, child: Text(name, overflow: TextOverflow.ellipsis));
                       }).toList(),
                       onChanged: (v) => setDialogState(() => selectedItemId = v),
                     ),
@@ -1844,7 +1850,7 @@ class _InventoryScreenState extends State<InventoryScreen> with SingleTickerProv
                           decoration: const InputDecoration(labelText: 'Formulated Feed *'),
                           isExpanded: true,
                           items: (_cachedFormulas ?? []).map<DropdownMenuItem<String>>((f) {
-                            return DropdownMenuItem(value: f.id, child: Text(f.name));
+                            return DropdownMenuItem(value: f.id, child: Text(f.name, overflow: TextOverflow.ellipsis));
                           }).toList(),
                           onChanged: (v) {
                             setDialogState(() {
@@ -2359,6 +2365,8 @@ class _AnimalFeedPlanCardState extends State<AnimalFeedPlanCard> {
                 Expanded(
                   flex: 3,
                   child: DropdownButtonFormField<String>(
+                    isExpanded: true,
+
                     initialValue: _selectedFormulaId,
                     decoration: const InputDecoration(
                       labelText: 'Assigned Feed',
@@ -2725,7 +2733,7 @@ class _OperationsPOSTabState extends State<OperationsPOSTab> {
                       decoration: const InputDecoration(labelText: 'Feed Formula *'),
                       isExpanded: true,
                       items: widget.formulas.map((f) {
-                        return DropdownMenuItem(value: f.id, child: Text(f.name));
+                        return DropdownMenuItem(value: f.id, child: Text(f.name, overflow: TextOverflow.ellipsis));
                       }).toList(),
                       onChanged: (v) {
                         setDialogState(() {

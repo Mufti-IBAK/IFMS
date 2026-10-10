@@ -222,27 +222,31 @@ class _FarmEventReportSheetState extends State<FarmEventReportSheet> {
               const SizedBox(height: 16),
               
               DropdownButtonFormField<String>(
+                isExpanded: true,
+
                 decoration: const InputDecoration(labelText: 'Event Type', border: OutlineInputBorder()),
                 initialValue: _eventType,
                 items: const [
-                  DropdownMenuItem(value: 'morning_report', child: Text('Morning Report')),
+                  DropdownMenuItem(value: 'morning_report', child: Text('Morning Report', overflow: TextOverflow.ellipsis)),
                   DropdownMenuItem(value: 'mortality', child: Text('Mortality (Death)')),
-                  DropdownMenuItem(value: 'birth', child: Text('Birth')),
-                  DropdownMenuItem(value: 'disease_outbreak', child: Text('Disease Outbreak')),
-                  DropdownMenuItem(value: 'equipment_failure', child: Text('Equipment Failure')),
-                  DropdownMenuItem(value: 'general', child: Text('General Event')),
+                  DropdownMenuItem(value: 'birth', child: Text('Birth', overflow: TextOverflow.ellipsis)),
+                  DropdownMenuItem(value: 'disease_outbreak', child: Text('Disease Outbreak', overflow: TextOverflow.ellipsis)),
+                  DropdownMenuItem(value: 'equipment_failure', child: Text('Equipment Failure', overflow: TextOverflow.ellipsis)),
+                  DropdownMenuItem(value: 'general', child: Text('General Event', overflow: TextOverflow.ellipsis)),
                 ],
                 onChanged: (v) => setState(() => _eventType = v!),
               ),
               const SizedBox(height: 16),
 
               DropdownButtonFormField<String>(
+                isExpanded: true,
+
                 decoration: const InputDecoration(labelText: 'Severity / Category', border: OutlineInputBorder()),
                 value: _severity,
                 items: const [
-                  DropdownMenuItem(value: 'insight', child: Text('Insight / Event Log')),
-                  DropdownMenuItem(value: 'warning', child: Text('Action Required')),
-                  DropdownMenuItem(value: 'critical', child: Text('Critical Alert')),
+                  DropdownMenuItem(value: 'insight', child: Text('Insight / Event Log', overflow: TextOverflow.ellipsis)),
+                  DropdownMenuItem(value: 'warning', child: Text('Action Required', overflow: TextOverflow.ellipsis)),
+                  DropdownMenuItem(value: 'critical', child: Text('Critical Alert', overflow: TextOverflow.ellipsis)),
                 ],
                 onChanged: (v) => setState(() => _severity = v!),
               ),

@@ -16,6 +16,8 @@ ALTER TABLE public.staff ADD COLUMN IF NOT EXISTS start_date TIMESTAMPTZ;
 ALTER TABLE public.hatchery_batches ADD COLUMN IF NOT EXISTS crate_number TEXT;
 ALTER TABLE public.hatchery_batches ADD COLUMN IF NOT EXISTS crate_section TEXT;
 
+ALTER TABLE public.animals ADD COLUMN IF NOT EXISTS generation TEXT DEFAULT 'F1';
+
 CREATE TABLE IF NOT EXISTS public.salary_advances (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     staff_id UUID REFERENCES public.staff(id) ON DELETE CASCADE,
@@ -42,10 +44,77 @@ CREATE TABLE IF NOT EXISTS public.audit_logs (
     created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
+CREATE TABLE IF NOT EXISTS public.yoghurt_production_batches (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    batch_number TEXT NOT NULL,
+    production_date TIMESTAMPTZ NOT NULL,
+    milk_input_liters NUMERIC NOT NULL,
+    milk_cost_per_liter NUMERIC NOT NULL DEFAULT 0.0,
+    total_milk_cost NUMERIC NOT NULL DEFAULT 0.0,
+    bottles_produced INTEGER NOT NULL,
+    packs_produced INTEGER NOT NULL,
+    bottles_remaining INTEGER NOT NULL,
+    additional_costs NUMERIC DEFAULT 0.0,
+    produced_by_name TEXT NOT NULL DEFAULT 'Staff',
+    produced_by_role TEXT NOT NULL DEFAULT 'Production Lead (Producer)',
+    notes TEXT,
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS public.yoghurt_sales (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    sale_date TIMESTAMPTZ NOT NULL,
+    customer_name TEXT NOT NULL,
+    customer_phone TEXT,
+    description TEXT,
+    sale_unit TEXT NOT NULL,
+    quantity_units INTEGER NOT NULL,
+    total_bottles INTEGER NOT NULL,
+    unit_price NUMERIC NOT NULL,
+    total_amount NUMERIC NOT NULL,
+    amount_paid NUMERIC NOT NULL,
+    balance_due NUMERIC DEFAULT 0.0,
+    balance_payer TEXT NOT NULL,
+    initiated_by_name TEXT NOT NULL DEFAULT 'Staff',
+    initiated_by_role TEXT NOT NULL DEFAULT 'Yoghurt Sales & Distribution Manager',
+    selected_batch_id UUID,
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS public.yoghurt_returns (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    return_date TIMESTAMPTZ NOT NULL,
+    customer_name TEXT NOT NULL,
+    description TEXT,
+    initial_bought_bottles INTEGER NOT NULL,
+    returned_bottles INTEGER NOT NULL,
+    replaced_bottles INTEGER NOT NULL,
+    processed_by_name TEXT NOT NULL DEFAULT 'Staff',
+    processed_by_role TEXT NOT NULL DEFAULT 'Operational Staff',
+    selected_batch_id UUID,
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS public.yoghurt_expenses (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    expense_date TIMESTAMPTZ NOT NULL,
+    description TEXT NOT NULL,
+    category TEXT DEFAULT 'other',
+    amount NUMERIC NOT NULL,
+    processed_by_name TEXT NOT NULL DEFAULT 'Staff',
+    processed_by_role TEXT NOT NULL DEFAULT 'Operational Staff',
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
 GRANT ALL ON public.staff TO anon, authenticated, service_role;
 GRANT ALL ON public.hatchery_batches TO anon, authenticated, service_role;
 GRANT ALL ON public.salary_advances TO anon, authenticated, service_role;
 GRANT ALL ON public.audit_logs TO anon, authenticated, service_role;
+GRANT ALL ON public.animals TO anon, authenticated, service_role;
+GRANT ALL ON public.yoghurt_production_batches TO anon, authenticated, service_role;
+GRANT ALL ON public.yoghurt_sales TO anon, authenticated, service_role;
+GRANT ALL ON public.yoghurt_returns TO anon, authenticated, service_role;
+GRANT ALL ON public.yoghurt_expenses TO anon, authenticated, service_role;
 """
 
 # Try executing via Supabase DB SQL endpoint

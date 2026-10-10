@@ -538,13 +538,15 @@ class _TasksScreenState extends State<TasksScreen> {
                     children: [
                       Expanded(
                         child: DropdownButtonFormField<String>(
+                          isExpanded: true,
+
                           value: selectedPriority,
                           decoration: const InputDecoration(labelText: 'Priority'),
                           items: const [
-                            DropdownMenuItem(value: 'low', child: Text('Low')),
-                            DropdownMenuItem(value: 'medium', child: Text('Medium')),
-                            DropdownMenuItem(value: 'high', child: Text('High')),
-                            DropdownMenuItem(value: 'urgent', child: Text('Urgent')),
+                            DropdownMenuItem(value: 'low', child: Text('Low', overflow: TextOverflow.ellipsis)),
+                            DropdownMenuItem(value: 'medium', child: Text('Medium', overflow: TextOverflow.ellipsis)),
+                            DropdownMenuItem(value: 'high', child: Text('High', overflow: TextOverflow.ellipsis)),
+                            DropdownMenuItem(value: 'urgent', child: Text('Urgent', overflow: TextOverflow.ellipsis)),
                           ],
                           onChanged: (val) => setState(() => selectedPriority = val!),
                         ),
@@ -552,13 +554,15 @@ class _TasksScreenState extends State<TasksScreen> {
                       const SizedBox(width: 12),
                       Expanded(
                         child: DropdownButtonFormField<String>(
+                          isExpanded: true,
+
                           value: selectedCategory,
                           decoration: const InputDecoration(labelText: 'Category'),
                           items: const [
-                            DropdownMenuItem(value: 'medical_record', child: Text('Medical')),
-                            DropdownMenuItem(value: 'pharmacy', child: Text('Pharmacy')),
-                            DropdownMenuItem(value: 'feed', child: Text('Feed')),
-                            DropdownMenuItem(value: 'other', child: Text('Other')),
+                            DropdownMenuItem(value: 'medical_record', child: Text('Medical', overflow: TextOverflow.ellipsis)),
+                            DropdownMenuItem(value: 'pharmacy', child: Text('Pharmacy', overflow: TextOverflow.ellipsis)),
+                            DropdownMenuItem(value: 'feed', child: Text('Feed', overflow: TextOverflow.ellipsis)),
+                            DropdownMenuItem(value: 'other', child: Text('Other', overflow: TextOverflow.ellipsis)),
                           ],
                           onChanged: (val) => setState(() => selectedCategory = val!),
                         ),

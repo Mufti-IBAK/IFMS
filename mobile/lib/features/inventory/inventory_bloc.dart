@@ -1,5 +1,7 @@
+import 'dart:async';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../core/database/local_db.dart';
+import '../../core/sync/sync_event_bus.dart';
 import 'inventory_repository.dart';
 import '../../core/di/service_locator.dart';
 import '../../core/network/notification_service.dart';
@@ -102,6 +104,7 @@ class InventoryError extends InventoryState {
 
 class InventoryBloc extends Bloc<InventoryEvent, InventoryState> {
   final InventoryRepository repository;
+  StreamSubscription<SyncCompletedEvent>? _syncSubscription;
 
   InventoryBloc(this.repository) : super(InventoryInitial()) {
     on<LoadInventoryItems>(_onLoad);
@@ -116,7 +119,20 @@ class InventoryBloc extends Bloc<InventoryEvent, InventoryState> {
     on<LogFeedConsumption>(_onLogConsumption);
     on<LoadConsumptionLogs>(_onLoadConsumption);
     on<PrepareFormulaBatch>(_onPrepareFormulaBatch);
+
+    _syncSubscription = SyncEventBus().stream.listen((event) {
+      if (event.containsAny(['feed_items', 'inventory_logs', 'feed_formulas'])) {
+        add(LoadInventoryItems());
+      }
+    });
   }
+
+  @override
+  Future<void> close() {
+    _syncSubscription?.cancel();
+    return super.close();
+  }
+
 
   Future<void> _onLoad(LoadInventoryItems event, Emitter<InventoryState> emit) async {
     final currentState = state;

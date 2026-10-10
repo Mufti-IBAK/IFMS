@@ -1,6 +1,8 @@
+import 'dart:async';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'staff_repository.dart';
 import '../../core/database/local_db.dart';
+import '../../core/sync/sync_event_bus.dart';
 
 // EVENTS
 abstract class StaffEvent {}
@@ -72,8 +74,15 @@ class StaffError extends StaffState {
 // BLOC
 class StaffBloc extends Bloc<StaffEvent, StaffState> {
   final StaffRepository repository;
+  StreamSubscription<SyncCompletedEvent>? _syncSubscription;
 
   StaffBloc(this.repository) : super(StaffLoading()) {
+    _syncSubscription = SyncEventBus().stream.listen((event) {
+      if (event.containsAny(['staff', 'staff_queries', 'salary_advances'])) {
+        add(LoadStaffData());
+      }
+    });
+
     on<LoadStaffData>((event, emit) async {
       final currentState = state;
       if (currentState is! StaffLoaded) {
@@ -174,4 +183,11 @@ class StaffBloc extends Bloc<StaffEvent, StaffState> {
       }
     });
   }
+
+  @override
+  Future<void> close() {
+    _syncSubscription?.cancel();
+    return super.close();
+  }
 }
+

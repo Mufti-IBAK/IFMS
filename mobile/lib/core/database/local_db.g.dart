@@ -44,6 +44,14 @@ class $LocalAnimalsTable extends LocalAnimals
   late final GeneratedColumn<DateTime> dateOfBirth = GeneratedColumn<DateTime>(
       'date_of_birth', aliasedName, true,
       type: DriftSqlType.dateTime, requiredDuringInsert: false);
+  static const VerificationMeta _generationMeta =
+      const VerificationMeta('generation');
+  @override
+  late final GeneratedColumn<String> generation = GeneratedColumn<String>(
+      'generation', aliasedName, false,
+      type: DriftSqlType.string,
+      requiredDuringInsert: false,
+      defaultValue: const Constant('F1'));
   static const VerificationMeta _locationIdMeta =
       const VerificationMeta('locationId');
   @override
@@ -143,6 +151,7 @@ class $LocalAnimalsTable extends LocalAnimals
         breed,
         sex,
         dateOfBirth,
+        generation,
         locationId,
         currentReproductiveStatus,
         acquisitionCost,
@@ -201,6 +210,12 @@ class $LocalAnimalsTable extends LocalAnimals
           _dateOfBirthMeta,
           dateOfBirth.isAcceptableOrUnknown(
               data['date_of_birth']!, _dateOfBirthMeta));
+    }
+    if (data.containsKey('generation')) {
+      context.handle(
+          _generationMeta,
+          generation.isAcceptableOrUnknown(
+              data['generation']!, _generationMeta));
     }
     if (data.containsKey('location_id')) {
       context.handle(
@@ -302,6 +317,8 @@ class $LocalAnimalsTable extends LocalAnimals
           .read(DriftSqlType.string, data['${effectivePrefix}sex'])!,
       dateOfBirth: attachedDatabase.typeMapping
           .read(DriftSqlType.dateTime, data['${effectivePrefix}date_of_birth']),
+      generation: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}generation'])!,
       locationId: attachedDatabase.typeMapping
           .read(DriftSqlType.string, data['${effectivePrefix}location_id']),
       currentReproductiveStatus: attachedDatabase.typeMapping.read(
@@ -349,6 +366,7 @@ class LocalAnimal extends DataClass implements Insertable<LocalAnimal> {
   final String? breed;
   final String sex;
   final DateTime? dateOfBirth;
+  final String generation;
   final String? locationId;
   final String currentReproductiveStatus;
   final double acquisitionCost;
@@ -371,6 +389,7 @@ class LocalAnimal extends DataClass implements Insertable<LocalAnimal> {
       this.breed,
       required this.sex,
       this.dateOfBirth,
+      required this.generation,
       this.locationId,
       required this.currentReproductiveStatus,
       required this.acquisitionCost,
@@ -399,6 +418,7 @@ class LocalAnimal extends DataClass implements Insertable<LocalAnimal> {
     if (!nullToAbsent || dateOfBirth != null) {
       map['date_of_birth'] = Variable<DateTime>(dateOfBirth);
     }
+    map['generation'] = Variable<String>(generation);
     if (!nullToAbsent || locationId != null) {
       map['location_id'] = Variable<String>(locationId);
     }
@@ -451,6 +471,7 @@ class LocalAnimal extends DataClass implements Insertable<LocalAnimal> {
       dateOfBirth: dateOfBirth == null && nullToAbsent
           ? const Value.absent()
           : Value(dateOfBirth),
+      generation: Value(generation),
       locationId: locationId == null && nullToAbsent
           ? const Value.absent()
           : Value(locationId),
@@ -497,6 +518,7 @@ class LocalAnimal extends DataClass implements Insertable<LocalAnimal> {
       breed: serializer.fromJson<String?>(json['breed']),
       sex: serializer.fromJson<String>(json['sex']),
       dateOfBirth: serializer.fromJson<DateTime?>(json['dateOfBirth']),
+      generation: serializer.fromJson<String>(json['generation']),
       locationId: serializer.fromJson<String?>(json['locationId']),
       currentReproductiveStatus:
           serializer.fromJson<String>(json['currentReproductiveStatus']),
@@ -526,6 +548,7 @@ class LocalAnimal extends DataClass implements Insertable<LocalAnimal> {
       'breed': serializer.toJson<String?>(breed),
       'sex': serializer.toJson<String>(sex),
       'dateOfBirth': serializer.toJson<DateTime?>(dateOfBirth),
+      'generation': serializer.toJson<String>(generation),
       'locationId': serializer.toJson<String?>(locationId),
       'currentReproductiveStatus':
           serializer.toJson<String>(currentReproductiveStatus),
@@ -552,6 +575,7 @@ class LocalAnimal extends DataClass implements Insertable<LocalAnimal> {
           Value<String?> breed = const Value.absent(),
           String? sex,
           Value<DateTime?> dateOfBirth = const Value.absent(),
+          String? generation,
           Value<String?> locationId = const Value.absent(),
           String? currentReproductiveStatus,
           double? acquisitionCost,
@@ -574,6 +598,7 @@ class LocalAnimal extends DataClass implements Insertable<LocalAnimal> {
         breed: breed.present ? breed.value : this.breed,
         sex: sex ?? this.sex,
         dateOfBirth: dateOfBirth.present ? dateOfBirth.value : this.dateOfBirth,
+        generation: generation ?? this.generation,
         locationId: locationId.present ? locationId.value : this.locationId,
         currentReproductiveStatus:
             currentReproductiveStatus ?? this.currentReproductiveStatus,
@@ -605,6 +630,8 @@ class LocalAnimal extends DataClass implements Insertable<LocalAnimal> {
       sex: data.sex.present ? data.sex.value : this.sex,
       dateOfBirth:
           data.dateOfBirth.present ? data.dateOfBirth.value : this.dateOfBirth,
+      generation:
+          data.generation.present ? data.generation.value : this.generation,
       locationId:
           data.locationId.present ? data.locationId.value : this.locationId,
       currentReproductiveStatus: data.currentReproductiveStatus.present
@@ -646,6 +673,7 @@ class LocalAnimal extends DataClass implements Insertable<LocalAnimal> {
           ..write('breed: $breed, ')
           ..write('sex: $sex, ')
           ..write('dateOfBirth: $dateOfBirth, ')
+          ..write('generation: $generation, ')
           ..write('locationId: $locationId, ')
           ..write('currentReproductiveStatus: $currentReproductiveStatus, ')
           ..write('acquisitionCost: $acquisitionCost, ')
@@ -673,6 +701,7 @@ class LocalAnimal extends DataClass implements Insertable<LocalAnimal> {
         breed,
         sex,
         dateOfBirth,
+        generation,
         locationId,
         currentReproductiveStatus,
         acquisitionCost,
@@ -699,6 +728,7 @@ class LocalAnimal extends DataClass implements Insertable<LocalAnimal> {
           other.breed == this.breed &&
           other.sex == this.sex &&
           other.dateOfBirth == this.dateOfBirth &&
+          other.generation == this.generation &&
           other.locationId == this.locationId &&
           other.currentReproductiveStatus == this.currentReproductiveStatus &&
           other.acquisitionCost == this.acquisitionCost &&
@@ -723,6 +753,7 @@ class LocalAnimalsCompanion extends UpdateCompanion<LocalAnimal> {
   final Value<String?> breed;
   final Value<String> sex;
   final Value<DateTime?> dateOfBirth;
+  final Value<String> generation;
   final Value<String?> locationId;
   final Value<String> currentReproductiveStatus;
   final Value<double> acquisitionCost;
@@ -746,6 +777,7 @@ class LocalAnimalsCompanion extends UpdateCompanion<LocalAnimal> {
     this.breed = const Value.absent(),
     this.sex = const Value.absent(),
     this.dateOfBirth = const Value.absent(),
+    this.generation = const Value.absent(),
     this.locationId = const Value.absent(),
     this.currentReproductiveStatus = const Value.absent(),
     this.acquisitionCost = const Value.absent(),
@@ -770,6 +802,7 @@ class LocalAnimalsCompanion extends UpdateCompanion<LocalAnimal> {
     this.breed = const Value.absent(),
     required String sex,
     this.dateOfBirth = const Value.absent(),
+    this.generation = const Value.absent(),
     this.locationId = const Value.absent(),
     required String currentReproductiveStatus,
     this.acquisitionCost = const Value.absent(),
@@ -798,6 +831,7 @@ class LocalAnimalsCompanion extends UpdateCompanion<LocalAnimal> {
     Expression<String>? breed,
     Expression<String>? sex,
     Expression<DateTime>? dateOfBirth,
+    Expression<String>? generation,
     Expression<String>? locationId,
     Expression<String>? currentReproductiveStatus,
     Expression<double>? acquisitionCost,
@@ -822,6 +856,7 @@ class LocalAnimalsCompanion extends UpdateCompanion<LocalAnimal> {
       if (breed != null) 'breed': breed,
       if (sex != null) 'sex': sex,
       if (dateOfBirth != null) 'date_of_birth': dateOfBirth,
+      if (generation != null) 'generation': generation,
       if (locationId != null) 'location_id': locationId,
       if (currentReproductiveStatus != null)
         'current_reproductive_status': currentReproductiveStatus,
@@ -849,6 +884,7 @@ class LocalAnimalsCompanion extends UpdateCompanion<LocalAnimal> {
       Value<String?>? breed,
       Value<String>? sex,
       Value<DateTime?>? dateOfBirth,
+      Value<String>? generation,
       Value<String?>? locationId,
       Value<String>? currentReproductiveStatus,
       Value<double>? acquisitionCost,
@@ -872,6 +908,7 @@ class LocalAnimalsCompanion extends UpdateCompanion<LocalAnimal> {
       breed: breed ?? this.breed,
       sex: sex ?? this.sex,
       dateOfBirth: dateOfBirth ?? this.dateOfBirth,
+      generation: generation ?? this.generation,
       locationId: locationId ?? this.locationId,
       currentReproductiveStatus:
           currentReproductiveStatus ?? this.currentReproductiveStatus,
@@ -912,6 +949,9 @@ class LocalAnimalsCompanion extends UpdateCompanion<LocalAnimal> {
     }
     if (dateOfBirth.present) {
       map['date_of_birth'] = Variable<DateTime>(dateOfBirth.value);
+    }
+    if (generation.present) {
+      map['generation'] = Variable<String>(generation.value);
     }
     if (locationId.present) {
       map['location_id'] = Variable<String>(locationId.value);
@@ -974,6 +1014,7 @@ class LocalAnimalsCompanion extends UpdateCompanion<LocalAnimal> {
           ..write('breed: $breed, ')
           ..write('sex: $sex, ')
           ..write('dateOfBirth: $dateOfBirth, ')
+          ..write('generation: $generation, ')
           ..write('locationId: $locationId, ')
           ..write('currentReproductiveStatus: $currentReproductiveStatus, ')
           ..write('acquisitionCost: $acquisitionCost, ')
@@ -15223,7 +15264,9 @@ class $LocalAuditLogsTable extends LocalAuditLogs
   @override
   late final GeneratedColumn<String> description = GeneratedColumn<String>(
       'description', aliasedName, false,
-      type: DriftSqlType.string, requiredDuringInsert: true);
+      type: DriftSqlType.string,
+      requiredDuringInsert: false,
+      defaultValue: const Constant(''));
   static const VerificationMeta _detailsJsonMeta =
       const VerificationMeta('detailsJson');
   @override
@@ -15302,8 +15345,6 @@ class $LocalAuditLogsTable extends LocalAuditLogs
           _descriptionMeta,
           description.isAcceptableOrUnknown(
               data['description']!, _descriptionMeta));
-    } else if (isInserting) {
-      context.missing(_descriptionMeta);
     }
     if (data.containsKey('details_json')) {
       context.handle(
@@ -15547,15 +15588,14 @@ class LocalAuditLogsCompanion extends UpdateCompanion<LocalAuditLog> {
     required String moduleName,
     this.entityId = const Value.absent(),
     this.entityLabel = const Value.absent(),
-    required String description,
+    this.description = const Value.absent(),
     this.detailsJson = const Value.absent(),
     this.timestamp = const Value.absent(),
     this.rowid = const Value.absent(),
   })  : id = Value(id),
         userName = Value(userName),
         actionType = Value(actionType),
-        moduleName = Value(moduleName),
-        description = Value(description);
+        moduleName = Value(moduleName);
   static Insertable<LocalAuditLog> custom({
     Expression<String>? id,
     Expression<String>? userName,
@@ -15661,6 +15701,2589 @@ class LocalAuditLogsCompanion extends UpdateCompanion<LocalAuditLog> {
   }
 }
 
+class $LocalYoghurtBatchesTable extends LocalYoghurtBatches
+    with TableInfo<$LocalYoghurtBatchesTable, LocalYoghurtBatche> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $LocalYoghurtBatchesTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+      'id', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _batchNumberMeta =
+      const VerificationMeta('batchNumber');
+  @override
+  late final GeneratedColumn<String> batchNumber = GeneratedColumn<String>(
+      'batch_number', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _productionDateMeta =
+      const VerificationMeta('productionDate');
+  @override
+  late final GeneratedColumn<DateTime> productionDate =
+      GeneratedColumn<DateTime>('production_date', aliasedName, false,
+          type: DriftSqlType.dateTime, requiredDuringInsert: true);
+  static const VerificationMeta _milkInputLitersMeta =
+      const VerificationMeta('milkInputLiters');
+  @override
+  late final GeneratedColumn<double> milkInputLiters = GeneratedColumn<double>(
+      'milk_input_liters', aliasedName, false,
+      type: DriftSqlType.double, requiredDuringInsert: true);
+  static const VerificationMeta _milkCostPerLiterMeta =
+      const VerificationMeta('milkCostPerLiter');
+  @override
+  late final GeneratedColumn<double> milkCostPerLiter = GeneratedColumn<double>(
+      'milk_cost_per_liter', aliasedName, false,
+      type: DriftSqlType.double, requiredDuringInsert: true);
+  static const VerificationMeta _totalMilkCostMeta =
+      const VerificationMeta('totalMilkCost');
+  @override
+  late final GeneratedColumn<double> totalMilkCost = GeneratedColumn<double>(
+      'total_milk_cost', aliasedName, false,
+      type: DriftSqlType.double, requiredDuringInsert: true);
+  static const VerificationMeta _bottlesProducedMeta =
+      const VerificationMeta('bottlesProduced');
+  @override
+  late final GeneratedColumn<int> bottlesProduced = GeneratedColumn<int>(
+      'bottles_produced', aliasedName, false,
+      type: DriftSqlType.int, requiredDuringInsert: true);
+  static const VerificationMeta _packsProducedMeta =
+      const VerificationMeta('packsProduced');
+  @override
+  late final GeneratedColumn<int> packsProduced = GeneratedColumn<int>(
+      'packs_produced', aliasedName, false,
+      type: DriftSqlType.int, requiredDuringInsert: true);
+  static const VerificationMeta _bottlesRemainingMeta =
+      const VerificationMeta('bottlesRemaining');
+  @override
+  late final GeneratedColumn<int> bottlesRemaining = GeneratedColumn<int>(
+      'bottles_remaining', aliasedName, false,
+      type: DriftSqlType.int, requiredDuringInsert: true);
+  static const VerificationMeta _additionalCostsMeta =
+      const VerificationMeta('additionalCosts');
+  @override
+  late final GeneratedColumn<double> additionalCosts = GeneratedColumn<double>(
+      'additional_costs', aliasedName, false,
+      type: DriftSqlType.double,
+      requiredDuringInsert: false,
+      defaultValue: const Constant(0.0));
+  static const VerificationMeta _producedByNameMeta =
+      const VerificationMeta('producedByName');
+  @override
+  late final GeneratedColumn<String> producedByName = GeneratedColumn<String>(
+      'produced_by_name', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _producedByRoleMeta =
+      const VerificationMeta('producedByRole');
+  @override
+  late final GeneratedColumn<String> producedByRole = GeneratedColumn<String>(
+      'produced_by_role', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _notesMeta = const VerificationMeta('notes');
+  @override
+  late final GeneratedColumn<String> notes = GeneratedColumn<String>(
+      'notes', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _createdAtMeta =
+      const VerificationMeta('createdAt');
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+      'created_at', aliasedName, false,
+      type: DriftSqlType.dateTime,
+      requiredDuringInsert: false,
+      defaultValue: currentDateAndTime);
+  @override
+  List<GeneratedColumn> get $columns => [
+        id,
+        batchNumber,
+        productionDate,
+        milkInputLiters,
+        milkCostPerLiter,
+        totalMilkCost,
+        bottlesProduced,
+        packsProduced,
+        bottlesRemaining,
+        additionalCosts,
+        producedByName,
+        producedByRole,
+        notes,
+        createdAt
+      ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'local_yoghurt_batches';
+  @override
+  VerificationContext validateIntegrity(Insertable<LocalYoghurtBatche> instance,
+      {bool isInserting = false}) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('batch_number')) {
+      context.handle(
+          _batchNumberMeta,
+          batchNumber.isAcceptableOrUnknown(
+              data['batch_number']!, _batchNumberMeta));
+    } else if (isInserting) {
+      context.missing(_batchNumberMeta);
+    }
+    if (data.containsKey('production_date')) {
+      context.handle(
+          _productionDateMeta,
+          productionDate.isAcceptableOrUnknown(
+              data['production_date']!, _productionDateMeta));
+    } else if (isInserting) {
+      context.missing(_productionDateMeta);
+    }
+    if (data.containsKey('milk_input_liters')) {
+      context.handle(
+          _milkInputLitersMeta,
+          milkInputLiters.isAcceptableOrUnknown(
+              data['milk_input_liters']!, _milkInputLitersMeta));
+    } else if (isInserting) {
+      context.missing(_milkInputLitersMeta);
+    }
+    if (data.containsKey('milk_cost_per_liter')) {
+      context.handle(
+          _milkCostPerLiterMeta,
+          milkCostPerLiter.isAcceptableOrUnknown(
+              data['milk_cost_per_liter']!, _milkCostPerLiterMeta));
+    } else if (isInserting) {
+      context.missing(_milkCostPerLiterMeta);
+    }
+    if (data.containsKey('total_milk_cost')) {
+      context.handle(
+          _totalMilkCostMeta,
+          totalMilkCost.isAcceptableOrUnknown(
+              data['total_milk_cost']!, _totalMilkCostMeta));
+    } else if (isInserting) {
+      context.missing(_totalMilkCostMeta);
+    }
+    if (data.containsKey('bottles_produced')) {
+      context.handle(
+          _bottlesProducedMeta,
+          bottlesProduced.isAcceptableOrUnknown(
+              data['bottles_produced']!, _bottlesProducedMeta));
+    } else if (isInserting) {
+      context.missing(_bottlesProducedMeta);
+    }
+    if (data.containsKey('packs_produced')) {
+      context.handle(
+          _packsProducedMeta,
+          packsProduced.isAcceptableOrUnknown(
+              data['packs_produced']!, _packsProducedMeta));
+    } else if (isInserting) {
+      context.missing(_packsProducedMeta);
+    }
+    if (data.containsKey('bottles_remaining')) {
+      context.handle(
+          _bottlesRemainingMeta,
+          bottlesRemaining.isAcceptableOrUnknown(
+              data['bottles_remaining']!, _bottlesRemainingMeta));
+    } else if (isInserting) {
+      context.missing(_bottlesRemainingMeta);
+    }
+    if (data.containsKey('additional_costs')) {
+      context.handle(
+          _additionalCostsMeta,
+          additionalCosts.isAcceptableOrUnknown(
+              data['additional_costs']!, _additionalCostsMeta));
+    }
+    if (data.containsKey('produced_by_name')) {
+      context.handle(
+          _producedByNameMeta,
+          producedByName.isAcceptableOrUnknown(
+              data['produced_by_name']!, _producedByNameMeta));
+    } else if (isInserting) {
+      context.missing(_producedByNameMeta);
+    }
+    if (data.containsKey('produced_by_role')) {
+      context.handle(
+          _producedByRoleMeta,
+          producedByRole.isAcceptableOrUnknown(
+              data['produced_by_role']!, _producedByRoleMeta));
+    } else if (isInserting) {
+      context.missing(_producedByRoleMeta);
+    }
+    if (data.containsKey('notes')) {
+      context.handle(
+          _notesMeta, notes.isAcceptableOrUnknown(data['notes']!, _notesMeta));
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(_createdAtMeta,
+          createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta));
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  LocalYoghurtBatche map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return LocalYoghurtBatche(
+      id: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}id'])!,
+      batchNumber: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}batch_number'])!,
+      productionDate: attachedDatabase.typeMapping.read(
+          DriftSqlType.dateTime, data['${effectivePrefix}production_date'])!,
+      milkInputLiters: attachedDatabase.typeMapping.read(
+          DriftSqlType.double, data['${effectivePrefix}milk_input_liters'])!,
+      milkCostPerLiter: attachedDatabase.typeMapping.read(
+          DriftSqlType.double, data['${effectivePrefix}milk_cost_per_liter'])!,
+      totalMilkCost: attachedDatabase.typeMapping.read(
+          DriftSqlType.double, data['${effectivePrefix}total_milk_cost'])!,
+      bottlesProduced: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}bottles_produced'])!,
+      packsProduced: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}packs_produced'])!,
+      bottlesRemaining: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}bottles_remaining'])!,
+      additionalCosts: attachedDatabase.typeMapping.read(
+          DriftSqlType.double, data['${effectivePrefix}additional_costs'])!,
+      producedByName: attachedDatabase.typeMapping.read(
+          DriftSqlType.string, data['${effectivePrefix}produced_by_name'])!,
+      producedByRole: attachedDatabase.typeMapping.read(
+          DriftSqlType.string, data['${effectivePrefix}produced_by_role'])!,
+      notes: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}notes']),
+      createdAt: attachedDatabase.typeMapping
+          .read(DriftSqlType.dateTime, data['${effectivePrefix}created_at'])!,
+    );
+  }
+
+  @override
+  $LocalYoghurtBatchesTable createAlias(String alias) {
+    return $LocalYoghurtBatchesTable(attachedDatabase, alias);
+  }
+}
+
+class LocalYoghurtBatche extends DataClass
+    implements Insertable<LocalYoghurtBatche> {
+  final String id;
+  final String batchNumber;
+  final DateTime productionDate;
+  final double milkInputLiters;
+  final double milkCostPerLiter;
+  final double totalMilkCost;
+  final int bottlesProduced;
+  final int packsProduced;
+  final int bottlesRemaining;
+  final double additionalCosts;
+  final String producedByName;
+  final String producedByRole;
+  final String? notes;
+  final DateTime createdAt;
+  const LocalYoghurtBatche(
+      {required this.id,
+      required this.batchNumber,
+      required this.productionDate,
+      required this.milkInputLiters,
+      required this.milkCostPerLiter,
+      required this.totalMilkCost,
+      required this.bottlesProduced,
+      required this.packsProduced,
+      required this.bottlesRemaining,
+      required this.additionalCosts,
+      required this.producedByName,
+      required this.producedByRole,
+      this.notes,
+      required this.createdAt});
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['batch_number'] = Variable<String>(batchNumber);
+    map['production_date'] = Variable<DateTime>(productionDate);
+    map['milk_input_liters'] = Variable<double>(milkInputLiters);
+    map['milk_cost_per_liter'] = Variable<double>(milkCostPerLiter);
+    map['total_milk_cost'] = Variable<double>(totalMilkCost);
+    map['bottles_produced'] = Variable<int>(bottlesProduced);
+    map['packs_produced'] = Variable<int>(packsProduced);
+    map['bottles_remaining'] = Variable<int>(bottlesRemaining);
+    map['additional_costs'] = Variable<double>(additionalCosts);
+    map['produced_by_name'] = Variable<String>(producedByName);
+    map['produced_by_role'] = Variable<String>(producedByRole);
+    if (!nullToAbsent || notes != null) {
+      map['notes'] = Variable<String>(notes);
+    }
+    map['created_at'] = Variable<DateTime>(createdAt);
+    return map;
+  }
+
+  LocalYoghurtBatchesCompanion toCompanion(bool nullToAbsent) {
+    return LocalYoghurtBatchesCompanion(
+      id: Value(id),
+      batchNumber: Value(batchNumber),
+      productionDate: Value(productionDate),
+      milkInputLiters: Value(milkInputLiters),
+      milkCostPerLiter: Value(milkCostPerLiter),
+      totalMilkCost: Value(totalMilkCost),
+      bottlesProduced: Value(bottlesProduced),
+      packsProduced: Value(packsProduced),
+      bottlesRemaining: Value(bottlesRemaining),
+      additionalCosts: Value(additionalCosts),
+      producedByName: Value(producedByName),
+      producedByRole: Value(producedByRole),
+      notes:
+          notes == null && nullToAbsent ? const Value.absent() : Value(notes),
+      createdAt: Value(createdAt),
+    );
+  }
+
+  factory LocalYoghurtBatche.fromJson(Map<String, dynamic> json,
+      {ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return LocalYoghurtBatche(
+      id: serializer.fromJson<String>(json['id']),
+      batchNumber: serializer.fromJson<String>(json['batchNumber']),
+      productionDate: serializer.fromJson<DateTime>(json['productionDate']),
+      milkInputLiters: serializer.fromJson<double>(json['milkInputLiters']),
+      milkCostPerLiter: serializer.fromJson<double>(json['milkCostPerLiter']),
+      totalMilkCost: serializer.fromJson<double>(json['totalMilkCost']),
+      bottlesProduced: serializer.fromJson<int>(json['bottlesProduced']),
+      packsProduced: serializer.fromJson<int>(json['packsProduced']),
+      bottlesRemaining: serializer.fromJson<int>(json['bottlesRemaining']),
+      additionalCosts: serializer.fromJson<double>(json['additionalCosts']),
+      producedByName: serializer.fromJson<String>(json['producedByName']),
+      producedByRole: serializer.fromJson<String>(json['producedByRole']),
+      notes: serializer.fromJson<String?>(json['notes']),
+      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'batchNumber': serializer.toJson<String>(batchNumber),
+      'productionDate': serializer.toJson<DateTime>(productionDate),
+      'milkInputLiters': serializer.toJson<double>(milkInputLiters),
+      'milkCostPerLiter': serializer.toJson<double>(milkCostPerLiter),
+      'totalMilkCost': serializer.toJson<double>(totalMilkCost),
+      'bottlesProduced': serializer.toJson<int>(bottlesProduced),
+      'packsProduced': serializer.toJson<int>(packsProduced),
+      'bottlesRemaining': serializer.toJson<int>(bottlesRemaining),
+      'additionalCosts': serializer.toJson<double>(additionalCosts),
+      'producedByName': serializer.toJson<String>(producedByName),
+      'producedByRole': serializer.toJson<String>(producedByRole),
+      'notes': serializer.toJson<String?>(notes),
+      'createdAt': serializer.toJson<DateTime>(createdAt),
+    };
+  }
+
+  LocalYoghurtBatche copyWith(
+          {String? id,
+          String? batchNumber,
+          DateTime? productionDate,
+          double? milkInputLiters,
+          double? milkCostPerLiter,
+          double? totalMilkCost,
+          int? bottlesProduced,
+          int? packsProduced,
+          int? bottlesRemaining,
+          double? additionalCosts,
+          String? producedByName,
+          String? producedByRole,
+          Value<String?> notes = const Value.absent(),
+          DateTime? createdAt}) =>
+      LocalYoghurtBatche(
+        id: id ?? this.id,
+        batchNumber: batchNumber ?? this.batchNumber,
+        productionDate: productionDate ?? this.productionDate,
+        milkInputLiters: milkInputLiters ?? this.milkInputLiters,
+        milkCostPerLiter: milkCostPerLiter ?? this.milkCostPerLiter,
+        totalMilkCost: totalMilkCost ?? this.totalMilkCost,
+        bottlesProduced: bottlesProduced ?? this.bottlesProduced,
+        packsProduced: packsProduced ?? this.packsProduced,
+        bottlesRemaining: bottlesRemaining ?? this.bottlesRemaining,
+        additionalCosts: additionalCosts ?? this.additionalCosts,
+        producedByName: producedByName ?? this.producedByName,
+        producedByRole: producedByRole ?? this.producedByRole,
+        notes: notes.present ? notes.value : this.notes,
+        createdAt: createdAt ?? this.createdAt,
+      );
+  LocalYoghurtBatche copyWithCompanion(LocalYoghurtBatchesCompanion data) {
+    return LocalYoghurtBatche(
+      id: data.id.present ? data.id.value : this.id,
+      batchNumber:
+          data.batchNumber.present ? data.batchNumber.value : this.batchNumber,
+      productionDate: data.productionDate.present
+          ? data.productionDate.value
+          : this.productionDate,
+      milkInputLiters: data.milkInputLiters.present
+          ? data.milkInputLiters.value
+          : this.milkInputLiters,
+      milkCostPerLiter: data.milkCostPerLiter.present
+          ? data.milkCostPerLiter.value
+          : this.milkCostPerLiter,
+      totalMilkCost: data.totalMilkCost.present
+          ? data.totalMilkCost.value
+          : this.totalMilkCost,
+      bottlesProduced: data.bottlesProduced.present
+          ? data.bottlesProduced.value
+          : this.bottlesProduced,
+      packsProduced: data.packsProduced.present
+          ? data.packsProduced.value
+          : this.packsProduced,
+      bottlesRemaining: data.bottlesRemaining.present
+          ? data.bottlesRemaining.value
+          : this.bottlesRemaining,
+      additionalCosts: data.additionalCosts.present
+          ? data.additionalCosts.value
+          : this.additionalCosts,
+      producedByName: data.producedByName.present
+          ? data.producedByName.value
+          : this.producedByName,
+      producedByRole: data.producedByRole.present
+          ? data.producedByRole.value
+          : this.producedByRole,
+      notes: data.notes.present ? data.notes.value : this.notes,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('LocalYoghurtBatche(')
+          ..write('id: $id, ')
+          ..write('batchNumber: $batchNumber, ')
+          ..write('productionDate: $productionDate, ')
+          ..write('milkInputLiters: $milkInputLiters, ')
+          ..write('milkCostPerLiter: $milkCostPerLiter, ')
+          ..write('totalMilkCost: $totalMilkCost, ')
+          ..write('bottlesProduced: $bottlesProduced, ')
+          ..write('packsProduced: $packsProduced, ')
+          ..write('bottlesRemaining: $bottlesRemaining, ')
+          ..write('additionalCosts: $additionalCosts, ')
+          ..write('producedByName: $producedByName, ')
+          ..write('producedByRole: $producedByRole, ')
+          ..write('notes: $notes, ')
+          ..write('createdAt: $createdAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+      id,
+      batchNumber,
+      productionDate,
+      milkInputLiters,
+      milkCostPerLiter,
+      totalMilkCost,
+      bottlesProduced,
+      packsProduced,
+      bottlesRemaining,
+      additionalCosts,
+      producedByName,
+      producedByRole,
+      notes,
+      createdAt);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is LocalYoghurtBatche &&
+          other.id == this.id &&
+          other.batchNumber == this.batchNumber &&
+          other.productionDate == this.productionDate &&
+          other.milkInputLiters == this.milkInputLiters &&
+          other.milkCostPerLiter == this.milkCostPerLiter &&
+          other.totalMilkCost == this.totalMilkCost &&
+          other.bottlesProduced == this.bottlesProduced &&
+          other.packsProduced == this.packsProduced &&
+          other.bottlesRemaining == this.bottlesRemaining &&
+          other.additionalCosts == this.additionalCosts &&
+          other.producedByName == this.producedByName &&
+          other.producedByRole == this.producedByRole &&
+          other.notes == this.notes &&
+          other.createdAt == this.createdAt);
+}
+
+class LocalYoghurtBatchesCompanion extends UpdateCompanion<LocalYoghurtBatche> {
+  final Value<String> id;
+  final Value<String> batchNumber;
+  final Value<DateTime> productionDate;
+  final Value<double> milkInputLiters;
+  final Value<double> milkCostPerLiter;
+  final Value<double> totalMilkCost;
+  final Value<int> bottlesProduced;
+  final Value<int> packsProduced;
+  final Value<int> bottlesRemaining;
+  final Value<double> additionalCosts;
+  final Value<String> producedByName;
+  final Value<String> producedByRole;
+  final Value<String?> notes;
+  final Value<DateTime> createdAt;
+  final Value<int> rowid;
+  const LocalYoghurtBatchesCompanion({
+    this.id = const Value.absent(),
+    this.batchNumber = const Value.absent(),
+    this.productionDate = const Value.absent(),
+    this.milkInputLiters = const Value.absent(),
+    this.milkCostPerLiter = const Value.absent(),
+    this.totalMilkCost = const Value.absent(),
+    this.bottlesProduced = const Value.absent(),
+    this.packsProduced = const Value.absent(),
+    this.bottlesRemaining = const Value.absent(),
+    this.additionalCosts = const Value.absent(),
+    this.producedByName = const Value.absent(),
+    this.producedByRole = const Value.absent(),
+    this.notes = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  LocalYoghurtBatchesCompanion.insert({
+    required String id,
+    required String batchNumber,
+    required DateTime productionDate,
+    required double milkInputLiters,
+    required double milkCostPerLiter,
+    required double totalMilkCost,
+    required int bottlesProduced,
+    required int packsProduced,
+    required int bottlesRemaining,
+    this.additionalCosts = const Value.absent(),
+    required String producedByName,
+    required String producedByRole,
+    this.notes = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  })  : id = Value(id),
+        batchNumber = Value(batchNumber),
+        productionDate = Value(productionDate),
+        milkInputLiters = Value(milkInputLiters),
+        milkCostPerLiter = Value(milkCostPerLiter),
+        totalMilkCost = Value(totalMilkCost),
+        bottlesProduced = Value(bottlesProduced),
+        packsProduced = Value(packsProduced),
+        bottlesRemaining = Value(bottlesRemaining),
+        producedByName = Value(producedByName),
+        producedByRole = Value(producedByRole);
+  static Insertable<LocalYoghurtBatche> custom({
+    Expression<String>? id,
+    Expression<String>? batchNumber,
+    Expression<DateTime>? productionDate,
+    Expression<double>? milkInputLiters,
+    Expression<double>? milkCostPerLiter,
+    Expression<double>? totalMilkCost,
+    Expression<int>? bottlesProduced,
+    Expression<int>? packsProduced,
+    Expression<int>? bottlesRemaining,
+    Expression<double>? additionalCosts,
+    Expression<String>? producedByName,
+    Expression<String>? producedByRole,
+    Expression<String>? notes,
+    Expression<DateTime>? createdAt,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (batchNumber != null) 'batch_number': batchNumber,
+      if (productionDate != null) 'production_date': productionDate,
+      if (milkInputLiters != null) 'milk_input_liters': milkInputLiters,
+      if (milkCostPerLiter != null) 'milk_cost_per_liter': milkCostPerLiter,
+      if (totalMilkCost != null) 'total_milk_cost': totalMilkCost,
+      if (bottlesProduced != null) 'bottles_produced': bottlesProduced,
+      if (packsProduced != null) 'packs_produced': packsProduced,
+      if (bottlesRemaining != null) 'bottles_remaining': bottlesRemaining,
+      if (additionalCosts != null) 'additional_costs': additionalCosts,
+      if (producedByName != null) 'produced_by_name': producedByName,
+      if (producedByRole != null) 'produced_by_role': producedByRole,
+      if (notes != null) 'notes': notes,
+      if (createdAt != null) 'created_at': createdAt,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  LocalYoghurtBatchesCompanion copyWith(
+      {Value<String>? id,
+      Value<String>? batchNumber,
+      Value<DateTime>? productionDate,
+      Value<double>? milkInputLiters,
+      Value<double>? milkCostPerLiter,
+      Value<double>? totalMilkCost,
+      Value<int>? bottlesProduced,
+      Value<int>? packsProduced,
+      Value<int>? bottlesRemaining,
+      Value<double>? additionalCosts,
+      Value<String>? producedByName,
+      Value<String>? producedByRole,
+      Value<String?>? notes,
+      Value<DateTime>? createdAt,
+      Value<int>? rowid}) {
+    return LocalYoghurtBatchesCompanion(
+      id: id ?? this.id,
+      batchNumber: batchNumber ?? this.batchNumber,
+      productionDate: productionDate ?? this.productionDate,
+      milkInputLiters: milkInputLiters ?? this.milkInputLiters,
+      milkCostPerLiter: milkCostPerLiter ?? this.milkCostPerLiter,
+      totalMilkCost: totalMilkCost ?? this.totalMilkCost,
+      bottlesProduced: bottlesProduced ?? this.bottlesProduced,
+      packsProduced: packsProduced ?? this.packsProduced,
+      bottlesRemaining: bottlesRemaining ?? this.bottlesRemaining,
+      additionalCosts: additionalCosts ?? this.additionalCosts,
+      producedByName: producedByName ?? this.producedByName,
+      producedByRole: producedByRole ?? this.producedByRole,
+      notes: notes ?? this.notes,
+      createdAt: createdAt ?? this.createdAt,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (batchNumber.present) {
+      map['batch_number'] = Variable<String>(batchNumber.value);
+    }
+    if (productionDate.present) {
+      map['production_date'] = Variable<DateTime>(productionDate.value);
+    }
+    if (milkInputLiters.present) {
+      map['milk_input_liters'] = Variable<double>(milkInputLiters.value);
+    }
+    if (milkCostPerLiter.present) {
+      map['milk_cost_per_liter'] = Variable<double>(milkCostPerLiter.value);
+    }
+    if (totalMilkCost.present) {
+      map['total_milk_cost'] = Variable<double>(totalMilkCost.value);
+    }
+    if (bottlesProduced.present) {
+      map['bottles_produced'] = Variable<int>(bottlesProduced.value);
+    }
+    if (packsProduced.present) {
+      map['packs_produced'] = Variable<int>(packsProduced.value);
+    }
+    if (bottlesRemaining.present) {
+      map['bottles_remaining'] = Variable<int>(bottlesRemaining.value);
+    }
+    if (additionalCosts.present) {
+      map['additional_costs'] = Variable<double>(additionalCosts.value);
+    }
+    if (producedByName.present) {
+      map['produced_by_name'] = Variable<String>(producedByName.value);
+    }
+    if (producedByRole.present) {
+      map['produced_by_role'] = Variable<String>(producedByRole.value);
+    }
+    if (notes.present) {
+      map['notes'] = Variable<String>(notes.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('LocalYoghurtBatchesCompanion(')
+          ..write('id: $id, ')
+          ..write('batchNumber: $batchNumber, ')
+          ..write('productionDate: $productionDate, ')
+          ..write('milkInputLiters: $milkInputLiters, ')
+          ..write('milkCostPerLiter: $milkCostPerLiter, ')
+          ..write('totalMilkCost: $totalMilkCost, ')
+          ..write('bottlesProduced: $bottlesProduced, ')
+          ..write('packsProduced: $packsProduced, ')
+          ..write('bottlesRemaining: $bottlesRemaining, ')
+          ..write('additionalCosts: $additionalCosts, ')
+          ..write('producedByName: $producedByName, ')
+          ..write('producedByRole: $producedByRole, ')
+          ..write('notes: $notes, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $LocalYoghurtSalesTable extends LocalYoghurtSales
+    with TableInfo<$LocalYoghurtSalesTable, LocalYoghurtSale> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $LocalYoghurtSalesTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+      'id', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _saleDateMeta =
+      const VerificationMeta('saleDate');
+  @override
+  late final GeneratedColumn<DateTime> saleDate = GeneratedColumn<DateTime>(
+      'sale_date', aliasedName, false,
+      type: DriftSqlType.dateTime, requiredDuringInsert: true);
+  static const VerificationMeta _customerNameMeta =
+      const VerificationMeta('customerName');
+  @override
+  late final GeneratedColumn<String> customerName = GeneratedColumn<String>(
+      'customer_name', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _customerPhoneMeta =
+      const VerificationMeta('customerPhone');
+  @override
+  late final GeneratedColumn<String> customerPhone = GeneratedColumn<String>(
+      'customer_phone', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _descriptionMeta =
+      const VerificationMeta('description');
+  @override
+  late final GeneratedColumn<String> description = GeneratedColumn<String>(
+      'description', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _saleUnitMeta =
+      const VerificationMeta('saleUnit');
+  @override
+  late final GeneratedColumn<String> saleUnit = GeneratedColumn<String>(
+      'sale_unit', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _quantityUnitsMeta =
+      const VerificationMeta('quantityUnits');
+  @override
+  late final GeneratedColumn<int> quantityUnits = GeneratedColumn<int>(
+      'quantity_units', aliasedName, false,
+      type: DriftSqlType.int, requiredDuringInsert: true);
+  static const VerificationMeta _totalBottlesMeta =
+      const VerificationMeta('totalBottles');
+  @override
+  late final GeneratedColumn<int> totalBottles = GeneratedColumn<int>(
+      'total_bottles', aliasedName, false,
+      type: DriftSqlType.int, requiredDuringInsert: true);
+  static const VerificationMeta _unitPriceMeta =
+      const VerificationMeta('unitPrice');
+  @override
+  late final GeneratedColumn<double> unitPrice = GeneratedColumn<double>(
+      'unit_price', aliasedName, false,
+      type: DriftSqlType.double, requiredDuringInsert: true);
+  static const VerificationMeta _totalAmountMeta =
+      const VerificationMeta('totalAmount');
+  @override
+  late final GeneratedColumn<double> totalAmount = GeneratedColumn<double>(
+      'total_amount', aliasedName, false,
+      type: DriftSqlType.double, requiredDuringInsert: true);
+  static const VerificationMeta _amountPaidMeta =
+      const VerificationMeta('amountPaid');
+  @override
+  late final GeneratedColumn<double> amountPaid = GeneratedColumn<double>(
+      'amount_paid', aliasedName, false,
+      type: DriftSqlType.double, requiredDuringInsert: true);
+  static const VerificationMeta _balanceDueMeta =
+      const VerificationMeta('balanceDue');
+  @override
+  late final GeneratedColumn<double> balanceDue = GeneratedColumn<double>(
+      'balance_due', aliasedName, false,
+      type: DriftSqlType.double,
+      requiredDuringInsert: false,
+      defaultValue: const Constant(0.0));
+  static const VerificationMeta _balancePayerMeta =
+      const VerificationMeta('balancePayer');
+  @override
+  late final GeneratedColumn<String> balancePayer = GeneratedColumn<String>(
+      'balance_payer', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _initiatedByNameMeta =
+      const VerificationMeta('initiatedByName');
+  @override
+  late final GeneratedColumn<String> initiatedByName = GeneratedColumn<String>(
+      'initiated_by_name', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _initiatedByRoleMeta =
+      const VerificationMeta('initiatedByRole');
+  @override
+  late final GeneratedColumn<String> initiatedByRole = GeneratedColumn<String>(
+      'initiated_by_role', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _selectedBatchIdMeta =
+      const VerificationMeta('selectedBatchId');
+  @override
+  late final GeneratedColumn<String> selectedBatchId = GeneratedColumn<String>(
+      'selected_batch_id', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _createdAtMeta =
+      const VerificationMeta('createdAt');
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+      'created_at', aliasedName, false,
+      type: DriftSqlType.dateTime,
+      requiredDuringInsert: false,
+      defaultValue: currentDateAndTime);
+  @override
+  List<GeneratedColumn> get $columns => [
+        id,
+        saleDate,
+        customerName,
+        customerPhone,
+        description,
+        saleUnit,
+        quantityUnits,
+        totalBottles,
+        unitPrice,
+        totalAmount,
+        amountPaid,
+        balanceDue,
+        balancePayer,
+        initiatedByName,
+        initiatedByRole,
+        selectedBatchId,
+        createdAt
+      ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'local_yoghurt_sales';
+  @override
+  VerificationContext validateIntegrity(Insertable<LocalYoghurtSale> instance,
+      {bool isInserting = false}) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('sale_date')) {
+      context.handle(_saleDateMeta,
+          saleDate.isAcceptableOrUnknown(data['sale_date']!, _saleDateMeta));
+    } else if (isInserting) {
+      context.missing(_saleDateMeta);
+    }
+    if (data.containsKey('customer_name')) {
+      context.handle(
+          _customerNameMeta,
+          customerName.isAcceptableOrUnknown(
+              data['customer_name']!, _customerNameMeta));
+    } else if (isInserting) {
+      context.missing(_customerNameMeta);
+    }
+    if (data.containsKey('customer_phone')) {
+      context.handle(
+          _customerPhoneMeta,
+          customerPhone.isAcceptableOrUnknown(
+              data['customer_phone']!, _customerPhoneMeta));
+    }
+    if (data.containsKey('description')) {
+      context.handle(
+          _descriptionMeta,
+          description.isAcceptableOrUnknown(
+              data['description']!, _descriptionMeta));
+    }
+    if (data.containsKey('sale_unit')) {
+      context.handle(_saleUnitMeta,
+          saleUnit.isAcceptableOrUnknown(data['sale_unit']!, _saleUnitMeta));
+    } else if (isInserting) {
+      context.missing(_saleUnitMeta);
+    }
+    if (data.containsKey('quantity_units')) {
+      context.handle(
+          _quantityUnitsMeta,
+          quantityUnits.isAcceptableOrUnknown(
+              data['quantity_units']!, _quantityUnitsMeta));
+    } else if (isInserting) {
+      context.missing(_quantityUnitsMeta);
+    }
+    if (data.containsKey('total_bottles')) {
+      context.handle(
+          _totalBottlesMeta,
+          totalBottles.isAcceptableOrUnknown(
+              data['total_bottles']!, _totalBottlesMeta));
+    } else if (isInserting) {
+      context.missing(_totalBottlesMeta);
+    }
+    if (data.containsKey('unit_price')) {
+      context.handle(_unitPriceMeta,
+          unitPrice.isAcceptableOrUnknown(data['unit_price']!, _unitPriceMeta));
+    } else if (isInserting) {
+      context.missing(_unitPriceMeta);
+    }
+    if (data.containsKey('total_amount')) {
+      context.handle(
+          _totalAmountMeta,
+          totalAmount.isAcceptableOrUnknown(
+              data['total_amount']!, _totalAmountMeta));
+    } else if (isInserting) {
+      context.missing(_totalAmountMeta);
+    }
+    if (data.containsKey('amount_paid')) {
+      context.handle(
+          _amountPaidMeta,
+          amountPaid.isAcceptableOrUnknown(
+              data['amount_paid']!, _amountPaidMeta));
+    } else if (isInserting) {
+      context.missing(_amountPaidMeta);
+    }
+    if (data.containsKey('balance_due')) {
+      context.handle(
+          _balanceDueMeta,
+          balanceDue.isAcceptableOrUnknown(
+              data['balance_due']!, _balanceDueMeta));
+    }
+    if (data.containsKey('balance_payer')) {
+      context.handle(
+          _balancePayerMeta,
+          balancePayer.isAcceptableOrUnknown(
+              data['balance_payer']!, _balancePayerMeta));
+    } else if (isInserting) {
+      context.missing(_balancePayerMeta);
+    }
+    if (data.containsKey('initiated_by_name')) {
+      context.handle(
+          _initiatedByNameMeta,
+          initiatedByName.isAcceptableOrUnknown(
+              data['initiated_by_name']!, _initiatedByNameMeta));
+    } else if (isInserting) {
+      context.missing(_initiatedByNameMeta);
+    }
+    if (data.containsKey('initiated_by_role')) {
+      context.handle(
+          _initiatedByRoleMeta,
+          initiatedByRole.isAcceptableOrUnknown(
+              data['initiated_by_role']!, _initiatedByRoleMeta));
+    } else if (isInserting) {
+      context.missing(_initiatedByRoleMeta);
+    }
+    if (data.containsKey('selected_batch_id')) {
+      context.handle(
+          _selectedBatchIdMeta,
+          selectedBatchId.isAcceptableOrUnknown(
+              data['selected_batch_id']!, _selectedBatchIdMeta));
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(_createdAtMeta,
+          createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta));
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  LocalYoghurtSale map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return LocalYoghurtSale(
+      id: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}id'])!,
+      saleDate: attachedDatabase.typeMapping
+          .read(DriftSqlType.dateTime, data['${effectivePrefix}sale_date'])!,
+      customerName: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}customer_name'])!,
+      customerPhone: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}customer_phone']),
+      description: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}description']),
+      saleUnit: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}sale_unit'])!,
+      quantityUnits: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}quantity_units'])!,
+      totalBottles: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}total_bottles'])!,
+      unitPrice: attachedDatabase.typeMapping
+          .read(DriftSqlType.double, data['${effectivePrefix}unit_price'])!,
+      totalAmount: attachedDatabase.typeMapping
+          .read(DriftSqlType.double, data['${effectivePrefix}total_amount'])!,
+      amountPaid: attachedDatabase.typeMapping
+          .read(DriftSqlType.double, data['${effectivePrefix}amount_paid'])!,
+      balanceDue: attachedDatabase.typeMapping
+          .read(DriftSqlType.double, data['${effectivePrefix}balance_due'])!,
+      balancePayer: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}balance_payer'])!,
+      initiatedByName: attachedDatabase.typeMapping.read(
+          DriftSqlType.string, data['${effectivePrefix}initiated_by_name'])!,
+      initiatedByRole: attachedDatabase.typeMapping.read(
+          DriftSqlType.string, data['${effectivePrefix}initiated_by_role'])!,
+      selectedBatchId: attachedDatabase.typeMapping.read(
+          DriftSqlType.string, data['${effectivePrefix}selected_batch_id']),
+      createdAt: attachedDatabase.typeMapping
+          .read(DriftSqlType.dateTime, data['${effectivePrefix}created_at'])!,
+    );
+  }
+
+  @override
+  $LocalYoghurtSalesTable createAlias(String alias) {
+    return $LocalYoghurtSalesTable(attachedDatabase, alias);
+  }
+}
+
+class LocalYoghurtSale extends DataClass
+    implements Insertable<LocalYoghurtSale> {
+  final String id;
+  final DateTime saleDate;
+  final String customerName;
+  final String? customerPhone;
+  final String? description;
+  final String saleUnit;
+  final int quantityUnits;
+  final int totalBottles;
+  final double unitPrice;
+  final double totalAmount;
+  final double amountPaid;
+  final double balanceDue;
+  final String balancePayer;
+  final String initiatedByName;
+  final String initiatedByRole;
+  final String? selectedBatchId;
+  final DateTime createdAt;
+  const LocalYoghurtSale(
+      {required this.id,
+      required this.saleDate,
+      required this.customerName,
+      this.customerPhone,
+      this.description,
+      required this.saleUnit,
+      required this.quantityUnits,
+      required this.totalBottles,
+      required this.unitPrice,
+      required this.totalAmount,
+      required this.amountPaid,
+      required this.balanceDue,
+      required this.balancePayer,
+      required this.initiatedByName,
+      required this.initiatedByRole,
+      this.selectedBatchId,
+      required this.createdAt});
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['sale_date'] = Variable<DateTime>(saleDate);
+    map['customer_name'] = Variable<String>(customerName);
+    if (!nullToAbsent || customerPhone != null) {
+      map['customer_phone'] = Variable<String>(customerPhone);
+    }
+    if (!nullToAbsent || description != null) {
+      map['description'] = Variable<String>(description);
+    }
+    map['sale_unit'] = Variable<String>(saleUnit);
+    map['quantity_units'] = Variable<int>(quantityUnits);
+    map['total_bottles'] = Variable<int>(totalBottles);
+    map['unit_price'] = Variable<double>(unitPrice);
+    map['total_amount'] = Variable<double>(totalAmount);
+    map['amount_paid'] = Variable<double>(amountPaid);
+    map['balance_due'] = Variable<double>(balanceDue);
+    map['balance_payer'] = Variable<String>(balancePayer);
+    map['initiated_by_name'] = Variable<String>(initiatedByName);
+    map['initiated_by_role'] = Variable<String>(initiatedByRole);
+    if (!nullToAbsent || selectedBatchId != null) {
+      map['selected_batch_id'] = Variable<String>(selectedBatchId);
+    }
+    map['created_at'] = Variable<DateTime>(createdAt);
+    return map;
+  }
+
+  LocalYoghurtSalesCompanion toCompanion(bool nullToAbsent) {
+    return LocalYoghurtSalesCompanion(
+      id: Value(id),
+      saleDate: Value(saleDate),
+      customerName: Value(customerName),
+      customerPhone: customerPhone == null && nullToAbsent
+          ? const Value.absent()
+          : Value(customerPhone),
+      description: description == null && nullToAbsent
+          ? const Value.absent()
+          : Value(description),
+      saleUnit: Value(saleUnit),
+      quantityUnits: Value(quantityUnits),
+      totalBottles: Value(totalBottles),
+      unitPrice: Value(unitPrice),
+      totalAmount: Value(totalAmount),
+      amountPaid: Value(amountPaid),
+      balanceDue: Value(balanceDue),
+      balancePayer: Value(balancePayer),
+      initiatedByName: Value(initiatedByName),
+      initiatedByRole: Value(initiatedByRole),
+      selectedBatchId: selectedBatchId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(selectedBatchId),
+      createdAt: Value(createdAt),
+    );
+  }
+
+  factory LocalYoghurtSale.fromJson(Map<String, dynamic> json,
+      {ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return LocalYoghurtSale(
+      id: serializer.fromJson<String>(json['id']),
+      saleDate: serializer.fromJson<DateTime>(json['saleDate']),
+      customerName: serializer.fromJson<String>(json['customerName']),
+      customerPhone: serializer.fromJson<String?>(json['customerPhone']),
+      description: serializer.fromJson<String?>(json['description']),
+      saleUnit: serializer.fromJson<String>(json['saleUnit']),
+      quantityUnits: serializer.fromJson<int>(json['quantityUnits']),
+      totalBottles: serializer.fromJson<int>(json['totalBottles']),
+      unitPrice: serializer.fromJson<double>(json['unitPrice']),
+      totalAmount: serializer.fromJson<double>(json['totalAmount']),
+      amountPaid: serializer.fromJson<double>(json['amountPaid']),
+      balanceDue: serializer.fromJson<double>(json['balanceDue']),
+      balancePayer: serializer.fromJson<String>(json['balancePayer']),
+      initiatedByName: serializer.fromJson<String>(json['initiatedByName']),
+      initiatedByRole: serializer.fromJson<String>(json['initiatedByRole']),
+      selectedBatchId: serializer.fromJson<String?>(json['selectedBatchId']),
+      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'saleDate': serializer.toJson<DateTime>(saleDate),
+      'customerName': serializer.toJson<String>(customerName),
+      'customerPhone': serializer.toJson<String?>(customerPhone),
+      'description': serializer.toJson<String?>(description),
+      'saleUnit': serializer.toJson<String>(saleUnit),
+      'quantityUnits': serializer.toJson<int>(quantityUnits),
+      'totalBottles': serializer.toJson<int>(totalBottles),
+      'unitPrice': serializer.toJson<double>(unitPrice),
+      'totalAmount': serializer.toJson<double>(totalAmount),
+      'amountPaid': serializer.toJson<double>(amountPaid),
+      'balanceDue': serializer.toJson<double>(balanceDue),
+      'balancePayer': serializer.toJson<String>(balancePayer),
+      'initiatedByName': serializer.toJson<String>(initiatedByName),
+      'initiatedByRole': serializer.toJson<String>(initiatedByRole),
+      'selectedBatchId': serializer.toJson<String?>(selectedBatchId),
+      'createdAt': serializer.toJson<DateTime>(createdAt),
+    };
+  }
+
+  LocalYoghurtSale copyWith(
+          {String? id,
+          DateTime? saleDate,
+          String? customerName,
+          Value<String?> customerPhone = const Value.absent(),
+          Value<String?> description = const Value.absent(),
+          String? saleUnit,
+          int? quantityUnits,
+          int? totalBottles,
+          double? unitPrice,
+          double? totalAmount,
+          double? amountPaid,
+          double? balanceDue,
+          String? balancePayer,
+          String? initiatedByName,
+          String? initiatedByRole,
+          Value<String?> selectedBatchId = const Value.absent(),
+          DateTime? createdAt}) =>
+      LocalYoghurtSale(
+        id: id ?? this.id,
+        saleDate: saleDate ?? this.saleDate,
+        customerName: customerName ?? this.customerName,
+        customerPhone:
+            customerPhone.present ? customerPhone.value : this.customerPhone,
+        description: description.present ? description.value : this.description,
+        saleUnit: saleUnit ?? this.saleUnit,
+        quantityUnits: quantityUnits ?? this.quantityUnits,
+        totalBottles: totalBottles ?? this.totalBottles,
+        unitPrice: unitPrice ?? this.unitPrice,
+        totalAmount: totalAmount ?? this.totalAmount,
+        amountPaid: amountPaid ?? this.amountPaid,
+        balanceDue: balanceDue ?? this.balanceDue,
+        balancePayer: balancePayer ?? this.balancePayer,
+        initiatedByName: initiatedByName ?? this.initiatedByName,
+        initiatedByRole: initiatedByRole ?? this.initiatedByRole,
+        selectedBatchId: selectedBatchId.present
+            ? selectedBatchId.value
+            : this.selectedBatchId,
+        createdAt: createdAt ?? this.createdAt,
+      );
+  LocalYoghurtSale copyWithCompanion(LocalYoghurtSalesCompanion data) {
+    return LocalYoghurtSale(
+      id: data.id.present ? data.id.value : this.id,
+      saleDate: data.saleDate.present ? data.saleDate.value : this.saleDate,
+      customerName: data.customerName.present
+          ? data.customerName.value
+          : this.customerName,
+      customerPhone: data.customerPhone.present
+          ? data.customerPhone.value
+          : this.customerPhone,
+      description:
+          data.description.present ? data.description.value : this.description,
+      saleUnit: data.saleUnit.present ? data.saleUnit.value : this.saleUnit,
+      quantityUnits: data.quantityUnits.present
+          ? data.quantityUnits.value
+          : this.quantityUnits,
+      totalBottles: data.totalBottles.present
+          ? data.totalBottles.value
+          : this.totalBottles,
+      unitPrice: data.unitPrice.present ? data.unitPrice.value : this.unitPrice,
+      totalAmount:
+          data.totalAmount.present ? data.totalAmount.value : this.totalAmount,
+      amountPaid:
+          data.amountPaid.present ? data.amountPaid.value : this.amountPaid,
+      balanceDue:
+          data.balanceDue.present ? data.balanceDue.value : this.balanceDue,
+      balancePayer: data.balancePayer.present
+          ? data.balancePayer.value
+          : this.balancePayer,
+      initiatedByName: data.initiatedByName.present
+          ? data.initiatedByName.value
+          : this.initiatedByName,
+      initiatedByRole: data.initiatedByRole.present
+          ? data.initiatedByRole.value
+          : this.initiatedByRole,
+      selectedBatchId: data.selectedBatchId.present
+          ? data.selectedBatchId.value
+          : this.selectedBatchId,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('LocalYoghurtSale(')
+          ..write('id: $id, ')
+          ..write('saleDate: $saleDate, ')
+          ..write('customerName: $customerName, ')
+          ..write('customerPhone: $customerPhone, ')
+          ..write('description: $description, ')
+          ..write('saleUnit: $saleUnit, ')
+          ..write('quantityUnits: $quantityUnits, ')
+          ..write('totalBottles: $totalBottles, ')
+          ..write('unitPrice: $unitPrice, ')
+          ..write('totalAmount: $totalAmount, ')
+          ..write('amountPaid: $amountPaid, ')
+          ..write('balanceDue: $balanceDue, ')
+          ..write('balancePayer: $balancePayer, ')
+          ..write('initiatedByName: $initiatedByName, ')
+          ..write('initiatedByRole: $initiatedByRole, ')
+          ..write('selectedBatchId: $selectedBatchId, ')
+          ..write('createdAt: $createdAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+      id,
+      saleDate,
+      customerName,
+      customerPhone,
+      description,
+      saleUnit,
+      quantityUnits,
+      totalBottles,
+      unitPrice,
+      totalAmount,
+      amountPaid,
+      balanceDue,
+      balancePayer,
+      initiatedByName,
+      initiatedByRole,
+      selectedBatchId,
+      createdAt);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is LocalYoghurtSale &&
+          other.id == this.id &&
+          other.saleDate == this.saleDate &&
+          other.customerName == this.customerName &&
+          other.customerPhone == this.customerPhone &&
+          other.description == this.description &&
+          other.saleUnit == this.saleUnit &&
+          other.quantityUnits == this.quantityUnits &&
+          other.totalBottles == this.totalBottles &&
+          other.unitPrice == this.unitPrice &&
+          other.totalAmount == this.totalAmount &&
+          other.amountPaid == this.amountPaid &&
+          other.balanceDue == this.balanceDue &&
+          other.balancePayer == this.balancePayer &&
+          other.initiatedByName == this.initiatedByName &&
+          other.initiatedByRole == this.initiatedByRole &&
+          other.selectedBatchId == this.selectedBatchId &&
+          other.createdAt == this.createdAt);
+}
+
+class LocalYoghurtSalesCompanion extends UpdateCompanion<LocalYoghurtSale> {
+  final Value<String> id;
+  final Value<DateTime> saleDate;
+  final Value<String> customerName;
+  final Value<String?> customerPhone;
+  final Value<String?> description;
+  final Value<String> saleUnit;
+  final Value<int> quantityUnits;
+  final Value<int> totalBottles;
+  final Value<double> unitPrice;
+  final Value<double> totalAmount;
+  final Value<double> amountPaid;
+  final Value<double> balanceDue;
+  final Value<String> balancePayer;
+  final Value<String> initiatedByName;
+  final Value<String> initiatedByRole;
+  final Value<String?> selectedBatchId;
+  final Value<DateTime> createdAt;
+  final Value<int> rowid;
+  const LocalYoghurtSalesCompanion({
+    this.id = const Value.absent(),
+    this.saleDate = const Value.absent(),
+    this.customerName = const Value.absent(),
+    this.customerPhone = const Value.absent(),
+    this.description = const Value.absent(),
+    this.saleUnit = const Value.absent(),
+    this.quantityUnits = const Value.absent(),
+    this.totalBottles = const Value.absent(),
+    this.unitPrice = const Value.absent(),
+    this.totalAmount = const Value.absent(),
+    this.amountPaid = const Value.absent(),
+    this.balanceDue = const Value.absent(),
+    this.balancePayer = const Value.absent(),
+    this.initiatedByName = const Value.absent(),
+    this.initiatedByRole = const Value.absent(),
+    this.selectedBatchId = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  LocalYoghurtSalesCompanion.insert({
+    required String id,
+    required DateTime saleDate,
+    required String customerName,
+    this.customerPhone = const Value.absent(),
+    this.description = const Value.absent(),
+    required String saleUnit,
+    required int quantityUnits,
+    required int totalBottles,
+    required double unitPrice,
+    required double totalAmount,
+    required double amountPaid,
+    this.balanceDue = const Value.absent(),
+    required String balancePayer,
+    required String initiatedByName,
+    required String initiatedByRole,
+    this.selectedBatchId = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  })  : id = Value(id),
+        saleDate = Value(saleDate),
+        customerName = Value(customerName),
+        saleUnit = Value(saleUnit),
+        quantityUnits = Value(quantityUnits),
+        totalBottles = Value(totalBottles),
+        unitPrice = Value(unitPrice),
+        totalAmount = Value(totalAmount),
+        amountPaid = Value(amountPaid),
+        balancePayer = Value(balancePayer),
+        initiatedByName = Value(initiatedByName),
+        initiatedByRole = Value(initiatedByRole);
+  static Insertable<LocalYoghurtSale> custom({
+    Expression<String>? id,
+    Expression<DateTime>? saleDate,
+    Expression<String>? customerName,
+    Expression<String>? customerPhone,
+    Expression<String>? description,
+    Expression<String>? saleUnit,
+    Expression<int>? quantityUnits,
+    Expression<int>? totalBottles,
+    Expression<double>? unitPrice,
+    Expression<double>? totalAmount,
+    Expression<double>? amountPaid,
+    Expression<double>? balanceDue,
+    Expression<String>? balancePayer,
+    Expression<String>? initiatedByName,
+    Expression<String>? initiatedByRole,
+    Expression<String>? selectedBatchId,
+    Expression<DateTime>? createdAt,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (saleDate != null) 'sale_date': saleDate,
+      if (customerName != null) 'customer_name': customerName,
+      if (customerPhone != null) 'customer_phone': customerPhone,
+      if (description != null) 'description': description,
+      if (saleUnit != null) 'sale_unit': saleUnit,
+      if (quantityUnits != null) 'quantity_units': quantityUnits,
+      if (totalBottles != null) 'total_bottles': totalBottles,
+      if (unitPrice != null) 'unit_price': unitPrice,
+      if (totalAmount != null) 'total_amount': totalAmount,
+      if (amountPaid != null) 'amount_paid': amountPaid,
+      if (balanceDue != null) 'balance_due': balanceDue,
+      if (balancePayer != null) 'balance_payer': balancePayer,
+      if (initiatedByName != null) 'initiated_by_name': initiatedByName,
+      if (initiatedByRole != null) 'initiated_by_role': initiatedByRole,
+      if (selectedBatchId != null) 'selected_batch_id': selectedBatchId,
+      if (createdAt != null) 'created_at': createdAt,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  LocalYoghurtSalesCompanion copyWith(
+      {Value<String>? id,
+      Value<DateTime>? saleDate,
+      Value<String>? customerName,
+      Value<String?>? customerPhone,
+      Value<String?>? description,
+      Value<String>? saleUnit,
+      Value<int>? quantityUnits,
+      Value<int>? totalBottles,
+      Value<double>? unitPrice,
+      Value<double>? totalAmount,
+      Value<double>? amountPaid,
+      Value<double>? balanceDue,
+      Value<String>? balancePayer,
+      Value<String>? initiatedByName,
+      Value<String>? initiatedByRole,
+      Value<String?>? selectedBatchId,
+      Value<DateTime>? createdAt,
+      Value<int>? rowid}) {
+    return LocalYoghurtSalesCompanion(
+      id: id ?? this.id,
+      saleDate: saleDate ?? this.saleDate,
+      customerName: customerName ?? this.customerName,
+      customerPhone: customerPhone ?? this.customerPhone,
+      description: description ?? this.description,
+      saleUnit: saleUnit ?? this.saleUnit,
+      quantityUnits: quantityUnits ?? this.quantityUnits,
+      totalBottles: totalBottles ?? this.totalBottles,
+      unitPrice: unitPrice ?? this.unitPrice,
+      totalAmount: totalAmount ?? this.totalAmount,
+      amountPaid: amountPaid ?? this.amountPaid,
+      balanceDue: balanceDue ?? this.balanceDue,
+      balancePayer: balancePayer ?? this.balancePayer,
+      initiatedByName: initiatedByName ?? this.initiatedByName,
+      initiatedByRole: initiatedByRole ?? this.initiatedByRole,
+      selectedBatchId: selectedBatchId ?? this.selectedBatchId,
+      createdAt: createdAt ?? this.createdAt,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (saleDate.present) {
+      map['sale_date'] = Variable<DateTime>(saleDate.value);
+    }
+    if (customerName.present) {
+      map['customer_name'] = Variable<String>(customerName.value);
+    }
+    if (customerPhone.present) {
+      map['customer_phone'] = Variable<String>(customerPhone.value);
+    }
+    if (description.present) {
+      map['description'] = Variable<String>(description.value);
+    }
+    if (saleUnit.present) {
+      map['sale_unit'] = Variable<String>(saleUnit.value);
+    }
+    if (quantityUnits.present) {
+      map['quantity_units'] = Variable<int>(quantityUnits.value);
+    }
+    if (totalBottles.present) {
+      map['total_bottles'] = Variable<int>(totalBottles.value);
+    }
+    if (unitPrice.present) {
+      map['unit_price'] = Variable<double>(unitPrice.value);
+    }
+    if (totalAmount.present) {
+      map['total_amount'] = Variable<double>(totalAmount.value);
+    }
+    if (amountPaid.present) {
+      map['amount_paid'] = Variable<double>(amountPaid.value);
+    }
+    if (balanceDue.present) {
+      map['balance_due'] = Variable<double>(balanceDue.value);
+    }
+    if (balancePayer.present) {
+      map['balance_payer'] = Variable<String>(balancePayer.value);
+    }
+    if (initiatedByName.present) {
+      map['initiated_by_name'] = Variable<String>(initiatedByName.value);
+    }
+    if (initiatedByRole.present) {
+      map['initiated_by_role'] = Variable<String>(initiatedByRole.value);
+    }
+    if (selectedBatchId.present) {
+      map['selected_batch_id'] = Variable<String>(selectedBatchId.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('LocalYoghurtSalesCompanion(')
+          ..write('id: $id, ')
+          ..write('saleDate: $saleDate, ')
+          ..write('customerName: $customerName, ')
+          ..write('customerPhone: $customerPhone, ')
+          ..write('description: $description, ')
+          ..write('saleUnit: $saleUnit, ')
+          ..write('quantityUnits: $quantityUnits, ')
+          ..write('totalBottles: $totalBottles, ')
+          ..write('unitPrice: $unitPrice, ')
+          ..write('totalAmount: $totalAmount, ')
+          ..write('amountPaid: $amountPaid, ')
+          ..write('balanceDue: $balanceDue, ')
+          ..write('balancePayer: $balancePayer, ')
+          ..write('initiatedByName: $initiatedByName, ')
+          ..write('initiatedByRole: $initiatedByRole, ')
+          ..write('selectedBatchId: $selectedBatchId, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $LocalYoghurtReturnsTable extends LocalYoghurtReturns
+    with TableInfo<$LocalYoghurtReturnsTable, LocalYoghurtReturn> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $LocalYoghurtReturnsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+      'id', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _returnDateMeta =
+      const VerificationMeta('returnDate');
+  @override
+  late final GeneratedColumn<DateTime> returnDate = GeneratedColumn<DateTime>(
+      'return_date', aliasedName, false,
+      type: DriftSqlType.dateTime, requiredDuringInsert: true);
+  static const VerificationMeta _customerNameMeta =
+      const VerificationMeta('customerName');
+  @override
+  late final GeneratedColumn<String> customerName = GeneratedColumn<String>(
+      'customer_name', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _descriptionMeta =
+      const VerificationMeta('description');
+  @override
+  late final GeneratedColumn<String> description = GeneratedColumn<String>(
+      'description', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _initialBoughtBottlesMeta =
+      const VerificationMeta('initialBoughtBottles');
+  @override
+  late final GeneratedColumn<int> initialBoughtBottles = GeneratedColumn<int>(
+      'initial_bought_bottles', aliasedName, false,
+      type: DriftSqlType.int, requiredDuringInsert: true);
+  static const VerificationMeta _returnedBottlesMeta =
+      const VerificationMeta('returnedBottles');
+  @override
+  late final GeneratedColumn<int> returnedBottles = GeneratedColumn<int>(
+      'returned_bottles', aliasedName, false,
+      type: DriftSqlType.int, requiredDuringInsert: true);
+  static const VerificationMeta _replacedBottlesMeta =
+      const VerificationMeta('replacedBottles');
+  @override
+  late final GeneratedColumn<int> replacedBottles = GeneratedColumn<int>(
+      'replaced_bottles', aliasedName, false,
+      type: DriftSqlType.int, requiredDuringInsert: true);
+  static const VerificationMeta _processedByNameMeta =
+      const VerificationMeta('processedByName');
+  @override
+  late final GeneratedColumn<String> processedByName = GeneratedColumn<String>(
+      'processed_by_name', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _processedByRoleMeta =
+      const VerificationMeta('processedByRole');
+  @override
+  late final GeneratedColumn<String> processedByRole = GeneratedColumn<String>(
+      'processed_by_role', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _selectedBatchIdMeta =
+      const VerificationMeta('selectedBatchId');
+  @override
+  late final GeneratedColumn<String> selectedBatchId = GeneratedColumn<String>(
+      'selected_batch_id', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _createdAtMeta =
+      const VerificationMeta('createdAt');
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+      'created_at', aliasedName, false,
+      type: DriftSqlType.dateTime,
+      requiredDuringInsert: false,
+      defaultValue: currentDateAndTime);
+  @override
+  List<GeneratedColumn> get $columns => [
+        id,
+        returnDate,
+        customerName,
+        description,
+        initialBoughtBottles,
+        returnedBottles,
+        replacedBottles,
+        processedByName,
+        processedByRole,
+        selectedBatchId,
+        createdAt
+      ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'local_yoghurt_returns';
+  @override
+  VerificationContext validateIntegrity(Insertable<LocalYoghurtReturn> instance,
+      {bool isInserting = false}) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('return_date')) {
+      context.handle(
+          _returnDateMeta,
+          returnDate.isAcceptableOrUnknown(
+              data['return_date']!, _returnDateMeta));
+    } else if (isInserting) {
+      context.missing(_returnDateMeta);
+    }
+    if (data.containsKey('customer_name')) {
+      context.handle(
+          _customerNameMeta,
+          customerName.isAcceptableOrUnknown(
+              data['customer_name']!, _customerNameMeta));
+    } else if (isInserting) {
+      context.missing(_customerNameMeta);
+    }
+    if (data.containsKey('description')) {
+      context.handle(
+          _descriptionMeta,
+          description.isAcceptableOrUnknown(
+              data['description']!, _descriptionMeta));
+    }
+    if (data.containsKey('initial_bought_bottles')) {
+      context.handle(
+          _initialBoughtBottlesMeta,
+          initialBoughtBottles.isAcceptableOrUnknown(
+              data['initial_bought_bottles']!, _initialBoughtBottlesMeta));
+    } else if (isInserting) {
+      context.missing(_initialBoughtBottlesMeta);
+    }
+    if (data.containsKey('returned_bottles')) {
+      context.handle(
+          _returnedBottlesMeta,
+          returnedBottles.isAcceptableOrUnknown(
+              data['returned_bottles']!, _returnedBottlesMeta));
+    } else if (isInserting) {
+      context.missing(_returnedBottlesMeta);
+    }
+    if (data.containsKey('replaced_bottles')) {
+      context.handle(
+          _replacedBottlesMeta,
+          replacedBottles.isAcceptableOrUnknown(
+              data['replaced_bottles']!, _replacedBottlesMeta));
+    } else if (isInserting) {
+      context.missing(_replacedBottlesMeta);
+    }
+    if (data.containsKey('processed_by_name')) {
+      context.handle(
+          _processedByNameMeta,
+          processedByName.isAcceptableOrUnknown(
+              data['processed_by_name']!, _processedByNameMeta));
+    } else if (isInserting) {
+      context.missing(_processedByNameMeta);
+    }
+    if (data.containsKey('processed_by_role')) {
+      context.handle(
+          _processedByRoleMeta,
+          processedByRole.isAcceptableOrUnknown(
+              data['processed_by_role']!, _processedByRoleMeta));
+    } else if (isInserting) {
+      context.missing(_processedByRoleMeta);
+    }
+    if (data.containsKey('selected_batch_id')) {
+      context.handle(
+          _selectedBatchIdMeta,
+          selectedBatchId.isAcceptableOrUnknown(
+              data['selected_batch_id']!, _selectedBatchIdMeta));
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(_createdAtMeta,
+          createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta));
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  LocalYoghurtReturn map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return LocalYoghurtReturn(
+      id: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}id'])!,
+      returnDate: attachedDatabase.typeMapping
+          .read(DriftSqlType.dateTime, data['${effectivePrefix}return_date'])!,
+      customerName: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}customer_name'])!,
+      description: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}description']),
+      initialBoughtBottles: attachedDatabase.typeMapping.read(
+          DriftSqlType.int, data['${effectivePrefix}initial_bought_bottles'])!,
+      returnedBottles: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}returned_bottles'])!,
+      replacedBottles: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}replaced_bottles'])!,
+      processedByName: attachedDatabase.typeMapping.read(
+          DriftSqlType.string, data['${effectivePrefix}processed_by_name'])!,
+      processedByRole: attachedDatabase.typeMapping.read(
+          DriftSqlType.string, data['${effectivePrefix}processed_by_role'])!,
+      selectedBatchId: attachedDatabase.typeMapping.read(
+          DriftSqlType.string, data['${effectivePrefix}selected_batch_id']),
+      createdAt: attachedDatabase.typeMapping
+          .read(DriftSqlType.dateTime, data['${effectivePrefix}created_at'])!,
+    );
+  }
+
+  @override
+  $LocalYoghurtReturnsTable createAlias(String alias) {
+    return $LocalYoghurtReturnsTable(attachedDatabase, alias);
+  }
+}
+
+class LocalYoghurtReturn extends DataClass
+    implements Insertable<LocalYoghurtReturn> {
+  final String id;
+  final DateTime returnDate;
+  final String customerName;
+  final String? description;
+  final int initialBoughtBottles;
+  final int returnedBottles;
+  final int replacedBottles;
+  final String processedByName;
+  final String processedByRole;
+  final String? selectedBatchId;
+  final DateTime createdAt;
+  const LocalYoghurtReturn(
+      {required this.id,
+      required this.returnDate,
+      required this.customerName,
+      this.description,
+      required this.initialBoughtBottles,
+      required this.returnedBottles,
+      required this.replacedBottles,
+      required this.processedByName,
+      required this.processedByRole,
+      this.selectedBatchId,
+      required this.createdAt});
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['return_date'] = Variable<DateTime>(returnDate);
+    map['customer_name'] = Variable<String>(customerName);
+    if (!nullToAbsent || description != null) {
+      map['description'] = Variable<String>(description);
+    }
+    map['initial_bought_bottles'] = Variable<int>(initialBoughtBottles);
+    map['returned_bottles'] = Variable<int>(returnedBottles);
+    map['replaced_bottles'] = Variable<int>(replacedBottles);
+    map['processed_by_name'] = Variable<String>(processedByName);
+    map['processed_by_role'] = Variable<String>(processedByRole);
+    if (!nullToAbsent || selectedBatchId != null) {
+      map['selected_batch_id'] = Variable<String>(selectedBatchId);
+    }
+    map['created_at'] = Variable<DateTime>(createdAt);
+    return map;
+  }
+
+  LocalYoghurtReturnsCompanion toCompanion(bool nullToAbsent) {
+    return LocalYoghurtReturnsCompanion(
+      id: Value(id),
+      returnDate: Value(returnDate),
+      customerName: Value(customerName),
+      description: description == null && nullToAbsent
+          ? const Value.absent()
+          : Value(description),
+      initialBoughtBottles: Value(initialBoughtBottles),
+      returnedBottles: Value(returnedBottles),
+      replacedBottles: Value(replacedBottles),
+      processedByName: Value(processedByName),
+      processedByRole: Value(processedByRole),
+      selectedBatchId: selectedBatchId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(selectedBatchId),
+      createdAt: Value(createdAt),
+    );
+  }
+
+  factory LocalYoghurtReturn.fromJson(Map<String, dynamic> json,
+      {ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return LocalYoghurtReturn(
+      id: serializer.fromJson<String>(json['id']),
+      returnDate: serializer.fromJson<DateTime>(json['returnDate']),
+      customerName: serializer.fromJson<String>(json['customerName']),
+      description: serializer.fromJson<String?>(json['description']),
+      initialBoughtBottles:
+          serializer.fromJson<int>(json['initialBoughtBottles']),
+      returnedBottles: serializer.fromJson<int>(json['returnedBottles']),
+      replacedBottles: serializer.fromJson<int>(json['replacedBottles']),
+      processedByName: serializer.fromJson<String>(json['processedByName']),
+      processedByRole: serializer.fromJson<String>(json['processedByRole']),
+      selectedBatchId: serializer.fromJson<String?>(json['selectedBatchId']),
+      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'returnDate': serializer.toJson<DateTime>(returnDate),
+      'customerName': serializer.toJson<String>(customerName),
+      'description': serializer.toJson<String?>(description),
+      'initialBoughtBottles': serializer.toJson<int>(initialBoughtBottles),
+      'returnedBottles': serializer.toJson<int>(returnedBottles),
+      'replacedBottles': serializer.toJson<int>(replacedBottles),
+      'processedByName': serializer.toJson<String>(processedByName),
+      'processedByRole': serializer.toJson<String>(processedByRole),
+      'selectedBatchId': serializer.toJson<String?>(selectedBatchId),
+      'createdAt': serializer.toJson<DateTime>(createdAt),
+    };
+  }
+
+  LocalYoghurtReturn copyWith(
+          {String? id,
+          DateTime? returnDate,
+          String? customerName,
+          Value<String?> description = const Value.absent(),
+          int? initialBoughtBottles,
+          int? returnedBottles,
+          int? replacedBottles,
+          String? processedByName,
+          String? processedByRole,
+          Value<String?> selectedBatchId = const Value.absent(),
+          DateTime? createdAt}) =>
+      LocalYoghurtReturn(
+        id: id ?? this.id,
+        returnDate: returnDate ?? this.returnDate,
+        customerName: customerName ?? this.customerName,
+        description: description.present ? description.value : this.description,
+        initialBoughtBottles: initialBoughtBottles ?? this.initialBoughtBottles,
+        returnedBottles: returnedBottles ?? this.returnedBottles,
+        replacedBottles: replacedBottles ?? this.replacedBottles,
+        processedByName: processedByName ?? this.processedByName,
+        processedByRole: processedByRole ?? this.processedByRole,
+        selectedBatchId: selectedBatchId.present
+            ? selectedBatchId.value
+            : this.selectedBatchId,
+        createdAt: createdAt ?? this.createdAt,
+      );
+  LocalYoghurtReturn copyWithCompanion(LocalYoghurtReturnsCompanion data) {
+    return LocalYoghurtReturn(
+      id: data.id.present ? data.id.value : this.id,
+      returnDate:
+          data.returnDate.present ? data.returnDate.value : this.returnDate,
+      customerName: data.customerName.present
+          ? data.customerName.value
+          : this.customerName,
+      description:
+          data.description.present ? data.description.value : this.description,
+      initialBoughtBottles: data.initialBoughtBottles.present
+          ? data.initialBoughtBottles.value
+          : this.initialBoughtBottles,
+      returnedBottles: data.returnedBottles.present
+          ? data.returnedBottles.value
+          : this.returnedBottles,
+      replacedBottles: data.replacedBottles.present
+          ? data.replacedBottles.value
+          : this.replacedBottles,
+      processedByName: data.processedByName.present
+          ? data.processedByName.value
+          : this.processedByName,
+      processedByRole: data.processedByRole.present
+          ? data.processedByRole.value
+          : this.processedByRole,
+      selectedBatchId: data.selectedBatchId.present
+          ? data.selectedBatchId.value
+          : this.selectedBatchId,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('LocalYoghurtReturn(')
+          ..write('id: $id, ')
+          ..write('returnDate: $returnDate, ')
+          ..write('customerName: $customerName, ')
+          ..write('description: $description, ')
+          ..write('initialBoughtBottles: $initialBoughtBottles, ')
+          ..write('returnedBottles: $returnedBottles, ')
+          ..write('replacedBottles: $replacedBottles, ')
+          ..write('processedByName: $processedByName, ')
+          ..write('processedByRole: $processedByRole, ')
+          ..write('selectedBatchId: $selectedBatchId, ')
+          ..write('createdAt: $createdAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+      id,
+      returnDate,
+      customerName,
+      description,
+      initialBoughtBottles,
+      returnedBottles,
+      replacedBottles,
+      processedByName,
+      processedByRole,
+      selectedBatchId,
+      createdAt);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is LocalYoghurtReturn &&
+          other.id == this.id &&
+          other.returnDate == this.returnDate &&
+          other.customerName == this.customerName &&
+          other.description == this.description &&
+          other.initialBoughtBottles == this.initialBoughtBottles &&
+          other.returnedBottles == this.returnedBottles &&
+          other.replacedBottles == this.replacedBottles &&
+          other.processedByName == this.processedByName &&
+          other.processedByRole == this.processedByRole &&
+          other.selectedBatchId == this.selectedBatchId &&
+          other.createdAt == this.createdAt);
+}
+
+class LocalYoghurtReturnsCompanion extends UpdateCompanion<LocalYoghurtReturn> {
+  final Value<String> id;
+  final Value<DateTime> returnDate;
+  final Value<String> customerName;
+  final Value<String?> description;
+  final Value<int> initialBoughtBottles;
+  final Value<int> returnedBottles;
+  final Value<int> replacedBottles;
+  final Value<String> processedByName;
+  final Value<String> processedByRole;
+  final Value<String?> selectedBatchId;
+  final Value<DateTime> createdAt;
+  final Value<int> rowid;
+  const LocalYoghurtReturnsCompanion({
+    this.id = const Value.absent(),
+    this.returnDate = const Value.absent(),
+    this.customerName = const Value.absent(),
+    this.description = const Value.absent(),
+    this.initialBoughtBottles = const Value.absent(),
+    this.returnedBottles = const Value.absent(),
+    this.replacedBottles = const Value.absent(),
+    this.processedByName = const Value.absent(),
+    this.processedByRole = const Value.absent(),
+    this.selectedBatchId = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  LocalYoghurtReturnsCompanion.insert({
+    required String id,
+    required DateTime returnDate,
+    required String customerName,
+    this.description = const Value.absent(),
+    required int initialBoughtBottles,
+    required int returnedBottles,
+    required int replacedBottles,
+    required String processedByName,
+    required String processedByRole,
+    this.selectedBatchId = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  })  : id = Value(id),
+        returnDate = Value(returnDate),
+        customerName = Value(customerName),
+        initialBoughtBottles = Value(initialBoughtBottles),
+        returnedBottles = Value(returnedBottles),
+        replacedBottles = Value(replacedBottles),
+        processedByName = Value(processedByName),
+        processedByRole = Value(processedByRole);
+  static Insertable<LocalYoghurtReturn> custom({
+    Expression<String>? id,
+    Expression<DateTime>? returnDate,
+    Expression<String>? customerName,
+    Expression<String>? description,
+    Expression<int>? initialBoughtBottles,
+    Expression<int>? returnedBottles,
+    Expression<int>? replacedBottles,
+    Expression<String>? processedByName,
+    Expression<String>? processedByRole,
+    Expression<String>? selectedBatchId,
+    Expression<DateTime>? createdAt,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (returnDate != null) 'return_date': returnDate,
+      if (customerName != null) 'customer_name': customerName,
+      if (description != null) 'description': description,
+      if (initialBoughtBottles != null)
+        'initial_bought_bottles': initialBoughtBottles,
+      if (returnedBottles != null) 'returned_bottles': returnedBottles,
+      if (replacedBottles != null) 'replaced_bottles': replacedBottles,
+      if (processedByName != null) 'processed_by_name': processedByName,
+      if (processedByRole != null) 'processed_by_role': processedByRole,
+      if (selectedBatchId != null) 'selected_batch_id': selectedBatchId,
+      if (createdAt != null) 'created_at': createdAt,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  LocalYoghurtReturnsCompanion copyWith(
+      {Value<String>? id,
+      Value<DateTime>? returnDate,
+      Value<String>? customerName,
+      Value<String?>? description,
+      Value<int>? initialBoughtBottles,
+      Value<int>? returnedBottles,
+      Value<int>? replacedBottles,
+      Value<String>? processedByName,
+      Value<String>? processedByRole,
+      Value<String?>? selectedBatchId,
+      Value<DateTime>? createdAt,
+      Value<int>? rowid}) {
+    return LocalYoghurtReturnsCompanion(
+      id: id ?? this.id,
+      returnDate: returnDate ?? this.returnDate,
+      customerName: customerName ?? this.customerName,
+      description: description ?? this.description,
+      initialBoughtBottles: initialBoughtBottles ?? this.initialBoughtBottles,
+      returnedBottles: returnedBottles ?? this.returnedBottles,
+      replacedBottles: replacedBottles ?? this.replacedBottles,
+      processedByName: processedByName ?? this.processedByName,
+      processedByRole: processedByRole ?? this.processedByRole,
+      selectedBatchId: selectedBatchId ?? this.selectedBatchId,
+      createdAt: createdAt ?? this.createdAt,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (returnDate.present) {
+      map['return_date'] = Variable<DateTime>(returnDate.value);
+    }
+    if (customerName.present) {
+      map['customer_name'] = Variable<String>(customerName.value);
+    }
+    if (description.present) {
+      map['description'] = Variable<String>(description.value);
+    }
+    if (initialBoughtBottles.present) {
+      map['initial_bought_bottles'] = Variable<int>(initialBoughtBottles.value);
+    }
+    if (returnedBottles.present) {
+      map['returned_bottles'] = Variable<int>(returnedBottles.value);
+    }
+    if (replacedBottles.present) {
+      map['replaced_bottles'] = Variable<int>(replacedBottles.value);
+    }
+    if (processedByName.present) {
+      map['processed_by_name'] = Variable<String>(processedByName.value);
+    }
+    if (processedByRole.present) {
+      map['processed_by_role'] = Variable<String>(processedByRole.value);
+    }
+    if (selectedBatchId.present) {
+      map['selected_batch_id'] = Variable<String>(selectedBatchId.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('LocalYoghurtReturnsCompanion(')
+          ..write('id: $id, ')
+          ..write('returnDate: $returnDate, ')
+          ..write('customerName: $customerName, ')
+          ..write('description: $description, ')
+          ..write('initialBoughtBottles: $initialBoughtBottles, ')
+          ..write('returnedBottles: $returnedBottles, ')
+          ..write('replacedBottles: $replacedBottles, ')
+          ..write('processedByName: $processedByName, ')
+          ..write('processedByRole: $processedByRole, ')
+          ..write('selectedBatchId: $selectedBatchId, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $LocalYoghurtExpensesTable extends LocalYoghurtExpenses
+    with TableInfo<$LocalYoghurtExpensesTable, LocalYoghurtExpense> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $LocalYoghurtExpensesTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+      'id', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _expenseDateMeta =
+      const VerificationMeta('expenseDate');
+  @override
+  late final GeneratedColumn<DateTime> expenseDate = GeneratedColumn<DateTime>(
+      'expense_date', aliasedName, false,
+      type: DriftSqlType.dateTime, requiredDuringInsert: true);
+  static const VerificationMeta _descriptionMeta =
+      const VerificationMeta('description');
+  @override
+  late final GeneratedColumn<String> description = GeneratedColumn<String>(
+      'description', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _categoryMeta =
+      const VerificationMeta('category');
+  @override
+  late final GeneratedColumn<String> category = GeneratedColumn<String>(
+      'category', aliasedName, false,
+      type: DriftSqlType.string,
+      requiredDuringInsert: false,
+      defaultValue: const Constant('other'));
+  static const VerificationMeta _amountMeta = const VerificationMeta('amount');
+  @override
+  late final GeneratedColumn<double> amount = GeneratedColumn<double>(
+      'amount', aliasedName, false,
+      type: DriftSqlType.double, requiredDuringInsert: true);
+  static const VerificationMeta _processedByNameMeta =
+      const VerificationMeta('processedByName');
+  @override
+  late final GeneratedColumn<String> processedByName = GeneratedColumn<String>(
+      'processed_by_name', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _processedByRoleMeta =
+      const VerificationMeta('processedByRole');
+  @override
+  late final GeneratedColumn<String> processedByRole = GeneratedColumn<String>(
+      'processed_by_role', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _createdAtMeta =
+      const VerificationMeta('createdAt');
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+      'created_at', aliasedName, false,
+      type: DriftSqlType.dateTime,
+      requiredDuringInsert: false,
+      defaultValue: currentDateAndTime);
+  @override
+  List<GeneratedColumn> get $columns => [
+        id,
+        expenseDate,
+        description,
+        category,
+        amount,
+        processedByName,
+        processedByRole,
+        createdAt
+      ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'local_yoghurt_expenses';
+  @override
+  VerificationContext validateIntegrity(
+      Insertable<LocalYoghurtExpense> instance,
+      {bool isInserting = false}) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('expense_date')) {
+      context.handle(
+          _expenseDateMeta,
+          expenseDate.isAcceptableOrUnknown(
+              data['expense_date']!, _expenseDateMeta));
+    } else if (isInserting) {
+      context.missing(_expenseDateMeta);
+    }
+    if (data.containsKey('description')) {
+      context.handle(
+          _descriptionMeta,
+          description.isAcceptableOrUnknown(
+              data['description']!, _descriptionMeta));
+    } else if (isInserting) {
+      context.missing(_descriptionMeta);
+    }
+    if (data.containsKey('category')) {
+      context.handle(_categoryMeta,
+          category.isAcceptableOrUnknown(data['category']!, _categoryMeta));
+    }
+    if (data.containsKey('amount')) {
+      context.handle(_amountMeta,
+          amount.isAcceptableOrUnknown(data['amount']!, _amountMeta));
+    } else if (isInserting) {
+      context.missing(_amountMeta);
+    }
+    if (data.containsKey('processed_by_name')) {
+      context.handle(
+          _processedByNameMeta,
+          processedByName.isAcceptableOrUnknown(
+              data['processed_by_name']!, _processedByNameMeta));
+    } else if (isInserting) {
+      context.missing(_processedByNameMeta);
+    }
+    if (data.containsKey('processed_by_role')) {
+      context.handle(
+          _processedByRoleMeta,
+          processedByRole.isAcceptableOrUnknown(
+              data['processed_by_role']!, _processedByRoleMeta));
+    } else if (isInserting) {
+      context.missing(_processedByRoleMeta);
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(_createdAtMeta,
+          createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta));
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  LocalYoghurtExpense map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return LocalYoghurtExpense(
+      id: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}id'])!,
+      expenseDate: attachedDatabase.typeMapping
+          .read(DriftSqlType.dateTime, data['${effectivePrefix}expense_date'])!,
+      description: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}description'])!,
+      category: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}category'])!,
+      amount: attachedDatabase.typeMapping
+          .read(DriftSqlType.double, data['${effectivePrefix}amount'])!,
+      processedByName: attachedDatabase.typeMapping.read(
+          DriftSqlType.string, data['${effectivePrefix}processed_by_name'])!,
+      processedByRole: attachedDatabase.typeMapping.read(
+          DriftSqlType.string, data['${effectivePrefix}processed_by_role'])!,
+      createdAt: attachedDatabase.typeMapping
+          .read(DriftSqlType.dateTime, data['${effectivePrefix}created_at'])!,
+    );
+  }
+
+  @override
+  $LocalYoghurtExpensesTable createAlias(String alias) {
+    return $LocalYoghurtExpensesTable(attachedDatabase, alias);
+  }
+}
+
+class LocalYoghurtExpense extends DataClass
+    implements Insertable<LocalYoghurtExpense> {
+  final String id;
+  final DateTime expenseDate;
+  final String description;
+  final String category;
+  final double amount;
+  final String processedByName;
+  final String processedByRole;
+  final DateTime createdAt;
+  const LocalYoghurtExpense(
+      {required this.id,
+      required this.expenseDate,
+      required this.description,
+      required this.category,
+      required this.amount,
+      required this.processedByName,
+      required this.processedByRole,
+      required this.createdAt});
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['expense_date'] = Variable<DateTime>(expenseDate);
+    map['description'] = Variable<String>(description);
+    map['category'] = Variable<String>(category);
+    map['amount'] = Variable<double>(amount);
+    map['processed_by_name'] = Variable<String>(processedByName);
+    map['processed_by_role'] = Variable<String>(processedByRole);
+    map['created_at'] = Variable<DateTime>(createdAt);
+    return map;
+  }
+
+  LocalYoghurtExpensesCompanion toCompanion(bool nullToAbsent) {
+    return LocalYoghurtExpensesCompanion(
+      id: Value(id),
+      expenseDate: Value(expenseDate),
+      description: Value(description),
+      category: Value(category),
+      amount: Value(amount),
+      processedByName: Value(processedByName),
+      processedByRole: Value(processedByRole),
+      createdAt: Value(createdAt),
+    );
+  }
+
+  factory LocalYoghurtExpense.fromJson(Map<String, dynamic> json,
+      {ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return LocalYoghurtExpense(
+      id: serializer.fromJson<String>(json['id']),
+      expenseDate: serializer.fromJson<DateTime>(json['expenseDate']),
+      description: serializer.fromJson<String>(json['description']),
+      category: serializer.fromJson<String>(json['category']),
+      amount: serializer.fromJson<double>(json['amount']),
+      processedByName: serializer.fromJson<String>(json['processedByName']),
+      processedByRole: serializer.fromJson<String>(json['processedByRole']),
+      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'expenseDate': serializer.toJson<DateTime>(expenseDate),
+      'description': serializer.toJson<String>(description),
+      'category': serializer.toJson<String>(category),
+      'amount': serializer.toJson<double>(amount),
+      'processedByName': serializer.toJson<String>(processedByName),
+      'processedByRole': serializer.toJson<String>(processedByRole),
+      'createdAt': serializer.toJson<DateTime>(createdAt),
+    };
+  }
+
+  LocalYoghurtExpense copyWith(
+          {String? id,
+          DateTime? expenseDate,
+          String? description,
+          String? category,
+          double? amount,
+          String? processedByName,
+          String? processedByRole,
+          DateTime? createdAt}) =>
+      LocalYoghurtExpense(
+        id: id ?? this.id,
+        expenseDate: expenseDate ?? this.expenseDate,
+        description: description ?? this.description,
+        category: category ?? this.category,
+        amount: amount ?? this.amount,
+        processedByName: processedByName ?? this.processedByName,
+        processedByRole: processedByRole ?? this.processedByRole,
+        createdAt: createdAt ?? this.createdAt,
+      );
+  LocalYoghurtExpense copyWithCompanion(LocalYoghurtExpensesCompanion data) {
+    return LocalYoghurtExpense(
+      id: data.id.present ? data.id.value : this.id,
+      expenseDate:
+          data.expenseDate.present ? data.expenseDate.value : this.expenseDate,
+      description:
+          data.description.present ? data.description.value : this.description,
+      category: data.category.present ? data.category.value : this.category,
+      amount: data.amount.present ? data.amount.value : this.amount,
+      processedByName: data.processedByName.present
+          ? data.processedByName.value
+          : this.processedByName,
+      processedByRole: data.processedByRole.present
+          ? data.processedByRole.value
+          : this.processedByRole,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('LocalYoghurtExpense(')
+          ..write('id: $id, ')
+          ..write('expenseDate: $expenseDate, ')
+          ..write('description: $description, ')
+          ..write('category: $category, ')
+          ..write('amount: $amount, ')
+          ..write('processedByName: $processedByName, ')
+          ..write('processedByRole: $processedByRole, ')
+          ..write('createdAt: $createdAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(id, expenseDate, description, category,
+      amount, processedByName, processedByRole, createdAt);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is LocalYoghurtExpense &&
+          other.id == this.id &&
+          other.expenseDate == this.expenseDate &&
+          other.description == this.description &&
+          other.category == this.category &&
+          other.amount == this.amount &&
+          other.processedByName == this.processedByName &&
+          other.processedByRole == this.processedByRole &&
+          other.createdAt == this.createdAt);
+}
+
+class LocalYoghurtExpensesCompanion
+    extends UpdateCompanion<LocalYoghurtExpense> {
+  final Value<String> id;
+  final Value<DateTime> expenseDate;
+  final Value<String> description;
+  final Value<String> category;
+  final Value<double> amount;
+  final Value<String> processedByName;
+  final Value<String> processedByRole;
+  final Value<DateTime> createdAt;
+  final Value<int> rowid;
+  const LocalYoghurtExpensesCompanion({
+    this.id = const Value.absent(),
+    this.expenseDate = const Value.absent(),
+    this.description = const Value.absent(),
+    this.category = const Value.absent(),
+    this.amount = const Value.absent(),
+    this.processedByName = const Value.absent(),
+    this.processedByRole = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  LocalYoghurtExpensesCompanion.insert({
+    required String id,
+    required DateTime expenseDate,
+    required String description,
+    this.category = const Value.absent(),
+    required double amount,
+    required String processedByName,
+    required String processedByRole,
+    this.createdAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  })  : id = Value(id),
+        expenseDate = Value(expenseDate),
+        description = Value(description),
+        amount = Value(amount),
+        processedByName = Value(processedByName),
+        processedByRole = Value(processedByRole);
+  static Insertable<LocalYoghurtExpense> custom({
+    Expression<String>? id,
+    Expression<DateTime>? expenseDate,
+    Expression<String>? description,
+    Expression<String>? category,
+    Expression<double>? amount,
+    Expression<String>? processedByName,
+    Expression<String>? processedByRole,
+    Expression<DateTime>? createdAt,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (expenseDate != null) 'expense_date': expenseDate,
+      if (description != null) 'description': description,
+      if (category != null) 'category': category,
+      if (amount != null) 'amount': amount,
+      if (processedByName != null) 'processed_by_name': processedByName,
+      if (processedByRole != null) 'processed_by_role': processedByRole,
+      if (createdAt != null) 'created_at': createdAt,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  LocalYoghurtExpensesCompanion copyWith(
+      {Value<String>? id,
+      Value<DateTime>? expenseDate,
+      Value<String>? description,
+      Value<String>? category,
+      Value<double>? amount,
+      Value<String>? processedByName,
+      Value<String>? processedByRole,
+      Value<DateTime>? createdAt,
+      Value<int>? rowid}) {
+    return LocalYoghurtExpensesCompanion(
+      id: id ?? this.id,
+      expenseDate: expenseDate ?? this.expenseDate,
+      description: description ?? this.description,
+      category: category ?? this.category,
+      amount: amount ?? this.amount,
+      processedByName: processedByName ?? this.processedByName,
+      processedByRole: processedByRole ?? this.processedByRole,
+      createdAt: createdAt ?? this.createdAt,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (expenseDate.present) {
+      map['expense_date'] = Variable<DateTime>(expenseDate.value);
+    }
+    if (description.present) {
+      map['description'] = Variable<String>(description.value);
+    }
+    if (category.present) {
+      map['category'] = Variable<String>(category.value);
+    }
+    if (amount.present) {
+      map['amount'] = Variable<double>(amount.value);
+    }
+    if (processedByName.present) {
+      map['processed_by_name'] = Variable<String>(processedByName.value);
+    }
+    if (processedByRole.present) {
+      map['processed_by_role'] = Variable<String>(processedByRole.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('LocalYoghurtExpensesCompanion(')
+          ..write('id: $id, ')
+          ..write('expenseDate: $expenseDate, ')
+          ..write('description: $description, ')
+          ..write('category: $category, ')
+          ..write('amount: $amount, ')
+          ..write('processedByName: $processedByName, ')
+          ..write('processedByRole: $processedByRole, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$LocalDatabase extends GeneratedDatabase {
   _$LocalDatabase(QueryExecutor e) : super(e);
   $LocalDatabaseManager get managers => $LocalDatabaseManager(this);
@@ -15717,6 +18340,14 @@ abstract class _$LocalDatabase extends GeneratedDatabase {
   late final $LocalBreedingEventsTable localBreedingEvents =
       $LocalBreedingEventsTable(this);
   late final $LocalAuditLogsTable localAuditLogs = $LocalAuditLogsTable(this);
+  late final $LocalYoghurtBatchesTable localYoghurtBatches =
+      $LocalYoghurtBatchesTable(this);
+  late final $LocalYoghurtSalesTable localYoghurtSales =
+      $LocalYoghurtSalesTable(this);
+  late final $LocalYoghurtReturnsTable localYoghurtReturns =
+      $LocalYoghurtReturnsTable(this);
+  late final $LocalYoghurtExpensesTable localYoghurtExpenses =
+      $LocalYoghurtExpensesTable(this);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -15751,7 +18382,11 @@ abstract class _$LocalDatabase extends GeneratedDatabase {
         localSalaryAdvances,
         localFarmEvents,
         localBreedingEvents,
-        localAuditLogs
+        localAuditLogs,
+        localYoghurtBatches,
+        localYoghurtSales,
+        localYoghurtReturns,
+        localYoghurtExpenses
       ];
 }
 
@@ -15763,6 +18398,7 @@ typedef $$LocalAnimalsTableCreateCompanionBuilder = LocalAnimalsCompanion
   Value<String?> breed,
   required String sex,
   Value<DateTime?> dateOfBirth,
+  Value<String> generation,
   Value<String?> locationId,
   required String currentReproductiveStatus,
   Value<double> acquisitionCost,
@@ -15788,6 +18424,7 @@ typedef $$LocalAnimalsTableUpdateCompanionBuilder = LocalAnimalsCompanion
   Value<String?> breed,
   Value<String> sex,
   Value<DateTime?> dateOfBirth,
+  Value<String> generation,
   Value<String?> locationId,
   Value<String> currentReproductiveStatus,
   Value<double> acquisitionCost,
@@ -15832,6 +18469,9 @@ class $$LocalAnimalsTableFilterComposer
 
   ColumnFilters<DateTime> get dateOfBirth => $composableBuilder(
       column: $table.dateOfBirth, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get generation => $composableBuilder(
+      column: $table.generation, builder: (column) => ColumnFilters(column));
 
   ColumnFilters<String> get locationId => $composableBuilder(
       column: $table.locationId, builder: (column) => ColumnFilters(column));
@@ -15909,6 +18549,9 @@ class $$LocalAnimalsTableOrderingComposer
 
   ColumnOrderings<DateTime> get dateOfBirth => $composableBuilder(
       column: $table.dateOfBirth, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get generation => $composableBuilder(
+      column: $table.generation, builder: (column) => ColumnOrderings(column));
 
   ColumnOrderings<String> get locationId => $composableBuilder(
       column: $table.locationId, builder: (column) => ColumnOrderings(column));
@@ -15989,6 +18632,9 @@ class $$LocalAnimalsTableAnnotationComposer
   GeneratedColumn<DateTime> get dateOfBirth => $composableBuilder(
       column: $table.dateOfBirth, builder: (column) => column);
 
+  GeneratedColumn<String> get generation => $composableBuilder(
+      column: $table.generation, builder: (column) => column);
+
   GeneratedColumn<String> get locationId => $composableBuilder(
       column: $table.locationId, builder: (column) => column);
 
@@ -16067,6 +18713,7 @@ class $$LocalAnimalsTableTableManager extends RootTableManager<
             Value<String?> breed = const Value.absent(),
             Value<String> sex = const Value.absent(),
             Value<DateTime?> dateOfBirth = const Value.absent(),
+            Value<String> generation = const Value.absent(),
             Value<String?> locationId = const Value.absent(),
             Value<String> currentReproductiveStatus = const Value.absent(),
             Value<double> acquisitionCost = const Value.absent(),
@@ -16091,6 +18738,7 @@ class $$LocalAnimalsTableTableManager extends RootTableManager<
             breed: breed,
             sex: sex,
             dateOfBirth: dateOfBirth,
+            generation: generation,
             locationId: locationId,
             currentReproductiveStatus: currentReproductiveStatus,
             acquisitionCost: acquisitionCost,
@@ -16115,6 +18763,7 @@ class $$LocalAnimalsTableTableManager extends RootTableManager<
             Value<String?> breed = const Value.absent(),
             required String sex,
             Value<DateTime?> dateOfBirth = const Value.absent(),
+            Value<String> generation = const Value.absent(),
             Value<String?> locationId = const Value.absent(),
             required String currentReproductiveStatus,
             Value<double> acquisitionCost = const Value.absent(),
@@ -16139,6 +18788,7 @@ class $$LocalAnimalsTableTableManager extends RootTableManager<
             breed: breed,
             sex: sex,
             dateOfBirth: dateOfBirth,
+            generation: generation,
             locationId: locationId,
             currentReproductiveStatus: currentReproductiveStatus,
             acquisitionCost: acquisitionCost,
@@ -23114,7 +25764,7 @@ typedef $$LocalAuditLogsTableCreateCompanionBuilder = LocalAuditLogsCompanion
   required String moduleName,
   Value<String?> entityId,
   Value<String?> entityLabel,
-  required String description,
+  Value<String> description,
   Value<String?> detailsJson,
   Value<DateTime> timestamp,
   Value<int> rowid,
@@ -23301,7 +25951,7 @@ class $$LocalAuditLogsTableTableManager extends RootTableManager<
             required String moduleName,
             Value<String?> entityId = const Value.absent(),
             Value<String?> entityLabel = const Value.absent(),
-            required String description,
+            Value<String> description = const Value.absent(),
             Value<String?> detailsJson = const Value.absent(),
             Value<DateTime> timestamp = const Value.absent(),
             Value<int> rowid = const Value.absent(),
@@ -23340,6 +25990,1212 @@ typedef $$LocalAuditLogsTableProcessedTableManager = ProcessedTableManager<
     ),
     LocalAuditLog,
     PrefetchHooks Function()>;
+typedef $$LocalYoghurtBatchesTableCreateCompanionBuilder
+    = LocalYoghurtBatchesCompanion Function({
+  required String id,
+  required String batchNumber,
+  required DateTime productionDate,
+  required double milkInputLiters,
+  required double milkCostPerLiter,
+  required double totalMilkCost,
+  required int bottlesProduced,
+  required int packsProduced,
+  required int bottlesRemaining,
+  Value<double> additionalCosts,
+  required String producedByName,
+  required String producedByRole,
+  Value<String?> notes,
+  Value<DateTime> createdAt,
+  Value<int> rowid,
+});
+typedef $$LocalYoghurtBatchesTableUpdateCompanionBuilder
+    = LocalYoghurtBatchesCompanion Function({
+  Value<String> id,
+  Value<String> batchNumber,
+  Value<DateTime> productionDate,
+  Value<double> milkInputLiters,
+  Value<double> milkCostPerLiter,
+  Value<double> totalMilkCost,
+  Value<int> bottlesProduced,
+  Value<int> packsProduced,
+  Value<int> bottlesRemaining,
+  Value<double> additionalCosts,
+  Value<String> producedByName,
+  Value<String> producedByRole,
+  Value<String?> notes,
+  Value<DateTime> createdAt,
+  Value<int> rowid,
+});
+
+class $$LocalYoghurtBatchesTableFilterComposer
+    extends Composer<_$LocalDatabase, $LocalYoghurtBatchesTable> {
+  $$LocalYoghurtBatchesTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get id => $composableBuilder(
+      column: $table.id, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get batchNumber => $composableBuilder(
+      column: $table.batchNumber, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<DateTime> get productionDate => $composableBuilder(
+      column: $table.productionDate,
+      builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<double> get milkInputLiters => $composableBuilder(
+      column: $table.milkInputLiters,
+      builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<double> get milkCostPerLiter => $composableBuilder(
+      column: $table.milkCostPerLiter,
+      builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<double> get totalMilkCost => $composableBuilder(
+      column: $table.totalMilkCost, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<int> get bottlesProduced => $composableBuilder(
+      column: $table.bottlesProduced,
+      builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<int> get packsProduced => $composableBuilder(
+      column: $table.packsProduced, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<int> get bottlesRemaining => $composableBuilder(
+      column: $table.bottlesRemaining,
+      builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<double> get additionalCosts => $composableBuilder(
+      column: $table.additionalCosts,
+      builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get producedByName => $composableBuilder(
+      column: $table.producedByName,
+      builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get producedByRole => $composableBuilder(
+      column: $table.producedByRole,
+      builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get notes => $composableBuilder(
+      column: $table.notes, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<DateTime> get createdAt => $composableBuilder(
+      column: $table.createdAt, builder: (column) => ColumnFilters(column));
+}
+
+class $$LocalYoghurtBatchesTableOrderingComposer
+    extends Composer<_$LocalDatabase, $LocalYoghurtBatchesTable> {
+  $$LocalYoghurtBatchesTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get id => $composableBuilder(
+      column: $table.id, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get batchNumber => $composableBuilder(
+      column: $table.batchNumber, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<DateTime> get productionDate => $composableBuilder(
+      column: $table.productionDate,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<double> get milkInputLiters => $composableBuilder(
+      column: $table.milkInputLiters,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<double> get milkCostPerLiter => $composableBuilder(
+      column: $table.milkCostPerLiter,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<double> get totalMilkCost => $composableBuilder(
+      column: $table.totalMilkCost,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<int> get bottlesProduced => $composableBuilder(
+      column: $table.bottlesProduced,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<int> get packsProduced => $composableBuilder(
+      column: $table.packsProduced,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<int> get bottlesRemaining => $composableBuilder(
+      column: $table.bottlesRemaining,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<double> get additionalCosts => $composableBuilder(
+      column: $table.additionalCosts,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get producedByName => $composableBuilder(
+      column: $table.producedByName,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get producedByRole => $composableBuilder(
+      column: $table.producedByRole,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get notes => $composableBuilder(
+      column: $table.notes, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<DateTime> get createdAt => $composableBuilder(
+      column: $table.createdAt, builder: (column) => ColumnOrderings(column));
+}
+
+class $$LocalYoghurtBatchesTableAnnotationComposer
+    extends Composer<_$LocalDatabase, $LocalYoghurtBatchesTable> {
+  $$LocalYoghurtBatchesTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get batchNumber => $composableBuilder(
+      column: $table.batchNumber, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get productionDate => $composableBuilder(
+      column: $table.productionDate, builder: (column) => column);
+
+  GeneratedColumn<double> get milkInputLiters => $composableBuilder(
+      column: $table.milkInputLiters, builder: (column) => column);
+
+  GeneratedColumn<double> get milkCostPerLiter => $composableBuilder(
+      column: $table.milkCostPerLiter, builder: (column) => column);
+
+  GeneratedColumn<double> get totalMilkCost => $composableBuilder(
+      column: $table.totalMilkCost, builder: (column) => column);
+
+  GeneratedColumn<int> get bottlesProduced => $composableBuilder(
+      column: $table.bottlesProduced, builder: (column) => column);
+
+  GeneratedColumn<int> get packsProduced => $composableBuilder(
+      column: $table.packsProduced, builder: (column) => column);
+
+  GeneratedColumn<int> get bottlesRemaining => $composableBuilder(
+      column: $table.bottlesRemaining, builder: (column) => column);
+
+  GeneratedColumn<double> get additionalCosts => $composableBuilder(
+      column: $table.additionalCosts, builder: (column) => column);
+
+  GeneratedColumn<String> get producedByName => $composableBuilder(
+      column: $table.producedByName, builder: (column) => column);
+
+  GeneratedColumn<String> get producedByRole => $composableBuilder(
+      column: $table.producedByRole, builder: (column) => column);
+
+  GeneratedColumn<String> get notes =>
+      $composableBuilder(column: $table.notes, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+}
+
+class $$LocalYoghurtBatchesTableTableManager extends RootTableManager<
+    _$LocalDatabase,
+    $LocalYoghurtBatchesTable,
+    LocalYoghurtBatche,
+    $$LocalYoghurtBatchesTableFilterComposer,
+    $$LocalYoghurtBatchesTableOrderingComposer,
+    $$LocalYoghurtBatchesTableAnnotationComposer,
+    $$LocalYoghurtBatchesTableCreateCompanionBuilder,
+    $$LocalYoghurtBatchesTableUpdateCompanionBuilder,
+    (
+      LocalYoghurtBatche,
+      BaseReferences<_$LocalDatabase, $LocalYoghurtBatchesTable,
+          LocalYoghurtBatche>
+    ),
+    LocalYoghurtBatche,
+    PrefetchHooks Function()> {
+  $$LocalYoghurtBatchesTableTableManager(
+      _$LocalDatabase db, $LocalYoghurtBatchesTable table)
+      : super(TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$LocalYoghurtBatchesTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$LocalYoghurtBatchesTableOrderingComposer(
+                  $db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$LocalYoghurtBatchesTableAnnotationComposer(
+                  $db: db, $table: table),
+          updateCompanionCallback: ({
+            Value<String> id = const Value.absent(),
+            Value<String> batchNumber = const Value.absent(),
+            Value<DateTime> productionDate = const Value.absent(),
+            Value<double> milkInputLiters = const Value.absent(),
+            Value<double> milkCostPerLiter = const Value.absent(),
+            Value<double> totalMilkCost = const Value.absent(),
+            Value<int> bottlesProduced = const Value.absent(),
+            Value<int> packsProduced = const Value.absent(),
+            Value<int> bottlesRemaining = const Value.absent(),
+            Value<double> additionalCosts = const Value.absent(),
+            Value<String> producedByName = const Value.absent(),
+            Value<String> producedByRole = const Value.absent(),
+            Value<String?> notes = const Value.absent(),
+            Value<DateTime> createdAt = const Value.absent(),
+            Value<int> rowid = const Value.absent(),
+          }) =>
+              LocalYoghurtBatchesCompanion(
+            id: id,
+            batchNumber: batchNumber,
+            productionDate: productionDate,
+            milkInputLiters: milkInputLiters,
+            milkCostPerLiter: milkCostPerLiter,
+            totalMilkCost: totalMilkCost,
+            bottlesProduced: bottlesProduced,
+            packsProduced: packsProduced,
+            bottlesRemaining: bottlesRemaining,
+            additionalCosts: additionalCosts,
+            producedByName: producedByName,
+            producedByRole: producedByRole,
+            notes: notes,
+            createdAt: createdAt,
+            rowid: rowid,
+          ),
+          createCompanionCallback: ({
+            required String id,
+            required String batchNumber,
+            required DateTime productionDate,
+            required double milkInputLiters,
+            required double milkCostPerLiter,
+            required double totalMilkCost,
+            required int bottlesProduced,
+            required int packsProduced,
+            required int bottlesRemaining,
+            Value<double> additionalCosts = const Value.absent(),
+            required String producedByName,
+            required String producedByRole,
+            Value<String?> notes = const Value.absent(),
+            Value<DateTime> createdAt = const Value.absent(),
+            Value<int> rowid = const Value.absent(),
+          }) =>
+              LocalYoghurtBatchesCompanion.insert(
+            id: id,
+            batchNumber: batchNumber,
+            productionDate: productionDate,
+            milkInputLiters: milkInputLiters,
+            milkCostPerLiter: milkCostPerLiter,
+            totalMilkCost: totalMilkCost,
+            bottlesProduced: bottlesProduced,
+            packsProduced: packsProduced,
+            bottlesRemaining: bottlesRemaining,
+            additionalCosts: additionalCosts,
+            producedByName: producedByName,
+            producedByRole: producedByRole,
+            notes: notes,
+            createdAt: createdAt,
+            rowid: rowid,
+          ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ));
+}
+
+typedef $$LocalYoghurtBatchesTableProcessedTableManager = ProcessedTableManager<
+    _$LocalDatabase,
+    $LocalYoghurtBatchesTable,
+    LocalYoghurtBatche,
+    $$LocalYoghurtBatchesTableFilterComposer,
+    $$LocalYoghurtBatchesTableOrderingComposer,
+    $$LocalYoghurtBatchesTableAnnotationComposer,
+    $$LocalYoghurtBatchesTableCreateCompanionBuilder,
+    $$LocalYoghurtBatchesTableUpdateCompanionBuilder,
+    (
+      LocalYoghurtBatche,
+      BaseReferences<_$LocalDatabase, $LocalYoghurtBatchesTable,
+          LocalYoghurtBatche>
+    ),
+    LocalYoghurtBatche,
+    PrefetchHooks Function()>;
+typedef $$LocalYoghurtSalesTableCreateCompanionBuilder
+    = LocalYoghurtSalesCompanion Function({
+  required String id,
+  required DateTime saleDate,
+  required String customerName,
+  Value<String?> customerPhone,
+  Value<String?> description,
+  required String saleUnit,
+  required int quantityUnits,
+  required int totalBottles,
+  required double unitPrice,
+  required double totalAmount,
+  required double amountPaid,
+  Value<double> balanceDue,
+  required String balancePayer,
+  required String initiatedByName,
+  required String initiatedByRole,
+  Value<String?> selectedBatchId,
+  Value<DateTime> createdAt,
+  Value<int> rowid,
+});
+typedef $$LocalYoghurtSalesTableUpdateCompanionBuilder
+    = LocalYoghurtSalesCompanion Function({
+  Value<String> id,
+  Value<DateTime> saleDate,
+  Value<String> customerName,
+  Value<String?> customerPhone,
+  Value<String?> description,
+  Value<String> saleUnit,
+  Value<int> quantityUnits,
+  Value<int> totalBottles,
+  Value<double> unitPrice,
+  Value<double> totalAmount,
+  Value<double> amountPaid,
+  Value<double> balanceDue,
+  Value<String> balancePayer,
+  Value<String> initiatedByName,
+  Value<String> initiatedByRole,
+  Value<String?> selectedBatchId,
+  Value<DateTime> createdAt,
+  Value<int> rowid,
+});
+
+class $$LocalYoghurtSalesTableFilterComposer
+    extends Composer<_$LocalDatabase, $LocalYoghurtSalesTable> {
+  $$LocalYoghurtSalesTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get id => $composableBuilder(
+      column: $table.id, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<DateTime> get saleDate => $composableBuilder(
+      column: $table.saleDate, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get customerName => $composableBuilder(
+      column: $table.customerName, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get customerPhone => $composableBuilder(
+      column: $table.customerPhone, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get description => $composableBuilder(
+      column: $table.description, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get saleUnit => $composableBuilder(
+      column: $table.saleUnit, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<int> get quantityUnits => $composableBuilder(
+      column: $table.quantityUnits, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<int> get totalBottles => $composableBuilder(
+      column: $table.totalBottles, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<double> get unitPrice => $composableBuilder(
+      column: $table.unitPrice, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<double> get totalAmount => $composableBuilder(
+      column: $table.totalAmount, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<double> get amountPaid => $composableBuilder(
+      column: $table.amountPaid, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<double> get balanceDue => $composableBuilder(
+      column: $table.balanceDue, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get balancePayer => $composableBuilder(
+      column: $table.balancePayer, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get initiatedByName => $composableBuilder(
+      column: $table.initiatedByName,
+      builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get initiatedByRole => $composableBuilder(
+      column: $table.initiatedByRole,
+      builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get selectedBatchId => $composableBuilder(
+      column: $table.selectedBatchId,
+      builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<DateTime> get createdAt => $composableBuilder(
+      column: $table.createdAt, builder: (column) => ColumnFilters(column));
+}
+
+class $$LocalYoghurtSalesTableOrderingComposer
+    extends Composer<_$LocalDatabase, $LocalYoghurtSalesTable> {
+  $$LocalYoghurtSalesTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get id => $composableBuilder(
+      column: $table.id, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<DateTime> get saleDate => $composableBuilder(
+      column: $table.saleDate, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get customerName => $composableBuilder(
+      column: $table.customerName,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get customerPhone => $composableBuilder(
+      column: $table.customerPhone,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get description => $composableBuilder(
+      column: $table.description, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get saleUnit => $composableBuilder(
+      column: $table.saleUnit, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<int> get quantityUnits => $composableBuilder(
+      column: $table.quantityUnits,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<int> get totalBottles => $composableBuilder(
+      column: $table.totalBottles,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<double> get unitPrice => $composableBuilder(
+      column: $table.unitPrice, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<double> get totalAmount => $composableBuilder(
+      column: $table.totalAmount, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<double> get amountPaid => $composableBuilder(
+      column: $table.amountPaid, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<double> get balanceDue => $composableBuilder(
+      column: $table.balanceDue, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get balancePayer => $composableBuilder(
+      column: $table.balancePayer,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get initiatedByName => $composableBuilder(
+      column: $table.initiatedByName,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get initiatedByRole => $composableBuilder(
+      column: $table.initiatedByRole,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get selectedBatchId => $composableBuilder(
+      column: $table.selectedBatchId,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<DateTime> get createdAt => $composableBuilder(
+      column: $table.createdAt, builder: (column) => ColumnOrderings(column));
+}
+
+class $$LocalYoghurtSalesTableAnnotationComposer
+    extends Composer<_$LocalDatabase, $LocalYoghurtSalesTable> {
+  $$LocalYoghurtSalesTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get saleDate =>
+      $composableBuilder(column: $table.saleDate, builder: (column) => column);
+
+  GeneratedColumn<String> get customerName => $composableBuilder(
+      column: $table.customerName, builder: (column) => column);
+
+  GeneratedColumn<String> get customerPhone => $composableBuilder(
+      column: $table.customerPhone, builder: (column) => column);
+
+  GeneratedColumn<String> get description => $composableBuilder(
+      column: $table.description, builder: (column) => column);
+
+  GeneratedColumn<String> get saleUnit =>
+      $composableBuilder(column: $table.saleUnit, builder: (column) => column);
+
+  GeneratedColumn<int> get quantityUnits => $composableBuilder(
+      column: $table.quantityUnits, builder: (column) => column);
+
+  GeneratedColumn<int> get totalBottles => $composableBuilder(
+      column: $table.totalBottles, builder: (column) => column);
+
+  GeneratedColumn<double> get unitPrice =>
+      $composableBuilder(column: $table.unitPrice, builder: (column) => column);
+
+  GeneratedColumn<double> get totalAmount => $composableBuilder(
+      column: $table.totalAmount, builder: (column) => column);
+
+  GeneratedColumn<double> get amountPaid => $composableBuilder(
+      column: $table.amountPaid, builder: (column) => column);
+
+  GeneratedColumn<double> get balanceDue => $composableBuilder(
+      column: $table.balanceDue, builder: (column) => column);
+
+  GeneratedColumn<String> get balancePayer => $composableBuilder(
+      column: $table.balancePayer, builder: (column) => column);
+
+  GeneratedColumn<String> get initiatedByName => $composableBuilder(
+      column: $table.initiatedByName, builder: (column) => column);
+
+  GeneratedColumn<String> get initiatedByRole => $composableBuilder(
+      column: $table.initiatedByRole, builder: (column) => column);
+
+  GeneratedColumn<String> get selectedBatchId => $composableBuilder(
+      column: $table.selectedBatchId, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+}
+
+class $$LocalYoghurtSalesTableTableManager extends RootTableManager<
+    _$LocalDatabase,
+    $LocalYoghurtSalesTable,
+    LocalYoghurtSale,
+    $$LocalYoghurtSalesTableFilterComposer,
+    $$LocalYoghurtSalesTableOrderingComposer,
+    $$LocalYoghurtSalesTableAnnotationComposer,
+    $$LocalYoghurtSalesTableCreateCompanionBuilder,
+    $$LocalYoghurtSalesTableUpdateCompanionBuilder,
+    (
+      LocalYoghurtSale,
+      BaseReferences<_$LocalDatabase, $LocalYoghurtSalesTable, LocalYoghurtSale>
+    ),
+    LocalYoghurtSale,
+    PrefetchHooks Function()> {
+  $$LocalYoghurtSalesTableTableManager(
+      _$LocalDatabase db, $LocalYoghurtSalesTable table)
+      : super(TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$LocalYoghurtSalesTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$LocalYoghurtSalesTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$LocalYoghurtSalesTableAnnotationComposer(
+                  $db: db, $table: table),
+          updateCompanionCallback: ({
+            Value<String> id = const Value.absent(),
+            Value<DateTime> saleDate = const Value.absent(),
+            Value<String> customerName = const Value.absent(),
+            Value<String?> customerPhone = const Value.absent(),
+            Value<String?> description = const Value.absent(),
+            Value<String> saleUnit = const Value.absent(),
+            Value<int> quantityUnits = const Value.absent(),
+            Value<int> totalBottles = const Value.absent(),
+            Value<double> unitPrice = const Value.absent(),
+            Value<double> totalAmount = const Value.absent(),
+            Value<double> amountPaid = const Value.absent(),
+            Value<double> balanceDue = const Value.absent(),
+            Value<String> balancePayer = const Value.absent(),
+            Value<String> initiatedByName = const Value.absent(),
+            Value<String> initiatedByRole = const Value.absent(),
+            Value<String?> selectedBatchId = const Value.absent(),
+            Value<DateTime> createdAt = const Value.absent(),
+            Value<int> rowid = const Value.absent(),
+          }) =>
+              LocalYoghurtSalesCompanion(
+            id: id,
+            saleDate: saleDate,
+            customerName: customerName,
+            customerPhone: customerPhone,
+            description: description,
+            saleUnit: saleUnit,
+            quantityUnits: quantityUnits,
+            totalBottles: totalBottles,
+            unitPrice: unitPrice,
+            totalAmount: totalAmount,
+            amountPaid: amountPaid,
+            balanceDue: balanceDue,
+            balancePayer: balancePayer,
+            initiatedByName: initiatedByName,
+            initiatedByRole: initiatedByRole,
+            selectedBatchId: selectedBatchId,
+            createdAt: createdAt,
+            rowid: rowid,
+          ),
+          createCompanionCallback: ({
+            required String id,
+            required DateTime saleDate,
+            required String customerName,
+            Value<String?> customerPhone = const Value.absent(),
+            Value<String?> description = const Value.absent(),
+            required String saleUnit,
+            required int quantityUnits,
+            required int totalBottles,
+            required double unitPrice,
+            required double totalAmount,
+            required double amountPaid,
+            Value<double> balanceDue = const Value.absent(),
+            required String balancePayer,
+            required String initiatedByName,
+            required String initiatedByRole,
+            Value<String?> selectedBatchId = const Value.absent(),
+            Value<DateTime> createdAt = const Value.absent(),
+            Value<int> rowid = const Value.absent(),
+          }) =>
+              LocalYoghurtSalesCompanion.insert(
+            id: id,
+            saleDate: saleDate,
+            customerName: customerName,
+            customerPhone: customerPhone,
+            description: description,
+            saleUnit: saleUnit,
+            quantityUnits: quantityUnits,
+            totalBottles: totalBottles,
+            unitPrice: unitPrice,
+            totalAmount: totalAmount,
+            amountPaid: amountPaid,
+            balanceDue: balanceDue,
+            balancePayer: balancePayer,
+            initiatedByName: initiatedByName,
+            initiatedByRole: initiatedByRole,
+            selectedBatchId: selectedBatchId,
+            createdAt: createdAt,
+            rowid: rowid,
+          ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ));
+}
+
+typedef $$LocalYoghurtSalesTableProcessedTableManager = ProcessedTableManager<
+    _$LocalDatabase,
+    $LocalYoghurtSalesTable,
+    LocalYoghurtSale,
+    $$LocalYoghurtSalesTableFilterComposer,
+    $$LocalYoghurtSalesTableOrderingComposer,
+    $$LocalYoghurtSalesTableAnnotationComposer,
+    $$LocalYoghurtSalesTableCreateCompanionBuilder,
+    $$LocalYoghurtSalesTableUpdateCompanionBuilder,
+    (
+      LocalYoghurtSale,
+      BaseReferences<_$LocalDatabase, $LocalYoghurtSalesTable, LocalYoghurtSale>
+    ),
+    LocalYoghurtSale,
+    PrefetchHooks Function()>;
+typedef $$LocalYoghurtReturnsTableCreateCompanionBuilder
+    = LocalYoghurtReturnsCompanion Function({
+  required String id,
+  required DateTime returnDate,
+  required String customerName,
+  Value<String?> description,
+  required int initialBoughtBottles,
+  required int returnedBottles,
+  required int replacedBottles,
+  required String processedByName,
+  required String processedByRole,
+  Value<String?> selectedBatchId,
+  Value<DateTime> createdAt,
+  Value<int> rowid,
+});
+typedef $$LocalYoghurtReturnsTableUpdateCompanionBuilder
+    = LocalYoghurtReturnsCompanion Function({
+  Value<String> id,
+  Value<DateTime> returnDate,
+  Value<String> customerName,
+  Value<String?> description,
+  Value<int> initialBoughtBottles,
+  Value<int> returnedBottles,
+  Value<int> replacedBottles,
+  Value<String> processedByName,
+  Value<String> processedByRole,
+  Value<String?> selectedBatchId,
+  Value<DateTime> createdAt,
+  Value<int> rowid,
+});
+
+class $$LocalYoghurtReturnsTableFilterComposer
+    extends Composer<_$LocalDatabase, $LocalYoghurtReturnsTable> {
+  $$LocalYoghurtReturnsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get id => $composableBuilder(
+      column: $table.id, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<DateTime> get returnDate => $composableBuilder(
+      column: $table.returnDate, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get customerName => $composableBuilder(
+      column: $table.customerName, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get description => $composableBuilder(
+      column: $table.description, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<int> get initialBoughtBottles => $composableBuilder(
+      column: $table.initialBoughtBottles,
+      builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<int> get returnedBottles => $composableBuilder(
+      column: $table.returnedBottles,
+      builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<int> get replacedBottles => $composableBuilder(
+      column: $table.replacedBottles,
+      builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get processedByName => $composableBuilder(
+      column: $table.processedByName,
+      builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get processedByRole => $composableBuilder(
+      column: $table.processedByRole,
+      builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get selectedBatchId => $composableBuilder(
+      column: $table.selectedBatchId,
+      builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<DateTime> get createdAt => $composableBuilder(
+      column: $table.createdAt, builder: (column) => ColumnFilters(column));
+}
+
+class $$LocalYoghurtReturnsTableOrderingComposer
+    extends Composer<_$LocalDatabase, $LocalYoghurtReturnsTable> {
+  $$LocalYoghurtReturnsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get id => $composableBuilder(
+      column: $table.id, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<DateTime> get returnDate => $composableBuilder(
+      column: $table.returnDate, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get customerName => $composableBuilder(
+      column: $table.customerName,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get description => $composableBuilder(
+      column: $table.description, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<int> get initialBoughtBottles => $composableBuilder(
+      column: $table.initialBoughtBottles,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<int> get returnedBottles => $composableBuilder(
+      column: $table.returnedBottles,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<int> get replacedBottles => $composableBuilder(
+      column: $table.replacedBottles,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get processedByName => $composableBuilder(
+      column: $table.processedByName,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get processedByRole => $composableBuilder(
+      column: $table.processedByRole,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get selectedBatchId => $composableBuilder(
+      column: $table.selectedBatchId,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<DateTime> get createdAt => $composableBuilder(
+      column: $table.createdAt, builder: (column) => ColumnOrderings(column));
+}
+
+class $$LocalYoghurtReturnsTableAnnotationComposer
+    extends Composer<_$LocalDatabase, $LocalYoghurtReturnsTable> {
+  $$LocalYoghurtReturnsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get returnDate => $composableBuilder(
+      column: $table.returnDate, builder: (column) => column);
+
+  GeneratedColumn<String> get customerName => $composableBuilder(
+      column: $table.customerName, builder: (column) => column);
+
+  GeneratedColumn<String> get description => $composableBuilder(
+      column: $table.description, builder: (column) => column);
+
+  GeneratedColumn<int> get initialBoughtBottles => $composableBuilder(
+      column: $table.initialBoughtBottles, builder: (column) => column);
+
+  GeneratedColumn<int> get returnedBottles => $composableBuilder(
+      column: $table.returnedBottles, builder: (column) => column);
+
+  GeneratedColumn<int> get replacedBottles => $composableBuilder(
+      column: $table.replacedBottles, builder: (column) => column);
+
+  GeneratedColumn<String> get processedByName => $composableBuilder(
+      column: $table.processedByName, builder: (column) => column);
+
+  GeneratedColumn<String> get processedByRole => $composableBuilder(
+      column: $table.processedByRole, builder: (column) => column);
+
+  GeneratedColumn<String> get selectedBatchId => $composableBuilder(
+      column: $table.selectedBatchId, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+}
+
+class $$LocalYoghurtReturnsTableTableManager extends RootTableManager<
+    _$LocalDatabase,
+    $LocalYoghurtReturnsTable,
+    LocalYoghurtReturn,
+    $$LocalYoghurtReturnsTableFilterComposer,
+    $$LocalYoghurtReturnsTableOrderingComposer,
+    $$LocalYoghurtReturnsTableAnnotationComposer,
+    $$LocalYoghurtReturnsTableCreateCompanionBuilder,
+    $$LocalYoghurtReturnsTableUpdateCompanionBuilder,
+    (
+      LocalYoghurtReturn,
+      BaseReferences<_$LocalDatabase, $LocalYoghurtReturnsTable,
+          LocalYoghurtReturn>
+    ),
+    LocalYoghurtReturn,
+    PrefetchHooks Function()> {
+  $$LocalYoghurtReturnsTableTableManager(
+      _$LocalDatabase db, $LocalYoghurtReturnsTable table)
+      : super(TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$LocalYoghurtReturnsTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$LocalYoghurtReturnsTableOrderingComposer(
+                  $db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$LocalYoghurtReturnsTableAnnotationComposer(
+                  $db: db, $table: table),
+          updateCompanionCallback: ({
+            Value<String> id = const Value.absent(),
+            Value<DateTime> returnDate = const Value.absent(),
+            Value<String> customerName = const Value.absent(),
+            Value<String?> description = const Value.absent(),
+            Value<int> initialBoughtBottles = const Value.absent(),
+            Value<int> returnedBottles = const Value.absent(),
+            Value<int> replacedBottles = const Value.absent(),
+            Value<String> processedByName = const Value.absent(),
+            Value<String> processedByRole = const Value.absent(),
+            Value<String?> selectedBatchId = const Value.absent(),
+            Value<DateTime> createdAt = const Value.absent(),
+            Value<int> rowid = const Value.absent(),
+          }) =>
+              LocalYoghurtReturnsCompanion(
+            id: id,
+            returnDate: returnDate,
+            customerName: customerName,
+            description: description,
+            initialBoughtBottles: initialBoughtBottles,
+            returnedBottles: returnedBottles,
+            replacedBottles: replacedBottles,
+            processedByName: processedByName,
+            processedByRole: processedByRole,
+            selectedBatchId: selectedBatchId,
+            createdAt: createdAt,
+            rowid: rowid,
+          ),
+          createCompanionCallback: ({
+            required String id,
+            required DateTime returnDate,
+            required String customerName,
+            Value<String?> description = const Value.absent(),
+            required int initialBoughtBottles,
+            required int returnedBottles,
+            required int replacedBottles,
+            required String processedByName,
+            required String processedByRole,
+            Value<String?> selectedBatchId = const Value.absent(),
+            Value<DateTime> createdAt = const Value.absent(),
+            Value<int> rowid = const Value.absent(),
+          }) =>
+              LocalYoghurtReturnsCompanion.insert(
+            id: id,
+            returnDate: returnDate,
+            customerName: customerName,
+            description: description,
+            initialBoughtBottles: initialBoughtBottles,
+            returnedBottles: returnedBottles,
+            replacedBottles: replacedBottles,
+            processedByName: processedByName,
+            processedByRole: processedByRole,
+            selectedBatchId: selectedBatchId,
+            createdAt: createdAt,
+            rowid: rowid,
+          ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ));
+}
+
+typedef $$LocalYoghurtReturnsTableProcessedTableManager = ProcessedTableManager<
+    _$LocalDatabase,
+    $LocalYoghurtReturnsTable,
+    LocalYoghurtReturn,
+    $$LocalYoghurtReturnsTableFilterComposer,
+    $$LocalYoghurtReturnsTableOrderingComposer,
+    $$LocalYoghurtReturnsTableAnnotationComposer,
+    $$LocalYoghurtReturnsTableCreateCompanionBuilder,
+    $$LocalYoghurtReturnsTableUpdateCompanionBuilder,
+    (
+      LocalYoghurtReturn,
+      BaseReferences<_$LocalDatabase, $LocalYoghurtReturnsTable,
+          LocalYoghurtReturn>
+    ),
+    LocalYoghurtReturn,
+    PrefetchHooks Function()>;
+typedef $$LocalYoghurtExpensesTableCreateCompanionBuilder
+    = LocalYoghurtExpensesCompanion Function({
+  required String id,
+  required DateTime expenseDate,
+  required String description,
+  Value<String> category,
+  required double amount,
+  required String processedByName,
+  required String processedByRole,
+  Value<DateTime> createdAt,
+  Value<int> rowid,
+});
+typedef $$LocalYoghurtExpensesTableUpdateCompanionBuilder
+    = LocalYoghurtExpensesCompanion Function({
+  Value<String> id,
+  Value<DateTime> expenseDate,
+  Value<String> description,
+  Value<String> category,
+  Value<double> amount,
+  Value<String> processedByName,
+  Value<String> processedByRole,
+  Value<DateTime> createdAt,
+  Value<int> rowid,
+});
+
+class $$LocalYoghurtExpensesTableFilterComposer
+    extends Composer<_$LocalDatabase, $LocalYoghurtExpensesTable> {
+  $$LocalYoghurtExpensesTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get id => $composableBuilder(
+      column: $table.id, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<DateTime> get expenseDate => $composableBuilder(
+      column: $table.expenseDate, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get description => $composableBuilder(
+      column: $table.description, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get category => $composableBuilder(
+      column: $table.category, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<double> get amount => $composableBuilder(
+      column: $table.amount, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get processedByName => $composableBuilder(
+      column: $table.processedByName,
+      builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get processedByRole => $composableBuilder(
+      column: $table.processedByRole,
+      builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<DateTime> get createdAt => $composableBuilder(
+      column: $table.createdAt, builder: (column) => ColumnFilters(column));
+}
+
+class $$LocalYoghurtExpensesTableOrderingComposer
+    extends Composer<_$LocalDatabase, $LocalYoghurtExpensesTable> {
+  $$LocalYoghurtExpensesTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get id => $composableBuilder(
+      column: $table.id, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<DateTime> get expenseDate => $composableBuilder(
+      column: $table.expenseDate, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get description => $composableBuilder(
+      column: $table.description, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get category => $composableBuilder(
+      column: $table.category, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<double> get amount => $composableBuilder(
+      column: $table.amount, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get processedByName => $composableBuilder(
+      column: $table.processedByName,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get processedByRole => $composableBuilder(
+      column: $table.processedByRole,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<DateTime> get createdAt => $composableBuilder(
+      column: $table.createdAt, builder: (column) => ColumnOrderings(column));
+}
+
+class $$LocalYoghurtExpensesTableAnnotationComposer
+    extends Composer<_$LocalDatabase, $LocalYoghurtExpensesTable> {
+  $$LocalYoghurtExpensesTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get expenseDate => $composableBuilder(
+      column: $table.expenseDate, builder: (column) => column);
+
+  GeneratedColumn<String> get description => $composableBuilder(
+      column: $table.description, builder: (column) => column);
+
+  GeneratedColumn<String> get category =>
+      $composableBuilder(column: $table.category, builder: (column) => column);
+
+  GeneratedColumn<double> get amount =>
+      $composableBuilder(column: $table.amount, builder: (column) => column);
+
+  GeneratedColumn<String> get processedByName => $composableBuilder(
+      column: $table.processedByName, builder: (column) => column);
+
+  GeneratedColumn<String> get processedByRole => $composableBuilder(
+      column: $table.processedByRole, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+}
+
+class $$LocalYoghurtExpensesTableTableManager extends RootTableManager<
+    _$LocalDatabase,
+    $LocalYoghurtExpensesTable,
+    LocalYoghurtExpense,
+    $$LocalYoghurtExpensesTableFilterComposer,
+    $$LocalYoghurtExpensesTableOrderingComposer,
+    $$LocalYoghurtExpensesTableAnnotationComposer,
+    $$LocalYoghurtExpensesTableCreateCompanionBuilder,
+    $$LocalYoghurtExpensesTableUpdateCompanionBuilder,
+    (
+      LocalYoghurtExpense,
+      BaseReferences<_$LocalDatabase, $LocalYoghurtExpensesTable,
+          LocalYoghurtExpense>
+    ),
+    LocalYoghurtExpense,
+    PrefetchHooks Function()> {
+  $$LocalYoghurtExpensesTableTableManager(
+      _$LocalDatabase db, $LocalYoghurtExpensesTable table)
+      : super(TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$LocalYoghurtExpensesTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$LocalYoghurtExpensesTableOrderingComposer(
+                  $db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$LocalYoghurtExpensesTableAnnotationComposer(
+                  $db: db, $table: table),
+          updateCompanionCallback: ({
+            Value<String> id = const Value.absent(),
+            Value<DateTime> expenseDate = const Value.absent(),
+            Value<String> description = const Value.absent(),
+            Value<String> category = const Value.absent(),
+            Value<double> amount = const Value.absent(),
+            Value<String> processedByName = const Value.absent(),
+            Value<String> processedByRole = const Value.absent(),
+            Value<DateTime> createdAt = const Value.absent(),
+            Value<int> rowid = const Value.absent(),
+          }) =>
+              LocalYoghurtExpensesCompanion(
+            id: id,
+            expenseDate: expenseDate,
+            description: description,
+            category: category,
+            amount: amount,
+            processedByName: processedByName,
+            processedByRole: processedByRole,
+            createdAt: createdAt,
+            rowid: rowid,
+          ),
+          createCompanionCallback: ({
+            required String id,
+            required DateTime expenseDate,
+            required String description,
+            Value<String> category = const Value.absent(),
+            required double amount,
+            required String processedByName,
+            required String processedByRole,
+            Value<DateTime> createdAt = const Value.absent(),
+            Value<int> rowid = const Value.absent(),
+          }) =>
+              LocalYoghurtExpensesCompanion.insert(
+            id: id,
+            expenseDate: expenseDate,
+            description: description,
+            category: category,
+            amount: amount,
+            processedByName: processedByName,
+            processedByRole: processedByRole,
+            createdAt: createdAt,
+            rowid: rowid,
+          ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ));
+}
+
+typedef $$LocalYoghurtExpensesTableProcessedTableManager
+    = ProcessedTableManager<
+        _$LocalDatabase,
+        $LocalYoghurtExpensesTable,
+        LocalYoghurtExpense,
+        $$LocalYoghurtExpensesTableFilterComposer,
+        $$LocalYoghurtExpensesTableOrderingComposer,
+        $$LocalYoghurtExpensesTableAnnotationComposer,
+        $$LocalYoghurtExpensesTableCreateCompanionBuilder,
+        $$LocalYoghurtExpensesTableUpdateCompanionBuilder,
+        (
+          LocalYoghurtExpense,
+          BaseReferences<_$LocalDatabase, $LocalYoghurtExpensesTable,
+              LocalYoghurtExpense>
+        ),
+        LocalYoghurtExpense,
+        PrefetchHooks Function()>;
 
 class $LocalDatabaseManager {
   final _$LocalDatabase _db;
@@ -23409,4 +27265,12 @@ class $LocalDatabaseManager {
       $$LocalBreedingEventsTableTableManager(_db, _db.localBreedingEvents);
   $$LocalAuditLogsTableTableManager get localAuditLogs =>
       $$LocalAuditLogsTableTableManager(_db, _db.localAuditLogs);
+  $$LocalYoghurtBatchesTableTableManager get localYoghurtBatches =>
+      $$LocalYoghurtBatchesTableTableManager(_db, _db.localYoghurtBatches);
+  $$LocalYoghurtSalesTableTableManager get localYoghurtSales =>
+      $$LocalYoghurtSalesTableTableManager(_db, _db.localYoghurtSales);
+  $$LocalYoghurtReturnsTableTableManager get localYoghurtReturns =>
+      $$LocalYoghurtReturnsTableTableManager(_db, _db.localYoghurtReturns);
+  $$LocalYoghurtExpensesTableTableManager get localYoghurtExpenses =>
+      $$LocalYoghurtExpensesTableTableManager(_db, _db.localYoghurtExpenses);
 }

@@ -68,6 +68,8 @@ class _LogBreedingSheetState extends State<LogBreedingSheet> {
             
             // Event Type Dropdown
             DropdownButtonFormField<String>(
+              isExpanded: true,
+
               value: _eventType,
               decoration: const InputDecoration(labelText: 'Event Type', border: OutlineInputBorder()),
               items: _eventTypes.map((e) => DropdownMenuItem(value: e, child: Text(e.toUpperCase()))).toList(),
@@ -87,12 +89,14 @@ class _LogBreedingSheetState extends State<LogBreedingSheet> {
                   }).toList();
 
                   return DropdownButtonFormField<String>(
+                    isExpanded: true,
+
                     value: _selectedAnimalId,
                     decoration: const InputDecoration(labelText: 'Select Female Animal', border: OutlineInputBorder()),
                     items: females.map((a) {
                       final id = (a is Map ? a['id'] : a.id).toString();
                       final tag = (a is Map ? a['tagId'] : a.tagId).toString();
-                      return DropdownMenuItem(value: id, child: Text(tag));
+                      return DropdownMenuItem(value: id, child: Text(tag, overflow: TextOverflow.ellipsis));
                     }).toList(),
                     onChanged: (v) => setState(() => _selectedAnimalId = v),
                   );
@@ -115,12 +119,14 @@ class _LogBreedingSheetState extends State<LogBreedingSheet> {
                     }).toList();
 
                     return DropdownButtonFormField<String>(
+                      isExpanded: true,
+
                       value: _selectedSireId,
                       decoration: const InputDecoration(labelText: 'Select Sire (Optional)', border: OutlineInputBorder()),
                       items: males.map((a) {
                         final id = (a is Map ? a['id'] : a.id).toString();
                         final tag = (a is Map ? a['tagId'] : a.tagId).toString();
-                        return DropdownMenuItem(value: id, child: Text(tag));
+                        return DropdownMenuItem(value: id, child: Text(tag, overflow: TextOverflow.ellipsis));
                       }).toList(),
                       onChanged: (v) => setState(() => _selectedSireId = v),
                     );
@@ -135,11 +141,13 @@ class _LogBreedingSheetState extends State<LogBreedingSheet> {
             // Pregnancy Check Result
             if (_eventType == 'pregnancy_check')
               DropdownButtonFormField<String>(
+                isExpanded: true,
+
                 value: _result,
                 decoration: const InputDecoration(labelText: 'Result', border: OutlineInputBorder()),
                 items: const [
-                  DropdownMenuItem(value: 'pregnant', child: Text('Pregnant')),
-                  DropdownMenuItem(value: 'open', child: Text('Open / Not Pregnant')),
+                  DropdownMenuItem(value: 'pregnant', child: Text('Pregnant', overflow: TextOverflow.ellipsis)),
+                  DropdownMenuItem(value: 'open', child: Text('Open / Not Pregnant', overflow: TextOverflow.ellipsis)),
                 ],
                 onChanged: (v) => setState(() => _result = v),
               ),
@@ -202,12 +210,14 @@ class _LogBreedingSheetState extends State<LogBreedingSheet> {
                     const SizedBox(width: 8),
                     Expanded(
                       child: DropdownButtonFormField<String>(
+                        isExpanded: true,
+
                         value: _offspringGender,
                         decoration: const InputDecoration(labelText: 'Gender', border: OutlineInputBorder()),
                         items: const [
-                          DropdownMenuItem(value: 'male', child: Text('Male')),
-                          DropdownMenuItem(value: 'female', child: Text('Female')),
-                          DropdownMenuItem(value: 'mixed', child: Text('Mixed')),
+                          DropdownMenuItem(value: 'male', child: Text('Male', overflow: TextOverflow.ellipsis)),
+                          DropdownMenuItem(value: 'female', child: Text('Female', overflow: TextOverflow.ellipsis)),
+                          DropdownMenuItem(value: 'mixed', child: Text('Mixed', overflow: TextOverflow.ellipsis)),
                         ],
                         onChanged: (v) => setState(() => _offspringGender = v!),
                       ),
@@ -219,12 +229,14 @@ class _LogBreedingSheetState extends State<LogBreedingSheet> {
                   children: [
                     Expanded(
                       child: DropdownButtonFormField<String>(
+                        isExpanded: true,
+
                         value: _healthStatus,
                         decoration: const InputDecoration(labelText: 'Health', border: OutlineInputBorder()),
                         items: const [
-                          DropdownMenuItem(value: 'healthy', child: Text('Healthy')),
-                          DropdownMenuItem(value: 'weak', child: Text('Weak')),
-                          DropdownMenuItem(value: 'stillborn', child: Text('Stillborn')),
+                          DropdownMenuItem(value: 'healthy', child: Text('Healthy', overflow: TextOverflow.ellipsis)),
+                          DropdownMenuItem(value: 'weak', child: Text('Weak', overflow: TextOverflow.ellipsis)),
+                          DropdownMenuItem(value: 'stillborn', child: Text('Stillborn', overflow: TextOverflow.ellipsis)),
                         ],
                         onChanged: (v) => setState(() => _healthStatus = v!),
                       ),
@@ -232,12 +244,14 @@ class _LogBreedingSheetState extends State<LogBreedingSheet> {
                     const SizedBox(width: 8),
                     Expanded(
                       child: DropdownButtonFormField<String>(
+                        isExpanded: true,
+
                         value: _motherStatus,
                         decoration: const InputDecoration(labelText: 'Mother Status', border: OutlineInputBorder()),
                         items: const [
-                          DropdownMenuItem(value: 'normal', child: Text('Normal')),
-                          DropdownMenuItem(value: 'assisted', child: Text('Assisted')),
-                          DropdownMenuItem(value: 'dystocia', child: Text('Dystocia')),
+                          DropdownMenuItem(value: 'normal', child: Text('Normal', overflow: TextOverflow.ellipsis)),
+                          DropdownMenuItem(value: 'assisted', child: Text('Assisted', overflow: TextOverflow.ellipsis)),
+                          DropdownMenuItem(value: 'dystocia', child: Text('Dystocia', overflow: TextOverflow.ellipsis)),
                         ],
                         onChanged: (v) => setState(() => _motherStatus = v!),
                       ),
@@ -251,13 +265,15 @@ class _LogBreedingSheetState extends State<LogBreedingSheet> {
               ...[
                 const SizedBox(height: 16),
                 DropdownButtonFormField<String>(
+                  isExpanded: true,
+
                   value: _syncProtocol,
                   decoration: const InputDecoration(labelText: 'Synchronization Protocol', border: OutlineInputBorder()),
                   items: const [
-                    DropdownMenuItem(value: 'ovsynch', child: Text('Ovsynch')),
-                    DropdownMenuItem(value: 'cosynch', child: Text('Cosynch')),
-                    DropdownMenuItem(value: 'cidr', child: Text('CIDR')),
-                    DropdownMenuItem(value: 'double_pg', child: Text('Double-PG')),
+                    DropdownMenuItem(value: 'ovsynch', child: Text('Ovsynch', overflow: TextOverflow.ellipsis)),
+                    DropdownMenuItem(value: 'cosynch', child: Text('Cosynch', overflow: TextOverflow.ellipsis)),
+                    DropdownMenuItem(value: 'cidr', child: Text('CIDR', overflow: TextOverflow.ellipsis)),
+                    DropdownMenuItem(value: 'double_pg', child: Text('Double-PG', overflow: TextOverflow.ellipsis)),
                   ],
                   onChanged: (v) => setState(() => _syncProtocol = v!),
                 ),
@@ -303,12 +319,14 @@ class _LogBreedingSheetState extends State<LogBreedingSheet> {
                 ),
                 const SizedBox(height: 16),
                 DropdownButtonFormField<String>(
+                  isExpanded: true,
+
                   value: _estrusPeriod,
                   decoration: const InputDecoration(labelText: 'Expected Estrus Period', border: OutlineInputBorder()),
                   items: const [
-                    DropdownMenuItem(value: 'morning', child: Text('Morning')),
-                    DropdownMenuItem(value: 'evening', child: Text('Evening')),
-                    DropdownMenuItem(value: 'all_day', child: Text('All Day')),
+                    DropdownMenuItem(value: 'morning', child: Text('Morning', overflow: TextOverflow.ellipsis)),
+                    DropdownMenuItem(value: 'evening', child: Text('Evening', overflow: TextOverflow.ellipsis)),
+                    DropdownMenuItem(value: 'all_day', child: Text('All Day', overflow: TextOverflow.ellipsis)),
                   ],
                   onChanged: (v) => setState(() => _estrusPeriod = v!),
                 ),

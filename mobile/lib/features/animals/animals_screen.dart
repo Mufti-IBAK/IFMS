@@ -966,16 +966,17 @@ class _AnimalsScreenState extends State<AnimalsScreen> {
                                     buildInputField(
                                       label: 'Species *',
                                       child: DropdownButtonFormField<String>(
+                                        isExpanded: true,
                                         initialValue: selectedSpecies,
                                         items: const [
-                                          DropdownMenuItem(value: 'bovine', child: Text('Bovine (Cattle)')),
-                                          DropdownMenuItem(value: 'avian', child: Text('Avian (Poultry)')),
-                                          DropdownMenuItem(value: 'caprine', child: Text('Caprine (Goat)')),
-                                          DropdownMenuItem(value: 'ovine', child: Text('Ovine (Sheep)')),
-                                          DropdownMenuItem(value: 'feline', child: Text('Feline (Cat)')),
-                                          DropdownMenuItem(value: 'canine', child: Text('Canine (Dog)')),
-                                          DropdownMenuItem(value: 'leprine', child: Text('Leprine (Rabbit)')),
-                                          DropdownMenuItem(value: 'others', child: Text('Others')),
+                                          DropdownMenuItem(value: 'bovine', child: Text('Bovine (Cattle)', overflow: TextOverflow.ellipsis)),
+                                          DropdownMenuItem(value: 'avian', child: Text('Avian (Poultry)', overflow: TextOverflow.ellipsis)),
+                                          DropdownMenuItem(value: 'caprine', child: Text('Caprine (Goat)', overflow: TextOverflow.ellipsis)),
+                                          DropdownMenuItem(value: 'ovine', child: Text('Ovine (Sheep)', overflow: TextOverflow.ellipsis)),
+                                          DropdownMenuItem(value: 'feline', child: Text('Feline (Cat)', overflow: TextOverflow.ellipsis)),
+                                          DropdownMenuItem(value: 'canine', child: Text('Canine (Dog)', overflow: TextOverflow.ellipsis)),
+                                          DropdownMenuItem(value: 'leprine', child: Text('Leprine (Rabbit)', overflow: TextOverflow.ellipsis)),
+                                          DropdownMenuItem(value: 'others', child: Text('Others', overflow: TextOverflow.ellipsis)),
                                         ],
                                         onChanged: (val) => setState(() => selectedSpecies = val!),
                                       ),
@@ -1217,12 +1218,14 @@ class _AnimalsScreenState extends State<AnimalsScreen> {
                                           child: buildInputField(
                                             label: 'Age Unit *',
                                             child: DropdownButtonFormField<String>(
+                                              isExpanded: true,
+
                                               value: estimatedAgeUnit,
                                               items: const [
-                                                DropdownMenuItem(value: 'Years', child: Text('Years')),
-                                                DropdownMenuItem(value: 'Months', child: Text('Months')),
-                                                DropdownMenuItem(value: 'Weeks', child: Text('Weeks')),
-                                                DropdownMenuItem(value: 'Days', child: Text('Days')),
+                                                DropdownMenuItem(value: 'Years', child: Text('Years', overflow: TextOverflow.ellipsis)),
+                                                DropdownMenuItem(value: 'Months', child: Text('Months', overflow: TextOverflow.ellipsis)),
+                                                DropdownMenuItem(value: 'Weeks', child: Text('Weeks', overflow: TextOverflow.ellipsis)),
+                                                DropdownMenuItem(value: 'Days', child: Text('Days', overflow: TextOverflow.ellipsis)),
                                               ],
                                               onChanged: (val) {
                                                 if (val != null) {
@@ -1297,11 +1300,11 @@ class _AnimalsScreenState extends State<AnimalsScreen> {
                                       value: selectedPurpose,
                                       labelText: 'Purpose',
                                       items: const [
-                                        DropdownMenuItem(value: 'breeding', child: Text('Breeding')),
+                                        DropdownMenuItem(value: 'breeding', child: Text('Breeding', overflow: TextOverflow.ellipsis)),
                                         DropdownMenuItem(value: 'milk', child: Text('Dairy (Milk)')),
                                         DropdownMenuItem(value: 'meat', child: Text('Beef (Meat)')),
                                         DropdownMenuItem(value: 'eggs', child: Text('Layers (Eggs)')),
-                                        DropdownMenuItem(value: 'others', child: Text('Others')),
+                                        DropdownMenuItem(value: 'others', child: Text('Others', overflow: TextOverflow.ellipsis)),
                                       ],
                                       onChanged: (val) {
                                         if (val != null) setState(() => selectedPurpose = val);
@@ -1745,16 +1748,17 @@ class _AnimalsScreenState extends State<AnimalsScreen> {
                                     buildInputField(
                                       label: 'Species *',
                                       child: DropdownButtonFormField<String>(
+                                        isExpanded: true,
                                         value: selectedSpecies,
                                         items: const [
-                                          DropdownMenuItem(value: 'bovine', child: Text('Bovine (Cattle)')),
-                                          DropdownMenuItem(value: 'avian', child: Text('Avian (Poultry)')),
-                                          DropdownMenuItem(value: 'caprine', child: Text('Caprine (Goat)')),
-                                          DropdownMenuItem(value: 'ovine', child: Text('Ovine (Sheep)')),
-                                          DropdownMenuItem(value: 'feline', child: Text('Feline (Cat)')),
-                                          DropdownMenuItem(value: 'canine', child: Text('Canine (Dog)')),
-                                          DropdownMenuItem(value: 'leprine', child: Text('Leprine (Rabbit)')),
-                                          DropdownMenuItem(value: 'others', child: Text('Others')),
+                                          DropdownMenuItem(value: 'bovine', child: Text('Bovine (Cattle)', overflow: TextOverflow.ellipsis)),
+                                          DropdownMenuItem(value: 'avian', child: Text('Avian (Poultry)', overflow: TextOverflow.ellipsis)),
+                                          DropdownMenuItem(value: 'caprine', child: Text('Caprine (Goat)', overflow: TextOverflow.ellipsis)),
+                                          DropdownMenuItem(value: 'ovine', child: Text('Ovine (Sheep)', overflow: TextOverflow.ellipsis)),
+                                          DropdownMenuItem(value: 'feline', child: Text('Feline (Cat)', overflow: TextOverflow.ellipsis)),
+                                          DropdownMenuItem(value: 'canine', child: Text('Canine (Dog)', overflow: TextOverflow.ellipsis)),
+                                          DropdownMenuItem(value: 'leprine', child: Text('Leprine (Rabbit)', overflow: TextOverflow.ellipsis)),
+                                          DropdownMenuItem(value: 'others', child: Text('Others', overflow: TextOverflow.ellipsis)),
                                         ],
                                         onChanged: (val) => setState(() => selectedSpecies = val!),
                                       ),
@@ -1991,12 +1995,14 @@ class _AnimalsScreenState extends State<AnimalsScreen> {
                                           child: buildInputField(
                                             label: 'Age Unit *',
                                             child: DropdownButtonFormField<String>(
+                                              isExpanded: true,
+
                                               value: estimatedAgeUnit,
                                               items: const [
-                                                DropdownMenuItem(value: 'Years', child: Text('Years')),
-                                                DropdownMenuItem(value: 'Months', child: Text('Months')),
-                                                DropdownMenuItem(value: 'Weeks', child: Text('Weeks')),
-                                                DropdownMenuItem(value: 'Days', child: Text('Days')),
+                                                DropdownMenuItem(value: 'Years', child: Text('Years', overflow: TextOverflow.ellipsis)),
+                                                DropdownMenuItem(value: 'Months', child: Text('Months', overflow: TextOverflow.ellipsis)),
+                                                DropdownMenuItem(value: 'Weeks', child: Text('Weeks', overflow: TextOverflow.ellipsis)),
+                                                DropdownMenuItem(value: 'Days', child: Text('Days', overflow: TextOverflow.ellipsis)),
                                               ],
                                               onChanged: (val) {
                                                 if (val != null) {
@@ -2063,13 +2069,15 @@ class _AnimalsScreenState extends State<AnimalsScreen> {
                                   buildInputField(
                                     label: 'Operational Purpose',
                                     child: DropdownButtonFormField<String>(
+                                      isExpanded: true,
+
                                       value: selectedPurpose,
                                       items: const [
-                                        DropdownMenuItem(value: 'breeding', child: Text('Breeding')),
+                                        DropdownMenuItem(value: 'breeding', child: Text('Breeding', overflow: TextOverflow.ellipsis)),
                                         DropdownMenuItem(value: 'milk', child: Text('Dairy (Milk)')),
                                         DropdownMenuItem(value: 'meat', child: Text('Beef (Meat)')),
                                         DropdownMenuItem(value: 'eggs', child: Text('Layers (Eggs)')),
-                                        DropdownMenuItem(value: 'others', child: Text('Others')),
+                                        DropdownMenuItem(value: 'others', child: Text('Others', overflow: TextOverflow.ellipsis)),
                                       ],
                                       onChanged: (val) => setState(() => selectedPurpose = val!),
                                     ),

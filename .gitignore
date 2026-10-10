@@ -22,3 +22,9 @@ mobile/android/local.properties
 # OS files
 .DS_Store
 Thumbs.db
+
+# Agent / Tooling files
+.agents/
+skills-lock.json
+RGF_App_Repo/
+assets/

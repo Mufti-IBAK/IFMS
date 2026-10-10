@@ -15,6 +15,7 @@ import '../../features/hatchery/hatchery_repository.dart';
 import '../../features/pharmacy/pharmacy_repository.dart';
 import '../../features/staff/staff_repository.dart';
 import '../../features/breeding/breeding_repository.dart';
+import '../../features/yoghurt/yoghurt_repository.dart';
 import '../../features/settings/settings_controller.dart';
 
 final sl = GetIt.instance;
@@ -50,5 +51,6 @@ Future<void> setupLocator() async {
   sl.registerLazySingleton<PharmacyRepository>(() => PharmacyRepository(sl()));
   sl.registerLazySingleton<StaffRepository>(() => StaffRepository(sl(), sl()));
   sl.registerLazySingleton<BreedingRepository>(() => BreedingRepository(sl(), sl()));
+  sl.registerLazySingleton<YoghurtRepository>(() => YoghurtRepository(sl()));
 }
 

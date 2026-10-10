@@ -36,6 +36,7 @@ import 'features/staff/staff_screen.dart';
 import 'features/breeding/breeding_bloc.dart';
 import 'features/breeding/breeding_repository.dart';
 import 'features/breeding/breeding_screen.dart';
+import 'features/yoghurt/yoghurt_screen.dart';
 import 'features/history/history_tracking_screen.dart';
 import 'core/network/notification_service.dart';
 import 'core/sync/sync_manager.dart';
@@ -212,6 +213,7 @@ class _IFMSAppState extends State<IFMSApp> {
               '/animals': (context) => const AnimalsScreen(),
               '/tasks': (context) => const TasksScreen(),
               '/dairy': (context) => const DairyScreen(),
+              '/yoghurt': (context) => const YoghurtScreen(),
               '/poultry': (context) => const PoultryScreen(),
               '/finance': (context) => const FinanceScreen(),
               '/alerts': (context) => const AlertScreen(),
@@ -231,8 +233,32 @@ class _IFMSAppState extends State<IFMSApp> {
   }
 }
 
-class MainNavigationWrapper extends StatelessWidget {
+class MainNavigationWrapper extends StatefulWidget {
   const MainNavigationWrapper({super.key});
+
+  @override
+  State<MainNavigationWrapper> createState() => _MainNavigationWrapperState();
+}
+
+class _MainNavigationWrapperState extends State<MainNavigationWrapper> with WidgetsBindingObserver {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      sl<SyncManager>().syncOnAppResume();
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -337,6 +363,7 @@ class HomeScreen extends StatelessWidget {
             _buildDrawerItem(context, 'Livestock Portfolio', Icons.agriculture, '/animals'),
             _buildDrawerItem(context, 'Genetics & Lineage', Icons.favorite, '/breeding'),
             _buildDrawerItem(context, 'Milk Production Registry', Icons.water_drop, '/dairy'),
+            _buildDrawerItem(context, 'Yoghurt Processing Hub', Icons.icecream, '/yoghurt'),
             _buildDrawerItem(context, 'Poultry Batches Control', Icons.egg, '/poultry'),
             _buildDrawerItem(context, 'Task & Operation Logs', Icons.assignment, '/tasks'),
             _buildDrawerItem(context, 'Alerts & Insights Control', Icons.notifications_active, '/alerts'),
@@ -385,9 +412,12 @@ class HomeScreen extends StatelessWidget {
           ],
         ),
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
+      body: RefreshIndicator(
+        onRefresh: () async => await sl<SyncManager>().syncAll(),
+        child: SingleChildScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // Welcome Section
@@ -742,8 +772,9 @@ class HomeScreen extends StatelessWidget {
           ],
         ),
       ),
-    );
-  }
+    ),
+  );
+}
 
   Widget _buildDrawerItem(BuildContext context, String title, IconData icon, String route) {
     return ListTile(

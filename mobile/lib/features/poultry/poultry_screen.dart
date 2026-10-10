@@ -260,12 +260,12 @@ class _PoultryScreenState extends State<PoultryScreen> with SingleTickerProvider
                       decoration: const InputDecoration(labelText: 'Poultry Type *'),
                       isExpanded: true,
                       items: const [
-                        DropdownMenuItem(value: 'broiler', child: Text('Broilers')),
-                        DropdownMenuItem(value: 'layer', child: Text('Layers')),
-                        DropdownMenuItem(value: 'cockerel', child: Text('Cockerels')),
-                        DropdownMenuItem(value: 'noiler', child: Text('Noilers')),
-                        DropdownMenuItem(value: 'turkey', child: Text('Turkeys')),
-                        DropdownMenuItem(value: 'duck', child: Text('Ducks')),
+                        DropdownMenuItem(value: 'broiler', child: Text('Broilers', overflow: TextOverflow.ellipsis)),
+                        DropdownMenuItem(value: 'layer', child: Text('Layers', overflow: TextOverflow.ellipsis)),
+                        DropdownMenuItem(value: 'cockerel', child: Text('Cockerels', overflow: TextOverflow.ellipsis)),
+                        DropdownMenuItem(value: 'noiler', child: Text('Noilers', overflow: TextOverflow.ellipsis)),
+                        DropdownMenuItem(value: 'turkey', child: Text('Turkeys', overflow: TextOverflow.ellipsis)),
+                        DropdownMenuItem(value: 'duck', child: Text('Ducks', overflow: TextOverflow.ellipsis)),
                       ],
                       onChanged: (v) => setStateDialog(() => selectedType = v!),
                     ),
@@ -469,8 +469,8 @@ class _PoultryScreenState extends State<PoultryScreen> with SingleTickerProvider
                       decoration: const InputDecoration(labelText: 'Flock Status *'),
                       isExpanded: true,
                       items: const [
-                        DropdownMenuItem(value: 'active', child: Text('Active')),
-                        DropdownMenuItem(value: 'closed', child: Text('Closed')),
+                        DropdownMenuItem(value: 'active', child: Text('Active', overflow: TextOverflow.ellipsis)),
+                        DropdownMenuItem(value: 'closed', child: Text('Closed', overflow: TextOverflow.ellipsis)),
                       ],
                       onChanged: (v) => setStateDialog(() => selectedStatus = v!),
                     ),
@@ -1320,7 +1320,7 @@ class _PoultryDetailScreenState extends State<PoultryDetailScreen> {
                         decoration: const InputDecoration(labelText: 'Select Formulated Feed'),
                         isExpanded: true,
                         items: formulas.map((f) {
-                          return DropdownMenuItem(value: f.id, child: Text(f.name));
+                          return DropdownMenuItem(value: f.id, child: Text(f.name, overflow: TextOverflow.ellipsis));
                         }).toList(),
                         onChanged: (v) => setStateDialog(() => selectedFormulaId = v!),
                       ),
@@ -1444,7 +1444,7 @@ class _PoultryDetailScreenState extends State<PoultryDetailScreen> {
                           decoration: const InputDecoration(labelText: 'Select Medication / Vaccine *'),
                           isExpanded: true,
                           items: medications.map((m) {
-                            return DropdownMenuItem(value: m.id, child: Text(m.name));
+                            return DropdownMenuItem(value: m.id, child: Text(m.name, overflow: TextOverflow.ellipsis));
                           }).toList(),
                           onChanged: (v) => setStateDialog(() => selectedMedId = v!),
                         ),

@@ -282,9 +282,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       ),
                       const SizedBox(height: 16),
                       DropdownButtonFormField<String>(
+                        isExpanded: true,
+
                         value: _selectedGender,
                         items: _genders
-                            .map((g) => DropdownMenuItem(value: g, child: Text(g)))
+                            .map((g) => DropdownMenuItem(value: g, child: Text(g, overflow: TextOverflow.ellipsis)))
                             .toList(),
                         onChanged: (val) {
                           if (val != null) setState(() => _selectedGender = val);
@@ -321,9 +323,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       ),
                       const Divider(height: 24),
                       DropdownButtonFormField<String>(
+                        isExpanded: true,
+
                         value: _selectedRole,
                         items: _roles
-                            .map((r) => DropdownMenuItem(value: r, child: Text(r)))
+                            .map((r) => DropdownMenuItem(value: r, child: Text(r, overflow: TextOverflow.ellipsis)))
                             .toList(),
                         onChanged: (val) {
                           if (val != null) setState(() => _selectedRole = val);

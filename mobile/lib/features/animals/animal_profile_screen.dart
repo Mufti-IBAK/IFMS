@@ -12,6 +12,7 @@ import '../../core/di/service_locator.dart';
 import '../../core/database/local_db.dart';
 import '../../core/network/api_client.dart';
 import '../../core/utils/report_service.dart';
+import '../../core/utils/animal_tag_formatter.dart';
 import '../finance/finance_repository.dart';
 import '../pharmacy/pharmacy_repository.dart';
 import 'animals_repository.dart';
@@ -61,6 +62,7 @@ class _AnimalProfileScreenState extends State<AnimalProfileScreen> with SingleTi
   late String? _vaccinationStatus;
   late String? _dewormingStatus;
   late dynamic _weight;
+  late String _generation;
 
   @override
   void initState() {
@@ -85,6 +87,7 @@ class _AnimalProfileScreenState extends State<AnimalProfileScreen> with SingleTi
     _vaccinationStatus = animal.vaccinationStatus;
     _dewormingStatus = animal.dewormingStatus;
     _weight = animal.weight;
+    _generation = animal.generation;
 
     final isCow = _species.toLowerCase() == 'cow' || _species.toLowerCase() == 'bovine';
     final showProduction = isCow && _sex.toLowerCase() == 'female';
@@ -230,14 +233,13 @@ class _AnimalProfileScreenState extends State<AnimalProfileScreen> with SingleTi
 
   @override
   Widget build(BuildContext context) {
-    final int? age = _dateOfBirth != null ? DateTime.now().difference(_dateOfBirth!).inDays : null;
-    final ageString = age != null ? (age > 365 ? '${(age / 365).toStringAsFixed(1)} Yrs' : '$age Days') : 'Unknown';
+    final ageString = AnimalTagFormatter.calculateDynamicAge(_dateOfBirth);
     final speciesStr = _species[0].toUpperCase() + _species.substring(1).toLowerCase();
     final isCow = _species.toLowerCase() == 'cow' || _species.toLowerCase() == 'bovine';
 
     return Scaffold(
       appBar: AppBar(
-        title: Text('${speciesStr.toUpperCase()} #$_tagId'),
+        title: Text('${speciesStr.toUpperCase()} ${_tagId.contains("-") ? _tagId : "#$_tagId"}'),
         actions: [
           IconButton(
             icon: const Icon(Icons.medical_services, color: AppColors.error),
@@ -348,10 +350,12 @@ class _AnimalProfileScreenState extends State<AnimalProfileScreen> with SingleTi
                     Text(
                       'Tag ID: $_tagId',
                       style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 20),
+                      overflow: TextOverflow.ellipsis,
                     ),
                     Text(
-                      '$speciesStr • $_breed',
+                      '$speciesStr • $_breed • Gen $_generation',
                       style: const TextStyle(fontSize: 13, color: Colors.grey),
+                      overflow: TextOverflow.ellipsis,
                     ),
                     const SizedBox(height: 8),
                     Container(
@@ -1849,6 +1853,7 @@ class _AnimalProfileScreenState extends State<AnimalProfileScreen> with SingleTi
     final weightController = TextEditingController(text: _weight?.toString() ?? '');
     final colorController = TextEditingController(text: _color ?? '');
     final marksController = TextEditingController(text: _uniqueMarks ?? '');
+    String selectedGenEdit = (widget.animal as LocalAnimal).generation;
     
     final List<String> selectedVaccines = [];
     String? nextVaccineToSchedule;
@@ -1999,8 +2004,27 @@ class _AnimalProfileScreenState extends State<AnimalProfileScreen> with SingleTi
                   ),
                   const SizedBox(height: 16),
                   
-                  TextField(textCapitalization: TextCapitalization.sentences, controller: tagController,
-                    decoration: const InputDecoration(labelText: 'Tag ID / Identifier *', prefixIcon: Icon(Icons.tag)),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: TextField(textCapitalization: TextCapitalization.sentences, controller: tagController,
+                          decoration: const InputDecoration(labelText: 'Tag ID / Identifier *', prefixIcon: Icon(Icons.tag)),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: DropdownButtonFormField<String>(
+                          isExpanded: true,
+
+                          value: selectedGenEdit,
+                          decoration: const InputDecoration(labelText: 'Generation *', prefixIcon: Icon(Icons.hub_outlined)),
+                          items: ['F1', 'F2', 'F3', 'F4', 'F5', 'F6', 'F7', 'F8', 'F9', 'F10'].map((g) =>
+                            DropdownMenuItem(value: g, child: Text('Gen $g', overflow: TextOverflow.ellipsis))
+                          ).toList(),
+                          onChanged: (val) => setStateSheet(() => selectedGenEdit = val!),
+                        ),
+                      ),
+                    ],
                   ),
                   const SizedBox(height: 8),
                   
@@ -2008,6 +2032,8 @@ class _AnimalProfileScreenState extends State<AnimalProfileScreen> with SingleTi
                     children: [
                       Expanded(
                         child: DropdownButtonFormField<String>(
+                          isExpanded: true,
+
                           initialValue: selectedSpecies,
                           decoration: const InputDecoration(labelText: 'Species *'),
                           items: const [
@@ -2023,11 +2049,13 @@ class _AnimalProfileScreenState extends State<AnimalProfileScreen> with SingleTi
                       const SizedBox(width: 12),
                       Expanded(
                         child: DropdownButtonFormField<String>(
+                          isExpanded: true,
+
                           initialValue: selectedSex,
                           decoration: const InputDecoration(labelText: 'Sex *'),
                           items: const [
-                            DropdownMenuItem(value: 'female', child: Text('Female')),
-                            DropdownMenuItem(value: 'male', child: Text('Male')),
+                            DropdownMenuItem(value: 'female', child: Text('Female', overflow: TextOverflow.ellipsis)),
+                            DropdownMenuItem(value: 'male', child: Text('Male', overflow: TextOverflow.ellipsis)),
                           ],
                           onChanged: (val) => setStateSheet(() => selectedSex = val!),
                         ),
@@ -2151,13 +2179,15 @@ class _AnimalProfileScreenState extends State<AnimalProfileScreen> with SingleTi
                       const SizedBox(width: 12),
                       Expanded(
                         child: DropdownButtonFormField<String>(
+                          isExpanded: true,
+
                           initialValue: selectedPurpose,
                           decoration: const InputDecoration(labelText: 'Purpose'),
                           items: const [
-                            DropdownMenuItem(value: 'breeding', child: Text('Breeding')),
+                            DropdownMenuItem(value: 'breeding', child: Text('Breeding', overflow: TextOverflow.ellipsis)),
                             DropdownMenuItem(value: 'milk', child: Text('Dairy (Milk)')),
                             DropdownMenuItem(value: 'meat', child: Text('Beef (Meat)')),
-                            DropdownMenuItem(value: 'others', child: Text('Others')),
+                            DropdownMenuItem(value: 'others', child: Text('Others', overflow: TextOverflow.ellipsis)),
                           ],
                           onChanged: (val) => setStateSheet(() => selectedPurpose = val!),
                         ),
@@ -2272,12 +2302,14 @@ class _AnimalProfileScreenState extends State<AnimalProfileScreen> with SingleTi
                           child: buildInputField(
                             label: 'Age Unit *',
                             child: DropdownButtonFormField<String>(
+                              isExpanded: true,
+
                               value: estimatedAgeUnit,
                               items: const [
-                                DropdownMenuItem(value: 'Years', child: Text('Years')),
-                                DropdownMenuItem(value: 'Months', child: Text('Months')),
-                                DropdownMenuItem(value: 'Weeks', child: Text('Weeks')),
-                                DropdownMenuItem(value: 'Days', child: Text('Days')),
+                                DropdownMenuItem(value: 'Years', child: Text('Years', overflow: TextOverflow.ellipsis)),
+                                DropdownMenuItem(value: 'Months', child: Text('Months', overflow: TextOverflow.ellipsis)),
+                                DropdownMenuItem(value: 'Weeks', child: Text('Weeks', overflow: TextOverflow.ellipsis)),
+                                DropdownMenuItem(value: 'Days', child: Text('Days', overflow: TextOverflow.ellipsis)),
                               ],
                               onChanged: (val) {
                                 if (val != null) {
@@ -2396,8 +2428,20 @@ class _AnimalProfileScreenState extends State<AnimalProfileScreen> with SingleTi
                             }
 
                             // Update repository
-                            await sl<AnimalsRepository>().updateAnimal(_id, {
-                              'tag_id': tagController.text.trim(),
+                            final breedCode = AnimalTagFormatter.getBreedCode(
+                                breed: finalBreed,
+                                pedigreeType: finalPedigreeType,
+                                species: selectedSpecies,
+                              );
+                              final formattedTagId = AnimalTagFormatter.formatTagId(
+                                rawTag: tagController.text.trim(),
+                                breedCode: breedCode,
+                                generation: selectedGenEdit,
+                              );
+
+                              await sl<AnimalsRepository>().updateAnimal(_id, {
+                                'tag_id': formattedTagId,
+                                'generation': selectedGenEdit,
                               'species': selectedSpecies,
                               'sex': selectedSex,
                               'breed': finalBreed,
@@ -2430,6 +2474,7 @@ class _AnimalProfileScreenState extends State<AnimalProfileScreen> with SingleTi
                               _vaccinationStatus = updated.vaccinationStatus;
                               _dewormingStatus = updated.dewormingStatus;
                               _weight = updated.weight;
+                              _generation = updated.generation;
                             });
 
                             if (bottomSheetContext.mounted) {
@@ -2495,14 +2540,14 @@ class _AnimalProfileScreenState extends State<AnimalProfileScreen> with SingleTi
                       decoration: const InputDecoration(labelText: 'Event Type *'),
                       isExpanded: true,
                       items: const [
-                        DropdownMenuItem(value: 'heat', child: Text('Heat Detected')),
-                        DropdownMenuItem(value: 'mating', child: Text('Natural Mating')),
+                        DropdownMenuItem(value: 'heat', child: Text('Heat Detected', overflow: TextOverflow.ellipsis)),
+                        DropdownMenuItem(value: 'mating', child: Text('Natural Mating', overflow: TextOverflow.ellipsis)),
                         DropdownMenuItem(value: 'ai_insemination', child: Text('Artificial Insemination (AI)')),
-                        DropdownMenuItem(value: 'ostrus_synchronization', child: Text('Estrus Synchronization')),
-                        DropdownMenuItem(value: 'pregnancy_check', child: Text('Pregnancy Check')),
-                        DropdownMenuItem(value: 'confirmed_pregnant', child: Text('Confirmed Pregnant')),
-                        DropdownMenuItem(value: 'abortion', child: Text('Abortion')),
-                        DropdownMenuItem(value: 'calving', child: Text('Calving / Birth')),
+                        DropdownMenuItem(value: 'ostrus_synchronization', child: Text('Estrus Synchronization', overflow: TextOverflow.ellipsis)),
+                        DropdownMenuItem(value: 'pregnancy_check', child: Text('Pregnancy Check', overflow: TextOverflow.ellipsis)),
+                        DropdownMenuItem(value: 'confirmed_pregnant', child: Text('Confirmed Pregnant', overflow: TextOverflow.ellipsis)),
+                        DropdownMenuItem(value: 'abortion', child: Text('Abortion', overflow: TextOverflow.ellipsis)),
+                        DropdownMenuItem(value: 'calving', child: Text('Calving / Birth', overflow: TextOverflow.ellipsis)),
                       ],
                       onChanged: (v) => setStateDialog(() => selectedType = v!),
                     ),
@@ -2575,11 +2620,13 @@ class _AnimalProfileScreenState extends State<AnimalProfileScreen> with SingleTi
                       ),
                       const SizedBox(height: 8),
                       DropdownButtonFormField<String>(
+                        isExpanded: true,
+
                         initialValue: breedingClass,
                         decoration: const InputDecoration(labelText: 'Breeding Class'),
                         items: const [
-                          DropdownMenuItem(value: 'crossed', child: Text('Crossbred / Crossed')),
-                          DropdownMenuItem(value: 'purebred', child: Text('Purebred')),
+                          DropdownMenuItem(value: 'crossed', child: Text('Crossbred / Crossed', overflow: TextOverflow.ellipsis)),
+                          DropdownMenuItem(value: 'purebred', child: Text('Purebred', overflow: TextOverflow.ellipsis)),
                         ],
                         onChanged: (val) => setStateDialog(() => breedingClass = val!),
                       ),
@@ -2592,14 +2639,16 @@ class _AnimalProfileScreenState extends State<AnimalProfileScreen> with SingleTi
                     if (selectedType == 'ostrus_synchronization' || selectedType == 'estrus_synchronization') ...[
                       const SizedBox(height: 8),
                       DropdownButtonFormField<String>(
+                        isExpanded: true,
+
                         initialValue: syncProtocol,
                         decoration: const InputDecoration(labelText: 'Sync Protocol *'),
                         items: const [
                           DropdownMenuItem(value: 'ovsynch', child: Text('Ovsynch (GnRH-PGF-GnRH)')),
-                          DropdownMenuItem(value: 'cosynch', child: Text('Cosynch')),
-                          DropdownMenuItem(value: 'presynch', child: Text('Presynch')),
-                          DropdownMenuItem(value: 'cidr', child: Text('CIDR Insert + Injection')),
-                          DropdownMenuItem(value: 'other', child: Text('Other Hormonal Protocol')),
+                          DropdownMenuItem(value: 'cosynch', child: Text('Cosynch', overflow: TextOverflow.ellipsis)),
+                          DropdownMenuItem(value: 'presynch', child: Text('Presynch', overflow: TextOverflow.ellipsis)),
+                          DropdownMenuItem(value: 'cidr', child: Text('CIDR Insert + Injection', overflow: TextOverflow.ellipsis)),
+                          DropdownMenuItem(value: 'other', child: Text('Other Hormonal Protocol', overflow: TextOverflow.ellipsis)),
                         ],
                         onChanged: (val) => setStateDialog(() => syncProtocol = val!),
                       ),
@@ -2640,17 +2689,21 @@ class _AnimalProfileScreenState extends State<AnimalProfileScreen> with SingleTi
                     if (selectedType == 'pregnancy_check') ...[
                       const SizedBox(height: 8),
                       DropdownButtonFormField<String>(
+                        isExpanded: true,
+
                         initialValue: checkMethod,
                         decoration: const InputDecoration(labelText: 'Check Method'),
                         items: const [
-                          DropdownMenuItem(value: 'palpation', child: Text('Rectal Palpation')),
-                          DropdownMenuItem(value: 'ultrasound', child: Text('Ultrasound Scan')),
-                          DropdownMenuItem(value: 'blood_test', child: Text('Blood Progesterone Test')),
+                          DropdownMenuItem(value: 'palpation', child: Text('Rectal Palpation', overflow: TextOverflow.ellipsis)),
+                          DropdownMenuItem(value: 'ultrasound', child: Text('Ultrasound Scan', overflow: TextOverflow.ellipsis)),
+                          DropdownMenuItem(value: 'blood_test', child: Text('Blood Progesterone Test', overflow: TextOverflow.ellipsis)),
                         ],
                         onChanged: (val) => setStateDialog(() => checkMethod = val!),
                       ),
                       const SizedBox(height: 8),
                       DropdownButtonFormField<String>(
+                        isExpanded: true,
+
                         initialValue: checkResult,
                         decoration: const InputDecoration(labelText: 'Result *'),
                         items: const [
@@ -2694,6 +2747,8 @@ class _AnimalProfileScreenState extends State<AnimalProfileScreen> with SingleTi
                     if (selectedType == 'calving') ...[
                       const SizedBox(height: 8),
                       DropdownButtonFormField<String>(
+                        isExpanded: true,
+
                         initialValue: calvingEase,
                         decoration: const InputDecoration(labelText: 'Calving Ease'),
                         items: const [
@@ -2710,6 +2765,8 @@ class _AnimalProfileScreenState extends State<AnimalProfileScreen> with SingleTi
                       ),
                       const SizedBox(height: 8),
                       DropdownButtonFormField<String>(
+                        isExpanded: true,
+
                         initialValue: offspringSex,
                         decoration: const InputDecoration(labelText: 'Offspring Sex'),
                         items: const [

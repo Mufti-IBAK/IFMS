@@ -1,5 +1,7 @@
+import 'dart:async';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../core/database/local_db.dart';
+import '../../core/sync/sync_event_bus.dart';
 import 'poultry_repository.dart';
 
 abstract class PoultryEvent {}
@@ -68,8 +70,15 @@ class PoultryError extends PoultryState {
 
 class PoultryBloc extends Bloc<PoultryEvent, PoultryState> {
   final PoultryRepository repository;
+  StreamSubscription<SyncCompletedEvent>? _syncSubscription;
 
   PoultryBloc(this.repository) : super(PoultryLoading()) {
+    _syncSubscription = SyncEventBus().stream.listen((event) {
+      if (event.containsAny(['poultry_batches', 'poultry_logs', 'poultry_events'])) {
+        add(LoadPoultryData());
+      }
+    });
+
     on<LoadPoultryData>((event, emit) async {
       final currentState = state;
       if (currentState is! PoultryLoaded) {
@@ -250,4 +259,11 @@ class PoultryBloc extends Bloc<PoultryEvent, PoultryState> {
       }
     });
   }
+
+  @override
+  Future<void> close() {
+    _syncSubscription?.cancel();
+    return super.close();
+  }
 }
+

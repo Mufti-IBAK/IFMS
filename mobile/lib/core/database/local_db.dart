@@ -6,7 +6,7 @@ import 'package:flutter/services.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:path/path.dart' as p;
 import 'package:sqlite3/sqlite3.dart' as sq;
-
+import '../utils/animal_tag_formatter.dart';
 
 part 'local_db.g.dart';
 
@@ -17,6 +17,7 @@ class LocalAnimals extends Table {
   TextColumn get breed => text().nullable()();
   TextColumn get sex => text()();
   DateTimeColumn get dateOfBirth => dateTime().nullable()();
+  TextColumn get generation => text().withDefault(const Constant('F1'))();
   TextColumn get locationId => text().nullable()();
   TextColumn get currentReproductiveStatus => text()();
   RealColumn get acquisitionCost => real().withDefault(const Constant(0.0))();
@@ -475,9 +476,83 @@ class LocalAuditLogs extends Table {
   TextColumn get moduleName => text()();          // "animals", "poultry", "hatchery", "finance", "staff", "inventory", "pharmacy"
   TextColumn get entityId => text().nullable()();
   TextColumn get entityLabel => text().nullable()(); // human-readable label
-  TextColumn get description => text()();
+  TextColumn get description => text().withDefault(const Constant(''))();
   TextColumn get detailsJson => text().nullable()(); // JSON diff of old→new values
   DateTimeColumn get timestamp => dateTime().withDefault(currentDateAndTime)();
+
+  @override
+  Set<Column> get primaryKey => {id};
+}
+
+class LocalYoghurtBatches extends Table {
+  TextColumn get id => text()();
+  TextColumn get batchNumber => text()();
+  DateTimeColumn get productionDate => dateTime()();
+  RealColumn get milkInputLiters => real()();
+  RealColumn get milkCostPerLiter => real()();
+  RealColumn get totalMilkCost => real()();
+  IntColumn get bottlesProduced => integer()();
+  IntColumn get packsProduced => integer()();
+  IntColumn get bottlesRemaining => integer()();
+  RealColumn get additionalCosts => real().withDefault(const Constant(0.0))();
+  TextColumn get producedByName => text()();
+  TextColumn get producedByRole => text()();
+  TextColumn get notes => text().nullable()();
+  DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
+
+  @override
+  Set<Column> get primaryKey => {id};
+}
+
+class LocalYoghurtSales extends Table {
+  TextColumn get id => text()();
+  DateTimeColumn get saleDate => dateTime()();
+  TextColumn get customerName => text()();
+  TextColumn get customerPhone => text().nullable()();
+  TextColumn get description => text().nullable()();
+  TextColumn get saleUnit => text()(); // "bottles", "packs"
+  IntColumn get quantityUnits => integer()();
+  IntColumn get totalBottles => integer()();
+  RealColumn get unitPrice => real()();
+  RealColumn get totalAmount => real()();
+  RealColumn get amountPaid => real()();
+  RealColumn get balanceDue => real().withDefault(const Constant(0.0))();
+  TextColumn get balancePayer => text()(); // "client_owes_farm", "farm_owes_client", "cleared"
+  TextColumn get initiatedByName => text()();
+  TextColumn get initiatedByRole => text()();
+  TextColumn get selectedBatchId => text().nullable()();
+  DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
+
+  @override
+  Set<Column> get primaryKey => {id};
+}
+
+class LocalYoghurtReturns extends Table {
+  TextColumn get id => text()();
+  DateTimeColumn get returnDate => dateTime()();
+  TextColumn get customerName => text()();
+  TextColumn get description => text().nullable()();
+  IntColumn get initialBoughtBottles => integer()();
+  IntColumn get returnedBottles => integer()();
+  IntColumn get replacedBottles => integer()();
+  TextColumn get processedByName => text()();
+  TextColumn get processedByRole => text()();
+  TextColumn get selectedBatchId => text().nullable()();
+  DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
+
+  @override
+  Set<Column> get primaryKey => {id};
+}
+
+class LocalYoghurtExpenses extends Table {
+  TextColumn get id => text()();
+  DateTimeColumn get expenseDate => dateTime()();
+  TextColumn get description => text()();
+  TextColumn get category => text().withDefault(const Constant('other'))();
+  RealColumn get amount => real()();
+  TextColumn get processedByName => text()();
+  TextColumn get processedByRole => text()();
+  DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
 
   @override
   Set<Column> get primaryKey => {id};
@@ -514,12 +589,16 @@ class LocalAuditLogs extends Table {
   LocalFarmEvents,
   LocalBreedingEvents,
   LocalAuditLogs,
+  LocalYoghurtBatches,
+  LocalYoghurtSales,
+  LocalYoghurtReturns,
+  LocalYoghurtExpenses,
 ])
 class LocalDatabase extends _$LocalDatabase {
   LocalDatabase([QueryExecutor? executor]) : super(executor ?? _openConnection());
 
   @override
-  int get schemaVersion => 29;
+  int get schemaVersion => 32;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -645,12 +724,39 @@ class LocalDatabase extends _$LocalDatabase {
           await m.addColumn(localFeedItems, localFeedItems.purchaseUnit);
         } catch (_) {}
       }
-      // --- V28 & V29: Schema upgrades handled safely in beforeOpen customStatements ---
+      // --- V30: Yoghurt production, sales, customer debt ledger, returns ---
+      if (from < 30) {
+        try {
+          await m.createTable(localYoghurtBatches);
+          await m.createTable(localYoghurtSales);
+          await m.createTable(localYoghurtReturns);
+        } catch (_) {}
+      }
+      // --- V31: Yoghurt expenses and explicit batch selection ---
+      if (from < 31) {
+        try {
+          await m.createTable(localYoghurtExpenses);
+          await m.addColumn(localYoghurtSales, localYoghurtSales.selectedBatchId);
+          await m.addColumn(localYoghurtReturns, localYoghurtReturns.selectedBatchId);
+        } catch (_) {}
+      }
+      // --- V32: Animal generation column and tag ID formatting ---
+      if (from < 32) {
+        try {
+          await m.addColumn(localAnimals, localAnimals.generation);
+        } catch (_) {}
+      }
     },
     beforeOpen: (details) async {
       // Ensure purchase_unit column exists in local_feed_items table
       try {
         await customStatement("ALTER TABLE local_feed_items ADD COLUMN purchase_unit TEXT DEFAULT 'bag';");
+      } catch (_) {}
+      try {
+        await customStatement("ALTER TABLE local_yoghurt_sales ADD COLUMN selected_batch_id TEXT;");
+      } catch (_) {}
+      try {
+        await customStatement("ALTER TABLE local_yoghurt_returns ADD COLUMN selected_batch_id TEXT;");
       } catch (_) {}
       try {
         await customStatement("ALTER TABLE local_medications ADD COLUMN dosage_rate_per_kg REAL;");
@@ -688,6 +794,12 @@ class LocalDatabase extends _$LocalDatabase {
       try {
         await customStatement("ALTER TABLE local_staff_queries ADD COLUMN is_compensation_transferred INTEGER DEFAULT 0;");
       } catch (_) {}
+      try {
+        await customStatement("ALTER TABLE local_audit_logs ADD COLUMN description TEXT DEFAULT '';");
+      } catch (_) {}
+      try {
+        await customStatement("ALTER TABLE local_animals ADD COLUMN generation TEXT DEFAULT 'F1';");
+      } catch (_) {}
 
       // Create high-performance indexing for SQLite queries
       await customStatement('CREATE INDEX IF NOT EXISTS idx_animals_tag_id ON local_animals (tag_id);');
@@ -695,6 +807,9 @@ class LocalDatabase extends _$LocalDatabase {
       await customStatement('CREATE INDEX IF NOT EXISTS idx_transactions_date ON local_transactions (transaction_date);');
       await customStatement('CREATE INDEX IF NOT EXISTS idx_tasks_status ON local_tasks (status);');
       await customStatement('CREATE INDEX IF NOT EXISTS idx_alerts_resolved ON local_alerts (is_resolved);');
+
+      // Migrate existing animals tag ID prefix and generation
+      await migrateAnimalTagsAndGenerations(this);
     },
   );
 }

@@ -4,10 +4,9 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/widgets/custom_charts.dart';
-import '../../core/di/service_locator.dart';
+import '../../core/widgets/responsive_calendar_dialog.dart';
 import '../../core/database/local_db.dart';
 import 'dairy_bloc.dart';
-import 'dairy_repository.dart';
 import 'widgets/add_milk_entry_sheet.dart';
 import '../../core/utils/dairy_pdf_export_service.dart';
 
@@ -143,28 +142,34 @@ class _DairyScreenState extends State<DairyScreen> with SingleTickerProviderStat
   }
 
   Widget _buildDashboardTab(DairyLoaded state) {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final selectedDay = DateTime(state.selectedDashboardDate.year, state.selectedDashboardDate.month, state.selectedDashboardDate.day);
+    final isToday = selectedDay.isAtSameMomentAs(today);
+
     String dateLabel = '';
+    String subtitleLabel = '';
+
     if (state.dashboardFilter == AnalyticsFilter.daily) {
-      dateLabel = DateFormat('MMM dd, yyyy').format(state.selectedDashboardDate);
+      if (isToday) {
+        dateLabel = 'Today';
+        subtitleLabel = DateFormat('MMM dd, yyyy').format(state.selectedDashboardDate);
+      } else if (selectedDay.isAtSameMomentAs(today.subtract(const Duration(days: 1)))) {
+        dateLabel = 'Yesterday';
+        subtitleLabel = DateFormat('MMM dd, yyyy').format(state.selectedDashboardDate);
+      } else {
+        dateLabel = DateFormat('EEE, MMM dd').format(state.selectedDashboardDate);
+        subtitleLabel = DateFormat('yyyy').format(state.selectedDashboardDate);
+      }
     } else if (state.dashboardFilter == AnalyticsFilter.weekly) {
       int weekday = state.selectedDashboardDate.weekday;
       final start = state.selectedDashboardDate.subtract(Duration(days: weekday - 1));
       final end = start.add(const Duration(days: 6));
       dateLabel = '${DateFormat('MMM dd').format(start)} - ${DateFormat('MMM dd').format(end)}';
+      subtitleLabel = 'Weekly Summary (${DateFormat('yyyy').format(start)})';
     } else {
       dateLabel = DateFormat('MMMM yyyy').format(state.selectedDashboardDate);
-    }
-
-    void shiftDate(int direction) {
-      DateTime newDate = state.selectedDashboardDate;
-      if (state.dashboardFilter == AnalyticsFilter.daily) {
-        newDate = state.selectedDashboardDate.add(Duration(days: direction));
-      } else if (state.dashboardFilter == AnalyticsFilter.weekly) {
-        newDate = state.selectedDashboardDate.add(Duration(days: 7 * direction));
-      } else {
-        newDate = DateTime(state.selectedDashboardDate.year, state.selectedDashboardDate.month + direction, state.selectedDashboardDate.day);
-      }
-      context.read<DairyBloc>().add(ChangeDashboardDate(newDate));
+      subtitleLabel = 'Monthly Summary';
     }
 
     return RefreshIndicator(
@@ -172,138 +177,318 @@ class _DairyScreenState extends State<DairyScreen> with SingleTickerProviderStat
       child: ListView(
         padding: const EdgeInsets.all(16),
         children: [
-          Center(
-            child: SegmentedButton<AnalyticsFilter>(
-              segments: const [
-                ButtonSegment(value: AnalyticsFilter.daily, label: Text('Daily')),
-                ButtonSegment(value: AnalyticsFilter.weekly, label: Text('Weekly')),
-                ButtonSegment(value: AnalyticsFilter.monthly, label: Text('Monthly')),
-              ],
-              selected: {state.dashboardFilter},
-              onSelectionChanged: (Set<AnalyticsFilter> newSelection) {
-                context.read<DairyBloc>().add(ChangeDashboardFilter(newSelection.first));
-              },
-              style: ButtonStyle(
-                backgroundColor: MaterialStateProperty.resolveWith<Color>((Set<MaterialState> states) {
-                  return states.contains(MaterialState.selected) ? AppColors.primary.withOpacity(0.2) : Colors.transparent;
-                }),
+          // Header Card: Date & Period Selector
+          Card(
+            elevation: 2,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            child: Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(16),
+                gradient: LinearGradient(
+                  colors: [Colors.teal.shade50.withOpacity(0.8), Colors.white],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
               ),
-            ),
-          ),
-          const SizedBox(height: 8),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              IconButton(icon: const Icon(Icons.chevron_left), onPressed: () => shiftDate(-1)),
-              Text(dateLabel, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-              IconButton(icon: const Icon(Icons.chevron_right), onPressed: () => shiftDate(1)),
-            ],
-          ),
-          const SizedBox(height: 16),
-          _buildKpiCard('Total Milk', '${state.totalMilkDashboard.toStringAsFixed(1)} Liters', Icons.water_drop, Colors.blue),
-          const SizedBox(height: 12),
-          Row(
-            children: [
-              Expanded(child: _buildKpiCard('Avg / Cow', '${state.averagePerCowDashboard.toStringAsFixed(1)} L', Icons.scale, Colors.teal)),
-              const SizedBox(width: 12),
-              Expanded(child: _buildKpiCard('Cows Milked', '${state.cowsMilkedCount}', Icons.pets, Colors.orange)),
-            ],
-          ),
-          const SizedBox(height: 24),
-          Text(state.dashboardFilter == AnalyticsFilter.daily ? 'Entries for $dateLabel' : 'Entries for this period', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-          const SizedBox(height: 12),
-          if (state.dashboardRecords.isEmpty)
-            const Center(child: Text('No milk records found.'))
-          else
-            ...state.dashboardRecords.map((record) {
-              final tagId = state.animalTagMap[record.animalId] ?? record.animalId.substring(0, 8);
-              return Card(
-                child: ListTile(
-                  leading: CircleAvatar(
-                    backgroundColor: record.isWithdrawn ? Colors.red.shade100 : Colors.blue.shade50,
-                    child: Icon(
-                      record.isWithdrawn ? Icons.warning : Icons.water_drop,
-                      color: record.isWithdrawn ? Colors.red : Colors.blue,
-                    ),
-                  ),
-                  title: Text('Cow ID: $tagId', style: const TextStyle(fontWeight: FontWeight.bold)),
-                  subtitle: Text('Session: ${record.milkingSession} • ${DateFormat('MMM dd, HH:mm').format(record.recordDate)}'),
-                  trailing: Row(
-                    mainAxisSize: MainAxisSize.min,
+              child: Column(
+                children: [
+                  // Row 1: Filter Segment Pills & TODAY Quick Button
+                  Row(
                     children: [
-                      Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        crossAxisAlignment: CrossAxisAlignment.end,
-                        children: [
-                          Text('${record.quantityLiters.toStringAsFixed(1)} L', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-                          if (record.isWithdrawn)
-                            const Text('WITHDRAWN', style: TextStyle(color: Colors.red, fontSize: 10, fontWeight: FontWeight.bold))
-                        ],
+                      Container(
+                        padding: const EdgeInsets.all(3),
+                        decoration: BoxDecoration(
+                          color: Colors.grey.shade200,
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: AnalyticsFilter.values.map((f) {
+                            final isSelected = state.dashboardFilter == f;
+                            final title = f == AnalyticsFilter.daily
+                                ? 'Daily'
+                                : f == AnalyticsFilter.weekly
+                                    ? 'Weekly'
+                                    : 'Monthly';
+                            return GestureDetector(
+                              onTap: () => context.read<DairyBloc>().add(ChangeDashboardFilter(f)),
+                              child: AnimatedContainer(
+                                duration: const Duration(milliseconds: 180),
+                                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                                decoration: BoxDecoration(
+                                  color: isSelected ? AppColors.primary : Colors.transparent,
+                                  borderRadius: BorderRadius.circular(16),
+                                  boxShadow: isSelected
+                                      ? [BoxShadow(color: AppColors.primary.withOpacity(0.3), blurRadius: 4, offset: const Offset(0, 2))]
+                                      : [],
+                                ),
+                                child: Text(
+                                  title,
+                                  style: TextStyle(
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.bold,
+                                    color: isSelected ? Colors.white : Colors.grey.shade700,
+                                  ),
+                                ),
+                              ),
+                            );
+                          }).toList(),
+                        ),
                       ),
-                      PopupMenuButton<String>(
-                        icon: const Icon(Icons.more_vert),
-                        onSelected: (value) {
-                          if (value == 'edit') {
-                            showModalBottomSheet(
-                              context: context,
-                              isScrollControlled: true,
-                              backgroundColor: Colors.transparent,
-                              builder: (ctx) => BlocProvider.value(
-                                value: context.read<DairyBloc>(),
-                                child: AddMilkEntrySheet(record: record),
-                              ),
-                            );
-                          } else if (value == 'delete') {
-                            showDialog(
-                              context: context,
-                              builder: (ctx) => AlertDialog(
-                                title: const Text('Delete Record'),
-                                content: const Text('Are you sure you want to delete this milk record?'),
-                                actions: [
-                                  TextButton(
-                                    onPressed: () => Navigator.pop(ctx),
-                                    child: const Text('Cancel'),
-                                  ),
-                                  TextButton(
-                                    onPressed: () {
-                                      context.read<DairyBloc>().add(DeleteMilkEntry(record.id));
-                                      Navigator.pop(ctx);
-                                    },
-                                    child: const Text('Delete', style: TextStyle(color: Colors.red)),
-                                  ),
-                                ],
-                              ),
-                            );
-                          }
-                        },
-                        itemBuilder: (context) => [
-                          const PopupMenuItem(
-                            value: 'edit',
-                            child: Row(
+                      const Spacer(),
+                      if (!isToday || state.dashboardFilter != AnalyticsFilter.daily)
+                        InkWell(
+                          onTap: () {
+                            context.read<DairyBloc>().add(ChangeDashboardFilter(AnalyticsFilter.daily));
+                            context.read<DairyBloc>().add(ChangeDashboardDate(today));
+                          },
+                          borderRadius: BorderRadius.circular(12),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
+                            decoration: BoxDecoration(
+                              color: Colors.teal.shade100,
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(color: Colors.teal.shade300),
+                            ),
+                            child: const Row(
+                              mainAxisSize: MainAxisSize.min,
                               children: [
-                                Icon(Icons.edit, size: 20),
-                                SizedBox(width: 8),
-                                Text('Edit'),
+                                Icon(Icons.replay, size: 12, color: Colors.teal),
+                                SizedBox(width: 4),
+                                Text('TODAY', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.teal)),
                               ],
                             ),
                           ),
-                          const PopupMenuItem(
-                            value: 'delete',
+                        ),
+                    ],
+                  ),
+                  const SizedBox(height: 10),
+
+                  // Row 2: Interactive Date Selector Bar
+                  Row(
+                    children: [
+                      Material(
+                        color: Colors.transparent,
+                        child: InkWell(
+                          borderRadius: BorderRadius.circular(10),
+                          onTap: () {
+                            DateTime newDate;
+                            if (state.dashboardFilter == AnalyticsFilter.daily) {
+                              newDate = state.selectedDashboardDate.subtract(const Duration(days: 1));
+                            } else if (state.dashboardFilter == AnalyticsFilter.weekly) {
+                              newDate = state.selectedDashboardDate.subtract(const Duration(days: 7));
+                            } else {
+                              newDate = DateTime(state.selectedDashboardDate.year, state.selectedDashboardDate.month - 1, 1);
+                            }
+                            context.read<DairyBloc>().add(ChangeDashboardDate(newDate));
+                          },
+                          child: Container(
+                            padding: const EdgeInsets.all(8),
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(10),
+                              border: Border.all(color: Colors.grey.shade300),
+                            ),
+                            child: const Icon(Icons.chevron_left, size: 20, color: Colors.teal),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: InkWell(
+                          onTap: () async {
+                            final picked = await showResponsiveCalendarPicker(
+                              context: context,
+                              initialDate: state.selectedDashboardDate,
+                            );
+                            if (picked != null && mounted) {
+                              context.read<DairyBloc>().add(ChangeDashboardDate(picked));
+                            }
+                          },
+                          borderRadius: BorderRadius.circular(12),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(color: Colors.teal.shade200),
+                              boxShadow: [
+                                BoxShadow(color: Colors.teal.withOpacity(0.05), blurRadius: 4, offset: const Offset(0, 2)),
+                              ],
+                            ),
                             child: Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
                               children: [
-                                Icon(Icons.delete, color: Colors.red, size: 20),
-                                SizedBox(width: 8),
-                                Text('Delete', style: TextStyle(color: Colors.red)),
+                                Container(
+                                  padding: const EdgeInsets.all(6),
+                                  decoration: BoxDecoration(
+                                    color: Colors.teal.shade50,
+                                    shape: BoxShape.circle,
+                                  ),
+                                  child: const Icon(Icons.calendar_month_rounded, size: 16, color: Colors.teal),
+                                ),
+                                const SizedBox(width: 8),
+                                Flexible(
+                                  child: Column(
+                                    mainAxisSize: MainAxisSize.min,
+                                    crossAxisAlignment: CrossAxisAlignment.center,
+                                    children: [
+                                      Text(
+                                        dateLabel,
+                                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Colors.black87),
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                      if (subtitleLabel.isNotEmpty)
+                                        Text(
+                                          subtitleLabel,
+                                          style: TextStyle(fontSize: 10, color: Colors.grey.shade600, fontWeight: FontWeight.w500),
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                    ],
+                                  ),
+                                ),
+                                const SizedBox(width: 6),
+                                Icon(Icons.arrow_drop_down, color: Colors.grey.shade600, size: 20),
                               ],
                             ),
                           ),
-                        ],
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Material(
+                        color: Colors.transparent,
+                        child: InkWell(
+                          borderRadius: BorderRadius.circular(10),
+                          onTap: () {
+                            DateTime newDate;
+                            if (state.dashboardFilter == AnalyticsFilter.daily) {
+                              newDate = state.selectedDashboardDate.add(const Duration(days: 1));
+                            } else if (state.dashboardFilter == AnalyticsFilter.weekly) {
+                              newDate = state.selectedDashboardDate.add(const Duration(days: 7));
+                            } else {
+                              newDate = DateTime(state.selectedDashboardDate.year, state.selectedDashboardDate.month + 1, 1);
+                            }
+                            context.read<DairyBloc>().add(ChangeDashboardDate(newDate));
+                          },
+                          child: Container(
+                            padding: const EdgeInsets.all(8),
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(10),
+                              border: Border.all(color: Colors.grey.shade300),
+                            ),
+                            child: const Icon(Icons.chevron_right, size: 20, color: Colors.teal),
+                          ),
+                        ),
                       ),
                     ],
                   ),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: 12),
+
+          // Main KPI Grid
+          GridView.count(
+            crossAxisCount: 2,
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            childAspectRatio: 1.4,
+            crossAxisSpacing: 12,
+            mainAxisSpacing: 12,
+            children: [
+              _buildKpiCard('Selected Period Milk', '${state.totalMilkDashboard.toStringAsFixed(1)} L', Icons.opacity, Colors.blue),
+              _buildKpiCard('Average Per Cow', '${state.averagePerCowDashboard.toStringAsFixed(1)} L', Icons.bar_chart, Colors.teal),
+              _buildKpiCard('Cows Milked', '${state.cowsMilkedCount} Cows', Icons.pets, Colors.purple),
+              _buildKpiCard('Monthly Total', '${state.monthlyMilkTotal.toStringAsFixed(1)} L', Icons.calendar_today, Colors.orange),
+            ],
+          ),
+          const SizedBox(height: 20),
+
+          // Top Producers & Low Performers Cards
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: _buildCowRankCard('TOP PRODUCERS', state.topProducersDashboard, Colors.green),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: _buildCowRankCard('LOW PERFORMERS', state.lowPerformersDashboard, Colors.amber.shade900),
+              ),
+            ],
+          ),
+          const SizedBox(height: 20),
+
+          // Logs Section Header
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text('MILK HARVEST LOGS', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+              Text('${state.dashboardRecords.length} records', style: const TextStyle(color: Colors.grey, fontSize: 12)),
+            ],
+          ),
+          const SizedBox(height: 8),
+
+          state.dashboardRecords.isEmpty
+              ? Container(
+                  padding: const EdgeInsets.all(32),
+                  alignment: Alignment.center,
+                  child: Column(
+                    children: [
+                      Icon(Icons.inbox, size: 48, color: Colors.grey.shade400),
+                      const SizedBox(height: 8),
+                      Text('No milk records for $dateLabel', style: TextStyle(color: Colors.grey.shade600)),
+                    ],
+                  ),
+                )
+              : ListView.builder(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  itemCount: state.dashboardRecords.length,
+                  itemBuilder: (context, index) {
+                    final rec = state.dashboardRecords[index];
+                    final tag = state.animalTagMap[rec.animalId] ?? rec.animalId.substring(0, 8);
+                    return Card(
+                      margin: const EdgeInsets.only(bottom: 8),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                      child: ListTile(
+                        leading: CircleAvatar(
+                          backgroundColor: rec.isWithdrawn ? Colors.red.shade100 : Colors.teal.shade50,
+                          child: Icon(
+                            rec.isWithdrawn ? Icons.warning_amber_rounded : Icons.water_drop,
+                            color: rec.isWithdrawn ? Colors.red : Colors.teal,
+                          ),
+                        ),
+                        title: Text('Cow Tag: #$tag', style: const TextStyle(fontWeight: FontWeight.bold)),
+                        subtitle: Text('${rec.milkingSession.toUpperCase()} • ${DateFormat('hh:mm a').format(rec.recordDate)}'),
+                        trailing: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              '${rec.quantityLiters.toStringAsFixed(1)} L',
+                              style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 16,
+                                color: rec.isWithdrawn ? Colors.red : Colors.teal.shade800,
+                              ),
+                            ),
+                            IconButton(
+                              icon: const Icon(Icons.delete_outline, color: Colors.red, size: 20),
+                              onPressed: () {
+                                context.read<DairyBloc>().add(DeleteMilkEntry(rec.id));
+                              },
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  },
                 ),
-              );
-            }),
         ],
       ),
     );
@@ -313,471 +498,413 @@ class _DairyScreenState extends State<DairyScreen> with SingleTickerProviderStat
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
-        // Export PDF Action Banner
-        ElevatedButton.icon(
-          onPressed: () {
-            DairyPdfExportService.exportDairyReportPdf(dairyData: state);
-          },
-          icon: const Icon(Icons.picture_as_pdf, color: Colors.white),
-          label: const Text('EXPORT PDF ANALYSIS REPORT', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white, fontSize: 13)),
-          style: ElevatedButton.styleFrom(
-            backgroundColor: AppColors.primary,
-            padding: const EdgeInsets.symmetric(vertical: 14),
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-          ),
-        ),
-        const SizedBox(height: 16),
-
-        // Time Filter Selector
-        Center(
-          child: SegmentedButton<AnalyticsFilter>(
-            segments: const [
-              ButtonSegment(value: AnalyticsFilter.daily, label: Text('Daily')),
-              ButtonSegment(value: AnalyticsFilter.weekly, label: Text('Weekly')),
-              ButtonSegment(value: AnalyticsFilter.monthly, label: Text('Monthly')),
-            ],
-            selected: {state.currentFilter},
-            onSelectionChanged: (Set<AnalyticsFilter> newSelection) {
-              context.read<DairyBloc>().add(ChangeAnalyticsFilter(newSelection.first));
-            },
-            style: ButtonStyle(
-              backgroundColor: MaterialStateProperty.resolveWith<Color>(
-                (Set<MaterialState> states) {
-                  if (states.contains(MaterialState.selected)) {
-                    return AppColors.primary.withOpacity(0.2);
+        // Analytics Filter Selector
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text('PRODUCTION TRENDS', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+            const SizedBox(height: 8),
+            SizedBox(
+              width: double.infinity,
+              child: SegmentedButton<AnalyticsFilter>(
+                segments: const [
+                  ButtonSegment(value: AnalyticsFilter.daily, label: Text('Daily', style: TextStyle(fontSize: 12))),
+                  ButtonSegment(value: AnalyticsFilter.weekly, label: Text('Weekly', style: TextStyle(fontSize: 12))),
+                  ButtonSegment(value: AnalyticsFilter.monthly, label: Text('Monthly', style: TextStyle(fontSize: 12))),
+                ],
+                selected: {state.currentFilter},
+                onSelectionChanged: (set) {
+                  if (set.isNotEmpty) {
+                    context.read<DairyBloc>().add(ChangeAnalyticsFilter(set.first));
                   }
-                  return Colors.transparent;
                 },
               ),
             ),
-          ),
+          ],
         ),
         const SizedBox(height: 16),
-        
-        // Herd Chart
+
+        // Herd Production Chart
         Card(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
           child: Padding(
             padding: const EdgeInsets.all(16),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    const Icon(Icons.show_chart, color: Colors.blue),
-                    const SizedBox(width: 8),
+                    const Text('Total Herd Output', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
                     Text(
-                      'HERD YIELD (${state.currentFilter.name.toUpperCase()}) - ${state.totalYieldForPeriod.toStringAsFixed(1)}L',
-                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Colors.grey),
+                      '${state.totalYieldForPeriod.toStringAsFixed(1)} L Total',
+                      style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.teal),
                     ),
                   ],
                 ),
                 const SizedBox(height: 16),
-                if (state.herdChartData.every((e) => e == 0))
-                  const SizedBox(
-                    height: 200,
-                    child: Center(child: Text('No milk records for this period.')),
-                  )
-                else
-                  CustomLineChart(
+                SizedBox(
+                  height: 180,
+                  child: CustomLineChart(
                     data: state.herdChartData,
                     labels: state.herdChartLabels,
-                    lineColor: Colors.blue.shade700,
-                    gradientColors: [Colors.blue.shade200.withOpacity(0.4), Colors.blue.shade200.withOpacity(0.0)],
+                    lineColor: Colors.teal,
                   ),
+                ),
               ],
             ),
           ),
         ),
-        
-        const SizedBox(height: 16),
-        const Text('Cow Breakdown', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+        const SizedBox(height: 20),
+
+        // Cow Yield Breakdown List
+        const Text('COW YIELD BREAKDOWN', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
         const SizedBox(height: 8),
-        
-        if (state.cowYieldBreakdown.isEmpty)
-          const Center(
-            child: Padding(
-              padding: EdgeInsets.all(24.0),
-              child: Text('No cow data available.'),
-            ),
-          )
-        else
-          ...state.cowYieldBreakdown.entries.map((e) {
-            final double percentage = state.totalYieldForPeriod > 0 
-                ? (e.value / state.totalYieldForPeriod) * 100 
-                : 0.0;
-            return Card(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(vertical: 8.0),
-                child: Column(
-                  children: [
-                    ListTile(
-                      leading: CircleAvatar(
-                        backgroundColor: AppColors.primary.withOpacity(0.1),
-                        child: const Icon(Icons.pets, color: AppColors.primary),
-                      ),
-                      title: Text('Cow ID: ${e.key}', style: const TextStyle(fontWeight: FontWeight.bold)),
-                      subtitle: Column(
+
+        state.cowYieldBreakdown.isEmpty
+            ? Container(
+                padding: const EdgeInsets.all(24),
+                alignment: Alignment.center,
+                child: const Text('No yield data available for selected filter.', style: TextStyle(color: Colors.grey)),
+              )
+            : ListView.builder(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                itemCount: state.cowYieldBreakdown.length,
+                itemBuilder: (context, index) {
+                  final entry = state.cowYieldBreakdown.entries.elementAt(index);
+                  final pct = state.totalYieldForPeriod > 0 ? (entry.value / state.totalYieldForPeriod) * 100 : 0.0;
+
+                  return Card(
+                    margin: const EdgeInsets.only(bottom: 8),
+                    child: Padding(
+                      padding: const EdgeInsets.all(12),
+                      child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const SizedBox(height: 4),
-                          LinearProgressIndicator(
-                            value: percentage / 100,
-                            backgroundColor: Colors.grey.shade200,
-                            color: AppColors.primary,
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text('Cow #${entry.key}', style: const TextStyle(fontWeight: FontWeight.bold)),
+                              Text('${entry.value.toStringAsFixed(1)} L (${pct.toStringAsFixed(1)}%)',
+                                  style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.teal)),
+                            ],
                           ),
-                          const SizedBox(height: 4),
-                          Text('${percentage.toStringAsFixed(1)}% of herd total', style: TextStyle(fontSize: 12, color: Colors.grey.shade600)),
+                          const SizedBox(height: 6),
+                          LinearProgressIndicator(
+                            value: state.totalYieldForPeriod > 0 ? (entry.value / state.totalYieldForPeriod) : 0.0,
+                            backgroundColor: Colors.teal.shade50,
+                            color: Colors.teal,
+                            minHeight: 6,
+                            borderRadius: BorderRadius.circular(3),
+                          ),
                         ],
                       ),
-                      trailing: Text('${e.value.toStringAsFixed(1)} L', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
                     ),
-                    if (state.cowChartData[e.key] != null && !state.cowChartData[e.key]!.every((v) => v == 0))
-                      Padding(
-                        padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
-                        child: SizedBox(
-                          height: 100,
-                          child: CustomLineChart(
-                            data: state.cowChartData[e.key]!,
-                            labels: state.herdChartLabels,
-                            lineColor: AppColors.primary,
-                            gradientColors: [AppColors.primary.withOpacity(0.2), AppColors.primary.withOpacity(0.0)],
-                          ),
-                        ),
-                      ),
-                  ],
-                ),
+                  );
+                },
               ),
-            );
-          }),
       ],
     );
   }
 
-
-  Widget _buildKpiCard(String title, String value, IconData icon, Color color) {
-    return Card(
-      elevation: 2,
-      child: Padding(
+  Widget _buildStoreAndSalesTab(DairyLoaded state) {
+    return RefreshIndicator(
+      onRefresh: () async => context.read<DairyBloc>().add(LoadDairyData()),
+      child: ListView(
         padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Icon(icon, color: color, size: 20),
-                const SizedBox(width: 8),
-                Text(title, style: TextStyle(color: Colors.grey.shade600, fontWeight: FontWeight.w500)),
-              ],
-            ),
-            const SizedBox(height: 12),
-            Text(value, style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
-          ],
-        ),
-      ),
-    );
-  }  Widget _buildStoreAndSalesTab(DairyLoaded state) {
-    final currencyFormatter = NumberFormat.currency(symbol: '₦', decimalDigits: 2);
-    final inStore = state.inStoreLiters;
-
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Live Availability Banner
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(20),
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [Colors.teal.shade800, Colors.teal.shade600],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
-              borderRadius: BorderRadius.circular(16),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.teal.withOpacity(0.3),
-                  blurRadius: 10,
-                  offset: const Offset(0, 4),
-                ),
-              ],
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    const Text(
-                      'MILK IN STORE (AVAILABLE FOR BUYERS)',
-                      style: TextStyle(color: Colors.white70, fontWeight: FontWeight.bold, fontSize: 11),
+          // Dynamic Milk Price Configurator Card
+          Card(
+            elevation: 2,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            color: Colors.teal.shade900,
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: Colors.teal.shade700,
+                      shape: BoxShape.circle,
                     ),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.2),
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                      child: const Row(
-                        children: [
-                          Icon(Icons.check_circle, color: Colors.greenAccent, size: 14),
-                          SizedBox(width: 4),
-                          Text('LIVE INVENTORY', style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold)),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 12),
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.baseline,
-                  textBaseline: TextBaseline.alphabetic,
-                  children: [
-                    Text(
-                      inStore.toStringAsFixed(1),
-                      style: const TextStyle(color: Colors.white, fontSize: 36, fontWeight: FontWeight.bold),
-                    ),
-                    const SizedBox(width: 6),
-                    const Text('LITERS AVAILABLE', style: TextStyle(color: Colors.white70, fontSize: 14, fontWeight: FontWeight.bold)),
-                  ],
-                ),
-                const SizedBox(height: 6),
-                Text(
-                  inStore > 0
-                      ? 'Ready for commercial buyer dispatch & bulk milk pickup.'
-                      : 'Store balance is zero. Log milk harvests to replenish inventory.',
-                  style: const TextStyle(color: Colors.white70, fontSize: 12),
-                ),
-                const SizedBox(height: 16),
-                Row(
-                  children: [
-                    Expanded(
-                      child: ElevatedButton.icon(
-                        onPressed: () => _showRecordBulkSaleDialog(context, inStore),
-                        icon: const Icon(Icons.point_of_sale, color: Colors.teal),
-                        label: const Text('RECORD BULK MILK SALE', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.teal, fontSize: 12)),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(vertical: 12),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    OutlinedButton.icon(
-                      onPressed: () => _showSetDefaultPriceDialog(context),
-                      icon: const Icon(Icons.price_change, color: Colors.white, size: 18),
-                      label: Text('₦${DairyRepository.defaultMilkPrice.toStringAsFixed(0)}/L', style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.white, fontSize: 12)),
-                      style: OutlinedButton.styleFrom(
-                        side: const BorderSide(color: Colors.white, width: 1.5),
-                        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 10),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 20),
-
-          // Inventory KPI Cards Grid
-          Row(
-            children: [
-              Expanded(
-                child: _buildKpiCard('Total Collected', '${state.totalCollectedLiters.toStringAsFixed(1)} L', Icons.opacity, Colors.blue),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: _buildKpiCard('Total Sold', '${state.totalSoldLiters.toStringAsFixed(1)} L', Icons.shopping_bag, Colors.orange),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          Row(
-            children: [
-              Expanded(
-                child: _buildKpiCard('Medical Withdrawn', '${state.totalWithdrawnLiters.toStringAsFixed(1)} L', Icons.medical_services, Colors.red),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: _buildKpiCard('Total Revenue', currencyFormatter.format(state.totalRevenue), Icons.account_balance_wallet, Colors.green),
-              ),
-            ],
-          ),
-          const SizedBox(height: 24),
-
-          // Sales History List Section
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              const Text('MILK SALES TRANSACTION HISTORY', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
-              Text('${state.salesHistory.length} Records', style: const TextStyle(color: Colors.grey, fontSize: 12)),
-            ],
-          ),
-          const SizedBox(height: 12),
-
-          if (state.salesHistory.isEmpty)
-            Card(
-              elevation: 1,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-              child: const Padding(
-                padding: EdgeInsets.all(24),
-                child: Center(
-                  child: Column(
-                    children: [
-                      Icon(Icons.storefront_outlined, size: 40, color: Colors.grey),
-                      SizedBox(height: 8),
-                      Text('No milk sales recorded yet.', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.grey)),
-                      SizedBox(height: 4),
-                      Text('Use "RECORD BULK MILK SALE" above to log sales to buyers.', style: TextStyle(fontSize: 11, color: Colors.grey)),
-                    ],
+                    child: const Icon(Icons.sell, color: Colors.amber, size: 24),
                   ),
-                ),
-              ),
-            )
-          else
-            ListView.separated(
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              itemCount: state.salesHistory.length,
-              separatorBuilder: (_, __) => const SizedBox(height: 8),
-              itemBuilder: (context, index) {
-                final tx = state.salesHistory[index];
-                return Card(
-                  elevation: 1.5,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                  child: Padding(
-                    padding: const EdgeInsets.all(12),
-                    child: Row(
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        CircleAvatar(
-                          backgroundColor: Colors.green.shade50,
-                          child: const Icon(Icons.local_shipping, color: Colors.green, size: 20),
+                        const Text(
+                          'ACTIVE MILK PRICE PER LITER',
+                          style: TextStyle(color: Colors.white70, fontSize: 10, fontWeight: FontWeight.bold, letterSpacing: 1),
                         ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                tx.description?.isNotEmpty == true ? tx.description! : 'Bulk Milk Sale',
-                                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
-                              ),
-                              const SizedBox(height: 4),
-                              Text(
-                                DateFormat('yyyy-MM-dd HH:mm').format(tx.transactionDate),
-                                style: const TextStyle(fontSize: 11, color: Colors.grey),
-                              ),
-                            ],
-                          ),
+                        const SizedBox(height: 2),
+                        Text(
+                          '₦${NumberFormat('#,##0.00').format(state.currentMilkPrice)} / Liter',
+                          style: const TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold),
                         ),
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.end,
-                          children: [
-                            Text(
-                              '+${currencyFormatter.format(tx.amount)}',
-                              style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.green, fontSize: 14),
-                            ),
-                            const SizedBox(height: 4),
-                            Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                InkWell(
-                                  onTap: () => _showEditBulkSaleDialog(context, tx),
-                                  child: Padding(
-                                    padding: const EdgeInsets.all(4),
-                                    child: Icon(Icons.edit_note, size: 18, color: Colors.blue.shade700),
-                                  ),
-                                ),
-                                const SizedBox(width: 8),
-                                InkWell(
-                                  onTap: () => _confirmDeleteMilkSale(context, tx.id),
-                                  child: const Padding(
-                                    padding: EdgeInsets.all(4),
-                                    child: Icon(Icons.delete_outline, size: 18, color: Colors.red),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ],
+                        const Text(
+                          'Affects pre-filled sales price and cold store valuation',
+                          style: TextStyle(color: Colors.white60, fontSize: 10),
                         ),
                       ],
                     ),
                   ),
-                );
-              },
+                  ElevatedButton.icon(
+                    onPressed: () => _showUpdatePriceDialog(context, state.currentMilkPrice),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.amber.shade700,
+                      foregroundColor: Colors.black,
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                    ),
+                    icon: const Icon(Icons.edit, size: 16),
+                    label: const Text('CHANGE PRICE', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 11)),
+                  ),
+                ],
+              ),
             ),
+          ),
+          const SizedBox(height: 16),
+
+          // Action Button: Record Bulk Milk Sale
+          ElevatedButton.icon(
+            onPressed: () => _showRecordBulkSaleDialog(context, state.inStoreLiters, state.currentMilkPrice),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.primary,
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(vertical: 14),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            ),
+            icon: const Icon(Icons.point_of_sale),
+            label: const Text('RECORD BULK MILK SALE', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+          ),
+          const SizedBox(height: 16),
+
+          // Inventory & Sales Overview KPI Grid
+          GridView.count(
+            crossAxisCount: 2,
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            childAspectRatio: 1.35,
+            crossAxisSpacing: 12,
+            mainAxisSpacing: 12,
+            children: [
+              _buildKpiCard('In Cold Store', '${state.inStoreLiters.toStringAsFixed(1)} L', Icons.kitchen, Colors.teal),
+              _buildKpiCard('Cold Store Value', '₦${NumberFormat('#,##0').format(state.inStoreValue)}', Icons.account_balance_wallet, Colors.green),
+              _buildKpiCard('Total Bulk Sold', '${state.totalSoldLiters.toStringAsFixed(1)} L', Icons.shopping_bag, Colors.blue),
+              _buildKpiCard('Total Milk Revenue', '₦${NumberFormat('#,##0').format(state.totalRevenue)}', Icons.payments, Colors.deepOrange),
+            ],
+          ),
+          const SizedBox(height: 24),
+
+          // Bulk Milk Sales History Header
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text('BULK MILK SALES HISTORY', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+              Text('${state.salesHistory.length} sales entries', style: const TextStyle(color: Colors.grey, fontSize: 12)),
+            ],
+          ),
+          const SizedBox(height: 8),
+
+          state.salesHistory.isEmpty
+              ? Container(
+                  padding: const EdgeInsets.all(32),
+                  alignment: Alignment.center,
+                  child: Column(
+                    children: [
+                      Icon(Icons.point_of_sale_outlined, size: 48, color: Colors.grey.shade400),
+                      const SizedBox(height: 8),
+                      Text('No bulk milk sales recorded yet.', style: TextStyle(color: Colors.grey.shade600)),
+                    ],
+                  ),
+                )
+              : ListView.builder(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  itemCount: state.salesHistory.length,
+                  itemBuilder: (context, index) {
+                    final tx = state.salesHistory[index];
+                    return Card(
+                      margin: const EdgeInsets.only(bottom: 8),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                      child: ListTile(
+                        leading: CircleAvatar(
+                          backgroundColor: Colors.green.shade50,
+                          child: const Icon(Icons.attach_money, color: Colors.green),
+                        ),
+                        title: Text(tx.description ?? 'Milk Sale', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                        subtitle: Text(DateFormat('MMM dd, yyyy • hh:mm a').format(tx.transactionDate), style: const TextStyle(fontSize: 11)),
+                        trailing: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              '₦${NumberFormat('#,##0.00').format(tx.amount)}',
+                              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: Colors.green),
+                            ),
+                            PopupMenuButton<String>(
+                              onSelected: (val) {
+                                if (val == 'edit') {
+                                  _showEditBulkSaleDialog(context, tx, state.currentMilkPrice);
+                                } else if (val == 'delete') {
+                                  _confirmDeleteMilkSale(context, tx.id);
+                                }
+                              },
+                              itemBuilder: (context) => [
+                                const PopupMenuItem(value: 'edit', child: Row(children: [Icon(Icons.edit, size: 16), SizedBox(width: 8), Text('Edit')])),
+                                const PopupMenuItem(value: 'delete', child: Row(children: [Icon(Icons.delete, color: Colors.red, size: 16), SizedBox(width: 8), Text('Delete', style: TextStyle(color: Colors.red))])),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  },
+                ),
         ],
       ),
     );
   }
 
-  void _showSetDefaultPriceDialog(BuildContext context) {
-    final priceCtrl = TextEditingController(text: DairyRepository.defaultMilkPrice.toStringAsFixed(0));
+  Widget _buildKpiCard(String title, String value, IconData icon, Color color) {
+    return Card(
+      elevation: 1,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Row(
+              children: [
+                Icon(icon, color: color, size: 18),
+                const SizedBox(width: 6),
+                Expanded(
+                  child: Text(
+                    title,
+                    style: TextStyle(color: Colors.grey.shade700, fontSize: 11, fontWeight: FontWeight.bold),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            FittedBox(
+              fit: BoxFit.scaleDown,
+              alignment: Alignment.centerLeft,
+              child: Text(value, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCowRankCard(String title, Map<String, double> data, Color color) {
+    return Card(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(title, style: TextStyle(color: color, fontWeight: FontWeight.bold, fontSize: 11)),
+            const SizedBox(height: 8),
+            if (data.isEmpty)
+              const Text('No records', style: TextStyle(color: Colors.grey, fontSize: 11))
+            else
+              ...data.entries.map((e) => Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 2.0),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text('#${e.key}', style: const TextStyle(fontWeight: FontWeight.w500, fontSize: 12)),
+                        Text('${e.value.toStringAsFixed(1)} L', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
+                      ],
+                    ),
+                  )),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showUpdatePriceDialog(BuildContext context, double currentPrice) {
+    final priceCtrl = TextEditingController(text: currentPrice.toStringAsFixed(0));
+    final formKey = GlobalKey<FormState>();
 
     showDialog(
       context: context,
       builder: (dialogCtx) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: Row(
-          children: const [
-            Icon(Icons.price_change, color: AppColors.primary),
+        title: const Row(
+          children: [
+            Icon(Icons.sell, color: Colors.teal),
             SizedBox(width: 8),
-            Text('Set Default Milk Price'),
+            Text('Update Milk Price (₦/L)'),
           ],
         ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              'Set fixed milk price per liter (₦). This will pre-fill all commercial bulk sales.',
-              style: TextStyle(fontSize: 12, color: Colors.grey),
-            ),
-            const SizedBox(height: 12),
-            TextField(
-              controller: priceCtrl,
-              keyboardType: const TextInputType.numberWithOptions(decimal: true),
-              decoration: const InputDecoration(
-                labelText: 'Price Per Liter (₦) *',
-                prefixText: '₦ ',
-                border: OutlineInputBorder(),
+        content: Form(
+          key: formKey,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text(
+                'Enter the new dynamic price per liter of raw milk. This price will automatically populate new sales and update live cold store valuation.',
+                style: TextStyle(fontSize: 12, color: Colors.black87),
               ),
-            ),
-          ],
+              const SizedBox(height: 16),
+              TextFormField(
+                controller: priceCtrl,
+                keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                decoration: const InputDecoration(
+                  labelText: 'Price Per Liter (₦) *',
+                  prefixText: '₦ ',
+                  border: OutlineInputBorder(),
+                  prefixIcon: Icon(Icons.payments),
+                ),
+                validator: (v) {
+                  if (v == null || v.trim().isEmpty) return 'Enter price per liter';
+                  final val = double.tryParse(v);
+                  if (val == null || val <= 0) return 'Enter valid price > 0';
+                  return null;
+                },
+              ),
+            ],
+          ),
         ),
         actions: [
           TextButton(onPressed: () => Navigator.pop(dialogCtx), child: const Text('CANCEL')),
           ElevatedButton(
-            onPressed: () async {
-              final price = double.tryParse(priceCtrl.text) ?? 500.0;
-              await sl<DairyRepository>().setDefaultMilkPrice(price);
-              if (context.mounted) {
-                context.read<DairyBloc>().add(LoadDairyData());
+            onPressed: () {
+              if (formKey.currentState!.validate()) {
+                final newP = double.parse(priceCtrl.text.trim());
+                context.read<DairyBloc>().add(UpdateMilkPriceEvent(newP));
+                Navigator.pop(dialogCtx);
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
-                    content: Text('Default milk price set to ₦${price.toStringAsFixed(0)} / Liter'),
-                    backgroundColor: AppColors.secondary,
+                    content: Text('Updated active milk price to ₦${newP.toStringAsFixed(0)} / Liter.'),
+                    backgroundColor: Colors.green,
                   ),
                 );
               }
-              if (dialogCtx.mounted) Navigator.pop(dialogCtx);
             },
-            style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary, foregroundColor: Colors.white),
-            child: const Text('SAVE PRICE'),
+            style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary),
+            child: const Text('SAVE PRICE', style: TextStyle(color: Colors.white)),
           ),
         ],
       ),
     );
   }
 
-  void _showRecordBulkSaleDialog(BuildContext context, double inStoreLiters) {
+  void _showRecordBulkSaleDialog(BuildContext context, double inStoreLiters, double currentPrice) {
     final formKey = GlobalKey<FormState>();
     final qtyCtrl = TextEditingController(text: inStoreLiters > 0 ? inStoreLiters.toStringAsFixed(1) : '100');
-    final priceCtrl = TextEditingController(text: DairyRepository.defaultMilkPrice.toStringAsFixed(0));
+    final priceCtrl = TextEditingController(text: currentPrice.toStringAsFixed(0));
     final buyerCtrl = TextEditingController();
     final notesCtrl = TextEditingController();
 
@@ -796,8 +923,8 @@ class _DairyScreenState extends State<DairyScreen> with SingleTickerProviderStat
 
             return AlertDialog(
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-              title: Row(
-                children: const [
+              title: const Row(
+                children: [
                   Icon(Icons.point_of_sale, color: Colors.teal),
                   SizedBox(width: 8),
                   Text('RECORD BULK MILK SALE'),
@@ -919,7 +1046,7 @@ class _DairyScreenState extends State<DairyScreen> with SingleTickerProviderStat
                       final q = double.parse(qtyCtrl.text.trim());
                       final p = double.parse(priceCtrl.text.trim());
 
-                      BlocProvider.of<DairyBloc>(context).add(RecordMilkSaleEvent(
+                      context.read<DairyBloc>().add(RecordMilkSaleEvent(
                         quantityLiters: q,
                         pricePerLiter: p,
                         buyerName: buyerCtrl.text.trim(),
@@ -946,14 +1073,14 @@ class _DairyScreenState extends State<DairyScreen> with SingleTickerProviderStat
     );
   }
 
-  void _showEditBulkSaleDialog(BuildContext context, LocalTransaction tx) {
+  void _showEditBulkSaleDialog(BuildContext context, LocalTransaction tx, double currentPrice) {
     final formKey = GlobalKey<FormState>();
 
     final regexLiters = RegExp(r'(\d+(?:\.\d+)?)\s*L');
     final regexPrice = RegExp(r'@\s*₦?(\d+(?:\.\d+)?)');
     
     double initialQty = 100.0;
-    double initialPrice = DairyRepository.defaultMilkPrice;
+    double initialPrice = currentPrice;
     String initialBuyer = '';
 
     final desc = tx.description ?? '';
@@ -963,7 +1090,7 @@ class _DairyScreenState extends State<DairyScreen> with SingleTickerProviderStat
     }
     final matchPrice = regexPrice.firstMatch(desc);
     if (matchPrice != null) {
-      initialPrice = double.tryParse(matchPrice.group(1)!) ?? DairyRepository.defaultMilkPrice;
+      initialPrice = double.tryParse(matchPrice.group(1)!) ?? currentPrice;
     }
     if (desc.contains(' - ')) {
       initialBuyer = desc.split(' - ').last.trim();
@@ -989,8 +1116,8 @@ class _DairyScreenState extends State<DairyScreen> with SingleTickerProviderStat
 
             return AlertDialog(
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-              title: Row(
-                children: const [
+              title: const Row(
+                children: [
                   Icon(Icons.edit_note, color: Colors.blue),
                   SizedBox(width: 8),
                   Text('Edit Milk Sale Entry'),
@@ -1090,7 +1217,7 @@ class _DairyScreenState extends State<DairyScreen> with SingleTickerProviderStat
                       final q = double.parse(qtyCtrl.text.trim());
                       final p = double.parse(priceCtrl.text.trim());
 
-                      BlocProvider.of<DairyBloc>(context).add(EditMilkSaleEvent(
+                      context.read<DairyBloc>().add(EditMilkSaleEvent(
                         id: tx.id,
                         quantityLiters: q,
                         pricePerLiter: p,
@@ -1128,7 +1255,7 @@ class _DairyScreenState extends State<DairyScreen> with SingleTickerProviderStat
           TextButton(onPressed: () => Navigator.pop(dialogCtx), child: const Text('CANCEL')),
           ElevatedButton(
             onPressed: () {
-              BlocProvider.of<DairyBloc>(context).add(DeleteMilkSaleEvent(id));
+              context.read<DairyBloc>().add(DeleteMilkSaleEvent(id));
               Navigator.pop(dialogCtx);
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(

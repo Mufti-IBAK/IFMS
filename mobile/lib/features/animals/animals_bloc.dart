@@ -1,7 +1,9 @@
+import 'dart:async';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'animals_repository.dart';
 import '../../core/di/service_locator.dart';
 import '../../core/network/notification_service.dart';
+import '../../core/sync/sync_event_bus.dart';
 
 // EVENTS
 abstract class AnimalsEvent {}
@@ -42,8 +44,15 @@ class AnimalsError extends AnimalsState {
 // BLOC
 class AnimalsBloc extends Bloc<AnimalsEvent, AnimalsState> {
   final AnimalsRepository repository;
+  StreamSubscription<SyncCompletedEvent>? _syncSubscription;
 
   AnimalsBloc(this.repository) : super(AnimalsLoading()) {
+    _syncSubscription = SyncEventBus().stream.listen((event) {
+      if (event.containsAny(['animals', 'animal_events'])) {
+        add(LoadAnimals());
+      }
+    });
+
     on<LoadAnimals>((event, emit) async {
       final currentState = state;
       if (currentState is! AnimalsLoaded) {
@@ -102,5 +111,11 @@ class AnimalsBloc extends Bloc<AnimalsEvent, AnimalsState> {
         add(LoadAnimals());
       }
     });
+  }
+
+  @override
+  Future<void> close() {
+    _syncSubscription?.cancel();
+    return super.close();
   }
 }

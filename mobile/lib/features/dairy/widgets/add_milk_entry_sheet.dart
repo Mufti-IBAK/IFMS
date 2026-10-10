@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/database/local_db.dart';
+import '../../../core/widgets/responsive_calendar_dialog.dart';
 import '../dairy_bloc.dart';
 import '../../animals/animals_bloc.dart';
 
@@ -118,12 +119,14 @@ class _AddMilkEntrySheetState extends State<AddMilkEntrySheet> {
               children: [
                 Expanded(
                   child: DropdownButtonFormField<String>(
+                    isExpanded: true,
+
                     initialValue: selectedSession,
                     decoration: const InputDecoration(labelText: 'Milking Session', border: OutlineInputBorder()),
                     items: const [
-                      DropdownMenuItem(value: 'morning', child: Text('Morning')),
-                      DropdownMenuItem(value: 'evening', child: Text('Evening')),
-                      DropdownMenuItem(value: 'total_day', child: Text('Daily Total')),
+                      DropdownMenuItem(value: 'morning', child: Text('Morning', overflow: TextOverflow.ellipsis)),
+                      DropdownMenuItem(value: 'evening', child: Text('Evening', overflow: TextOverflow.ellipsis)),
+                      DropdownMenuItem(value: 'total_day', child: Text('Daily Total', overflow: TextOverflow.ellipsis)),
                     ],
                     onChanged: (v) => setState(() => selectedSession = v!),
                   ),
@@ -133,7 +136,7 @@ class _AddMilkEntrySheetState extends State<AddMilkEntrySheet> {
                   child: GestureDetector(
                     onTap: () async {
                       FocusScope.of(context).unfocus();
-                      final date = await showDatePicker(builder: (context, child) => Theme(data: Theme.of(context).copyWith(useMaterial3: false), child: MediaQuery(data: MediaQuery.of(context).copyWith(textScaleFactor: 1.0), child: child!)), 
+                      final date = await showResponsiveCalendarPicker(
                         context: context,
                         initialDate: selectedDate,
                         firstDate: DateTime(2000),

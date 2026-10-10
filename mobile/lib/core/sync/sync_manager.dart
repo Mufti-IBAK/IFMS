@@ -7,26 +7,36 @@ import '../database/local_db.dart';
 import '../network/api_client.dart';
 import '../di/service_locator.dart';
 import '../network/notification_service.dart';
+import 'sync_event_bus.dart';
 
 class SyncManager {
   final LocalDatabase db;
   final ApiClient apiClient;
   bool _isSyncing = false;
+  bool _isRestoring = false;
 
   SyncManager(this.db, this.apiClient) {
     Connectivity().onConnectivityChanged.listen((result) {
       if (!result.contains(ConnectivityResult.none)) {
         triggerSync();
+        restoreFromSupabase();
       }
     });
-    // Outbound queue check every 30 seconds (lightweight, non-blocking)
-    Timer.periodic(const Duration(seconds: 30), (timer) {
+
+    // Outbound queue check every 15 seconds (lightweight, non-blocking)
+    Timer.periodic(const Duration(seconds: 15), (timer) {
       triggerSync();
     });
-    // Inbound full cloud sync every 15 minutes (batched, non-blocking)
-    Timer.periodic(const Duration(minutes: 15), (timer) {
+
+    // Inbound cloud sync check every 45 seconds for active multi-user sync
+    Timer.periodic(const Duration(seconds: 45), (timer) {
       restoreFromSupabase();
     });
+  }
+
+  /// Triggered whenever the app is brought to foreground (AppLifecycleState.resumed)
+  Future<void> syncOnAppResume() async {
+    await syncAll();
   }
 
   // ─── Outbound Sync (local → Supabase) ─────────────────────────────────────
@@ -159,18 +169,42 @@ class SyncManager {
 
   /// Pulls all tables from Supabase and inserts into local DB.
   /// Uses insertOnConflictUpdate in batch transactions for high performance.
+  /// Emits a SyncCompletedEvent via SyncEventBus so active BLoCs reload immediately.
   Future<void> restoreFromSupabase() async {
-    await Future.wait([
-      _restoreAnimals(),
-      _restoreMilkRecords(),
-      _restoreTransactions(),
-      _restoreTasks(),
-      _restoreBreedingEvents(),
-      _restoreAlerts(),
-    ]);
+    if (_isRestoring) return;
+    _isRestoring = true;
+
+    try {
+      final updatedTables = <String>{};
+      final results = await Future.wait([
+        _restoreAnimals(),
+        _restoreMilkRecords(),
+        _restoreTransactions(),
+        _restoreTasks(),
+        _restoreBreedingEvents(),
+        _restoreAlerts(),
+        _restoreMedications(),
+        _restoreStaff(),
+      ]);
+
+      if (results[0]) updatedTables.add('animals');
+      if (results[1]) updatedTables.add('milk_records');
+      if (results[2]) updatedTables.add('transactions');
+      if (results[3]) updatedTables.add('tasks');
+      if (results[4]) updatedTables.add('breeding_events');
+      if (results[5]) updatedTables.add('alerts');
+      if (results[6]) updatedTables.add('medications');
+      if (results[7]) updatedTables.add('staff');
+
+      if (updatedTables.isNotEmpty) {
+        SyncEventBus().fire(SyncCompletedEvent(tablesUpdated: updatedTables));
+      }
+    } finally {
+      _isRestoring = false;
+    }
   }
 
-  Future<void> _restoreAnimals() async {
+  Future<bool> _restoreAnimals() async {
     try {
       final res = await apiClient.dio.get('/animals', queryParameters: {'limit': '1000'});
       final rows = (res.data as List?) ?? [];
@@ -204,13 +238,15 @@ class SyncManager {
         await db.batch((batch) {
           batch.insertAllOnConflictUpdate(db.localAnimals, companions);
         });
+        return true;
       }
     } catch (e) {
       // Non-fatal — continue restoring other tables
     }
+    return false;
   }
 
-  Future<void> _restoreMilkRecords() async {
+  Future<bool> _restoreMilkRecords() async {
     try {
       final res = await apiClient.dio.get('/milk_records', queryParameters: {'limit': '5000'});
       final rows = (res.data as List?) ?? [];
@@ -230,13 +266,15 @@ class SyncManager {
         await db.batch((batch) {
           batch.insertAllOnConflictUpdate(db.localMilkRecords, companions);
         });
+        return true;
       }
     } catch (e) {
       // Non-fatal
     }
+    return false;
   }
 
-  Future<void> _restoreTransactions() async {
+  Future<bool> _restoreTransactions() async {
     try {
       final res = await apiClient.dio.get('/transactions', queryParameters: {'limit': '5000'});
       final rows = (res.data as List?) ?? [];
@@ -257,13 +295,15 @@ class SyncManager {
         await db.batch((batch) {
           batch.insertAllOnConflictUpdate(db.localTransactions, companions);
         });
+        return true;
       }
     } catch (e) {
       // Non-fatal
     }
+    return false;
   }
 
-  Future<void> _restoreTasks() async {
+  Future<bool> _restoreTasks() async {
     try {
       final res = await apiClient.dio.get('/tasks', queryParameters: {'limit': '2000'});
       final rows = (res.data as List?) ?? [];
@@ -285,13 +325,15 @@ class SyncManager {
         await db.batch((batch) {
           batch.insertAllOnConflictUpdate(db.localTasks, companions);
         });
+        return true;
       }
     } catch (e) {
       // Non-fatal
     }
+    return false;
   }
 
-  Future<void> _restoreBreedingEvents() async {
+  Future<bool> _restoreBreedingEvents() async {
     try {
       final res = await apiClient.dio.get('/breeding_events', queryParameters: {'limit': '2000'});
       final rows = (res.data as List?) ?? [];
@@ -313,13 +355,15 @@ class SyncManager {
         await db.batch((batch) {
           batch.insertAllOnConflictUpdate(db.localBreedingEvents, companions);
         });
+        return true;
       }
     } catch (e) {
       // Non-fatal
     }
+    return false;
   }
 
-  Future<void> _restoreAlerts() async {
+  Future<bool> _restoreAlerts() async {
     try {
       final res = await apiClient.dio.get('/alerts', queryParameters: {'limit': '2000'});
       final rows = (res.data as List?) ?? [];
@@ -342,9 +386,82 @@ class SyncManager {
         await db.batch((batch) {
           batch.insertAllOnConflictUpdate(db.localAlerts, companions);
         });
+        return true;
       }
     } catch (e) {
       // Non-fatal
     }
+    return false;
+  }
+
+  Future<bool> _restoreMedications() async {
+    try {
+      final res = await apiClient.dio.get('/medications', queryParameters: {'limit': '1000'});
+      final rows = (res.data as List?) ?? [];
+      final companions = <LocalMedicationsCompanion>[];
+      for (final r in rows) {
+        companions.add(LocalMedicationsCompanion.insert(
+          id: r['id'] as String,
+          name: r['name'] as String,
+          category: r['category'] as String? ?? 'other',
+          unit: r['unit'] as String? ?? 'ml',
+          currentStock: Value((r['current_stock'] as num?)?.toDouble() ?? 0.0),
+          reorderThreshold: Value((r['reorder_threshold'] as num?)?.toDouble() ?? 5.0),
+          costPerUnit: Value((r['cost_per_unit'] as num?)?.toDouble() ?? 0.0),
+          supplier: Value(r['supplier'] as String?),
+          expiryDate: Value(r['expiry_date'] != null ? DateTime.tryParse(r['expiry_date']) : null),
+          batchNumber: Value(r['batch_number'] as String?),
+          milkWithdrawalDays: Value((r['milk_withdrawal_days'] as num?)?.toInt() ?? 0),
+          meatWithdrawalDays: Value((r['meat_withdrawal_days'] as num?)?.toInt() ?? 0),
+          dosageRatePerKg: Value((r['dosage_rate_per_kg'] as num?)?.toDouble()),
+          dosageRateText: Value(r['dosage_rate_text'] as String?),
+          concentration: Value(r['concentration'] as String?),
+          concentrationMgPerMl: Value((r['concentration_mg_per_ml'] as num?)?.toDouble()),
+          concentrationValue: Value((r['concentration_value'] as num?)?.toDouble()),
+          concentrationUnit: Value(r['concentration_unit'] as String?),
+          isActive: Value(r['is_active'] as bool? ?? true),
+        ));
+      }
+      if (companions.isNotEmpty) {
+        await db.batch((batch) {
+          batch.insertAllOnConflictUpdate(db.localMedications, companions);
+        });
+        return true;
+      }
+    } catch (_) {}
+    return false;
+  }
+
+  Future<bool> _restoreStaff() async {
+    try {
+      final res = await apiClient.dio.get('/staff', queryParameters: {'limit': '500'});
+      final rows = (res.data as List?) ?? [];
+      final companions = <LocalStaffCompanion>[];
+      for (final r in rows) {
+        companions.add(LocalStaffCompanion.insert(
+          id: r['id'] as String,
+          name: r['name'] as String,
+          role: r['role'] as String? ?? 'Worker',
+          phone: Value(r['phone'] as String?),
+          baseSalary: Value((r['base_salary'] as num?)?.toDouble() ?? 0.0),
+          performanceRating: Value((r['performance_rating'] as num?)?.toDouble() ?? 5.0),
+          isActive: Value(r['is_active'] as bool? ?? true),
+          profilePic: Value(r['profile_pic'] as String?),
+          gender: Value(r['gender'] as String?),
+          dateOfBirth: Value(r['date_of_birth'] != null ? DateTime.tryParse(r['date_of_birth']) : null),
+          address: Value(r['address'] as String?),
+          emergencyContact: Value(r['emergency_contact'] as String?),
+          employmentType: Value(r['employment_type'] as String?),
+          startDate: Value(r['start_date'] != null ? DateTime.tryParse(r['start_date']) : null),
+        ));
+      }
+      if (companions.isNotEmpty) {
+        await db.batch((batch) {
+          batch.insertAllOnConflictUpdate(db.localStaff, companions);
+        });
+        return true;
+      }
+    } catch (_) {}
+    return false;
   }
 }

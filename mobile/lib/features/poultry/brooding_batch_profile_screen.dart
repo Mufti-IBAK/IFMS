@@ -372,12 +372,14 @@ class _BroodingBatchProfileScreenState extends State<BroodingBatchProfileScreen>
                       const SizedBox(width: 8),
                       Expanded(
                         child: DropdownButtonFormField<String>(
+                          isExpanded: true,
+
                           value: heatStatus,
                           decoration: const InputDecoration(labelText: 'Heater Status'),
                           items: const [
-                            DropdownMenuItem(value: 'active', child: Text('Heater ON')),
-                            DropdownMenuItem(value: 'off', child: Text('Heater OFF')),
-                            DropdownMenuItem(value: 'adjusted', child: Text('Adjusted')),
+                            DropdownMenuItem(value: 'active', child: Text('Heater ON', overflow: TextOverflow.ellipsis)),
+                            DropdownMenuItem(value: 'off', child: Text('Heater OFF', overflow: TextOverflow.ellipsis)),
+                            DropdownMenuItem(value: 'adjusted', child: Text('Adjusted', overflow: TextOverflow.ellipsis)),
                           ],
                           onChanged: (v) => setSheetState(() => heatStatus = v ?? 'active'),
                         ),
@@ -741,13 +743,15 @@ class _BroodingBatchProfileScreenState extends State<BroodingBatchProfileScreen>
             TextField(controller: houseCtrl, decoration: const InputDecoration(labelText: 'Target House/Pen Name')),
             const SizedBox(height: 8),
             DropdownButtonFormField<String>(
+              isExpanded: true,
+
               initialValue: selectedType,
               decoration: const InputDecoration(labelText: 'Flock Purpose / Type'),
               items: const [
-                DropdownMenuItem(value: 'layer', child: Text('Layers')),
-                DropdownMenuItem(value: 'broiler', child: Text('Broilers')),
-                DropdownMenuItem(value: 'cockerel', child: Text('Cockerels')),
-                DropdownMenuItem(value: 'noiler', child: Text('Noilers')),
+                DropdownMenuItem(value: 'layer', child: Text('Layers', overflow: TextOverflow.ellipsis)),
+                DropdownMenuItem(value: 'broiler', child: Text('Broilers', overflow: TextOverflow.ellipsis)),
+                DropdownMenuItem(value: 'cockerel', child: Text('Cockerels', overflow: TextOverflow.ellipsis)),
+                DropdownMenuItem(value: 'noiler', child: Text('Noilers', overflow: TextOverflow.ellipsis)),
               ],
               onChanged: (v) => selectedType = v ?? 'layer',
             ),

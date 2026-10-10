@@ -6,6 +6,7 @@ import '../../core/database/local_db.dart';
 import '../../core/network/api_client.dart';
 import '../../core/audit/audit_repository.dart';
 import '../../core/di/service_locator.dart';
+import '../../core/utils/animal_tag_formatter.dart';
 
 class AnimalsRepository {
   final ApiClient apiClient;
@@ -19,6 +20,7 @@ class AnimalsRepository {
       final list = response.data as List;
       await _updateLocalCache(list);
     } catch (_) {}
+    await migrateAnimalTagsAndGenerations(db);
     return await db.select(db.localAnimals).get();
   }
 
@@ -31,116 +33,131 @@ class AnimalsRepository {
     animalData['status'] = animalData['status'] ?? 'active';
     animalData['current_reproductive_status'] = animalData['current_reproductive_status'] ?? 'open';
     
-    // Online-First: Make API call first
+    // 1. ALWAYS save to local database FIRST (Local-First Reliability)
+    final localData = Map<String, dynamic>.from(animalData);
+    if (imagePath != null) {
+      localData['image_path'] = imagePath;
+    }
+    await _updateLocalCache([localData]);
+
+    final acqCost = double.tryParse((animalData['acquisition_cost'] ?? 0).toString()) ?? 0.0;
+    if (acqCost > 0) {
+      final txUuid = const Uuid().v4();
+      await db.into(db.localTransactions).insertOnConflictUpdate(LocalTransactionsCompanion.insert(
+        id: txUuid,
+        transactionType: 'expense',
+        category: 'animal_purchase',
+        amount: acqCost,
+        currency: const Value('NGN'),
+        relatedEntityType: const Value('animal'),
+        relatedEntityId: Value(uuid),
+        description: Value('Acquisition cost for ${animalData['tag_id']} (${animalData['species']})'),
+        transactionDate: DateTime.now(),
+        isReconciled: const Value(false),
+      ));
+    }
+
+    sl<AuditRepository>().logAction(
+      userName: 'Farm Manager',
+      actionType: 'CREATE',
+      moduleName: 'animals',
+      entityId: uuid,
+      entityName: '${animalData['species']} (${animalData['tag_id']})',
+      description: 'Registered animal tag #${animalData['tag_id']}',
+      details: animalData,
+    );
+
+    // 2. Safely attempt remote API sync
     try {
-      final response = await apiClient.dio.post('/animals', data: animalData);
-      final animalId = response.data['id'];
+      final apiData = Map<String, dynamic>.from(animalData);
+      final response = await apiClient.dio.post('/animals', data: apiData);
+      final animalId = response.data?['id'] ?? uuid;
 
-      // If image exists, upload it
       if (imagePath != null && animalId != null) {
-        final formData = FormData.fromMap({
-          'file': await MultipartFile.fromFile(imagePath, filename: 'animal_photo.jpg'),
-        });
-        await apiClient.dio.post('/animals/$animalId/image', data: formData);
-      }
-
-      await _updateLocalCache([response.data]);
-
-      // Audit Log
-      sl<AuditRepository>().logAction(
-        userName: 'Farm Manager',
-        actionType: 'CREATE',
-        moduleName: 'animals',
-        entityId: uuid,
-        entityName: '${animalData['species']} (${animalData['tag_id']})',
-        description: 'Registered animal tag #${animalData['tag_id']}',
-        details: animalData,
-      );
-
-      // Auto-log acquisition cost if > 0
-      final acqCost = double.tryParse((animalData['acquisition_cost'] ?? 0).toString()) ?? 0.0;
-      if (acqCost > 0) {
-        final txUuid = const Uuid().v4();
-        await db.into(db.localTransactions).insertOnConflictUpdate(LocalTransactionsCompanion.insert(
-          id: txUuid,
-          transactionType: 'expense',
-          category: 'animal_purchase',
-          amount: acqCost,
-          currency: const Value('NGN'),
-          relatedEntityType: const Value('animal'),
-          relatedEntityId: Value(uuid),
-          description: Value('Acquisition cost for ${animalData['tag_id']} (${animalData['species']})'),
-          transactionDate: DateTime.now(),
-          isReconciled: const Value(false),
-        ));
+        try {
+          final formData = FormData.fromMap({
+            'file': await MultipartFile.fromFile(imagePath, filename: 'animal_photo.jpg'),
+          });
+          await apiClient.dio.post('/animals/$animalId/image', data: formData);
+        } catch (_) {}
       }
     } catch (e) {
-      if (e is DioException && ApiClient.isNetworkError(e)) {
-        final localData = Map<String, dynamic>.from(animalData);
-        if (imagePath != null) {
-          localData['image_path'] = imagePath;
-        }
-        await _updateLocalCache([localData]);
-
-        final acqCost = double.tryParse((animalData['acquisition_cost'] ?? 0).toString()) ?? 0.0;
-        if (acqCost > 0) {
-          final txUuid = const Uuid().v4();
-          await db.into(db.localTransactions).insertOnConflictUpdate(LocalTransactionsCompanion.insert(
-            id: txUuid,
-            transactionType: 'expense',
-            category: 'animal_purchase',
-            amount: acqCost,
-            currency: const Value('NGN'),
-            relatedEntityType: const Value('animal'),
-            relatedEntityId: Value(uuid),
-            description: Value('Acquisition cost for ${animalData['tag_id']} (${animalData['species']})'),
-            transactionDate: DateTime.now(),
-            isReconciled: const Value(false),
-          ));
-        }
-
-        await db.into(db.syncQueue).insert(SyncQueueCompanion.insert(
-          endpoint: '/animals',
-          method: 'POST',
-          body: jsonEncode(animalData),
-          queuedAt: DateTime.now(),
-        ));
-        throw Exception('Saved locally. Will sync when connection is restored.');
-      }
-      if (e is DioException) {
-        throw Exception(e.response?.data?['message'] ?? e.response?.data?['details'] ?? 'Failed to add animal: ${e.message}');
-      }
-      throw Exception('Failed to add animal: $e');
+      await db.into(db.syncQueue).insert(SyncQueueCompanion.insert(
+        endpoint: '/animals',
+        method: 'POST',
+        body: jsonEncode(animalData),
+        queuedAt: DateTime.now(),
+      ));
     }
   }
 
   Future<void> _updateLocalCache(List<dynamic> animals) async {
+    // Check pending sync items for animals so we do not overwrite un-synced local edits
+    final pendingSync = await db.select(db.syncQueue).get();
+    final pendingAnimalIds = <String>{};
+    for (final s in pendingSync) {
+      if (s.endpoint.contains('/animals')) {
+        try {
+          final body = jsonDecode(s.body);
+          if (body is Map && body['id'] != null) {
+            pendingAnimalIds.add(body['id'].toString());
+          }
+        } catch (_) {}
+      }
+    }
+
     await db.transaction(() async {
       await db.batch((batch) {
         batch.insertAll(
           db.localAnimals,
-          animals.map((animal) => LocalAnimalsCompanion.insert(
-            id: animal['id'],
-            tagId: animal['tag_id'],
-            species: animal['species'],
-            sex: animal['sex'],
-            dateOfBirth: Value(animal['date_of_birth'] != null ? DateTime.parse(animal['date_of_birth']) : null),
-            currentReproductiveStatus: animal['current_reproductive_status'] ?? 'open',
-            breed: Value(animal['breed']),
-            weight: Value(animal['weight'] != null ? double.tryParse(animal['weight'].toString()) : null),
-            color: Value(animal['color']),
-            uniqueMarks: Value(animal['unique_marks']),
-            pedigreeType: Value(animal['pedigree_type']),
-            purpose: Value(animal['purpose']),
-            vaccinationStatus: Value(animal['vaccination_status']),
-            dewormingStatus: Value(animal['deworming_status']),
-            imagePath: Value(animal['image_path']),
-            status: Value(animal['status'] ?? 'active'),
-            sireId: Value(animal['sire_id']),
-            damId: Value(animal['dam_id']),
-            acquisitionCost: Value(animal['acquisition_cost'] != null ? double.tryParse(animal['acquisition_cost'].toString()) ?? 0.0 : 0.0),
-            salvageValue: Value(animal['salvage_value'] != null ? double.tryParse(animal['salvage_value'].toString()) ?? 0.0 : 0.0),
-          )).toList(),
+          animals
+              .where((animal) => !pendingAnimalIds.contains(animal['id']?.toString()))
+              .map((animal) {
+            final dob = animal['date_of_birth'] != null ? DateTime.tryParse(animal['date_of_birth'].toString()) : null;
+            String gen = (animal['generation'] ?? '').toString().trim();
+            if (gen.isEmpty) {
+              if (dob != null && DateTime.now().difference(dob).inDays < 183) {
+                gen = 'F2';
+              } else {
+                gen = 'F1';
+              }
+            }
+            final rawTag = (animal['tag_id'] ?? '').toString();
+            final breedCode = AnimalTagFormatter.getBreedCode(
+              breed: (animal['breed'] ?? '').toString(),
+              pedigreeType: animal['pedigree_type']?.toString(),
+              species: animal['species']?.toString(),
+            );
+            final formattedTag = AnimalTagFormatter.formatTagId(
+              rawTag: rawTag,
+              breedCode: breedCode,
+              generation: gen,
+            );
+
+            return LocalAnimalsCompanion.insert(
+              id: animal['id'],
+              tagId: formattedTag,
+              species: animal['species'] ?? 'Livestock',
+              sex: animal['sex'] ?? 'unknown',
+              dateOfBirth: Value(dob),
+              generation: Value(gen),
+              currentReproductiveStatus: animal['current_reproductive_status'] ?? 'open',
+              breed: Value(animal['breed']),
+              weight: Value(animal['weight'] != null ? double.tryParse(animal['weight'].toString()) : null),
+              color: Value(animal['color']),
+              uniqueMarks: Value(animal['unique_marks']),
+              pedigreeType: Value(animal['pedigree_type']),
+              purpose: Value(animal['purpose']),
+              vaccinationStatus: Value(animal['vaccination_status']),
+              dewormingStatus: Value(animal['deworming_status']),
+              imagePath: Value(animal['image_path']),
+              status: Value(animal['status'] ?? 'active'),
+              sireId: Value(animal['sire_id']),
+              damId: Value(animal['dam_id']),
+              acquisitionCost: Value(animal['acquisition_cost'] != null ? double.tryParse(animal['acquisition_cost'].toString()) ?? 0.0 : 0.0),
+              salvageValue: Value(animal['salvage_value'] != null ? double.tryParse(animal['salvage_value'].toString()) ?? 0.0 : 0.0),
+            );
+          }).toList(),
           mode: InsertMode.insertOrReplace,
         );
       });
@@ -151,65 +168,58 @@ class AnimalsRepository {
     final imagePath = updateData['image_path'] as String?;
     updateData.remove('image_path');
 
+    // 1. ALWAYS update local database FIRST
+    await (db.update(db.localAnimals)..where((t) => t.id.equals(id))).write(
+      LocalAnimalsCompanion(
+        tagId: updateData.containsKey('tag_id') ? Value(updateData['tag_id']) : const Value.absent(),
+        species: updateData.containsKey('species') ? Value(updateData['species']) : const Value.absent(),
+        breed: updateData.containsKey('breed') ? Value(updateData['breed']) : const Value.absent(),
+        sex: updateData.containsKey('sex') ? Value(updateData['sex']) : const Value.absent(),
+        status: updateData.containsKey('status') ? Value(updateData['status']) : const Value.absent(),
+        weight: updateData.containsKey('weight') ? Value(double.tryParse(updateData['weight'].toString())) : const Value.absent(),
+        color: updateData.containsKey('color') ? Value(updateData['color']) : const Value.absent(),
+        uniqueMarks: updateData.containsKey('unique_marks') ? Value(updateData['unique_marks']) : const Value.absent(),
+        purpose: updateData.containsKey('purpose') ? Value(updateData['purpose']) : const Value.absent(),
+        pedigreeType: updateData.containsKey('pedigree_type') ? Value(updateData['pedigree_type']) : const Value.absent(),
+        generation: updateData.containsKey('generation') ? Value(updateData['generation']) : const Value.absent(),
+        currentReproductiveStatus: updateData.containsKey('current_reproductive_status') ? Value(updateData['current_reproductive_status']) : const Value.absent(),
+        dateOfBirth: updateData.containsKey('date_of_birth') ? Value(updateData['date_of_birth'] != null ? DateTime.tryParse(updateData['date_of_birth']) : null) : const Value.absent(),
+        imagePath: imagePath != null ? Value(imagePath) : const Value.absent(),
+      ),
+    );
+
+    final existingAnimal = await (db.select(db.localAnimals)..where((t) => t.id.equals(id))).getSingleOrNull();
+    final tagLabel = updateData['tag_id'] ?? existingAnimal?.tagId ?? id;
+    final speciesLabel = updateData['species'] ?? existingAnimal?.species ?? 'Animal';
+
+    sl<AuditRepository>().logAction(
+      userName: 'Farm Manager',
+      actionType: 'UPDATE',
+      moduleName: 'animals',
+      entityId: id,
+      entityName: '$speciesLabel (#$tagLabel)',
+      description: 'Updated details for $speciesLabel (#$tagLabel)',
+      details: updateData,
+    );
+
+    // 2. Safely attempt remote API sync
     try {
       await apiClient.dio.patch('/animals?id=eq.$id', data: updateData);
-      
-      // If image exists, upload it
       if (imagePath != null) {
-        final formData = FormData.fromMap({
-          'file': await MultipartFile.fromFile(imagePath, filename: 'animal_photo.jpg'),
-        });
-        await apiClient.dio.post('/animals/$id/image', data: formData);
+        try {
+          final formData = FormData.fromMap({
+            'file': await MultipartFile.fromFile(imagePath, filename: 'animal_photo.jpg'),
+          });
+          await apiClient.dio.post('/animals/$id/image', data: formData);
+        } catch (_) {}
       }
-      
-      final freshResponse = await apiClient.dio.get('/animals?id=eq.$id');
-      if (freshResponse.data is List && freshResponse.data.isNotEmpty) {
-        await _updateLocalCache([freshResponse.data[0]]);
-      }
-
-      final existingAnimal = await (db.select(db.localAnimals)..where((t) => t.id.equals(id))).getSingleOrNull();
-      final tagLabel = updateData['tag_id'] ?? existingAnimal?.tagId ?? id;
-      final speciesLabel = updateData['species'] ?? existingAnimal?.species ?? 'Animal';
-
-      sl<AuditRepository>().logAction(
-        userName: 'Farm Manager',
-        actionType: 'UPDATE',
-        moduleName: 'animals',
-        entityId: id,
-        entityName: '$speciesLabel (#$tagLabel)',
-        description: 'Updated details for $speciesLabel (#$tagLabel)',
-        details: updateData,
-      );
     } catch (e) {
-      if (e is DioException && ApiClient.isNetworkError(e)) {
-        await (db.update(db.localAnimals)..where((t) => t.id.equals(id))).write(
-          LocalAnimalsCompanion(
-            tagId: updateData.containsKey('tag_id') ? Value(updateData['tag_id']) : const Value.absent(),
-            species: updateData.containsKey('species') ? Value(updateData['species']) : const Value.absent(),
-            breed: updateData.containsKey('breed') ? Value(updateData['breed']) : const Value.absent(),
-            sex: updateData.containsKey('sex') ? Value(updateData['sex']) : const Value.absent(),
-            status: updateData.containsKey('status') ? Value(updateData['status']) : const Value.absent(),
-            weight: updateData.containsKey('weight') ? Value(double.tryParse(updateData['weight'].toString())) : const Value.absent(),
-            color: updateData.containsKey('color') ? Value(updateData['color']) : const Value.absent(),
-            uniqueMarks: updateData.containsKey('unique_marks') ? Value(updateData['unique_marks']) : const Value.absent(),
-            purpose: updateData.containsKey('purpose') ? Value(updateData['purpose']) : const Value.absent(),
-            pedigreeType: updateData.containsKey('pedigree_type') ? Value(updateData['pedigree_type']) : const Value.absent(),
-            imagePath: imagePath != null ? Value(imagePath) : const Value.absent(),
-          )
-        );
-
-        await db.into(db.syncQueue).insert(SyncQueueCompanion.insert(
-          endpoint: '/animals/$id',
-          method: 'PATCH',
-          body: jsonEncode(updateData),
-          queuedAt: DateTime.now(),
-        ));
-        throw Exception('Saved locally. Will sync when connection is restored.');
-      }
-      if (e is DioException) {
-        throw Exception(e.response?.data?['message'] ?? e.response?.data?['details'] ?? 'Failed to update animal: ${e.message}');
-      }
-      throw Exception('Failed to update animal: $e');
+      await db.into(db.syncQueue).insert(SyncQueueCompanion.insert(
+        endpoint: '/animals/$id',
+        method: 'PATCH',
+        body: jsonEncode(updateData),
+        queuedAt: DateTime.now(),
+      ));
     }
   }
 

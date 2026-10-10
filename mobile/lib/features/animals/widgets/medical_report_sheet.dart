@@ -465,6 +465,8 @@ class _MedicalReportSheetState extends State<MedicalReportSheet> {
                             children: [
                               Expanded(
                                 child: DropdownButtonFormField<String>(
+                                  isExpanded: true,
+
                                   decoration: const InputDecoration(
                                     labelText: 'Frequency',
                                     border: OutlineInputBorder(),

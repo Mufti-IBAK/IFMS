@@ -789,17 +789,17 @@ class _PharmacyScreenState extends State<PharmacyScreen> with SingleTickerProvid
                                 ),
                                 isExpanded: true,
                                 items: const [
-                                  DropdownMenuItem(value: 'antibiotic', child: Text('Antibiotic / Antimicrobial')),
-                                  DropdownMenuItem(value: 'vaccine', child: Text('Vaccine')),
-                                  DropdownMenuItem(value: 'dewormer', child: Text('Dewormer / Anthelmintic')),
+                                  DropdownMenuItem(value: 'antibiotic', child: Text('Antibiotic / Antimicrobial', overflow: TextOverflow.ellipsis)),
+                                  DropdownMenuItem(value: 'vaccine', child: Text('Vaccine', overflow: TextOverflow.ellipsis)),
+                                  DropdownMenuItem(value: 'dewormer', child: Text('Dewormer / Anthelmintic', overflow: TextOverflow.ellipsis)),
                                   DropdownMenuItem(value: 'ectoparasiticide', child: Text('Ectoparasiticide (Tick/Flea)')),
                                   DropdownMenuItem(value: 'nsaid', child: Text('NSAID (Anti-inflammatory/Pain)')),
-                                  DropdownMenuItem(value: 'hormone', child: Text('Hormone / Breeding')),
-                                  DropdownMenuItem(value: 'supplement', child: Text('Supplement / Vitamin')),
-                                  DropdownMenuItem(value: 'antiseptic', child: Text('Antiseptic / Disinfectant')),
-                                  DropdownMenuItem(value: 'rehydration', child: Text('Rehydration / IV Fluids')),
-                                  DropdownMenuItem(value: 'anesthetic', child: Text('Anesthetic / Sedative')),
-                                  DropdownMenuItem(value: 'other', child: Text('Other / Miscellaneous')),
+                                  DropdownMenuItem(value: 'hormone', child: Text('Hormone / Breeding', overflow: TextOverflow.ellipsis)),
+                                  DropdownMenuItem(value: 'supplement', child: Text('Supplement / Vitamin', overflow: TextOverflow.ellipsis)),
+                                  DropdownMenuItem(value: 'antiseptic', child: Text('Antiseptic / Disinfectant', overflow: TextOverflow.ellipsis)),
+                                  DropdownMenuItem(value: 'rehydration', child: Text('Rehydration / IV Fluids', overflow: TextOverflow.ellipsis)),
+                                  DropdownMenuItem(value: 'anesthetic', child: Text('Anesthetic / Sedative', overflow: TextOverflow.ellipsis)),
+                                  DropdownMenuItem(value: 'other', child: Text('Other / Miscellaneous', overflow: TextOverflow.ellipsis)),
                                 ],
                                 onChanged: (v) => setStateDialog(() => category = v!),
                               ),
@@ -867,11 +867,11 @@ class _PharmacyScreenState extends State<PharmacyScreen> with SingleTickerProvid
                                         DropdownMenuItem(value: 'mg', child: Text('Milligrams (mg)')),
                                         DropdownMenuItem(value: 'g', child: Text('Grams (g)')),
                                         DropdownMenuItem(value: 'tabs', child: Text('Tablets (tabs)')),
-                                        DropdownMenuItem(value: 'doses', child: Text('Doses')),
-                                        DropdownMenuItem(value: 'vials', child: Text('Vials')),
-                                        DropdownMenuItem(value: 'ampoules', child: Text('Ampoules')),
-                                        DropdownMenuItem(value: 'sachets', child: Text('Sachets')),
-                                        DropdownMenuItem(value: 'bolus', child: Text('Bolus')),
+                                        DropdownMenuItem(value: 'doses', child: Text('Doses', overflow: TextOverflow.ellipsis)),
+                                        DropdownMenuItem(value: 'vials', child: Text('Vials', overflow: TextOverflow.ellipsis)),
+                                        DropdownMenuItem(value: 'ampoules', child: Text('Ampoules', overflow: TextOverflow.ellipsis)),
+                                        DropdownMenuItem(value: 'sachets', child: Text('Sachets', overflow: TextOverflow.ellipsis)),
+                                        DropdownMenuItem(value: 'bolus', child: Text('Bolus', overflow: TextOverflow.ellipsis)),
                                       ],
                                       onChanged: (v) => setStateDialog(() => unit = v!),
                                     ),
@@ -1087,13 +1087,13 @@ class _PharmacyScreenState extends State<PharmacyScreen> with SingleTickerProvid
                                 ),
                                 isExpanded: true,
                                 items: const [
-                                  DropdownMenuItem(value: 'pack', child: Text('Pack')),
-                                  DropdownMenuItem(value: 'box', child: Text('Box')),
-                                  DropdownMenuItem(value: 'bottle', child: Text('Bottle')),
-                                  DropdownMenuItem(value: 'vial', child: Text('Vial')),
-                                  DropdownMenuItem(value: 'ampoule', child: Text('Ampoule')),
-                                  DropdownMenuItem(value: 'sachet', child: Text('Sachet')),
-                                  DropdownMenuItem(value: 'tub', child: Text('Tub')),
+                                  DropdownMenuItem(value: 'pack', child: Text('Pack', overflow: TextOverflow.ellipsis)),
+                                  DropdownMenuItem(value: 'box', child: Text('Box', overflow: TextOverflow.ellipsis)),
+                                  DropdownMenuItem(value: 'bottle', child: Text('Bottle', overflow: TextOverflow.ellipsis)),
+                                  DropdownMenuItem(value: 'vial', child: Text('Vial', overflow: TextOverflow.ellipsis)),
+                                  DropdownMenuItem(value: 'ampoule', child: Text('Ampoule', overflow: TextOverflow.ellipsis)),
+                                  DropdownMenuItem(value: 'sachet', child: Text('Sachet', overflow: TextOverflow.ellipsis)),
+                                  DropdownMenuItem(value: 'tub', child: Text('Tub', overflow: TextOverflow.ellipsis)),
                                 ],
                                 onChanged: (v) => setStateDialog(() => purchaseUnitType = v!),
                               ),
@@ -1423,6 +1423,8 @@ class _PharmacyScreenState extends State<PharmacyScreen> with SingleTickerProvid
                       children: [
                         Expanded(
                           child: DropdownButtonFormField<String>(
+                            isExpanded: true,
+
                             value: category,
                             decoration: const InputDecoration(labelText: 'Category *'),
                             items: ['antibiotic', 'vaccine', 'dewormer', 'vitamin', 'supplement', 'other']
@@ -1442,10 +1444,12 @@ class _PharmacyScreenState extends State<PharmacyScreen> with SingleTickerProvid
                     ),
                     const SizedBox(height: 12),
                     DropdownButtonFormField<String>(
+                      isExpanded: true,
+
                       value: unit,
                       decoration: const InputDecoration(labelText: 'Unit *'),
                       items: ['ml', 'g', 'kg', 'bolus', 'vial', 'tablets', 'units']
-                          .map((u) => DropdownMenuItem(value: u, child: Text(u)))
+                          .map((u) => DropdownMenuItem(value: u, child: Text(u, overflow: TextOverflow.ellipsis)))
                           .toList(),
                       onChanged: (v) => setStateDialog(() => unit = v!),
                     ),
@@ -1637,13 +1641,13 @@ class _PharmacyScreenState extends State<PharmacyScreen> with SingleTickerProvid
                       decoration: const InputDecoration(labelText: 'Purchase Package Type *'),
                       isExpanded: true,
                       items: const [
-                        DropdownMenuItem(value: 'pack', child: Text('Pack')),
-                        DropdownMenuItem(value: 'box', child: Text('Box')),
-                        DropdownMenuItem(value: 'bottle', child: Text('Bottle')),
-                        DropdownMenuItem(value: 'vial', child: Text('Vial')),
-                        DropdownMenuItem(value: 'ampoule', child: Text('Ampoule')),
-                        DropdownMenuItem(value: 'sachet', child: Text('Sachet')),
-                        DropdownMenuItem(value: 'tub', child: Text('Tub')),
+                        DropdownMenuItem(value: 'pack', child: Text('Pack', overflow: TextOverflow.ellipsis)),
+                        DropdownMenuItem(value: 'box', child: Text('Box', overflow: TextOverflow.ellipsis)),
+                        DropdownMenuItem(value: 'bottle', child: Text('Bottle', overflow: TextOverflow.ellipsis)),
+                        DropdownMenuItem(value: 'vial', child: Text('Vial', overflow: TextOverflow.ellipsis)),
+                        DropdownMenuItem(value: 'ampoule', child: Text('Ampoule', overflow: TextOverflow.ellipsis)),
+                        DropdownMenuItem(value: 'sachet', child: Text('Sachet', overflow: TextOverflow.ellipsis)),
+                        DropdownMenuItem(value: 'tub', child: Text('Tub', overflow: TextOverflow.ellipsis)),
                       ],
                       onChanged: (v) => purchaseUnitType = v!,
                     ),
@@ -1933,7 +1937,7 @@ class _PharmacyScreenState extends State<PharmacyScreen> with SingleTickerProvid
                           isExpanded: true,
                           items: medications.map((m) {
                             final conc = m.concentration != null ? ' (${m.concentration})' : '';
-                            return DropdownMenuItem(value: m.id, child: Text('${m.name}$conc'));
+                            return DropdownMenuItem(value: m.id, child: Text('${m.name}$conc', overflow: TextOverflow.ellipsis));
                           }).toList(),
                           onChanged: (v) => setDialogState(() {
                             selectedMedId = v;

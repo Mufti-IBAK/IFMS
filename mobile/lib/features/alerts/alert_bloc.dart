@@ -1,5 +1,7 @@
+import 'dart:async';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../core/database/local_db.dart';
+import '../../core/sync/sync_event_bus.dart';
 import 'alert_repository.dart';
 
 abstract class AlertEvent {}
@@ -22,8 +24,15 @@ class AlertError extends AlertState {
 
 class AlertBloc extends Bloc<AlertEvent, AlertState> {
   final AlertRepository repository;
+  StreamSubscription<SyncCompletedEvent>? _syncSubscription;
 
   AlertBloc(this.repository) : super(AlertLoading()) {
+    _syncSubscription = SyncEventBus().stream.listen((event) {
+      if (event.containsAny(['alerts'])) {
+        add(LoadAlerts());
+      }
+    });
+
     on<LoadAlerts>((event, emit) async {
       final currentState = state;
       if (currentState is! AlertLoaded) {
@@ -49,4 +58,11 @@ class AlertBloc extends Bloc<AlertEvent, AlertState> {
       }
     });
   }
+
+  @override
+  Future<void> close() {
+    _syncSubscription?.cancel();
+    return super.close();
+  }
 }
+

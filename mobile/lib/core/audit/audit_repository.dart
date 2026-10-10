@@ -40,7 +40,7 @@ class AuditRepository {
       moduleName: moduleName,
       entityId: Value(entityId),
       entityLabel: Value(entityName),
-      description: description,
+      description: Value(description),
       detailsJson: Value(details != null ? jsonEncode(details) : null),
       timestamp: Value(now),
     );

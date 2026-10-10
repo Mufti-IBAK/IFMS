@@ -1,5 +1,7 @@
+import 'dart:async';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../core/database/local_db.dart';
+import '../../core/sync/sync_event_bus.dart';
 import 'finance_repository.dart';
 
 // ──────────────────────────────────────────────
@@ -71,6 +73,7 @@ class FinanceError extends FinanceState {
 
 class FinanceBloc extends Bloc<FinanceEvent, FinanceState> {
   final FinanceRepository repository;
+  StreamSubscription<SyncCompletedEvent>? _syncSubscription;
 
   FinanceBloc(this.repository) : super(FinanceLoading()) {
     on<LoadFinanceData>(_onLoad);
@@ -80,7 +83,20 @@ class FinanceBloc extends Bloc<FinanceEvent, FinanceState> {
     on<UpdateTransactionEvent>(_onUpdateTransaction);
     on<DeleteTransactionEvent>(_onDeleteTransaction);
     on<ClearAllTransactionsEvent>(_onClearAllTransactions);
+
+    _syncSubscription = SyncEventBus().stream.listen((event) {
+      if (event.containsAny(['transactions'])) {
+        add(LoadFinanceData());
+      }
+    });
   }
+
+  @override
+  Future<void> close() {
+    _syncSubscription?.cancel();
+    return super.close();
+  }
+
 
   Future<void> _onLoad(LoadFinanceData event, Emitter<FinanceState> emit) async {
     final currentState = state;

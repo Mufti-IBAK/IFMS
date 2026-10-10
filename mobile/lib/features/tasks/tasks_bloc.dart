@@ -1,7 +1,9 @@
+import 'dart:async';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'tasks_repository.dart';
 import '../../core/di/service_locator.dart';
 import '../../core/network/notification_service.dart';
+import '../../core/sync/sync_event_bus.dart';
 
 // EVENTS
 abstract class TasksEvent {}
@@ -33,8 +35,15 @@ class TasksError extends TasksState {
 // BLOC
 class TasksBloc extends Bloc<TasksEvent, TasksState> {
   final TasksRepository repository;
+  StreamSubscription<SyncCompletedEvent>? _syncSubscription;
 
   TasksBloc(this.repository) : super(TasksLoading()) {
+    _syncSubscription = SyncEventBus().stream.listen((event) {
+      if (event.containsAny(['tasks'])) {
+        add(LoadTasks());
+      }
+    });
+
     on<LoadTasks>((event, emit) async {
       final currentState = state;
       if (currentState is! TasksLoaded) {
@@ -78,4 +87,11 @@ class TasksBloc extends Bloc<TasksEvent, TasksState> {
       }
     });
   }
+
+  @override
+  Future<void> close() {
+    _syncSubscription?.cancel();
+    return super.close();
+  }
 }
+

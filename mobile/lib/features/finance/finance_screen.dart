@@ -1175,6 +1175,8 @@ class _FinanceScreenState extends State<FinanceScreen> with SingleTickerProvider
                     ),
                     const SizedBox(height: 12),
                     DropdownButtonFormField<String>(
+                      isExpanded: true,
+
                       value: category,
                       decoration: const InputDecoration(labelText: 'Category *', border: OutlineInputBorder()),
                       items: categoryOptions.map((c) {
@@ -1535,6 +1537,8 @@ class _FinanceScreenState extends State<FinanceScreen> with SingleTickerProvider
                     const SizedBox(height: 12),
 
                     DropdownButtonFormField<String>(
+                      isExpanded: true,
+
                       initialValue: category,
                       decoration: const InputDecoration(labelText: 'Category *', border: OutlineInputBorder()),
                       items: categoryOptions.map((c) {

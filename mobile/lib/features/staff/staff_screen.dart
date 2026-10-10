@@ -533,7 +533,32 @@ class _StaffScreenState extends State<StaffScreen> with SingleTickerProviderStat
                 // Employment Info
                 const Text('Employment Details', style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.primary)),
                 const Divider(),
-                TextField(textCapitalization: TextCapitalization.sentences, controller: roleCtrl, decoration: const InputDecoration(labelText: 'Role (e.g. Herder)', prefixIcon: Icon(Icons.work))),
+                TextField(
+                  textCapitalization: TextCapitalization.sentences,
+                  controller: roleCtrl,
+                  decoration: const InputDecoration(labelText: 'Role (e.g. Production Lead)', prefixIcon: Icon(Icons.work)),
+                ),
+                const SizedBox(height: 8),
+                Wrap(
+                  spacing: 6,
+                  runSpacing: 6,
+                  children: [
+                    'Production Lead',
+                    'Yoghurt Sales & Distribution Manager',
+                    'Operational Staff',
+                    'Veterinarian',
+                    'Farm Manager',
+                    'Casual Worker',
+                  ].map((r) => ActionChip(
+                    label: Text(r, style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold)),
+                    padding: EdgeInsets.zero,
+                    materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    onPressed: () {
+                      roleCtrl.text = r;
+                      setDiagState(() {});
+                    },
+                  )).toList(),
+                ),
                 const SizedBox(height: 12),                
                 AppDropdownFormField<String>(
                   labelText: 'Employment Type',

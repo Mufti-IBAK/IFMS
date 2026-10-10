@@ -1,5 +1,7 @@
+import 'dart:async';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../core/database/local_db.dart';
+import '../../core/sync/sync_event_bus.dart';
 import 'pharmacy_repository.dart';
 
 // ──────────────────────────────────────────────
@@ -65,6 +67,7 @@ class PharmacyError extends PharmacyState {
 
 class PharmacyBloc extends Bloc<PharmacyEvent, PharmacyState> {
   final PharmacyRepository repository;
+  StreamSubscription<SyncCompletedEvent>? _syncSubscription;
 
   PharmacyBloc(this.repository) : super(PharmacyInitial()) {
     on<LoadPharmacy>(_onLoad);
@@ -73,7 +76,20 @@ class PharmacyBloc extends Bloc<PharmacyEvent, PharmacyState> {
     on<EditMedication>(_onEditMedication);
     on<LogTreatment>(_onLogTreatment);
     on<DiscardStock>(_onDiscardStock);
+
+    _syncSubscription = SyncEventBus().stream.listen((event) {
+      if (event.containsAny(['medications', 'medication_logs', 'animal_medical_records'])) {
+        add(LoadPharmacy());
+      }
+    });
   }
+
+  @override
+  Future<void> close() {
+    _syncSubscription?.cancel();
+    return super.close();
+  }
+
 
   Future<void> _onLoad(LoadPharmacy event, Emitter<PharmacyState> emit) async {
     emit(PharmacyLoading());
