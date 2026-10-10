@@ -8,8 +8,10 @@ import '../poultry/poultry_repository.dart';
 import '../../core/database/local_db.dart';
 import 'package:ifms_mobile/core/widgets/custom_charts.dart';
 import '../../core/utils/finance_pdf_export_service.dart';
+import '../../core/widgets/responsive_calendar_dialog.dart';
 import '../settings/settings_controller.dart';
 import 'finance_bloc.dart';
+import 'finance_repository.dart';
 
 class FinanceScreen extends StatefulWidget {
   const FinanceScreen({super.key});
@@ -32,7 +34,10 @@ class _FinanceScreenState extends State<FinanceScreen> with SingleTickerProvider
   List<_InventoryCachedItem> _animalsList = [];
   List<_InventoryCachedItem> _flocksList = [];
   DateTime _selectedMonth = DateTime.now();
+  DateTime _selectedDate = DateTime.now();
   int _selectedWeek = 0; // 0 = All Weeks, 1 = Wk 1 (1-7), 2 = Wk 2 (8-14), 3 = Wk 3 (15-21), 4 = Wk 4 (22+)
+  bool _isDayView = true; // Default to Daily Ledger display as requested
+  String _ledgerCategoryFilter = 'ALL';
 
   bool _isManualTransaction(LocalTransaction tx) {
     final type = tx.relatedEntityType?.toLowerCase();
@@ -62,18 +67,18 @@ class _FinanceScreenState extends State<FinanceScreen> with SingleTickerProvider
     try {
       final animals = await sl<AnimalsRepository>().getAnimals();
       final flocks = await sl<PoultryRepository>().getBatches();
-
       if (mounted) {
         setState(() {
           _animalsList = animals.map((a) {
-            final id = a.id;
             final tag = a.tagId;
-            final species = a.species;
-            return _InventoryCachedItem(id, '$tag ($species)');
+            final breed = a.breed ?? 'Unknown Breed';
+            return _InventoryCachedItem(a.id, '$tag ($breed)');
           }).toList();
 
           _flocksList = flocks.map((f) {
-            return _InventoryCachedItem(f.id, '${f.batchNumber} (Flock)');
+            final batchName = '${f.batchNumber} (${f.houseName})';
+            final breed = f.breed ?? 'Flock';
+            return _InventoryCachedItem(f.id, '$batchName ($breed)');
           }).toList();
         });
       }
@@ -82,144 +87,114 @@ class _FinanceScreenState extends State<FinanceScreen> with SingleTickerProvider
 
   @override
   Widget build(BuildContext context) {
-    return BlocConsumer<FinanceBloc, FinanceState>(
-      listener: (context, state) {
-        if (state is FinanceError) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(state.message),
-              backgroundColor: Colors.red,
-              behavior: SnackBarBehavior.floating,
-              margin: const EdgeInsets.only(bottom: 80, left: 20, right: 20),
-              duration: const Duration(seconds: 4),
-            ),
-          );
-        }
-      },
-      builder: (context, state) {
-        if (state is FinanceLoading) {
-          return const Scaffold(
-            body: Center(child: CircularProgressIndicator()),
-          );
-        } else if (state is FinanceLoaded) {
-          return Scaffold(
-            appBar: AppBar(
-              title: const Text('FINANCIAL LEDGER'),
-              actions: [
-                IconButton(
-                  icon: const Icon(Icons.picture_as_pdf),
-                  tooltip: 'Export Monthly Account Statement PDF',
-                  onPressed: () {
-                    FinancePdfExportService.exportMonthlyAccountStatementPdf(
-                      transactions: state.transactions,
-                      selectedMonth: _selectedMonth,
-                      ownerEmail: sl.isRegistered<SettingsController>() ? sl<SettingsController>().profile?.ownerEmail : null,
-                      managerEmail: sl.isRegistered<SettingsController>() ? sl<SettingsController>().profile?.managerEmail : null,
-                    );
-                  },
+    return Scaffold(
+      backgroundColor: AppColors.background,
+      appBar: AppBar(
+        title: const Text('Financial Management', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+        backgroundColor: Colors.white,
+        foregroundColor: AppColors.onSurface,
+        elevation: 0,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.refresh, color: AppColors.primary),
+            tooltip: 'Sync & Refresh',
+            onPressed: () {
+              BlocProvider.of<FinanceBloc>(context).add(LoadFinanceData());
+            },
+          ),
+          PopupMenuButton<String>(
+            icon: const Icon(Icons.more_vert, color: AppColors.primary),
+            onSelected: (val) {
+              if (val == 'clear_all') {
+                _confirmClearLedger(context);
+              }
+            },
+            itemBuilder: (ctx) => [
+              const PopupMenuItem(
+                value: 'clear_all',
+                child: Row(
+                  children: [
+                    Icon(Icons.delete_sweep, color: Colors.red, size: 20),
+                    SizedBox(width: 8),
+                    Text('Clear All Ledger Entries', style: TextStyle(color: Colors.red, fontSize: 13)),
+                  ],
                 ),
-                if (_tabController.index == 1)
-                  IconButton(
-                    icon: const Icon(Icons.delete_sweep_outlined, color: Colors.red),
-                    tooltip: 'Clear Ledger',
-                    onPressed: () => _confirmClearLedger(context),
+              ),
+            ],
+          ),
+        ],
+        bottom: TabBar(
+          controller: _tabController,
+          labelColor: AppColors.primary,
+          unselectedLabelColor: Colors.grey,
+          indicatorColor: AppColors.primary,
+          indicatorWeight: 3,
+          tabs: const [
+            Tab(icon: Icon(Icons.insights, size: 20), text: 'INSIGHTS'),
+            Tab(icon: Icon(Icons.receipt_long, size: 20), text: 'LEDGER'),
+            Tab(icon: Icon(Icons.psychology, size: 20), text: 'ADVISOR'),
+          ],
+        ),
+      ),
+      body: BlocConsumer<FinanceBloc, FinanceState>(
+        listener: (context, state) {
+          if (state is FinanceError) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text(state.message), backgroundColor: Colors.red),
+            );
+          }
+        },
+        builder: (context, state) {
+          if (state is FinanceLoading) {
+            return const Center(child: CircularProgressIndicator());
+          }
+          if (state is FinanceError) {
+            return Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(Icons.error_outline, size: 48, color: Colors.red),
+                  const SizedBox(height: 16),
+                  Text(state.message, style: const TextStyle(color: Colors.red)),
+                  const SizedBox(height: 16),
+                  ElevatedButton(
+                    onPressed: () => BlocProvider.of<FinanceBloc>(context).add(LoadFinanceData()),
+                    child: const Text('Retry'),
                   ),
-              ],
-              bottom: TabBar(
-                controller: _tabController,
-                labelColor: Colors.white,
-                unselectedLabelColor: Colors.white70,
-                indicatorColor: AppColors.secondary,
-                tabs: const [
-                  Tab(icon: Icon(Icons.dashboard_outlined), text: 'Dashboard'),
-                  Tab(icon: Icon(Icons.receipt_long_outlined), text: 'Ledger'),
-                  Tab(icon: Icon(Icons.gavel_outlined), text: 'Culling Recommendations'),
                 ],
               ),
-            ),
-            body: TabBarView(
+            );
+          }
+          if (state is FinanceLoaded) {
+            return TabBarView(
               controller: _tabController,
               children: [
                 _buildDashboardTab(context, state),
                 _buildLedgerTab(context, state),
                 _buildCullingTab(context, state),
               ],
-            ),
-            floatingActionButton: _tabController.index == 1
-                ? FloatingActionButton.extended(
-                    onPressed: () => _showLogTransactionDialog(context),
-                    backgroundColor: AppColors.primary,
-                    icon: const Icon(Icons.add, color: Colors.white),
-                    label: const Text('Record Tx', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-                  )
-                : null,
-          );
-        } else if (state is FinanceError) {
-          return Scaffold(
-            appBar: AppBar(title: const Text('FINANCIAL LEDGER')),
-            body: Center(
-              child: Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    const Icon(Icons.error_outline, color: Colors.red, size: 48),
-                    const SizedBox(height: 16),
-                    Text(state.message, textAlign: TextAlign.center, style: const TextStyle(color: Colors.red)),
-                    const SizedBox(height: 16),
-                    ElevatedButton(
-                      onPressed: () => BlocProvider.of<FinanceBloc>(context).add(LoadFinanceData()),
-                      child: const Text('Retry'),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          );
-        }
-        return const Scaffold(
-          body: Center(child: Text('Unknown State')),
-        );
-      },
-    );
-  }
-
-  Widget _buildWeekSegmentTab(int weekIndex, String label) {
-    final isSelected = _selectedWeek == weekIndex;
-    return Expanded(
-      child: GestureDetector(
-        onTap: () => setState(() => _selectedWeek = weekIndex),
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 180),
-          padding: const EdgeInsets.symmetric(vertical: 8),
-          decoration: BoxDecoration(
-            color: isSelected ? AppColors.primary : Colors.transparent,
-            borderRadius: BorderRadius.circular(8),
-            boxShadow: isSelected
-                ? [BoxShadow(color: AppColors.primary.withOpacity(0.3), blurRadius: 4, offset: const Offset(0, 2))]
-                : null,
-          ),
-          alignment: Alignment.center,
-          child: Text(
-            label,
-            style: TextStyle(
-              color: isSelected ? Colors.white : Colors.grey.shade800,
-              fontWeight: isSelected ? FontWeight.bold : FontWeight.w600,
-              fontSize: 11,
-            ),
-          ),
-        ),
+            );
+          }
+          return const SizedBox.shrink();
+        },
       ),
+      floatingActionButton: _tabController.index == 1
+          ? FloatingActionButton.extended(
+              onPressed: () => _showAddTransactionDialog(context),
+              backgroundColor: AppColors.primary,
+              icon: const Icon(Icons.add, color: Colors.white),
+              label: const Text('Record Tx', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+            )
+          : null,
     );
   }
 
   // ──────────────────────────────────────────────
-  // TAB 1: DASHBOARD
+  // TAB 1: DASHBOARD & FINANCIAL INSIGHTS
   // ──────────────────────────────────────────────
   Widget _buildDashboardTab(BuildContext context, FinanceLoaded state) {
-    // 1. Filter transactions by Month, Week, AND Reconciliation status
+    // Filter transactions by Month and Week (READ ALL TRANSACTIONS for real-time reporting)
     final filteredTxs = state.transactions.where((t) {
-      if (!t.isReconciled) return false; // ONLY RECONCILED TRANSACTIONS REFLECT ON FINANCIAL RECORDS & DASHBOARD
       final d = t.transactionDate;
       if (d.year != _selectedMonth.year || d.month != _selectedMonth.month) {
         return false;
@@ -233,28 +208,59 @@ class _FinanceScreenState extends State<FinanceScreen> with SingleTickerProvider
 
     double totalRevenue = 0.0;
     double totalExpenses = 0.0;
+    double reconciledRevenue = 0.0;
+    double reconciledExpenses = 0.0;
+    double pendingRevenue = 0.0;
+    double pendingExpenses = 0.0;
+
+    // Yoghurt Factory specific metrics
+    double yoghurtSales = 0.0;
+    double yoghurtDirectExpenses = 0.0;
+    double yoghurtRawTransferExpenses = 0.0;
+
     final Map<String, double> categoryBreakdown = {};
 
     for (var tx in filteredTxs) {
       final amt = tx.amount;
       if (tx.transactionType == 'income') {
         totalRevenue += amt;
+        if (tx.isReconciled) {
+          reconciledRevenue += amt;
+        } else {
+          pendingRevenue += amt;
+        }
+        if (tx.category == 'yoghurt_sales') {
+          yoghurtSales += amt;
+        }
       } else {
         totalExpenses += amt;
+        if (tx.isReconciled) {
+          reconciledExpenses += amt;
+        } else {
+          pendingExpenses += amt;
+        }
+        if (tx.category == 'yoghurt_expense') {
+          yoghurtDirectExpenses += amt;
+        } else if (tx.category == 'yoghurt_raw_material_transfer') {
+          yoghurtRawTransferExpenses += amt;
+        }
       }
       categoryBreakdown[tx.category] = (categoryBreakdown[tx.category] ?? 0.0) + amt;
     }
 
+    final totalYoghurtExpenses = yoghurtDirectExpenses + yoghurtRawTransferExpenses;
+    final yoghurtNetProfit = yoghurtSales - totalYoghurtExpenses;
+    final yoghurtMargin = yoghurtSales > 0 ? (yoghurtNetProfit / yoghurtSales) * 100 : 0.0;
+
     final netProfit = totalRevenue - totalExpenses;
     final margin = totalRevenue > 0 ? (netProfit / totalRevenue) * 100 : 0.0;
 
-    // 2. Compute Bar Graph Data (CustomBarChart) for the selected week / month
+    // Compute Bar Graph Data
     final List<String> chartLabels = [];
     final List<double> chartRevenue = [];
     final List<double> chartExpenses = [];
 
     if (_selectedWeek == 0) {
-      // All Weeks Mode (4 Weeks of the Month)
       final weeklyRev = List.filled(4, 0.0);
       final weeklyExp = List.filled(4, 0.0);
       for (var tx in filteredTxs) {
@@ -270,7 +276,6 @@ class _FinanceScreenState extends State<FinanceScreen> with SingleTickerProvider
       chartRevenue.addAll(weeklyRev);
       chartExpenses.addAll(weeklyExp);
     } else {
-      // Specific Week Mode: plot days of that specific week!
       int startDay = 1;
       int endDay = 7;
       if (_selectedWeek == 1) { startDay = 1; endDay = 7; }
@@ -300,13 +305,13 @@ class _FinanceScreenState extends State<FinanceScreen> with SingleTickerProvider
       }
     }
 
-    // 3. Category Donut Chart Data
+    // Category Donut Chart Data
     final List<double> donutValues = [];
     final List<String> donutLabels = [];
     categoryBreakdown.forEach((k, v) {
       if (v > 0) {
         donutValues.add(v);
-        donutLabels.add(k.replaceAll('_', ' ').toUpperCase());
+        donutLabels.add(_formatCategoryLabel(k));
       }
     });
 
@@ -318,6 +323,8 @@ class _FinanceScreenState extends State<FinanceScreen> with SingleTickerProvider
       Colors.pink,
       Colors.indigo,
       Colors.orange,
+      Colors.deepOrange,
+      Colors.cyan,
     ];
 
     return SingleChildScrollView(
@@ -336,15 +343,32 @@ class _FinanceScreenState extends State<FinanceScreen> with SingleTickerProvider
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Row(
-                        children: [
-                          const Icon(Icons.calendar_month, color: AppColors.primary, size: 20),
-                          const SizedBox(width: 8),
-                          Text(
-                            'PERIOD: ${DateFormat('MMMM yyyy').format(_selectedMonth).toUpperCase()}',
-                            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
-                          ),
-                        ],
+                      InkWell(
+                        onTap: () async {
+                          final picked = await showResponsiveCalendarPicker(
+                            context: context,
+                            initialDate: _selectedMonth,
+                            firstDate: DateTime(2020),
+                            lastDate: DateTime(2035),
+                          );
+                          if (picked != null) {
+                            setState(() {
+                              _selectedMonth = DateTime(picked.year, picked.month, 1);
+                              _selectedWeek = 0;
+                            });
+                          }
+                        },
+                        child: Row(
+                          children: [
+                            const Icon(Icons.calendar_month, color: AppColors.primary, size: 20),
+                            const SizedBox(width: 8),
+                            Text(
+                              'PERIOD: ${DateFormat('MMMM yyyy').format(_selectedMonth).toUpperCase()}',
+                              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                            ),
+                            const Icon(Icons.arrow_drop_down, color: AppColors.primary, size: 18),
+                          ],
+                        ),
                       ),
                       Row(
                         children: [
@@ -438,6 +462,114 @@ class _FinanceScreenState extends State<FinanceScreen> with SingleTickerProvider
                 'Margin % of sales',
               ),
             ],
+          ),
+          const SizedBox(height: 12),
+
+          // RECONCILIATION AUDIT STATUS STRIP
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(color: Colors.grey.shade200),
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Row(
+                  children: [
+                    const Icon(Icons.verified, color: Colors.green, size: 16),
+                    const SizedBox(width: 6),
+                    Text(
+                      'Reconciled: ${_compactFormatter.format(reconciledRevenue - reconciledExpenses)}',
+                      style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.green),
+                    ),
+                  ],
+                ),
+                Row(
+                  children: [
+                    const Icon(Icons.pending_actions, color: Colors.orange, size: 16),
+                    const SizedBox(width: 6),
+                    Text(
+                      'Pending Audit: ${_compactFormatter.format(pendingRevenue - pendingExpenses)}',
+                      style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.orange),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 16),
+
+          // YOGHURT FACTORY PERFORMANCE CARD (NEW DEDICATED SECTION)
+          Card(
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            elevation: 2,
+            child: Container(
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(16),
+                gradient: LinearGradient(
+                  colors: [Colors.cyan.shade50, Colors.teal.shade50],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                border: Border.all(color: Colors.cyan.shade200),
+              ),
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(8),
+                            decoration: BoxDecoration(
+                              color: Colors.cyan.shade600,
+                              shape: BoxShape.circle,
+                            ),
+                            child: const Icon(Icons.icecream, color: Colors.white, size: 18),
+                          ),
+                          const SizedBox(width: 10),
+                          const Text(
+                            'YOGHURT FACTORY INSIGHTS',
+                            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Colors.teal),
+                          ),
+                        ],
+                      ),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                        decoration: BoxDecoration(
+                          color: yoghurtNetProfit >= 0 ? Colors.green.shade100 : Colors.red.shade100,
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: yoghurtNetProfit >= 0 ? Colors.green.shade300 : Colors.red.shade300),
+                        ),
+                        child: Text(
+                          '${yoghurtMargin.toStringAsFixed(1)}% MARGIN',
+                          style: TextStyle(
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                            color: yoghurtNetProfit >= 0 ? Colors.green.shade900 : Colors.red.shade900,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 14),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      _miniMetric('Gross Sales', _currencyFormatter.format(yoghurtSales), Colors.green.shade800),
+                      _miniMetric('Op. Expenses', _currencyFormatter.format(yoghurtDirectExpenses), Colors.red.shade800),
+                      _miniMetric('Milk Transfer', _currencyFormatter.format(yoghurtRawTransferExpenses), Colors.indigo.shade800),
+                      _miniMetric('Net Contribution', _currencyFormatter.format(yoghurtNetProfit), yoghurtNetProfit >= 0 ? Colors.teal.shade900 : Colors.red.shade900),
+                    ],
+                  ),
+                ],
+              ),
+            ),
           ),
           const SizedBox(height: 16),
 
@@ -598,23 +730,38 @@ class _FinanceScreenState extends State<FinanceScreen> with SingleTickerProvider
                       final isRevenueCat = name.contains('SALES');
                       return Column(
                         children: [
-                          ListTile(
-                            dense: true,
-                            contentPadding: EdgeInsets.zero,
-                            title: Text(name, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 11)),
-                            trailing: Text(
-                              _currencyFormatter.format(val),
-                              style: TextStyle(
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Row(
+                                children: [
+                                  Container(
+                                    width: 10,
+                                    height: 10,
+                                    decoration: BoxDecoration(
+                                      color: donutColors[idx % donutColors.length],
+                                      shape: BoxShape.circle,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Text(name, style: const TextStyle(fontSize: 12)),
+                                ],
+                              ),
+                              Text(
+                                '${isRevenueCat ? '+' : '-'}${_currencyFormatter.format(val)}',
+                                style: TextStyle(
                                   fontWeight: FontWeight.bold,
-                                  fontSize: 11,
-                                  color: isRevenueCat ? Colors.green : Colors.red),
-                            ),
+                                  fontSize: 12,
+                                  color: isRevenueCat ? Colors.green : Colors.red,
+                                ),
+                              ),
+                            ],
                           ),
-                          const Divider(height: 1, thickness: 0.5),
+                          const Divider(),
                         ],
                       );
                     }),
-                  ]
+                  ],
                 ],
               ),
             ),
@@ -624,120 +771,274 @@ class _FinanceScreenState extends State<FinanceScreen> with SingleTickerProvider
     );
   }
 
+  Widget _miniMetric(String label, String value, Color color) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(label, style: const TextStyle(fontSize: 9, color: Colors.grey, fontWeight: FontWeight.bold)),
+        const SizedBox(height: 2),
+        Text(value, style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: color)),
+      ],
+    );
+  }
 
-  Widget _kpiCard(String label, String value, IconData icon, Color color, String subText) {
+  Widget _buildWeekSegmentTab(int index, String label) {
+    final isSelected = _selectedWeek == index;
+    return Expanded(
+      child: GestureDetector(
+        onTap: () {
+          setState(() {
+            _selectedWeek = index;
+          });
+        },
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 6),
+          decoration: BoxDecoration(
+            color: isSelected ? AppColors.primary : Colors.transparent,
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Center(
+            child: Text(
+              label,
+              style: TextStyle(
+                color: isSelected ? Colors.white : Colors.black87,
+                fontSize: 11,
+                fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _kpiCard(String title, String value, IconData icon, Color color, String sub) {
+    return Card(
+      elevation: 2,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Expanded(child: Text(title, style: TextStyle(fontSize: 12, color: Colors.grey.shade600), overflow: TextOverflow.ellipsis)),
+                Icon(icon, color: color, size: 18),
+              ],
+            ),
+            Text(
+              value,
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: color),
+            ),
+            Text(sub, style: TextStyle(fontSize: 10, color: Colors.grey.shade500), overflow: TextOverflow.ellipsis),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // ──────────────────────────────────────────────
+  // TAB 2: CONSOLIDATED LEDGER (PER DAY VIEW)
+  // ──────────────────────────────────────────────
+  Widget _buildDateSelectorHeader(FinanceLoaded state) {
+    final dayFormat = DateFormat('EEEE, d MMMM yyyy');
+    final monthFormat = DateFormat('MMMM yyyy');
+    final isToday = _selectedDate.year == DateTime.now().year &&
+                    _selectedDate.month == DateTime.now().month &&
+                    _selectedDate.day == DateTime.now().day;
+
     return Container(
-      padding: const EdgeInsets.all(12),
+      margin: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
       decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.08),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: color.withValues(alpha: 0.15)),
+        color: Colors.purple.shade50,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: Colors.purple.shade200),
       ),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(label, style: TextStyle(color: Colors.grey.shade700, fontSize: 11, fontWeight: FontWeight.w500)),
-              Icon(icon, color: color, size: 16),
-            ],
-          ),
-          const Spacer(),
-          Text(value, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 20, color: color)),
-          const SizedBox(height: 2),
-          Text(subText, style: TextStyle(color: Colors.grey.shade500, fontSize: 9)),
-        ],
-      ),
-    );
-  }
-
-  // ──────────────────────────────────────────────
-  // TAB 2: CONSOLIDATED LEDGER
-  // ──────────────────────────────────────────────
-  Widget _buildMonthSelectorHeader(FinanceLoaded state) {
-    final monthFormat = DateFormat('MMMM yyyy');
-    final isCurrentMonth = _selectedMonth.year == DateTime.now().year && _selectedMonth.month == DateTime.now().month;
-
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-      decoration: BoxDecoration(
-        color: Colors.purple.shade50,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.purple.shade200),
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          IconButton(
-            icon: const Icon(Icons.chevron_left, color: Colors.purple),
-            tooltip: 'Previous Month',
-            onPressed: () {
-              setState(() {
-                _selectedMonth = DateTime(_selectedMonth.year, _selectedMonth.month - 1, 1);
-              });
-            },
-          ),
-          InkWell(
-            onTap: () async {
-              final picked = await showDatePicker(
-                context: context,
-                initialDate: _selectedMonth,
-                firstDate: DateTime(2020),
-                lastDate: DateTime(2030),
-                helpText: 'SELECT LEDGER MONTH',
-              );
-              if (picked != null) {
-                setState(() {
-                  _selectedMonth = DateTime(picked.year, picked.month, 1);
-                });
-              }
-            },
-            child: Row(
-              children: [
-                const Icon(Icons.calendar_month, color: Colors.purple, size: 18),
-                const SizedBox(width: 4),
-                Text(
-                  monthFormat.format(_selectedMonth).toUpperCase(),
-                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Colors.purple),
-                ),
-                const Icon(Icons.arrow_drop_down, color: Colors.purple),
-              ],
-            ),
-          ),
-          Row(
-            children: [
               IconButton(
-                icon: const Icon(Icons.picture_as_pdf, color: Colors.purple, size: 20),
-                tooltip: 'Export Statement PDF',
-                onPressed: () {
-                  FinancePdfExportService.exportMonthlyAccountStatementPdf(
-                    transactions: state.transactions,
-                    selectedMonth: _selectedMonth,
-                    ownerEmail: sl.isRegistered<SettingsController>() ? sl<SettingsController>().profile?.ownerEmail : null,
-                    managerEmail: sl.isRegistered<SettingsController>() ? sl<SettingsController>().profile?.managerEmail : null,
-                  );
-                },
-              ),
-              if (!isCurrentMonth)
-                TextButton(
-                  onPressed: () {
-                    setState(() {
-                      _selectedMonth = DateTime.now();
-                    });
-                  },
-                  child: const Text('THIS MONTH', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.purple)),
-                ),
-              IconButton(
-                icon: const Icon(Icons.chevron_right, color: Colors.purple),
-                tooltip: 'Next Month',
+                icon: const Icon(Icons.chevron_left, color: Colors.purple),
+                tooltip: _isDayView ? 'Previous Day' : 'Previous Month',
                 onPressed: () {
                   setState(() {
-                    _selectedMonth = DateTime(_selectedMonth.year, _selectedMonth.month + 1, 1);
+                    if (_isDayView) {
+                      _selectedDate = _selectedDate.subtract(const Duration(days: 1));
+                    } else {
+                      _selectedDate = DateTime(_selectedDate.year, _selectedDate.month - 1, 1);
+                    }
                   });
                 },
               ),
+              InkWell(
+                borderRadius: BorderRadius.circular(8),
+                onTap: () async {
+                  final picked = await showResponsiveCalendarPicker(
+                    context: context,
+                    initialDate: _selectedDate,
+                    firstDate: DateTime(2020),
+                    lastDate: DateTime(2035),
+                  );
+                  if (picked != null) {
+                    setState(() {
+                      _selectedDate = picked;
+                    });
+                  }
+                },
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.calendar_today, color: Colors.purple, size: 16),
+                      const SizedBox(width: 6),
+                      Text(
+                        _isDayView ? dayFormat.format(_selectedDate) : monthFormat.format(_selectedDate).toUpperCase(),
+                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Colors.purple),
+                      ),
+                      if (_isDayView && isToday) ...[
+                        const SizedBox(width: 6),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: Colors.purple,
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: const Text('TODAY', style: TextStyle(color: Colors.white, fontSize: 9, fontWeight: FontWeight.bold)),
+                        ),
+                      ],
+                      const SizedBox(width: 4),
+                      const Icon(Icons.arrow_drop_down, color: Colors.purple),
+                    ],
+                  ),
+                ),
+              ),
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  if (_isDayView && !isToday)
+                    TextButton(
+                      style: TextButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                        minimumSize: Size.zero,
+                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      ),
+                      onPressed: () {
+                        setState(() {
+                          _selectedDate = DateTime.now();
+                        });
+                      },
+                      child: const Text('TODAY', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.purple)),
+                    ),
+                  IconButton(
+                    icon: const Icon(Icons.chevron_right, color: Colors.purple),
+                    tooltip: _isDayView ? 'Next Day' : 'Next Month',
+                    onPressed: () {
+                      setState(() {
+                        if (_isDayView) {
+                          _selectedDate = _selectedDate.add(const Duration(days: 1));
+                        } else {
+                          _selectedDate = DateTime(_selectedDate.year, _selectedDate.month + 1, 1);
+                        }
+                      });
+                    },
+                  ),
+                ],
+              ),
+            ],
+          ),
+          const SizedBox(height: 6),
+          // View Mode Switcher and PDF Export actions
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              // Toggle Day / Month view
+              Container(
+                padding: const EdgeInsets.all(2),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: Colors.purple.shade200),
+                ),
+                child: Row(
+                  children: [
+                    InkWell(
+                      onTap: () => setState(() => _isDayView = true),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: _isDayView ? Colors.purple : Colors.transparent,
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        child: Text(
+                          'DAY VIEW',
+                          style: TextStyle(
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                            color: _isDayView ? Colors.white : Colors.purple,
+                          ),
+                        ),
+                      ),
+                    ),
+                    InkWell(
+                      onTap: () => setState(() => _isDayView = false),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: !_isDayView ? Colors.purple : Colors.transparent,
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        child: Text(
+                          'MONTH VIEW',
+                          style: TextStyle(
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                            color: !_isDayView ? Colors.white : Colors.purple,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              // Export PDF Actions
+              Row(
+                children: [
+                  OutlinedButton.icon(
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: Colors.purple,
+                      side: BorderSide(color: Colors.purple.shade300),
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      minimumSize: Size.zero,
+                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    ),
+                    icon: const Icon(Icons.picture_as_pdf, size: 14),
+                    label: Text(_isDayView ? 'Day PDF' : 'Month PDF', style: const TextStyle(fontSize: 11)),
+                    onPressed: () {
+                      if (_isDayView) {
+                        FinancePdfExportService.exportDailyLedgerStatementPdf(
+                          transactions: state.transactions,
+                          selectedDate: _selectedDate,
+                          ownerEmail: sl.isRegistered<SettingsController>() ? sl<SettingsController>().profile?.ownerEmail : null,
+                          managerEmail: sl.isRegistered<SettingsController>() ? sl<SettingsController>().profile?.managerEmail : null,
+                        );
+                      } else {
+                        FinancePdfExportService.exportMonthlyAccountStatementPdf(
+                          transactions: state.transactions,
+                          selectedMonth: _selectedDate,
+                          ownerEmail: sl.isRegistered<SettingsController>() ? sl<SettingsController>().profile?.ownerEmail : null,
+                          managerEmail: sl.isRegistered<SettingsController>() ? sl<SettingsController>().profile?.managerEmail : null,
+                        );
+                      }
+                    },
+                  ),
+                ],
+              ),
             ],
           ),
         ],
@@ -745,21 +1046,111 @@ class _FinanceScreenState extends State<FinanceScreen> with SingleTickerProvider
     );
   }
 
-  // ──────────────────────────────────────────────
-  // TAB 2: CONSOLIDATED LEDGER
-  // ──────────────────────────────────────────────
   Widget _buildLedgerTab(BuildContext context, FinanceLoaded state) {
-    final filteredTransactions = state.transactions.where((tx) {
-      return tx.transactionDate.year == _selectedMonth.year &&
-             tx.transactionDate.month == _selectedMonth.month;
+    // 1. Time-filtered transactions
+    final timeFilteredTransactions = state.transactions.where((tx) {
+      if (_isDayView) {
+        return tx.transactionDate.year == _selectedDate.year &&
+               tx.transactionDate.month == _selectedDate.month &&
+               tx.transactionDate.day == _selectedDate.day;
+      } else {
+        return tx.transactionDate.year == _selectedDate.year &&
+               tx.transactionDate.month == _selectedDate.month;
+      }
     }).toList();
+
+    // 2. Category Filter
+    final filteredTransactions = timeFilteredTransactions.where((tx) {
+      if (_ledgerCategoryFilter == 'ALL') return true;
+      if (_ledgerCategoryFilter == 'INCOME') return tx.transactionType == 'income';
+      if (_ledgerCategoryFilter == 'EXPENSE') return tx.transactionType == 'expense';
+      if (_ledgerCategoryFilter == 'YOGHURT') return tx.category.toLowerCase().contains('yoghurt');
+      if (_ledgerCategoryFilter == 'DAIRY') return tx.category.toLowerCase().contains('milk');
+      if (_ledgerCategoryFilter == 'LIVESTOCK') return tx.category.toLowerCase().contains('animal');
+      if (_ledgerCategoryFilter == 'POULTRY') return tx.category.toLowerCase().contains('poultry') || tx.category.toLowerCase().contains('hatchery');
+      return true;
+    }).toList();
+
+    // Compute period summary
+    double periodIncome = 0.0;
+    double periodExpense = 0.0;
+    for (var tx in timeFilteredTransactions) {
+      if (tx.transactionType == 'income') {
+        periodIncome += tx.amount;
+      } else {
+        periodExpense += tx.amount;
+      }
+    }
+    final periodNet = periodIncome - periodExpense;
 
     return Column(
       children: [
         Padding(
-          padding: const EdgeInsets.only(left: 16, right: 16, top: 12),
-          child: _buildMonthSelectorHeader(state),
+          padding: const EdgeInsets.only(left: 16, right: 16, top: 10),
+          child: _buildDateSelectorHeader(state),
         ),
+
+        // Quick Period Summary Strip
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(color: Colors.grey.shade200),
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(_isDayView ? 'DAILY INCOME' : 'MONTHLY INCOME', style: const TextStyle(fontSize: 9, color: Colors.grey, fontWeight: FontWeight.bold)),
+                    Text('+${_currencyFormatter.format(periodIncome)}', style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.green)),
+                  ],
+                ),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    Text(_isDayView ? 'DAILY EXPENSES' : 'MONTHLY EXPENSES', style: const TextStyle(fontSize: 9, color: Colors.grey, fontWeight: FontWeight.bold)),
+                    Text('-${_currencyFormatter.format(periodExpense)}', style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.red)),
+                  ],
+                ),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    Text(_isDayView ? 'DAILY NET' : 'MONTHLY NET', style: const TextStyle(fontSize: 9, color: Colors.grey, fontWeight: FontWeight.bold)),
+                    Text(
+                      _currencyFormatter.format(periodNet),
+                      style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: periodNet >= 0 ? AppColors.primary : Colors.orange),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ),
+        const SizedBox(height: 6),
+
+        // Category Filter Chips
+        SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+          child: Row(
+            children: [
+              _categoryFilterChip('ALL'),
+              _categoryFilterChip('INCOME'),
+              _categoryFilterChip('EXPENSE'),
+              _categoryFilterChip('YOGHURT'),
+              _categoryFilterChip('DAIRY'),
+              _categoryFilterChip('LIVESTOCK'),
+              _categoryFilterChip('POULTRY'),
+            ],
+          ),
+        ),
+        const SizedBox(height: 4),
+
         Expanded(
           child: filteredTransactions.isEmpty
               ? Center(
@@ -769,12 +1160,14 @@ class _FinanceScreenState extends State<FinanceScreen> with SingleTickerProvider
                       const Icon(Icons.receipt_long, size: 48, color: Colors.grey),
                       const SizedBox(height: 12),
                       Text(
-                        'No transactions recorded for ${DateFormat('MMMM yyyy').format(_selectedMonth)}.',
+                        _isDayView
+                            ? 'No transactions recorded for ${DateFormat('d MMMM yyyy').format(_selectedDate)}.'
+                            : 'No transactions recorded for ${DateFormat('MMMM yyyy').format(_selectedDate)}.',
                         style: const TextStyle(color: Colors.grey, fontWeight: FontWeight.bold),
                       ),
                       const SizedBox(height: 4),
                       const Text(
-                        'This month is a clean sheet. Use "+ Record Tx" or operate farm modules to log activity.',
+                        'This day is clear. Tap "+ Record Tx" to record a new entry.',
                         style: TextStyle(fontSize: 12, color: Colors.grey),
                         textAlign: TextAlign.center,
                       ),
@@ -790,6 +1183,7 @@ class _FinanceScreenState extends State<FinanceScreen> with SingleTickerProvider
                     final isIncome = tx.transactionType == 'income';
                     final isReconciled = tx.isReconciled;
                     final isManual = _isManualTransaction(tx);
+                    final isYoghurt = tx.category.toLowerCase().contains('yoghurt');
 
                     return Card(
                       elevation: 1,
@@ -798,10 +1192,14 @@ class _FinanceScreenState extends State<FinanceScreen> with SingleTickerProvider
                         contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                         onTap: () => _showLedgerActionsBottomSheet(context, tx),
                         leading: CircleAvatar(
-                          backgroundColor: isIncome ? Colors.green.shade50 : Colors.red.shade50,
+                          backgroundColor: isYoghurt
+                              ? (isIncome ? Colors.cyan.shade100 : Colors.amber.shade100)
+                              : (isIncome ? Colors.green.shade50 : Colors.red.shade50),
                           child: Icon(
-                            isIncome ? Icons.trending_up : Icons.trending_down,
-                            color: isIncome ? Colors.green : Colors.red,
+                            _getCategoryIcon(tx.category, isIncome),
+                            color: isYoghurt
+                                ? (isIncome ? Colors.cyan.shade800 : Colors.amber.shade900)
+                                : (isIncome ? Colors.green : Colors.red),
                             size: 22,
                           ),
                         ),
@@ -809,10 +1207,21 @@ class _FinanceScreenState extends State<FinanceScreen> with SingleTickerProvider
                           children: [
                             Expanded(
                               child: Text(
-                                tx.description?.isNotEmpty == true ? tx.description! : tx.category.replaceAll('_', ' ').toUpperCase(),
-                                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                                tx.description?.isNotEmpty == true ? tx.description! : _formatCategoryLabel(tx.category),
+                                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
                               ),
                             ),
+                            if (isYoghurt)
+                              Container(
+                                margin: const EdgeInsets.only(left: 6),
+                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                decoration: BoxDecoration(
+                                  color: Colors.cyan.shade50,
+                                  borderRadius: BorderRadius.circular(4),
+                                  border: Border.all(color: Colors.cyan.shade300, width: 0.5),
+                                ),
+                                child: const Text('YOGHURT', style: TextStyle(color: Colors.cyan, fontSize: 8, fontWeight: FontWeight.bold)),
+                              ),
                             if (isManual)
                               Container(
                                 margin: const EdgeInsets.only(left: 6),
@@ -822,25 +1231,27 @@ class _FinanceScreenState extends State<FinanceScreen> with SingleTickerProvider
                                   borderRadius: BorderRadius.circular(4),
                                   border: Border.all(color: Colors.purple.shade200, width: 0.5),
                                 ),
-                                child: const Text('MANUAL', style: TextStyle(color: Colors.purple, fontSize: 9, fontWeight: FontWeight.bold)),
+                                child: const Text('MANUAL', style: TextStyle(color: Colors.purple, fontSize: 8, fontWeight: FontWeight.bold)),
                               ),
-                            if (isReconciled)
-                              Container(
-                                margin: const EdgeInsets.only(left: 6),
-                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                                decoration: BoxDecoration(
-                                  color: Colors.green.shade50,
-                                  borderRadius: BorderRadius.circular(4),
-                                  border: Border.all(color: Colors.green.shade200, width: 0.5),
-                                ),
-                                child: const Text('APPROVED', style: TextStyle(color: Colors.green, fontSize: 9, fontWeight: FontWeight.bold)),
+                            Container(
+                              margin: const EdgeInsets.only(left: 6),
+                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                              decoration: BoxDecoration(
+                                color: isReconciled ? Colors.green.shade50 : Colors.orange.shade50,
+                                borderRadius: BorderRadius.circular(4),
+                                border: Border.all(color: isReconciled ? Colors.green.shade200 : Colors.orange.shade200, width: 0.5),
                               ),
+                              child: Text(
+                                isReconciled ? 'APPROVED' : 'PENDING',
+                                style: TextStyle(color: isReconciled ? Colors.green : Colors.orange.shade900, fontSize: 8, fontWeight: FontWeight.bold),
+                              ),
+                            ),
                           ],
                         ),
                         subtitle: Padding(
                           padding: const EdgeInsets.only(top: 4),
                           child: Text(
-                            '${tx.category.replaceAll('_', ' ').toUpperCase()} • ${DateFormat('yyyy-MM-dd HH:mm').format(tx.transactionDate)}',
+                            '${_formatCategoryLabel(tx.category)} • ${DateFormat('yyyy-MM-dd HH:mm').format(tx.transactionDate)}',
                             style: TextStyle(fontSize: 11, color: Colors.grey.shade600),
                           ),
                         ),
@@ -859,6 +1270,55 @@ class _FinanceScreenState extends State<FinanceScreen> with SingleTickerProvider
         ),
       ],
     );
+  }
+
+  Widget _categoryFilterChip(String label) {
+    final isSelected = _ledgerCategoryFilter == label;
+    return Padding(
+      padding: const EdgeInsets.only(right: 6),
+      child: FilterChip(
+        label: Text(label, style: TextStyle(fontSize: 10, fontWeight: isSelected ? FontWeight.bold : FontWeight.normal, color: isSelected ? Colors.white : Colors.black87)),
+        selected: isSelected,
+        selectedColor: AppColors.primary,
+        backgroundColor: Colors.white,
+        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+        onSelected: (val) {
+          setState(() {
+            _ledgerCategoryFilter = label;
+          });
+        },
+      ),
+    );
+  }
+
+  IconData _getCategoryIcon(String cat, bool isIncome) {
+    switch (cat.toLowerCase()) {
+      case 'yoghurt_sales':
+        return Icons.icecream;
+      case 'yoghurt_expense':
+        return Icons.factory_outlined;
+      case 'yoghurt_raw_material_transfer':
+        return Icons.swap_horiz;
+      case 'milk_sales':
+        return Icons.water_drop;
+      case 'animal_sales':
+        return Icons.pets;
+      case 'poultry_sales':
+      case 'hatchery_sales':
+        return Icons.egg;
+      case 'feed':
+        return Icons.grass;
+      case 'medication':
+        return Icons.medication;
+      case 'labor':
+        return Icons.badge;
+      case 'equipment':
+        return Icons.build;
+      case 'utilities':
+        return Icons.bolt;
+      default:
+        return isIncome ? Icons.trending_up : Icons.trending_down;
+    }
   }
 
   void _showLedgerActionsBottomSheet(BuildContext context, LocalTransaction tx) {
@@ -900,9 +1360,11 @@ class _FinanceScreenState extends State<FinanceScreen> with SingleTickerProvider
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text(
-                      tx.description?.isNotEmpty == true ? tx.description! : tx.category.replaceAll('_', ' ').toUpperCase(),
-                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                    Expanded(
+                      child: Text(
+                        tx.description?.isNotEmpty == true ? tx.description! : _formatCategoryLabel(tx.category),
+                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                      ),
                     ),
                     Text(
                       '${isIncome ? '+' : '-'}${_currencyFormatter.format(tx.amount)}',
@@ -915,113 +1377,94 @@ class _FinanceScreenState extends State<FinanceScreen> with SingleTickerProvider
                   ],
                 ),
                 const SizedBox(height: 12),
-                Text('Category: ${tx.category.replaceAll('_', ' ').toUpperCase()}', style: const TextStyle(fontSize: 13)),
+                Text('Category: ${_formatCategoryLabel(tx.category)}', style: const TextStyle(fontSize: 13)),
                 const SizedBox(height: 4),
                 Text('Date: ${DateFormat('yyyy-MM-dd HH:mm').format(tx.transactionDate)}', style: const TextStyle(fontSize: 13)),
                 const SizedBox(height: 4),
                 Text('Linked Asset: $displayLink', style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: AppColors.primary)),
-                const SizedBox(height: 20),
+                const SizedBox(height: 16),
                 const Divider(),
                 const SizedBox(height: 10),
 
-                if (isManual) ...[
-                  Row(
-                    children: [
-                      if (!isReconciled) ...[
-                        Expanded(
-                          child: OutlinedButton.icon(
-                            onPressed: () {
-                              Navigator.pop(sheetCtx);
-                              _showEditTransactionDialog(context, tx);
-                            },
-                            icon: const Icon(Icons.edit_outlined, color: AppColors.primary),
-                            label: const Text('Edit', style: TextStyle(color: AppColors.primary)),
-                            style: OutlinedButton.styleFrom(
-                              side: const BorderSide(color: AppColors.primary),
-                              padding: const EdgeInsets.symmetric(vertical: 12),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: OutlinedButton.icon(
-                            onPressed: () {
-                              Navigator.pop(sheetCtx);
-                              BlocProvider.of<FinanceBloc>(context).add(ReconcileTransactionEvent(tx.id));
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(content: Text('Transaction reconciled successfully.')),
-                              );
-                            },
-                            icon: const Icon(Icons.verified_outlined, color: Colors.green),
-                            label: const Text('Reconcile', style: TextStyle(color: Colors.green)),
-                            style: OutlinedButton.styleFrom(
-                              side: const BorderSide(color: Colors.green),
-                              padding: const EdgeInsets.symmetric(vertical: 12),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                      ] else ...[
-                        Expanded(
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(vertical: 12),
-                            decoration: BoxDecoration(
-                              color: Colors.green.shade50,
-                              borderRadius: BorderRadius.circular(8),
-                              border: Border.all(color: Colors.green.shade200),
-                            ),
-                            alignment: Alignment.center,
-                            child: const Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Icon(Icons.check_circle, color: Colors.green, size: 16),
-                                SizedBox(width: 6),
-                                Text('RECONCILED (LOCKED)', style: TextStyle(color: Colors.green, fontWeight: FontWeight.bold, fontSize: 11)),
-                              ],
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                      ],
+                // Reconcile and Actions for ALL entries
+                Row(
+                  children: [
+                    if (!isReconciled) ...[
                       Expanded(
-                        child: ElevatedButton.icon(
+                        child: OutlinedButton.icon(
                           onPressed: () {
                             Navigator.pop(sheetCtx);
-                            _confirmDeleteTransaction(context, tx);
+                            BlocProvider.of<FinanceBloc>(context).add(ReconcileTransactionEvent(tx.id));
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(content: Text('Transaction audited & reconciled successfully.')),
+                            );
                           },
-                          icon: const Icon(Icons.delete_outline, color: Colors.white),
-                          label: const Text('Delete', style: TextStyle(color: Colors.white)),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.red,
+                          icon: const Icon(Icons.verified_outlined, color: Colors.green),
+                          label: const Text('Reconcile', style: TextStyle(color: Colors.green)),
+                          style: OutlinedButton.styleFrom(
+                            side: const BorderSide(color: Colors.green),
                             padding: const EdgeInsets.symmetric(vertical: 12),
                           ),
                         ),
                       ),
-                    ],
-                  ),
-                ] else ...[
-                  Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: Colors.blue.shade50,
-                      borderRadius: BorderRadius.circular(10),
-                      border: Border.all(color: Colors.blue.shade200),
-                    ),
-                    child: Row(
-                      children: const [
-                        Icon(Icons.lock_outline, color: Colors.blue),
-                        SizedBox(width: 10),
-                        Expanded(
-                          child: Text(
-                            'System Auto-Captured Entry\nThis transaction was automatically logged by operational activity (poultry, pharmacy, staff advance, animal sale) and is read-only for audit compliance.',
-                            style: TextStyle(fontSize: 11, color: Colors.blue),
+                      const SizedBox(width: 8),
+                    ] else ...[
+                      Expanded(
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                          decoration: BoxDecoration(
+                            color: Colors.green.shade50,
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(color: Colors.green.shade200),
+                          ),
+                          alignment: Alignment.center,
+                          child: const Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(Icons.check_circle, color: Colors.green, size: 16),
+                              SizedBox(width: 6),
+                              Text('RECONCILED (AUDITED)', style: TextStyle(color: Colors.green, fontWeight: FontWeight.bold, fontSize: 11)),
+                            ],
                           ),
                         ),
-                      ],
+                      ),
+                      const SizedBox(width: 8),
+                    ],
+
+                    if (isManual && !isReconciled) ...[
+                      Expanded(
+                        child: OutlinedButton.icon(
+                          onPressed: () {
+                            Navigator.pop(sheetCtx);
+                            _showEditTransactionDialog(context, tx);
+                          },
+                          icon: const Icon(Icons.edit_outlined, color: AppColors.primary),
+                          label: const Text('Edit', style: TextStyle(color: AppColors.primary)),
+                          style: OutlinedButton.styleFrom(
+                            side: const BorderSide(color: AppColors.primary),
+                            padding: const EdgeInsets.symmetric(vertical: 12),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                    ],
+
+                    Expanded(
+                      child: ElevatedButton.icon(
+                        onPressed: () {
+                          Navigator.pop(sheetCtx);
+                          _confirmDeleteTransaction(context, tx);
+                        },
+                        icon: const Icon(Icons.delete_outline, color: Colors.white),
+                        label: const Text('Delete', style: TextStyle(color: Colors.white)),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.red,
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                        ),
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ],
             ),
           ),
@@ -1108,8 +1551,8 @@ class _FinanceScreenState extends State<FinanceScreen> with SingleTickerProvider
         return StatefulBuilder(
           builder: (ctx, setDialogState) {
             final categoryOptions = type == 'income'
-                ? ['milk_sales', 'animal_sales', 'poultry_sales', 'hatchery_sales', 'misc']
-                : ['feed', 'medication', 'labor', 'equipment', 'utilities', 'misc'];
+                ? ['milk_sales', 'yoghurt_sales', 'animal_sales', 'poultry_sales', 'hatchery_sales', 'misc']
+                : ['feed', 'yoghurt_expense', 'yoghurt_raw_material_transfer', 'medication', 'labor', 'equipment', 'utilities', 'misc'];
 
             if (!categoryOptions.contains(category)) {
               category = categoryOptions.first;
@@ -1176,13 +1619,12 @@ class _FinanceScreenState extends State<FinanceScreen> with SingleTickerProvider
                     const SizedBox(height: 12),
                     DropdownButtonFormField<String>(
                       isExpanded: true,
-
                       value: category,
                       decoration: const InputDecoration(labelText: 'Category *', border: OutlineInputBorder()),
                       items: categoryOptions.map((c) {
                         return DropdownMenuItem(
                           value: c,
-                          child: Text(c.replaceAll('_', ' ').toUpperCase()),
+                          child: Text(_formatCategoryLabel(c)),
                         );
                       }).toList(),
                       onChanged: (v) {
@@ -1192,11 +1634,11 @@ class _FinanceScreenState extends State<FinanceScreen> with SingleTickerProvider
                     const SizedBox(height: 12),
                     InkWell(
                       onTap: () async {
-                        final picked = await showDatePicker(
+                        final picked = await showResponsiveCalendarPicker(
                           context: context,
                           initialDate: selectedDate,
                           firstDate: DateTime(2020),
-                          lastDate: DateTime(2030),
+                          lastDate: DateTime(2035),
                         );
                         if (picked != null) {
                           setDialogState(() => selectedDate = picked);
@@ -1236,6 +1678,7 @@ class _FinanceScreenState extends State<FinanceScreen> with SingleTickerProvider
                       );
                       return;
                     }
+
                     Navigator.pop(dialogCtx);
 
                     final payload = {
@@ -1251,7 +1694,7 @@ class _FinanceScreenState extends State<FinanceScreen> with SingleTickerProvider
 
                     BlocProvider.of<FinanceBloc>(context).add(UpdateTransactionEvent(tx.id, payload));
                     ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Transaction updated successfully.')),
+                      const SnackBar(content: Text('Transaction updated.')),
                     );
                   },
                   style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary),
@@ -1265,194 +1708,7 @@ class _FinanceScreenState extends State<FinanceScreen> with SingleTickerProvider
     );
   }
 
-  // ──────────────────────────────────────────────
-  // TAB 3: CULLING RECOMMENDER
-  // ──────────────────────────────────────────────
-  Widget _buildCullingTab(BuildContext context, FinanceLoaded state) {
-    final list = state.cullingRecommendations;
-
-    if (list.isEmpty) {
-      return const Center(
-        child: Padding(
-          padding: EdgeInsets.all(24),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(Icons.done_all, color: Colors.green, size: 48),
-              SizedBox(height: 12),
-              Text(
-                'ALL COWS ARE ECONOMICALLY PRODUCTIVE',
-                textAlign: TextAlign.center,
-                style: TextStyle(fontWeight: FontWeight.bold, color: Colors.green),
-              ),
-              SizedBox(height: 6),
-              Text('No cows flagged for health, economic or reproductive failures.', textAlign: TextAlign.center),
-            ],
-          ),
-        ),
-      );
-    }
-
-    return ListView.builder(
-      padding: const EdgeInsets.all(16),
-      itemCount: list.length,
-      itemBuilder: (context, index) {
-        final rec = list[index];
-        final reasons = rec['reasons'] as List? ?? [];
-        final bookValue = double.tryParse(rec['book_value']?.toString() ?? '0.0') ?? 0.0;
-        final salvageValue = double.tryParse(rec['salvage_value']?.toString() ?? '0.0') ?? 0.0;
-
-        return Card(
-          margin: const EdgeInsets.only(bottom: 12),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-          elevation: 2,
-          child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Row(
-                      children: [
-                        const Icon(Icons.gavel, color: Colors.orange),
-                        const SizedBox(width: 8),
-                        Text(
-                          'Tag: ${rec['tag_id'] ?? "Unknown"}',
-                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-                        ),
-                      ],
-                    ),
-                    Text(
-                      'Salvage: ${_currencyFormatter.format(salvageValue)}',
-                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Colors.grey),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 12),
-                const Text('Flag Reasons:', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.grey)),
-                const SizedBox(height: 6),
-                Wrap(
-                  spacing: 6,
-                  runSpacing: 6,
-                  children: reasons.map<Widget>((r) {
-                    return Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: Colors.orange.shade50,
-                        borderRadius: BorderRadius.circular(8),
-                        border: Border.all(color: Colors.orange.shade200, width: 0.5),
-                      ),
-                      child: Text(
-                        r.toString().toUpperCase(),
-                        style: TextStyle(color: Colors.orange.shade900, fontSize: 10, fontWeight: FontWeight.bold),
-                      ),
-                    );
-                  }).toList(),
-                ),
-                const SizedBox(height: 12),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text('Asset Book Value: ${_currencyFormatter.format(bookValue)}', style: const TextStyle(fontSize: 12)),
-                    ElevatedButton.icon(
-                      onPressed: () => _showCullActionDialog(context, rec),
-                      icon: const Icon(Icons.shopping_cart, color: Colors.white, size: 16),
-                      label: const Text('Cull & Sell', style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold)),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.red,
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-        );
-      },
-    );
-  }
-
-  void _showCullActionDialog(BuildContext context, Map<String, dynamic> rec) {
-    final animalId = rec['animal_id']?.toString() ?? '';
-    final tag = rec['tag_id']?.toString() ?? '';
-    final salvageValue = double.tryParse(rec['salvage_value']?.toString() ?? '0.0') ?? 0.0;
-
-    final priceCtrl = TextEditingController(text: salvageValue.toString());
-
-    showDialog(
-      context: context,
-      builder: (dialogCtx) {
-        return AlertDialog(
-          title: Text('Execute Cull: Animal $tag'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text('This action will archive the animal status to "sold" and record a transaction in your accounts ledger.'),
-              const SizedBox(height: 16),
-              TextField(textCapitalization: TextCapitalization.sentences, controller: priceCtrl,
-                keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                decoration: const InputDecoration(
-                  labelText: 'Sale Price (₦) *',
-                  hintText: 'e.g. 150000',
-                  border: OutlineInputBorder(),
-                ),
-              ),
-            ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(dialogCtx),
-              child: const Text('CANCEL'),
-            ),
-            ElevatedButton(
-              onPressed: () async {
-                final price = double.tryParse(priceCtrl.text) ?? salvageValue;
-                Navigator.pop(dialogCtx);
-
-                try {
-                  await sl<AnimalsRepository>().updateAnimal(animalId, {'status': 'sold'});
-
-                  if (context.mounted) {
-                    BlocProvider.of<FinanceBloc>(context).add(AddTransaction({
-                      'transaction_type': 'income',
-                      'category': 'animal_sales',
-                      'amount': price,
-                      'related_entity_type': 'animal',
-                      'related_entity_id': animalId,
-                      'description': 'CULLED AND SOLD: Cow $tag',
-                      'transaction_date': DateFormat('yyyy-MM-dd').format(DateTime.now()),
-                    }));
-
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text('Cow $tag culled successfully and registered sale of ₦${price.toStringAsFixed(2)}')),
-                    );
-                  }
-                } catch (e) {
-                  if (context.mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text('Failed to cull: ${e.toString()}')),
-                    );
-                  }
-                }
-              },
-              style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-              child: const Text('CULL & SELL', style: TextStyle(color: Colors.white)),
-            ),
-          ],
-        );
-      },
-    );
-  }
-
-  // ──────────────────────────────────────────────
-  // TRANSACTION DIALOG LOGGER
-  // ──────────────────────────────────────────────
-  void _showLogTransactionDialog(BuildContext context) {
+  void _showAddTransactionDialog(BuildContext context) {
     showDialog(
       context: context,
       builder: (dialogCtx) {
@@ -1460,7 +1716,7 @@ class _FinanceScreenState extends State<FinanceScreen> with SingleTickerProvider
         String category = 'feed';
         final amountCtrl = TextEditingController();
         final descCtrl = TextEditingController();
-        DateTime selectedDate = DateTime.now();
+        DateTime selectedDate = _selectedDate; // Defaults to currently selected ledger date!
 
         bool linkToEntity = false;
         String entityType = 'animal';
@@ -1469,8 +1725,8 @@ class _FinanceScreenState extends State<FinanceScreen> with SingleTickerProvider
         return StatefulBuilder(
           builder: (ctx, setDialogState) {
             final categoryOptions = type == 'income'
-                ? ['milk_sales', 'animal_sales', 'poultry_sales', 'hatchery_sales', 'misc']
-                : ['feed', 'medication', 'labor', 'equipment', 'utilities', 'misc'];
+                ? ['milk_sales', 'yoghurt_sales', 'animal_sales', 'poultry_sales', 'hatchery_sales', 'misc']
+                : ['feed', 'yoghurt_expense', 'yoghurt_raw_material_transfer', 'medication', 'labor', 'equipment', 'utilities', 'misc'];
 
             if (!categoryOptions.contains(category)) {
               category = categoryOptions.first;
@@ -1527,7 +1783,8 @@ class _FinanceScreenState extends State<FinanceScreen> with SingleTickerProvider
                     ),
                     const SizedBox(height: 12),
 
-                    TextField(textCapitalization: TextCapitalization.sentences, controller: amountCtrl,
+                    TextField(
+                      controller: amountCtrl,
                       keyboardType: const TextInputType.numberWithOptions(decimal: true),
                       decoration: const InputDecoration(
                         labelText: 'Amount (₦) *',
@@ -1538,13 +1795,12 @@ class _FinanceScreenState extends State<FinanceScreen> with SingleTickerProvider
 
                     DropdownButtonFormField<String>(
                       isExpanded: true,
-
-                      initialValue: category,
+                      value: category,
                       decoration: const InputDecoration(labelText: 'Category *', border: OutlineInputBorder()),
                       items: categoryOptions.map((c) {
                         return DropdownMenuItem(
                           value: c,
-                          child: Text(c.replaceAll('_', ' ').toUpperCase()),
+                          child: Text(_formatCategoryLabel(c)),
                         );
                       }).toList(),
                       onChanged: (v) {
@@ -1557,11 +1813,11 @@ class _FinanceScreenState extends State<FinanceScreen> with SingleTickerProvider
 
                     InkWell(
                       onTap: () async {
-                        final picked = await showDatePicker(
+                        final picked = await showResponsiveCalendarPicker(
                           context: context,
                           initialDate: selectedDate,
                           firstDate: DateTime(2020),
-                          lastDate: DateTime(2030),
+                          lastDate: DateTime(2035),
                         );
                         if (picked != null) {
                           setDialogState(() => selectedDate = picked);
@@ -1578,7 +1834,9 @@ class _FinanceScreenState extends State<FinanceScreen> with SingleTickerProvider
                     ),
                     const SizedBox(height: 12),
 
-                    TextField(textCapitalization: TextCapitalization.sentences, controller: descCtrl,
+                    TextField(
+                      textCapitalization: TextCapitalization.sentences,
+                      controller: descCtrl,
                       decoration: const InputDecoration(
                         labelText: 'Description',
                         border: OutlineInputBorder(),
@@ -1647,7 +1905,9 @@ class _FinanceScreenState extends State<FinanceScreen> with SingleTickerProvider
                             setDialogState(() => selectedEntityId = selection.id);
                           },
                           fieldViewBuilder: (context, textEditingController, focusNode, onFieldSubmitted) {
-                            return TextField(textCapitalization: TextCapitalization.sentences, controller: textEditingController,
+                            return TextField(
+                              textCapitalization: TextCapitalization.sentences,
+                              controller: textEditingController,
                               focusNode: focusNode,
                               decoration: const InputDecoration(
                                 labelText: 'Search linked item',
@@ -1702,6 +1962,288 @@ class _FinanceScreenState extends State<FinanceScreen> with SingleTickerProvider
           },
         );
       },
+    );
+  }
+
+  // ──────────────────────────────────────────────
+  // TAB 3: ADVISOR & CULLING
+  // ──────────────────────────────────────────────
+  Widget _buildCullingTab(BuildContext context, FinanceLoaded state) {
+    return FutureBuilder<List<_InventoryCachedItem>>(
+      future: sl<AnimalsRepository>().getAnimals().then((list) => list.map((a) {
+        return _InventoryCachedItem(a.id, '${a.tagId} (${a.breed ?? "Unknown"})');
+      }).toList()),
+      builder: (context, snapshot) {
+        if (!snapshot.hasData) {
+          return const Center(child: CircularProgressIndicator());
+        }
+
+        final animals = snapshot.data!;
+        if (animals.isEmpty) {
+          return const Center(child: Text('No animals available for profit analysis.'));
+        }
+
+        return _AnimalFinancialDetailView(animals: animals);
+      },
+    );
+  }
+
+  static String _formatCategoryLabel(String cat) {
+    switch (cat.toLowerCase()) {
+      case 'yoghurt_sales':
+        return 'Yoghurt Sales';
+      case 'yoghurt_expense':
+        return 'Yoghurt Factory Op. Expense';
+      case 'yoghurt_raw_material_transfer':
+        return 'Milk Transfer (Yoghurt)';
+      case 'milk_sales':
+        return 'Milk Sales (Dairy)';
+      case 'animal_sales':
+        return 'Livestock Sales';
+      case 'poultry_sales':
+        return 'Poultry & Egg Sales';
+      case 'hatchery_sales':
+        return 'Hatchery Sales';
+      case 'feed':
+        return 'Feed & Fodder';
+      case 'medication':
+        return 'Medication & Health';
+      case 'labor':
+        return 'Labor & Payroll';
+      case 'equipment':
+        return 'Equipment & Repairs';
+      case 'utilities':
+        return 'Utilities & Fuel';
+      case 'misc':
+        return 'Miscellaneous';
+      default:
+        return cat.replaceAll('_', ' ').toUpperCase();
+    }
+  }
+}
+
+class _AnimalFinancialDetailView extends StatefulWidget {
+  final List<_InventoryCachedItem> animals;
+  const _AnimalFinancialDetailView({required this.animals});
+
+  @override
+  State<_AnimalFinancialDetailView> createState() => _AnimalFinancialDetailViewState();
+}
+
+class _AnimalFinancialDetailViewState extends State<_AnimalFinancialDetailView> {
+  late String _selectedAnimalId;
+  Future<Map<String, dynamic>>? _summaryFuture;
+
+  @override
+  void initState() {
+    super.initState();
+    _selectedAnimalId = widget.animals.first.id;
+    _fetchSummary();
+  }
+
+  void _fetchSummary() {
+    setState(() {
+      _summaryFuture = sl<FinanceRepository>().getAnimalFinancialSummary(_selectedAnimalId);
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Card(
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              child: DropdownButtonHideUnderline(
+                child: DropdownButton<String>(
+                  isExpanded: true,
+                  value: _selectedAnimalId,
+                  items: widget.animals.map((a) {
+                    return DropdownMenuItem(
+                      value: a.id,
+                      child: Text(a.display, style: const TextStyle(fontWeight: FontWeight.bold)),
+                    );
+                  }).toList(),
+                  onChanged: (val) {
+                    if (val != null) {
+                      _selectedAnimalId = val;
+                      _fetchSummary();
+                    }
+                  },
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(height: 16),
+          FutureBuilder<Map<String, dynamic>>(
+            future: _summaryFuture,
+            builder: (context, snapshot) {
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return const Center(child: Padding(
+                  padding: EdgeInsets.all(32.0),
+                  child: CircularProgressIndicator(),
+                ));
+              }
+              if (snapshot.hasError) {
+                return Center(child: Text('Error: ${snapshot.error}', style: const TextStyle(color: Colors.red)));
+              }
+              final data = snapshot.data;
+              if (data == null) {
+                return const Center(child: Text('No data found.'));
+              }
+
+              final rev = (data['direct_revenue'] as num?)?.toDouble() ?? 0.0;
+              final totalCost = (data['total_costs'] as num?)?.toDouble() ?? 0.0;
+              final net = (data['net_profit'] as num?)?.toDouble() ?? 0.0;
+              final feedCost = (data['feed_cost'] as num?)?.toDouble() ?? 0.0;
+              final healthCost = (data['health_cost'] as num?)?.toDouble() ?? 0.0;
+              final laborCost = (data['labor_cost'] as num?)?.toDouble() ?? 0.0;
+              final overhead = (data['allocated_overhead'] as num?)?.toDouble() ?? 0.0;
+
+              final depr = data['depreciation'] as Map<String, dynamic>? ?? {};
+              final bookVal = (depr['current_book_value'] as num?)?.toDouble() ?? 0.0;
+              final cumDepr = (depr['cumulative_depreciation'] as num?)?.toDouble() ?? 0.0;
+
+              final txs = (data['transactions'] as List?) ?? [];
+
+              final f = NumberFormat.currency(symbol: '₦', decimalDigits: 2);
+
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Expanded(child: _metricBox('Direct Revenue', f.format(rev), Colors.green)),
+                      const SizedBox(width: 8),
+                      Expanded(child: _metricBox('Direct & Shared Costs', f.format(totalCost), Colors.red)),
+                      const SizedBox(width: 8),
+                      Expanded(child: _metricBox('Net Profit', f.format(net), net >= 0 ? AppColors.primary : Colors.orange)),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+
+                  Card(
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                    child: Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text('COST ALLOCATION BREAKDOWN', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Colors.grey)),
+                          const SizedBox(height: 12),
+                          _rowItem('Feed Cost', f.format(feedCost)),
+                          _rowItem('Health & Medication', f.format(healthCost)),
+                          _rowItem('Direct Labor Allocated', f.format(laborCost)),
+                          _rowItem('Overhead Allocated', f.format(overhead)),
+                        ],
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+
+                  Card(
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                    child: Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text('CAPITAL ASSET & DEPRECIATION', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Colors.grey)),
+                          const SizedBox(height: 12),
+                          _rowItem('Current Book Value', f.format(bookVal)),
+                          _rowItem('Cumulative Depreciation', f.format(cumDepr)),
+                        ],
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+
+                  Card(
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                    child: Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              const Text('LINKED TRANSACTIONS', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Colors.grey)),
+                              Text('${txs.length} logs', style: const TextStyle(fontSize: 12, color: Colors.grey)),
+                            ],
+                          ),
+                          const SizedBox(height: 12),
+                          if (txs.isEmpty)
+                            const Padding(
+                              padding: EdgeInsets.symmetric(vertical: 12),
+                              child: Center(child: Text('No individual transaction history logged yet.', style: TextStyle(fontSize: 12, color: Colors.grey))),
+                            )
+                          else
+                            ...txs.map((t) {
+                              final isIncome = t['type'] == 'income';
+                              final amt = (t['amount'] as num?)?.toDouble() ?? 0.0;
+                              return Column(
+                                children: [
+                                  ListTile(
+                                    dense: true,
+                                    contentPadding: EdgeInsets.zero,
+                                    title: Text(t['description']?.isNotEmpty == true ? t['description'] : t['category'].toString().replaceAll('_', ' ').toUpperCase(), style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                                    subtitle: Text('${t['category']} • ${t['date']?.substring(0, 10)}', style: const TextStyle(fontSize: 11)),
+                                    trailing: Text(
+                                      '${isIncome ? '+' : '-'}${f.format(amt)}',
+                                      style: TextStyle(fontWeight: FontWeight.bold, color: isIncome ? Colors.green : Colors.red),
+                                    ),
+                                  ),
+                                  const Divider(height: 1),
+                                ],
+                              );
+                            }),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              );
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _metricBox(String label, String value, Color color) {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.grey.shade200),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(label, style: const TextStyle(fontSize: 10, color: Colors.grey), overflow: TextOverflow.ellipsis),
+          const SizedBox(height: 4),
+          Text(value, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: color), overflow: TextOverflow.ellipsis),
+        ],
+      ),
+    );
+  }
+
+  Widget _rowItem(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(label, style: const TextStyle(fontSize: 12)),
+          Text(value, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
+        ],
+      ),
     );
   }
 }

@@ -85,7 +85,7 @@ class FinanceBloc extends Bloc<FinanceEvent, FinanceState> {
     on<ClearAllTransactionsEvent>(_onClearAllTransactions);
 
     _syncSubscription = SyncEventBus().stream.listen((event) {
-      if (event.containsAny(['transactions'])) {
+      if (event.containsAny(['transactions', 'yoghurt_sales', 'yoghurt_expenses', 'yoghurt'])) {
         add(LoadFinanceData());
       }
     });
@@ -111,6 +111,7 @@ class FinanceBloc extends Bloc<FinanceEvent, FinanceState> {
       // Sector Net Margin breakdown
       Map<String, double> sectorMargins = {
         'Dairy (milk_sales)': 0,
+        'Yoghurt Factory': 0,
         'Poultry (poultry_sales)': 0,
         'Hatchery (hatchery_sales)': 0,
         'Livestock (animal_sales)': 0,
@@ -120,6 +121,8 @@ class FinanceBloc extends Bloc<FinanceEvent, FinanceState> {
         final amount = tx.transactionType == 'income' ? tx.amount : -tx.amount;
         if (tx.category == 'milk_sales') {
           sectorMargins['Dairy (milk_sales)'] = (sectorMargins['Dairy (milk_sales)'] ?? 0) + amount;
+        } else if (tx.category == 'yoghurt_sales' || tx.category == 'yoghurt_expense' || tx.category == 'yoghurt_raw_material_transfer') {
+          sectorMargins['Yoghurt Factory'] = (sectorMargins['Yoghurt Factory'] ?? 0) + amount;
         } else if (tx.category == 'poultry_sales') {
           sectorMargins['Poultry (poultry_sales)'] = (sectorMargins['Poultry (poultry_sales)'] ?? 0) + amount;
         } else if (tx.category == 'hatchery_sales') {

@@ -1,6 +1,6 @@
 name: ifms_mobile
 description: A new Flutter project for the Integrated Farm Management System.
-version: 2.6.1+22071
+version: 2.6.2+22072
 
 environment:
   sdk: '>=3.0.0 <4.0.0'
