@@ -110,23 +110,34 @@ class _AuthScreenState extends State<AuthScreen> {
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
                 // Brand logo / header
-                const Icon(
-                  Icons.agriculture_outlined,
-                  size: 80,
-                  color: AppColors.primary,
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(16),
+                  child: Image.asset(
+                    'assets/images/app_icon.png',
+                    width: 80,
+                    height: 80,
+                    fit: BoxFit.contain,
+                    errorBuilder: (_, __, ___) => const Icon(
+                      Icons.agriculture_rounded,
+                      size: 80,
+                      color: AppColors.primary,
+                    ),
+                  ),
                 ),
-                const SizedBox(height: 12),
+                const SizedBox(height: 16),
                 Text(
-                  'NFarms Portal',
+                  'Royal Golden',
                   style: Theme.of(context).textTheme.headlineLarge?.copyWith(
                         color: AppColors.primary,
                         fontWeight: FontWeight.w900,
                       ),
                 ),
                 Text(
-                  'Integrated Farm Management System',
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: AppColors.outline,
+                  'Integrated Farms LTD',
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        color: AppColors.secondary,
+                        fontWeight: FontWeight.bold,
+                        letterSpacing: 1.5,
                       ),
                 ),
                 const SizedBox(height: 48),

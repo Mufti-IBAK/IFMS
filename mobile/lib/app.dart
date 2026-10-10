@@ -194,9 +194,65 @@ class _IFMSAppState extends State<IFMSApp> {
               future: _isInitializedFuture,
               builder: (context, snapshot) {
                 if (snapshot.connectionState == ConnectionState.waiting) {
-                  return const Scaffold(
+                  return Scaffold(
+                    backgroundColor: AppColors.background,
                     body: Center(
-                      child: CircularProgressIndicator(),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          ClipRRect(
+                            borderRadius: BorderRadius.circular(20),
+                            child: Image.asset(
+                              'assets/images/app_icon.png',
+                              width: 100,
+                              height: 100,
+                              fit: BoxFit.contain,
+                              errorBuilder: (_, __, ___) => const Icon(
+                                Icons.agriculture_rounded,
+                                size: 80,
+                                color: AppColors.primary,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 24),
+                          Text(
+                            'ROYAL GOLDEN',
+                            style: GoogleFonts.rajdhani(
+                              color: AppColors.primary,
+                              fontWeight: FontWeight.w900,
+                              fontSize: 24,
+                              letterSpacing: 2.0,
+                            ),
+                          ),
+                          Text(
+                            'INTEGRATED FARMS LTD',
+                            style: GoogleFonts.rajdhani(
+                              color: AppColors.secondary,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 14,
+                              letterSpacing: 3.0,
+                            ),
+                          ),
+                          const SizedBox(height: 36),
+                          const SizedBox(
+                            width: 28,
+                            height: 28,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2.5,
+                              valueColor: AlwaysStoppedAnimation<Color>(AppColors.primary),
+                            ),
+                          ),
+                          const SizedBox(height: 16),
+                          Text(
+                            'Loading farm operations...',
+                            style: TextStyle(
+                              color: Colors.grey.shade600,
+                              fontSize: 12,
+                              letterSpacing: 0.5,
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   );
                 }
@@ -293,13 +349,25 @@ class HomeScreen extends StatelessWidget {
         foregroundColor: Colors.white,
         title: Row(
           children: [
-            ClipRRect(
-              borderRadius: BorderRadius.circular(6),
-              child: Image.asset(
-                'assets/images/app_icon.png',
-                width: 28,
-                height: 28,
-                fit: BoxFit.contain,
+            Container(
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(6),
+              ),
+              padding: const EdgeInsets.all(2),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(4),
+                child: Image.asset(
+                  'assets/images/app_icon.png',
+                  width: 26,
+                  height: 26,
+                  fit: BoxFit.contain,
+                  errorBuilder: (_, __, ___) => const Icon(
+                    Icons.agriculture_rounded,
+                    color: AppColors.primary,
+                    size: 24,
+                  ),
+                ),
               ),
             ),
             const SizedBox(width: 10),
