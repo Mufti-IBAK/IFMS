@@ -73,7 +73,7 @@ class TaskPdfExportService {
                     crossAxisAlignment: pw.CrossAxisAlignment.start,
                     children: [
                       pw.Text(
-                        'ROYAL HERITAGE FARMS',
+                        'ROYAL GOLDEN INTEGRATED FARMS LTD',
                         style: pw.TextStyle(
                           color: PdfColors.white,
                           fontSize: 18,

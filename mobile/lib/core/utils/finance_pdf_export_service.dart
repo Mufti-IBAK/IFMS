@@ -10,7 +10,7 @@ class FinancePdfExportService {
     required DateTime selectedMonth,
     String? ownerEmail,
     String? managerEmail,
-    String farmName = 'ROYAL HERITAGE FARMS',
+    String farmName = 'ROYAL GOLDEN INTEGRATED FARMS LTD',
   }) async {
     final pdf = pw.Document();
 

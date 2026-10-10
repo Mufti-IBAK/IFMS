@@ -69,7 +69,7 @@ class BroodingPdfExportService {
                   crossAxisAlignment: pw.CrossAxisAlignment.start,
                   children: [
                     pw.Text(
-                      'ROYAL HERITAGE FARMS',
+                      'ROYAL GOLDEN INTEGRATED FARMS LTD',
                       style: pw.TextStyle(
                         fontSize: 22,
                         fontWeight: pw.FontWeight.bold,

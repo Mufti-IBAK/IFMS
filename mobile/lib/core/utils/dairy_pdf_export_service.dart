@@ -7,7 +7,7 @@ import '../../features/dairy/dairy_bloc.dart';
 class DairyPdfExportService {
   static Future<void> exportDairyReportPdf({
     required DairyLoaded dairyData,
-    String farmName = 'ROYAL HERITAGE FARMS',
+    String farmName = 'ROYAL GOLDEN INTEGRATED FARMS LTD',
   }) async {
     final pdf = pw.Document();
 

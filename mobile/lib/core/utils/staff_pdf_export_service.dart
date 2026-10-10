@@ -60,7 +60,7 @@ class StaffPdfExportService {
                 pw.Column(
                   crossAxisAlignment: pw.CrossAxisAlignment.start,
                   children: [
-                    pw.Text('ROYAL HERITAGE FARMS', style: pw.TextStyle(fontSize: 22, fontWeight: pw.FontWeight.bold, color: PdfColors.teal900)),
+                    pw.Text('ROYAL GOLDEN INTEGRATED FARMS LTD', style: pw.TextStyle(fontSize: 22, fontWeight: pw.FontWeight.bold, color: PdfColors.teal900)),
                     pw.Text('STAFF & PAYROLL ANALYSIS REPORT', style: pw.TextStyle(fontSize: 14, fontWeight: pw.FontWeight.bold, color: PdfColors.teal700)),
                     pw.Text('Generated: $generatedAt', style: const pw.TextStyle(fontSize: 9, color: PdfColors.grey700)),
                   ],

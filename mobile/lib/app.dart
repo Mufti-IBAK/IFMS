@@ -165,7 +165,7 @@ class _IFMSAppState extends State<IFMSApp> {
           return MaterialApp(
             navigatorKey: appNavigatorKey,
             scaffoldMessengerKey: scaffoldMessengerKey,
-            title: 'IFMS Mobile',
+            title: 'Royal Golden Integrated Farms LTD',
             theme: AppTheme.lightTheme,
             darkTheme: ThemeData.dark().copyWith(
               useMaterial3: true,
@@ -293,22 +293,26 @@ class HomeScreen extends StatelessWidget {
         foregroundColor: Colors.white,
         title: Row(
           children: [
-            Container(
-              padding: const EdgeInsets.all(6),
-              decoration: const BoxDecoration(
-                color: AppColors.secondary,
-                shape: BoxShape.circle,
+            ClipRRect(
+              borderRadius: BorderRadius.circular(6),
+              child: Image.asset(
+                'assets/images/app_icon.png',
+                width: 28,
+                height: 28,
+                fit: BoxFit.contain,
               ),
-              child: const Icon(Icons.shield, color: Colors.white, size: 18),
             ),
             const SizedBox(width: 10),
-            Text(
-              'RoyalHeritage Farms',
-              style: GoogleFonts.rajdhani(
-                color: Colors.white,
-                fontWeight: FontWeight.bold,
-                fontSize: 20,
-                letterSpacing: 0.5,
+            Expanded(
+              child: Text(
+                'Royal Golden Integrated Farms',
+                style: GoogleFonts.rajdhani(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 18,
+                  letterSpacing: 0.3,
+                ),
+                overflow: TextOverflow.ellipsis,
               ),
             ),
           ],
@@ -449,7 +453,7 @@ class HomeScreen extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       const Text(
-                        'ROYAL HERITAGE FARMS',
+                        'ROYAL GOLDEN INTEGRATED FARMS LTD',
                         style: TextStyle(
                           color: AppColors.secondary,
                           fontWeight: FontWeight.bold,
