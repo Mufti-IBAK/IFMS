@@ -155,16 +155,149 @@ class SyncManager {
     }
   }
 
-  /// Pushes local queue, then pulls remote changes
+  /// Pushes local queue and checks for unsynced local records, then pulls remote changes
   Future<void> syncAll() async {
     final connectivity = await Connectivity().checkConnectivity();
     if (connectivity.contains(ConnectivityResult.none)) return;
     
-    // 1. Push local changes first
+    // 1. Force upload any local records missing from Cloud (Animals, Yoghurt Batches, Sales, Expenses)
+    await uploadUnsyncedLocalDataToCloud();
+
+    // 2. Push local queue
     await triggerSync();
     
-    // 2. Pull remote changes
+    // 3. Pull remote changes
     await restoreFromSupabase();
+  }
+
+  /// Automatically scans local database tables and uploads any records that do not exist on Supabase
+  Future<void> uploadUnsyncedLocalDataToCloud() async {
+    try {
+      // A. Animals
+      final localAnimals = await db.select(db.localAnimals).get();
+      if (localAnimals.isNotEmpty) {
+        final remoteRes = await apiClient.dio.get('/animals', queryParameters: {'select': 'id', 'limit': '2000'});
+        final remoteIds = ((remoteRes.data as List?) ?? []).map((e) => e['id']?.toString()).toSet();
+        for (final anim in localAnimals) {
+          if (!remoteIds.contains(anim.id)) {
+            final payload = {
+              'id': anim.id,
+              'tag_id': anim.tagId,
+              'species': anim.species,
+              'breed': anim.breed,
+              'sex': anim.sex,
+              'date_of_birth': anim.dateOfBirth?.toIso8601String().split('T').first,
+              'status': anim.status,
+              'current_reproductive_status': anim.currentReproductiveStatus,
+              'location_id': anim.locationId,
+              'acquisition_cost': anim.acquisitionCost,
+              'salvage_value': anim.salvageValue,
+              'weight': anim.weight,
+              'color': anim.color,
+              'unique_marks': anim.uniqueMarks,
+              'pedigree_type': anim.pedigreeType,
+              'purpose': anim.purpose,
+              'vaccination_status': anim.vaccinationStatus,
+              'deworming_status': anim.dewormingStatus,
+              'generation': anim.generation,
+              'sire_id': anim.sireId,
+              'dam_id': anim.damId,
+            };
+            try {
+              await apiClient.dio.post('/animals', data: payload);
+              remoteIds.add(anim.id);
+            } catch (_) {}
+          }
+        }
+      }
+
+      // B. Yoghurt Batches
+      final localBatches = await db.select(db.localYoghurtBatches).get();
+      if (localBatches.isNotEmpty) {
+        final remoteRes = await apiClient.dio.get('/yoghurt_production_batches', queryParameters: {'select': 'id', 'limit': '1000'});
+        final remoteIds = ((remoteRes.data as List?) ?? []).map((e) => e['id']?.toString()).toSet();
+        for (final b in localBatches) {
+          if (!remoteIds.contains(b.id)) {
+            final payload = {
+              'id': b.id,
+              'batch_number': b.batchNumber,
+              'production_date': b.productionDate.toIso8601String(),
+              'milk_input_liters': b.milkInputLiters,
+              'milk_cost_per_liter': b.milkCostPerLiter,
+              'total_milk_cost': b.totalMilkCost,
+              'bottles_produced': b.bottlesProduced,
+              'packs_produced': b.packsProduced,
+              'bottles_remaining': b.bottlesRemaining,
+              'additional_costs': b.additionalCosts,
+              'produced_by_name': b.producedByName,
+              'produced_by_role': b.producedByRole,
+              'notes': b.notes,
+            };
+            try {
+              await apiClient.dio.post('/yoghurt_production_batches', data: payload);
+              remoteIds.add(b.id);
+            } catch (_) {}
+          }
+        }
+      }
+
+      // C. Yoghurt Sales
+      final localSales = await db.select(db.localYoghurtSales).get();
+      if (localSales.isNotEmpty) {
+        final remoteRes = await apiClient.dio.get('/yoghurt_sales', queryParameters: {'select': 'id', 'limit': '2000'});
+        final remoteIds = ((remoteRes.data as List?) ?? []).map((e) => e['id']?.toString()).toSet();
+        for (final s in localSales) {
+          if (!remoteIds.contains(s.id)) {
+            final payload = {
+              'id': s.id,
+              'sale_date': s.saleDate.toIso8601String(),
+              'customer_name': s.customerName,
+              'customer_phone': s.customerPhone,
+              'description': s.description,
+              'sale_unit': s.saleUnit,
+              'quantity_units': s.quantityUnits,
+              'total_bottles': s.totalBottles,
+              'unit_price': s.unitPrice,
+              'total_amount': s.totalAmount,
+              'amount_paid': s.amountPaid,
+              'balance_due': s.balanceDue,
+              'balance_payer': s.balancePayer,
+              'initiated_by_name': s.initiatedByName,
+              'initiated_by_role': s.initiatedByRole,
+              'selected_batch_id': s.selectedBatchId,
+            };
+            try {
+              await apiClient.dio.post('/yoghurt_sales', data: payload);
+              remoteIds.add(s.id);
+            } catch (_) {}
+          }
+        }
+      }
+
+      // D. Yoghurt Expenses
+      final localExp = await db.select(db.localYoghurtExpenses).get();
+      if (localExp.isNotEmpty) {
+        final remoteRes = await apiClient.dio.get('/yoghurt_expenses', queryParameters: {'select': 'id', 'limit': '1000'});
+        final remoteIds = ((remoteRes.data as List?) ?? []).map((e) => e['id']?.toString()).toSet();
+        for (final ex in localExp) {
+          if (!remoteIds.contains(ex.id)) {
+            final payload = {
+              'id': ex.id,
+              'expense_date': ex.expenseDate.toIso8601String(),
+              'description': ex.description,
+              'category': ex.category,
+              'amount': ex.amount,
+              'processed_by_name': ex.processedByName,
+              'processed_by_role': ex.processedByRole,
+            };
+            try {
+              await apiClient.dio.post('/yoghurt_expenses', data: payload);
+              remoteIds.add(ex.id);
+            } catch (_) {}
+          }
+        }
+      }
+    } catch (_) {}
   }
 
   /// Pulls all tables from Supabase and inserts into local DB.
@@ -185,6 +318,10 @@ class SyncManager {
         _restoreAlerts(),
         _restoreMedications(),
         _restoreStaff(),
+        _restoreYoghurtBatches(),
+        _restoreYoghurtSales(),
+        _restoreYoghurtReturns(),
+        _restoreYoghurtExpenses(),
       ]);
 
       if (results[0]) updatedTables.add('animals');
@@ -195,6 +332,11 @@ class SyncManager {
       if (results[5]) updatedTables.add('alerts');
       if (results[6]) updatedTables.add('medications');
       if (results[7]) updatedTables.add('staff');
+      if (results[8]) updatedTables.add('yoghurt_batches');
+      if (results[9]) updatedTables.add('yoghurt_sales');
+      if (results[10]) updatedTables.add('yoghurt_returns');
+      if (results[11]) updatedTables.add('yoghurt_expenses');
+      if (results[8] || results[9] || results[10] || results[11]) updatedTables.add('yoghurt');
 
       if (updatedTables.isNotEmpty) {
         SyncEventBus().fire(SyncCompletedEvent(tablesUpdated: updatedTables));
@@ -458,6 +600,140 @@ class SyncManager {
       if (companions.isNotEmpty) {
         await db.batch((batch) {
           batch.insertAllOnConflictUpdate(db.localStaff, companions);
+        });
+        return true;
+      }
+    } catch (_) {}
+    return false;
+  }
+
+  Future<bool> _restoreYoghurtBatches() async {
+    try {
+      final res = await apiClient.dio.get('/yoghurt_production_batches', queryParameters: {'limit': '1000'});
+      final rows = (res.data as List?) ?? [];
+      final companions = <LocalYoghurtBatchesCompanion>[];
+      for (final r in rows) {
+        final prodDateStr = r['production_date'] as String?;
+        if (prodDateStr == null) continue;
+        companions.add(LocalYoghurtBatchesCompanion.insert(
+          id: r['id'] as String,
+          batchNumber: r['batch_number'] as String,
+          productionDate: DateTime.parse(prodDateStr),
+          milkInputLiters: (r['milk_input_liters'] as num).toDouble(),
+          milkCostPerLiter: (r['milk_cost_per_liter'] as num?)?.toDouble() ?? 0.0,
+          totalMilkCost: (r['total_milk_cost'] as num?)?.toDouble() ?? 0.0,
+          bottlesProduced: (r['bottles_produced'] as num).toInt(),
+          packsProduced: (r['packs_produced'] as num).toInt(),
+          bottlesRemaining: (r['bottles_remaining'] as num).toInt(),
+          additionalCosts: Value((r['additional_costs'] as num?)?.toDouble() ?? 0.0),
+          producedByName: r['produced_by_name'] as String? ?? 'Staff',
+          producedByRole: r['produced_by_role'] as String? ?? 'Production Lead',
+          notes: Value(r['notes'] as String?),
+          createdAt: Value(r['created_at'] != null ? DateTime.tryParse(r['created_at']) ?? DateTime.now() : DateTime.now()),
+        ));
+      }
+      if (companions.isNotEmpty) {
+        await db.batch((batch) {
+          batch.insertAllOnConflictUpdate(db.localYoghurtBatches, companions);
+        });
+        return true;
+      }
+    } catch (_) {}
+    return false;
+  }
+
+  Future<bool> _restoreYoghurtSales() async {
+    try {
+      final res = await apiClient.dio.get('/yoghurt_sales', queryParameters: {'limit': '2000'});
+      final rows = (res.data as List?) ?? [];
+      final companions = <LocalYoghurtSalesCompanion>[];
+      for (final r in rows) {
+        final saleDateStr = r['sale_date'] as String?;
+        if (saleDateStr == null) continue;
+        companions.add(LocalYoghurtSalesCompanion.insert(
+          id: r['id'] as String,
+          saleDate: DateTime.parse(saleDateStr),
+          customerName: r['customer_name'] as String,
+          customerPhone: Value(r['customer_phone'] as String?),
+          description: Value(r['description'] as String?),
+          saleUnit: r['sale_unit'] as String? ?? 'bottles',
+          quantityUnits: (r['quantity_units'] as num).toInt(),
+          totalBottles: (r['total_bottles'] as num).toInt(),
+          unitPrice: (r['unit_price'] as num).toDouble(),
+          totalAmount: (r['total_amount'] as num).toDouble(),
+          amountPaid: (r['amount_paid'] as num).toDouble(),
+          balanceDue: Value((r['balance_due'] as num?)?.toDouble() ?? 0.0),
+          balancePayer: r['balance_payer'] as String? ?? 'cleared',
+          initiatedByName: r['initiated_by_name'] as String? ?? 'Staff',
+          initiatedByRole: r['initiated_by_role'] as String? ?? 'Officer',
+          selectedBatchId: Value(r['selected_batch_id'] as String?),
+          createdAt: Value(r['created_at'] != null ? DateTime.tryParse(r['created_at']) ?? DateTime.now() : DateTime.now()),
+        ));
+      }
+      if (companions.isNotEmpty) {
+        await db.batch((batch) {
+          batch.insertAllOnConflictUpdate(db.localYoghurtSales, companions);
+        });
+        return true;
+      }
+    } catch (_) {}
+    return false;
+  }
+
+  Future<bool> _restoreYoghurtReturns() async {
+    try {
+      final res = await apiClient.dio.get('/yoghurt_returns', queryParameters: {'limit': '1000'});
+      final rows = (res.data as List?) ?? [];
+      final companions = <LocalYoghurtReturnsCompanion>[];
+      for (final r in rows) {
+        final retDateStr = r['return_date'] as String?;
+        if (retDateStr == null) continue;
+        companions.add(LocalYoghurtReturnsCompanion.insert(
+          id: r['id'] as String,
+          returnDate: DateTime.parse(retDateStr),
+          customerName: r['customer_name'] as String,
+          description: Value(r['description'] as String?),
+          initialBoughtBottles: (r['initial_bought_bottles'] as num).toInt(),
+          returnedBottles: (r['returned_bottles'] as num).toInt(),
+          replacedBottles: (r['replaced_bottles'] as num).toInt(),
+          processedByName: r['processed_by_name'] as String? ?? 'Staff',
+          processedByRole: r['processed_by_role'] as String? ?? 'Officer',
+          selectedBatchId: Value(r['selected_batch_id'] as String?),
+          createdAt: Value(r['created_at'] != null ? DateTime.tryParse(r['created_at']) ?? DateTime.now() : DateTime.now()),
+        ));
+      }
+      if (companions.isNotEmpty) {
+        await db.batch((batch) {
+          batch.insertAllOnConflictUpdate(db.localYoghurtReturns, companions);
+        });
+        return true;
+      }
+    } catch (_) {}
+    return false;
+  }
+
+  Future<bool> _restoreYoghurtExpenses() async {
+    try {
+      final res = await apiClient.dio.get('/yoghurt_expenses', queryParameters: {'limit': '1000'});
+      final rows = (res.data as List?) ?? [];
+      final companions = <LocalYoghurtExpensesCompanion>[];
+      for (final r in rows) {
+        final expDateStr = r['expense_date'] as String?;
+        if (expDateStr == null) continue;
+        companions.add(LocalYoghurtExpensesCompanion.insert(
+          id: r['id'] as String,
+          expenseDate: DateTime.parse(expDateStr),
+          description: r['description'] as String,
+          category: Value(r['category'] as String? ?? 'other'),
+          amount: (r['amount'] as num).toDouble(),
+          processedByName: r['processed_by_name'] as String? ?? 'Staff',
+          processedByRole: r['processed_by_role'] as String? ?? 'Officer',
+          createdAt: Value(r['created_at'] != null ? DateTime.tryParse(r['created_at']) ?? DateTime.now() : DateTime.now()),
+        ));
+      }
+      if (companions.isNotEmpty) {
+        await db.batch((batch) {
+          batch.insertAllOnConflictUpdate(db.localYoghurtExpenses, companions);
         });
         return true;
       }

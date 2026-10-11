@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'package:drift/drift.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:intl/intl.dart';
@@ -5,18 +6,20 @@ import 'package:uuid/uuid.dart';
 import '../../core/audit/audit_repository.dart';
 import '../../core/database/local_db.dart';
 import '../../core/di/service_locator.dart';
+import '../../core/network/api_client.dart';
 import '../../core/sync/sync_event_bus.dart';
 import '../dairy/dairy_repository.dart';
 
 class YoghurtRepository {
   final LocalDatabase _db;
+  final ApiClient _apiClient;
   final _uuid = const Uuid();
   final FlutterSecureStorage _storage = const FlutterSecureStorage();
 
   static const String _bottlePriceKey = 'yoghurt_price_per_bottle';
   static const String _packPriceKey = 'yoghurt_price_per_pack';
 
-  YoghurtRepository(this._db);
+  YoghurtRepository(this._db, this._apiClient);
 
   Future<Map<String, double>> getYoghurtPrices() async {
     double bottlePrice = 500.0;
@@ -274,6 +277,35 @@ class YoghurtRepository {
       },
     );
 
+    // Sync to Cloud Supabase
+    final batchPayload = {
+      'id': batchId,
+      'batch_number': batchNumber,
+      'production_date': productionDate.toIso8601String(),
+      'milk_input_liters': milkInputLiters,
+      'milk_cost_per_liter': milkCostPerLiter,
+      'total_milk_cost': totalMilkCost,
+      'bottles_produced': bottlesProduced,
+      'packs_produced': packsProduced,
+      'bottles_remaining': bottlesProduced,
+      'additional_costs': additionalCosts,
+      'produced_by_name': producedByName,
+      'produced_by_role': producedByRole,
+      'notes': notes,
+    };
+    try {
+      await _apiClient.dio.post('/yoghurt_production_batches', data: batchPayload);
+    } catch (_) {
+      await _db.into(_db.syncQueue).insert(
+        SyncQueueCompanion.insert(
+          endpoint: '/yoghurt_production_batches',
+          method: 'POST',
+          body: jsonEncode(batchPayload),
+          queuedAt: DateTime.now(),
+        ),
+      );
+    }
+
     SyncEventBus().fire(SyncCompletedEvent(tablesUpdated: {'yoghurt', 'yoghurt_batches'}));
   }
 
@@ -417,6 +449,38 @@ class YoghurtRepository {
       },
     );
 
+    // Sync to Cloud Supabase
+    final salePayload = {
+      'id': saleId,
+      'sale_date': saleDate.toIso8601String(),
+      'customer_name': customerName,
+      'customer_phone': customerPhone,
+      'description': description ?? 'Yoghurt Sale ($quantityUnits $saleUnit)',
+      'sale_unit': saleUnit,
+      'quantity_units': quantityUnits,
+      'total_bottles': totalBottlesNeeded,
+      'unit_price': unitPrice,
+      'total_amount': totalAmount,
+      'amount_paid': amountPaid,
+      'balance_due': balanceDue,
+      'balance_payer': balancePayer,
+      'initiated_by_name': initiatedByName,
+      'initiated_by_role': initiatedByRole,
+      'selected_batch_id': (selectedBatchId != null && selectedBatchId != 'auto' && selectedBatchId.isNotEmpty) ? selectedBatchId : null,
+    };
+    try {
+      await _apiClient.dio.post('/yoghurt_sales', data: salePayload);
+    } catch (_) {
+      await _db.into(_db.syncQueue).insert(
+        SyncQueueCompanion.insert(
+          endpoint: '/yoghurt_sales',
+          method: 'POST',
+          body: jsonEncode(salePayload),
+          queuedAt: DateTime.now(),
+        ),
+      );
+    }
+
     SyncEventBus().fire(SyncCompletedEvent(tablesUpdated: {'yoghurt', 'yoghurt_sales', 'transactions'}));
   }
 
@@ -517,6 +581,32 @@ class YoghurtRepository {
       },
     );
 
+    // Sync to Cloud Supabase
+    final retPayload = {
+      'id': returnId,
+      'return_date': returnDate.toIso8601String(),
+      'customer_name': customerName,
+      'description': description,
+      'initial_bought_bottles': initialBoughtBottles,
+      'returned_bottles': returnedBottles,
+      'replaced_bottles': replacedBottles,
+      'processed_by_name': processedByName,
+      'processed_by_role': processedByRole,
+      'selected_batch_id': (selectedBatchId != null && selectedBatchId != 'auto' && selectedBatchId.isNotEmpty) ? selectedBatchId : null,
+    };
+    try {
+      await _apiClient.dio.post('/yoghurt_returns', data: retPayload);
+    } catch (_) {
+      await _db.into(_db.syncQueue).insert(
+        SyncQueueCompanion.insert(
+          endpoint: '/yoghurt_returns',
+          method: 'POST',
+          body: jsonEncode(retPayload),
+          queuedAt: DateTime.now(),
+        ),
+      );
+    }
+
     SyncEventBus().fire(SyncCompletedEvent(tablesUpdated: {'yoghurt', 'yoghurt_returns'}));
   }
 
@@ -574,6 +664,29 @@ class YoghurtRepository {
         'staff_role': processedByRole,
       },
     );
+
+    // Sync to Cloud Supabase
+    final expPayload = {
+      'id': expenseId,
+      'expense_date': expenseDate.toIso8601String(),
+      'description': description,
+      'category': category,
+      'amount': amount,
+      'processed_by_name': processedByName,
+      'processed_by_role': processedByRole,
+    };
+    try {
+      await _apiClient.dio.post('/yoghurt_expenses', data: expPayload);
+    } catch (_) {
+      await _db.into(_db.syncQueue).insert(
+        SyncQueueCompanion.insert(
+          endpoint: '/yoghurt_expenses',
+          method: 'POST',
+          body: jsonEncode(expPayload),
+          queuedAt: DateTime.now(),
+        ),
+      );
+    }
 
     SyncEventBus().fire(SyncCompletedEvent(tablesUpdated: {'yoghurt', 'yoghurt_expenses', 'transactions'}));
   }

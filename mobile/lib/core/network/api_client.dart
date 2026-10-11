@@ -125,6 +125,14 @@ class ApiClient {
            path = '/tasks';
         } else if (path.startsWith('/alerts')) {
            path = '/alerts';
+        } else if (path.startsWith('/yoghurt/batches') || path.startsWith('/yoghurt_production_batches')) {
+           path = '/yoghurt_production_batches';
+        } else if (path.startsWith('/yoghurt/sales') || path.startsWith('/yoghurt_sales')) {
+           path = '/yoghurt_sales';
+        } else if (path.startsWith('/yoghurt/returns') || path.startsWith('/yoghurt_returns')) {
+           path = '/yoghurt_returns';
+        } else if (path.startsWith('/yoghurt/expenses') || path.startsWith('/yoghurt_expenses')) {
+           path = '/yoghurt_expenses';
         }
 
         // Let Supabase handle created_by/logged_by via DEFAULT auth.uid()

@@ -69,13 +69,13 @@ jobs:
       run: |
         cd mobile
         flutter build appbundle --release \
-          --build-name=2.6.1 \
+          --build-name=2.7.0 \
           --build-number=${{ env.BUILD_NUMBER }}
     - name: Build APK for OTA Updater
       run: |
         cd mobile
         flutter build apk --release \
-          --build-name=2.6.1 \
+          --build-name=2.7.0 \
           --build-number=${{ env.BUILD_NUMBER }} \
           --split-per-abi
     - name: Run Supabase Database Migration

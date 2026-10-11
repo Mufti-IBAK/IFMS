@@ -51,6 +51,6 @@ Future<void> setupLocator() async {
   sl.registerLazySingleton<PharmacyRepository>(() => PharmacyRepository(sl()));
   sl.registerLazySingleton<StaffRepository>(() => StaffRepository(sl(), sl()));
   sl.registerLazySingleton<BreedingRepository>(() => BreedingRepository(sl(), sl()));
-  sl.registerLazySingleton<YoghurtRepository>(() => YoghurtRepository(sl()));
+  sl.registerLazySingleton<YoghurtRepository>(() => YoghurtRepository(sl(), sl()));
 }
 
