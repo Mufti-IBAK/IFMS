@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import '../../core/theme/app_colors.dart';
+import '../../core/network/api_client.dart';
+import '../../core/sync/sync_manager.dart';
+import '../../core/di/service_locator.dart';
 import 'settings_controller.dart';
-import 'profile_screen.dart';
 
 class AuthScreen extends StatefulWidget {
   final SettingsController controller;
@@ -17,6 +19,7 @@ class AuthScreen extends StatefulWidget {
 
 class _AuthScreenState extends State<AuthScreen> {
   final _formKey = GlobalKey<FormState>();
+  final _nameController = TextEditingController();
   final _emailController = TextEditingController();
   final _phoneController = TextEditingController();
   final _passwordController = TextEditingController();
@@ -24,9 +27,12 @@ class _AuthScreenState extends State<AuthScreen> {
 
   bool _isSignUp = false;
   bool _obscurePassword = true;
+  bool _isLoading = false;
+  bool _isGoogleLoading = false;
 
   @override
   void dispose() {
+    _nameController.dispose();
     _emailController.dispose();
     _phoneController.dispose();
     _passwordController.dispose();
@@ -34,65 +40,136 @@ class _AuthScreenState extends State<AuthScreen> {
     super.dispose();
   }
 
-  void _submit() {
-    if (_formKey.currentState!.validate()) {
+  Future<void> _handleEmailSubmit() async {
+    if (!_formKey.currentState!.validate()) return;
+
+    setState(() => _isLoading = true);
+    final apiClient = sl<ApiClient>();
+    final email = _emailController.text.trim();
+    final password = _passwordController.text;
+
+    try {
       if (_isSignUp) {
-        // Collect email and phone numbers for verification
-        final email = _emailController.text.trim();
+        final name = _nameController.text.trim();
         final phone = _phoneController.text.trim();
 
-        // As requested: "do not implement the sign up now, until i tell you what feature each role would have access to"
-        // Show account creation success popup and prompt to complete profile
-        showDialog(
-          context: context,
-          barrierDismissible: false,
-          builder: (context) => AlertDialog(
-            title: Row(
-              children: const [
-                Icon(Icons.check_circle_outline, color: Colors.green),
-                SizedBox(width: 8),
-                Text('Account Initialized'),
-              ],
-            ),
-            content: Text(
-              'A verification email and SMS notification will be set up to send sign up details to:\n\nEmail: $email\nPhone: $phone\n\nPlease proceed to complete your career profile details now!',
-            ),
-            actions: [
-              ElevatedButton(
-                onPressed: () {
-                  Navigator.of(context).pop(); // Close dialog
-                  
-                  // Initialize a blank profile with email and phone
-                  final emptyProfile = UserProfile(
-                    name: '',
-                    email: email,
-                    phone: phone,
-                    dob: '',
-                    gender: 'Male',
-                    careerBio: '',
-                    role: 'Casual Staff',
-                  );
-                  widget.controller.updateProfile(emptyProfile);
+        await apiClient.signUpWithEmailPassword(
+          email,
+          password,
+          fullName: name.isNotEmpty ? name : null,
+          phone: phone.isNotEmpty ? phone : null,
+        );
 
-                  // Open ProfileScreen to fill details
-                  Navigator.of(context).pushReplacement(
-                    MaterialPageRoute(
-                      builder: (context) => ProfileScreen(
-                        controller: widget.controller,
-                        isFromSignup: true,
-                      ),
-                    ),
-                  );
-                },
-                child: const Text('Complete Profile'),
-              ),
-            ],
+        final current = widget.controller.profile;
+        final updatedProfile = UserProfile(
+          name: name.isNotEmpty ? name : (current?.name ?? 'Farm Operator'),
+          email: email,
+          phone: phone,
+          dob: current?.dob ?? '',
+          gender: current?.gender ?? 'Male',
+          careerBio: current?.careerBio ?? '',
+          role: 'Staff',
+        );
+        await widget.controller.updateProfile(updatedProfile);
+
+        // Immediate background sync
+        sl<SyncManager>().syncAll();
+
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Account registered successfully!'),
+              backgroundColor: Colors.green,
+            ),
+          );
+          Navigator.of(context).pushReplacementNamed('/home');
+        }
+      } else {
+        // Sign In
+        final result = await apiClient.signInWithEmailPassword(email, password);
+        final user = result['user'] as Map<String, dynamic>?;
+        final userMetadata = user?['user_metadata'] as Map<String, dynamic>?;
+        final name = userMetadata?['full_name'] as String? ?? '';
+        final phone = userMetadata?['phone'] as String? ?? '';
+
+        final current = widget.controller.profile;
+        final updatedProfile = UserProfile(
+          name: name.isNotEmpty ? name : (current?.name.isNotEmpty == true ? current!.name : 'Farm Operator'),
+          email: email,
+          phone: phone.isNotEmpty ? phone : (current?.phone ?? ''),
+          dob: current?.dob ?? '',
+          gender: current?.gender ?? 'Male',
+          careerBio: current?.careerBio ?? '',
+          role: 'Staff',
+        );
+        await widget.controller.updateProfile(updatedProfile);
+
+        // Immediate background sync to restore all cloud data
+        sl<SyncManager>().syncAll();
+
+        if (mounted) {
+          Navigator.of(context).pushReplacementNamed('/home');
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(e.toString().replaceAll('Exception: ', '')),
+            backgroundColor: Colors.red.shade700,
           ),
         );
-      } else {
-        // Simple mock login for local testing
+      }
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  Future<void> _handleGoogleSignIn() async {
+    setState(() => _isGoogleLoading = true);
+    final apiClient = sl<ApiClient>();
+
+    try {
+      final result = await apiClient.signInWithGoogle();
+      final user = result['user'] as Map<String, dynamic>?;
+      final userMetadata = user?['user_metadata'] as Map<String, dynamic>?;
+      final email = user?['email'] as String? ?? '';
+      final name = userMetadata?['full_name'] as String? ??
+          userMetadata?['name'] as String? ??
+          '';
+
+      final current = widget.controller.profile;
+      final updatedProfile = UserProfile(
+        name: name.isNotEmpty ? name : (current?.name.isNotEmpty == true ? current!.name : 'Farm Operator'),
+        email: email.isNotEmpty ? email : (current?.email ?? ''),
+        phone: current?.phone ?? '',
+        dob: current?.dob ?? '',
+        gender: current?.gender ?? 'Male',
+        careerBio: current?.careerBio ?? '',
+        role: 'Staff',
+      );
+      await widget.controller.updateProfile(updatedProfile);
+
+      // Immediate background sync to pull and push
+      sl<SyncManager>().syncAll();
+
+      if (mounted) {
         Navigator.of(context).pushReplacementNamed('/home');
       }
+    } catch (e) {
+      if (mounted) {
+        final errStr = e.toString().replaceAll('Exception: ', '');
+        if (!errStr.contains('cancelled')) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(errStr),
+              backgroundColor: Colors.red.shade700,
+            ),
+          );
+        }
+      }
+    } finally {
+      if (mounted) setState(() => _isGoogleLoading = false);
     }
   }
 
@@ -102,7 +179,7 @@ class _AuthScreenState extends State<AuthScreen> {
       backgroundColor: AppColors.background,
       body: Center(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 32.0, vertical: 24.0),
+          padding: const EdgeInsets.symmetric(horizontal: 28.0, vertical: 24.0),
           child: Form(
             key: _formKey,
             child: Column(
@@ -114,33 +191,33 @@ class _AuthScreenState extends State<AuthScreen> {
                   borderRadius: BorderRadius.circular(16),
                   child: Image.asset(
                     'assets/images/app_icon.png',
-                    width: 80,
-                    height: 80,
+                    width: 76,
+                    height: 76,
                     fit: BoxFit.contain,
                     errorBuilder: (_, __, ___) => const Icon(
                       Icons.agriculture_rounded,
-                      size: 80,
+                      size: 76,
                       color: AppColors.primary,
                     ),
                   ),
                 ),
-                const SizedBox(height: 16),
+                const SizedBox(height: 14),
                 Text(
                   'Royal Golden',
-                  style: Theme.of(context).textTheme.headlineLarge?.copyWith(
+                  style: Theme.of(context).textTheme.headlineMedium?.copyWith(
                         color: AppColors.primary,
                         fontWeight: FontWeight.w900,
                       ),
                 ),
                 Text(
-                  'Integrated Farms LTD',
-                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                  'INTEGRATED FARMS LTD',
+                  style: Theme.of(context).textTheme.titleSmall?.copyWith(
                         color: AppColors.secondary,
                         fontWeight: FontWeight.bold,
-                        letterSpacing: 1.5,
+                        letterSpacing: 2.0,
                       ),
                 ),
-                const SizedBox(height: 48),
+                const SizedBox(height: 36),
 
                 // Form card
                 Card(
@@ -150,12 +227,12 @@ class _AuthScreenState extends State<AuthScreen> {
                     side: const BorderSide(color: AppColors.outlineVariant, width: 1),
                   ),
                   child: Padding(
-                    padding: const EdgeInsets.all(24.0),
+                    padding: const EdgeInsets.all(22.0),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
                         Text(
-                          _isSignUp ? 'REGISTER ACCOUNT' : 'LOGIN TO ACCOUNT',
+                          _isSignUp ? 'CREATE YOUR ACCOUNT' : 'LOGIN TO YOUR ACCOUNT',
                           style: Theme.of(context).textTheme.labelLarge?.copyWith(
                                 letterSpacing: 1.2,
                                 fontWeight: FontWeight.bold,
@@ -163,9 +240,45 @@ class _AuthScreenState extends State<AuthScreen> {
                               ),
                           textAlign: TextAlign.center,
                         ),
-                        const Divider(height: 24),
+                        const SizedBox(height: 8),
+                        Text(
+                          _isSignUp
+                              ? 'Enter your farm credentials to access real-time records.'
+                              : 'Sign in to sync farm records and operations across all devices.',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Colors.grey.shade600,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                        const Divider(height: 28),
 
-                        // Inputs
+                        if (_isSignUp) ...[
+                          TextFormField(
+                            controller: _nameController,
+                            keyboardType: TextInputType.name,
+                            decoration: const InputDecoration(
+                              labelText: 'Full Name',
+                              prefixIcon: Icon(Icons.person_outline),
+                            ),
+                            validator: (value) =>
+                                value == null || value.trim().isEmpty ? 'Please enter your name' : null,
+                          ),
+                          const SizedBox(height: 14),
+                          TextFormField(
+                            controller: _phoneController,
+                            keyboardType: TextInputType.phone,
+                            decoration: const InputDecoration(
+                              labelText: 'Phone Number',
+                              prefixIcon: Icon(Icons.phone_outlined),
+                            ),
+                            validator: (value) =>
+                                value == null || value.trim().isEmpty ? 'Please enter phone number' : null,
+                          ),
+                          const SizedBox(height: 14),
+                        ],
+
+                        // Email
                         TextFormField(
                           controller: _emailController,
                           keyboardType: TextInputType.emailAddress,
@@ -179,19 +292,9 @@ class _AuthScreenState extends State<AuthScreen> {
                             return null;
                           },
                         ),
-                        if (_isSignUp) ...[
-                          const SizedBox(height: 16),
-                          TextFormField(
-                            controller: _phoneController,
-                            keyboardType: TextInputType.phone,
-                            decoration: const InputDecoration(
-                              labelText: 'Phone Number',
-                              prefixIcon: Icon(Icons.phone_outlined),
-                            ),
-                            validator: (value) => value == null || value.trim().isEmpty ? 'Please enter phone number' : null,
-                          ),
-                        ],
-                        const SizedBox(height: 16),
+                        const SizedBox(height: 14),
+
+                        // Password
                         TextFormField(
                           controller: _passwordController,
                           obscureText: _obscurePassword,
@@ -203,10 +306,12 @@ class _AuthScreenState extends State<AuthScreen> {
                               onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
                             ),
                           ),
-                          validator: (value) => value == null || value.length < 6 ? 'Password must be at least 6 characters' : null,
+                          validator: (value) =>
+                              value == null || value.length < 6 ? 'Password must be at least 6 characters' : null,
                         ),
+
                         if (_isSignUp) ...[
-                          const SizedBox(height: 16),
+                          const SizedBox(height: 14),
                           TextFormField(
                             controller: _confirmPasswordController,
                             obscureText: _obscurePassword,
@@ -220,23 +325,108 @@ class _AuthScreenState extends State<AuthScreen> {
                             },
                           ),
                         ],
-                        const SizedBox(height: 24),
+                        const SizedBox(height: 22),
 
-                        // Submit Button
+                        // Primary Action Button (Email/Password)
                         ElevatedButton(
-                          onPressed: _submit,
+                          onPressed: (_isLoading || _isGoogleLoading) ? null : _handleEmailSubmit,
                           style: ElevatedButton.styleFrom(
                             backgroundColor: AppColors.primary,
                             foregroundColor: Colors.white,
-                            minimumSize: const Size(double.infinity, 50),
+                            minimumSize: const Size(double.infinity, 48),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(10),
                             ),
                           ),
-                          child: Text(
-                            _isSignUp ? 'Create Account' : 'Sign In',
-                            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                          child: _isLoading
+                              ? const SizedBox(
+                                  width: 22,
+                                  height: 22,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2.2,
+                                    valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                  ),
+                                )
+                              : Text(
+                                  _isSignUp ? 'Create Account' : 'Sign In with Email',
+                                  style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
+                                ),
+                        ),
+
+                        const SizedBox(height: 18),
+
+                        // OR Divider
+                        Row(
+                          children: [
+                            const Expanded(child: Divider()),
+                            Padding(
+                              padding: const EdgeInsets.symmetric(horizontal: 12.0),
+                              child: Text(
+                                'OR CONTINUE WITH',
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w600,
+                                  color: Colors.grey.shade500,
+                                  letterSpacing: 0.8,
+                                ),
+                              ),
+                            ),
+                            const Expanded(child: Divider()),
+                          ],
+                        ),
+
+                        const SizedBox(height: 18),
+
+                        // Google Sign-In Button
+                        OutlinedButton(
+                          onPressed: (_isLoading || _isGoogleLoading) ? null : _handleGoogleSignIn,
+                          style: OutlinedButton.styleFrom(
+                            backgroundColor: Colors.white,
+                            foregroundColor: const Color(0xFF1F1F1F),
+                            side: BorderSide(color: Colors.grey.shade300, width: 1.2),
+                            minimumSize: const Size(double.infinity, 48),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            elevation: 0,
                           ),
+                          child: _isGoogleLoading
+                              ? const SizedBox(
+                                  width: 22,
+                                  height: 22,
+                                  child: CircularProgressIndicator(strokeWidth: 2.2),
+                                )
+                              : Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Container(
+                                      width: 22,
+                                      height: 22,
+                                      decoration: const BoxDecoration(
+                                        shape: BoxShape.circle,
+                                      ),
+                                      child: const Center(
+                                        child: Text(
+                                          'G',
+                                          style: TextStyle(
+                                            color: Color(0xFF4285F4),
+                                            fontWeight: FontWeight.w900,
+                                            fontSize: 18,
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                    const SizedBox(width: 10),
+                                    const Text(
+                                      'Continue with Google',
+                                      style: TextStyle(
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.w600,
+                                        color: Color(0xFF1F1F1F),
+                                      ),
+                                    ),
+                                  ],
+                                ),
                         ),
                       ],
                     ),
@@ -253,7 +443,7 @@ class _AuthScreenState extends State<AuthScreen> {
                   child: Text(
                     _isSignUp
                         ? 'Already have an account? Sign In'
-                        : 'New to NFarms? Register Here',
+                        : 'New to Royal Golden Farms? Register Here',
                     style: const TextStyle(fontWeight: FontWeight.w600),
                   ),
                 ),

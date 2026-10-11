@@ -1,8 +1,12 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import '../../core/theme/app_colors.dart';
+import '../../core/sync/sync_manager.dart';
+import '../../core/network/api_client.dart';
+import '../../core/di/service_locator.dart';
 import 'settings_controller.dart';
 import 'profile_screen.dart';
+import 'auth_screen.dart';
 
 class SettingsScreen extends StatelessWidget {
   final SettingsController controller;
@@ -199,6 +203,109 @@ class SettingsScreen extends StatelessWidget {
                               Text('200%', style: TextStyle(fontSize: 10, color: AppColors.outline)),
                             ],
                           ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 24),
+
+                Text(
+                  'ACCOUNT & CLOUD SYNC',
+                  style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                        letterSpacing: 1.2,
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.onSurfaceVariant,
+                      ),
+                ),
+                const SizedBox(height: 16),
+
+                Card(
+                  elevation: 0,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    side: const BorderSide(color: AppColors.outlineVariant, width: 1),
+                  ),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 16.0),
+                    child: Column(
+                      children: [
+                        ListTile(
+                          contentPadding: EdgeInsets.zero,
+                          leading: const Icon(Icons.cloud_sync_outlined, color: AppColors.primary),
+                          title: const Text('Force Cloud Sync Now', style: TextStyle(fontWeight: FontWeight.w600)),
+                          subtitle: const Text('Upload offline records & pull latest farm data'),
+                          trailing: IconButton(
+                            icon: const Icon(Icons.sync, color: AppColors.primary),
+                            onPressed: () {
+                              sl<SyncManager>().syncAll();
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text('Cloud synchronization initiated for all farm sections...'),
+                                  backgroundColor: AppColors.primary,
+                                  duration: Duration(seconds: 2),
+                                ),
+                              );
+                            },
+                          ),
+                          onTap: () {
+                            sl<SyncManager>().syncAll();
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text('Cloud synchronization initiated for all farm sections...'),
+                                backgroundColor: AppColors.primary,
+                                duration: Duration(seconds: 2),
+                              ),
+                            );
+                          },
+                        ),
+                        const Divider(),
+                        ListTile(
+                          contentPadding: EdgeInsets.zero,
+                          leading: const Icon(Icons.manage_accounts_outlined, color: AppColors.secondary),
+                          title: const Text('Authentication & Accounts', style: TextStyle(fontWeight: FontWeight.w600)),
+                          subtitle: Text(profile?.email.isNotEmpty == true ? profile!.email : 'Tap to log in or switch account'),
+                          trailing: const Icon(Icons.chevron_right),
+                          onTap: () {
+                            Navigator.of(context).push(
+                              MaterialPageRoute(
+                                builder: (context) => AuthScreen(controller: controller),
+                              ),
+                            );
+                          },
+                        ),
+                        const Divider(),
+                        ListTile(
+                          contentPadding: EdgeInsets.zero,
+                          leading: const Icon(Icons.logout, color: Colors.red),
+                          title: const Text('Sign Out', style: TextStyle(fontWeight: FontWeight.w600, color: Colors.red)),
+                          subtitle: const Text('Sign out from Supabase cloud session'),
+                          onTap: () async {
+                            final confirm = await showDialog<bool>(
+                              context: context,
+                              builder: (ctx) => AlertDialog(
+                                title: const Text('Sign Out'),
+                                content: const Text('Are you sure you want to sign out from your cloud session?'),
+                                actions: [
+                                  TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
+                                  ElevatedButton(
+                                    onPressed: () => Navigator.pop(ctx, true),
+                                    style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+                                    child: const Text('Sign Out', style: TextStyle(color: Colors.white)),
+                                  ),
+                                ],
+                              ),
+                            );
+                            if (confirm == true) {
+                              await sl<ApiClient>().signOut();
+                              if (context.mounted) {
+                                Navigator.of(context).pushAndRemoveUntil(
+                                  MaterialPageRoute(builder: (_) => AuthScreen(controller: controller)),
+                                  (route) => false,
+                                );
+                              }
+                            }
+                          },
                         ),
                       ],
                     ),

@@ -40,6 +40,7 @@ import 'features/yoghurt/yoghurt_screen.dart';
 import 'features/history/history_tracking_screen.dart';
 import 'core/network/notification_service.dart';
 import 'core/sync/sync_manager.dart';
+import 'core/network/api_client.dart';
 import 'core/updater/app_updater.dart';
 import 'core/database/local_db.dart';
 import 'features/settings/settings_controller.dart';
@@ -111,9 +112,16 @@ class _IFMSAppState extends State<IFMSApp> {
 
   Future<bool> _checkIfDatabaseInitialized() async {
     try {
+      // 1. Check if user already has an active authenticated session
+      final hasSession = await sl<ApiClient>().hasValidSession();
+      if (hasSession) return true;
+
+      // 2. Fallback check for existing local data (so existing installs are never locked out)
       final db = sl<LocalDatabase>();
       final animals = await (db.select(db.localAnimals)..limit(1)).get();
-      return animals.isNotEmpty;
+      if (animals.isNotEmpty) return true;
+
+      return false;
     } catch (_) {
       return false;
     }

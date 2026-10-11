@@ -297,6 +297,420 @@ class SyncManager {
           }
         }
       }
+
+      // E. Yoghurt Returns
+      final localReturns = await db.select(db.localYoghurtReturns).get();
+      if (localReturns.isNotEmpty) {
+        final remoteRes = await apiClient.dio.get('/yoghurt_returns', queryParameters: {'select': 'id', 'limit': '1000'});
+        final remoteIds = ((remoteRes.data as List?) ?? []).map((e) => e['id']?.toString()).toSet();
+        for (final ret in localReturns) {
+          if (!remoteIds.contains(ret.id)) {
+            final payload = {
+              'id': ret.id,
+              'return_date': ret.returnDate.toIso8601String(),
+              'customer_name': ret.customerName,
+              'description': ret.description,
+              'initial_bought_bottles': ret.initialBoughtBottles,
+              'returned_bottles': ret.returnedBottles,
+              'replaced_bottles': ret.replacedBottles,
+              'processed_by_name': ret.processedByName,
+              'processed_by_role': ret.processedByRole,
+              'selected_batch_id': ret.selectedBatchId,
+            };
+            try {
+              await apiClient.dio.post('/yoghurt_returns', data: payload);
+              remoteIds.add(ret.id);
+            } catch (_) {}
+          }
+        }
+      }
+
+      // F. Milk Records
+      final localMilk = await db.select(db.localMilkRecords).get();
+      if (localMilk.isNotEmpty) {
+        final remoteRes = await apiClient.dio.get('/milk_records', queryParameters: {'select': 'id', 'limit': '5000'});
+        final remoteIds = ((remoteRes.data as List?) ?? []).map((e) => e['id']?.toString()).toSet();
+        for (final m in localMilk) {
+          if (!remoteIds.contains(m.id)) {
+            final payload = {
+              'id': m.id,
+              'animal_id': m.animalId,
+              'record_date': m.recordDate.toIso8601String(),
+              'milking_session': m.milkingSession,
+              'quantity_liters': m.quantityLiters,
+              'is_withdrawn': m.isWithdrawn,
+            };
+            try {
+              await apiClient.dio.post('/milk_records', data: payload);
+              remoteIds.add(m.id);
+            } catch (_) {}
+          }
+        }
+      }
+
+      // G. Transactions
+      final localTx = await db.select(db.localTransactions).get();
+      if (localTx.isNotEmpty) {
+        final remoteRes = await apiClient.dio.get('/transactions', queryParameters: {'select': 'id', 'limit': '5000'});
+        final remoteIds = ((remoteRes.data as List?) ?? []).map((e) => e['id']?.toString()).toSet();
+        for (final t in localTx) {
+          if (!remoteIds.contains(t.id)) {
+            final payload = {
+              'id': t.id,
+              'transaction_type': t.transactionType,
+              'category': t.category,
+              'amount': t.amount,
+              'currency': t.currency,
+              'related_entity_type': t.relatedEntityType,
+              'related_entity_id': t.relatedEntityId,
+              'description': t.description,
+              'transaction_date': t.transactionDate.toIso8601String(),
+              'is_reconciled': t.isReconciled,
+            };
+            try {
+              await apiClient.dio.post('/transactions', data: payload);
+              remoteIds.add(t.id);
+            } catch (_) {}
+          }
+        }
+      }
+
+      // H. Tasks
+      final localTasks = await db.select(db.localTasks).get();
+      if (localTasks.isNotEmpty) {
+        final remoteRes = await apiClient.dio.get('/tasks', queryParameters: {'select': 'id', 'limit': '2000'});
+        final remoteIds = ((remoteRes.data as List?) ?? []).map((e) => e['id']?.toString()).toSet();
+        for (final tk in localTasks) {
+          if (!remoteIds.contains(tk.id)) {
+            final payload = {
+              'id': tk.id,
+              'title': tk.title,
+              'description': tk.description,
+              'priority': tk.priority,
+              'status': tk.status,
+              'assigned_to': tk.assignedTo,
+              'due_date': tk.dueDate?.toIso8601String().split('T').first,
+              'completed_at': tk.completedAt?.toIso8601String(),
+            };
+            try {
+              await apiClient.dio.post('/tasks', data: payload);
+              remoteIds.add(tk.id);
+            } catch (_) {}
+          }
+        }
+      }
+
+      // I. Poultry Batches
+      final localPoultry = await db.select(db.localPoultryBatches).get();
+      if (localPoultry.isNotEmpty) {
+        final remoteRes = await apiClient.dio.get('/poultry_batches', queryParameters: {'select': 'id', 'limit': '1000'});
+        final remoteIds = ((remoteRes.data as List?) ?? []).map((e) => e['id']?.toString()).toSet();
+        for (final p in localPoultry) {
+          if (!remoteIds.contains(p.id)) {
+            final payload = {
+              'id': p.id,
+              'batch_type': p.purpose ?? 'broiler',
+              'breed': p.breed ?? 'Broiler',
+              'start_date': p.startDate.toIso8601String().split('T').first,
+              'initial_count': p.initialCount,
+              'current_count': p.currentCount,
+              'initial_chick_cost': p.acquisitionCost,
+              'status': p.status,
+              'location_id': '${p.batchNumber}|${p.houseName}',
+              'batch_name': p.batchNumber,
+              'house_name': p.houseName,
+            };
+            try {
+              await apiClient.dio.post('/poultry_batches', data: payload);
+              remoteIds.add(p.id);
+            } catch (_) {}
+          }
+        }
+      }
+
+      // J. Hatchery Batches
+      final localHatchery = await db.select(db.localHatcheryBatches).get();
+      if (localHatchery.isNotEmpty) {
+        final remoteRes = await apiClient.dio.get('/hatchery_batches', queryParameters: {'select': 'id', 'limit': '1000'});
+        final remoteIds = ((remoteRes.data as List?) ?? []).map((e) => e['id']?.toString()).toSet();
+        for (final h in localHatchery) {
+          if (!remoteIds.contains(h.id)) {
+            final payload = {
+              'id': h.id,
+              'egg_source': h.eggSource,
+              'egg_count': h.eggCount,
+              'breed': h.breed,
+              'set_date': h.setDate.toIso8601String().split('T').first,
+              'expected_hatch_date': h.expectedHatchDate.toIso8601String().split('T').first,
+              'fertile_eggs': h.fertileEggs,
+              'hatched_chicks': h.hatchedChicks,
+              'failed_eggs': h.failedEggs,
+              'initial_egg_cost': h.initialEggCost,
+              'status': h.status,
+              'crate_number': h.crateNumber,
+              'crate_section': h.crateSection,
+            };
+            try {
+              await apiClient.dio.post('/hatchery_batches', data: payload);
+              remoteIds.add(h.id);
+            } catch (_) {}
+          }
+        }
+      }
+
+      // K. Feed Items
+      final localFeed = await db.select(db.localFeedItems).get();
+      if (localFeed.isNotEmpty) {
+        final remoteRes = await apiClient.dio.get('/feed_items', queryParameters: {'select': 'id', 'limit': '1000'});
+        final remoteIds = ((remoteRes.data as List?) ?? []).map((e) => e['id']?.toString()).toSet();
+        for (final f in localFeed) {
+          if (!remoteIds.contains(f.id)) {
+            final payload = {
+              'id': f.id,
+              'name': f.name,
+              'category': f.category,
+              'unit': f.unit,
+              'purchase_unit': f.purchaseUnit,
+              'current_stock': f.currentStock,
+              'reorder_threshold': f.reorderThreshold,
+              'cost_per_unit': f.costPerUnit,
+              'weight_per_unit': f.weightPerUnit,
+              'cost_per_kg': f.costPerKg,
+              'supplier': f.supplier,
+              'is_active': f.isActive,
+              'currency': 'NGN',
+            };
+            try {
+              await apiClient.dio.post('/feed_items', data: payload);
+              remoteIds.add(f.id);
+            } catch (_) {}
+          }
+        }
+      }
+
+      // L. Inventory Logs
+      final localInvLogs = await db.select(db.localInventoryLogs).get();
+      if (localInvLogs.isNotEmpty) {
+        final remoteRes = await apiClient.dio.get('/inventory_logs', queryParameters: {'select': 'id', 'limit': '2000'});
+        final remoteIds = ((remoteRes.data as List?) ?? []).map((e) => e['id']?.toString()).toSet();
+        for (final l in localInvLogs) {
+          if (!remoteIds.contains(l.id)) {
+            final payload = {
+              'id': l.id,
+              'item_id': l.itemId,
+              'change_type': l.changeType,
+              'quantity_change': l.quantityChange,
+              'balance_after': l.balanceAfter,
+              'log_date': l.logDate.toIso8601String().split('T').first,
+              'related_entity_type': l.relatedEntityType,
+              'related_entity_id': l.relatedEntityId,
+              'notes': l.notes,
+            };
+            try {
+              await apiClient.dio.post('/inventory_logs', data: payload);
+              remoteIds.add(l.id);
+            } catch (_) {}
+          }
+        }
+      }
+
+      // M. Medications
+      final localMeds = await db.select(db.localMedications).get();
+      if (localMeds.isNotEmpty) {
+        final remoteRes = await apiClient.dio.get('/medications', queryParameters: {'select': 'id', 'limit': '1000'});
+        final remoteIds = ((remoteRes.data as List?) ?? []).map((e) => e['id']?.toString()).toSet();
+        for (final med in localMeds) {
+          if (!remoteIds.contains(med.id)) {
+            final payload = {
+              'id': med.id,
+              'name': med.name,
+              'category': med.category,
+              'unit': med.unit,
+              'current_stock': med.currentStock,
+              'reorder_threshold': med.reorderThreshold,
+              'cost_per_unit': med.costPerUnit,
+              'supplier': med.supplier,
+              'expiry_date': med.expiryDate?.toIso8601String(),
+              'batch_number': med.batchNumber,
+              'milk_withdrawal_days': med.milkWithdrawalDays,
+              'meat_withdrawal_days': med.meatWithdrawalDays,
+              'is_active': med.isActive,
+              'dosage_rate_per_kg': med.dosageRatePerKg,
+              'dosage_rate_text': med.dosageRateText,
+              'concentration': med.concentration,
+              'concentration_mg_per_ml': med.concentrationMgPerMl,
+              'concentration_value': med.concentrationValue,
+              'concentration_unit': med.concentrationUnit,
+            };
+            try {
+              await apiClient.dio.post('/medications', data: payload);
+              remoteIds.add(med.id);
+            } catch (_) {}
+          }
+        }
+      }
+
+      // N. Animal Medical Records
+      final localMedRecords = await db.select(db.localAnimalMedicalRecords).get();
+      if (localMedRecords.isNotEmpty) {
+        final remoteRes = await apiClient.dio.get('/animal_medical_records', queryParameters: {'select': 'id', 'limit': '2000'});
+        final remoteIds = ((remoteRes.data as List?) ?? []).map((e) => e['id']?.toString()).toSet();
+        for (final mr in localMedRecords) {
+          if (!remoteIds.contains(mr.id)) {
+            final payload = {
+              'id': mr.id,
+              'animal_id': mr.animalId,
+              'medication_id': mr.medicationId,
+              'administered_dose': mr.administeredDose,
+              'cost': mr.cost,
+              'treatment_date': mr.treatmentDate.toIso8601String(),
+              'diagnosed_condition': mr.diagnosedCondition,
+              'administered_by': mr.administeredBy,
+              'withdrawal_end_date': mr.withdrawalEndDate?.toIso8601String(),
+              'notes': mr.notes,
+            };
+            try {
+              await apiClient.dio.post('/animal_medical_records', data: payload);
+              remoteIds.add(mr.id);
+            } catch (_) {}
+          }
+        }
+      }
+
+      // O. Staff
+      final localStaff = await db.select(db.localStaff).get();
+      if (localStaff.isNotEmpty) {
+        final remoteRes = await apiClient.dio.get('/staff', queryParameters: {'select': 'id', 'limit': '500'});
+        final remoteIds = ((remoteRes.data as List?) ?? []).map((e) => e['id']?.toString()).toSet();
+        for (final st in localStaff) {
+          if (!remoteIds.contains(st.id)) {
+            final payload = {
+              'id': st.id,
+              'name': st.name,
+              'role': st.role,
+              'phone': st.phone,
+              'base_salary': st.baseSalary,
+              'performance_rating': st.performanceRating,
+              'is_active': st.isActive,
+              'profile_pic': st.profilePic,
+              'gender': st.gender,
+              'date_of_birth': st.dateOfBirth?.toIso8601String().split('T').first,
+              'address': st.address,
+              'emergency_contact': st.emergencyContact,
+              'employment_type': st.employmentType,
+              'start_date': st.startDate?.toIso8601String(),
+            };
+            try {
+              await apiClient.dio.post('/staff', data: payload);
+              remoteIds.add(st.id);
+            } catch (_) {}
+          }
+        }
+      }
+
+      // P. Salary Advances
+      final localAdvances = await db.select(db.localSalaryAdvances).get();
+      if (localAdvances.isNotEmpty) {
+        final remoteRes = await apiClient.dio.get('/salary_advances', queryParameters: {'select': 'id', 'limit': '1000'});
+        final remoteIds = ((remoteRes.data as List?) ?? []).map((e) => e['id']?.toString()).toSet();
+        for (final sa in localAdvances) {
+          if (!remoteIds.contains(sa.id)) {
+            final payload = {
+              'id': sa.id,
+              'staff_id': sa.staffId,
+              'advance_amount': sa.advanceAmount,
+              'monthly_deduction': sa.monthlyDeduction,
+              'repayment_months': 1,
+              'total_repaid': sa.totalRepaid,
+              'collection_date': sa.collectionDate.toIso8601String(),
+              'is_fully_repaid': sa.isFullyRepaid,
+              'is_one_off_advance': sa.isOneOffAdvance,
+              'notes': sa.notes,
+            };
+            try {
+              await apiClient.dio.post('/salary_advances', data: payload);
+              remoteIds.add(sa.id);
+            } catch (_) {}
+          }
+        }
+      }
+
+      // Q. Staff Queries
+      final localQueries = await db.select(db.localStaffQueries).get();
+      if (localQueries.isNotEmpty) {
+        final remoteRes = await apiClient.dio.get('/staff_queries', queryParameters: {'select': 'id', 'limit': '1000'});
+        final remoteIds = ((remoteRes.data as List?) ?? []).map((e) => e['id']?.toString()).toSet();
+        for (final sq in localQueries) {
+          if (!remoteIds.contains(sq.id)) {
+            final payload = {
+              'id': sq.id,
+              'staff_id': sq.staffId,
+              'title': sq.title,
+              'description': sq.description,
+              'deduction_amount': sq.deductionAmount,
+              'is_resolved': sq.isResolved,
+              'resolution_notes': sq.resolutionNotes,
+              'resolved_at': sq.resolvedAt?.toIso8601String(),
+              'issue_date': sq.issueDate.toIso8601String().split('T').first,
+            };
+            try {
+              await apiClient.dio.post('/staff_queries', data: payload);
+              remoteIds.add(sq.id);
+            } catch (_) {}
+          }
+        }
+      }
+
+      // R. Breeding Events
+      final localBreeding = await db.select(db.localBreedingEvents).get();
+      if (localBreeding.isNotEmpty) {
+        final remoteRes = await apiClient.dio.get('/breeding_events', queryParameters: {'select': 'id', 'limit': '2000'});
+        final remoteIds = ((remoteRes.data as List?) ?? []).map((e) => e['id']?.toString()).toSet();
+        for (final be in localBreeding) {
+          if (!remoteIds.contains(be.id)) {
+            final payload = {
+              'id': be.id,
+              'animal_id': be.animalId,
+              'event_type': be.eventType,
+              'event_date': be.eventDate.toIso8601String(),
+              'sire_id': be.sireId,
+              'semen_batch_id': be.semenBatchId,
+              'technician': be.technician,
+              'result': be.result,
+              'notes': be.notes,
+            };
+            try {
+              await apiClient.dio.post('/breeding_events', data: payload);
+              remoteIds.add(be.id);
+            } catch (_) {}
+          }
+        }
+      }
+
+      // S. Alerts
+      final localAlerts = await db.select(db.localAlerts).get();
+      if (localAlerts.isNotEmpty) {
+        final remoteRes = await apiClient.dio.get('/alerts', queryParameters: {'select': 'id', 'limit': '2000'});
+        final remoteIds = ((remoteRes.data as List?) ?? []).map((e) => e['id']?.toString()).toSet();
+        for (final al in localAlerts) {
+          if (!remoteIds.contains(al.id)) {
+            final payload = {
+              'id': al.id,
+              'title': al.title,
+              'severity': al.severity,
+              'message': al.message,
+              'location': al.location,
+              'impact': al.impact,
+              'created_at': al.createdAt.toIso8601String(),
+              'is_resolved': al.isResolved,
+            };
+            try {
+              await apiClient.dio.post('/alerts', data: payload);
+              remoteIds.add(al.id);
+            } catch (_) {}
+          }
+        }
+      }
     } catch (_) {}
   }
 
@@ -322,6 +736,13 @@ class SyncManager {
         _restoreYoghurtSales(),
         _restoreYoghurtReturns(),
         _restoreYoghurtExpenses(),
+        _restorePoultryBatches(),
+        _restoreHatcheryBatches(),
+        _restoreFeedItems(),
+        _restoreInventoryLogs(),
+        _restoreAnimalMedicalRecords(),
+        _restoreSalaryAdvances(),
+        _restoreStaffQueries(),
       ]);
 
       if (results[0]) updatedTables.add('animals');
@@ -337,6 +758,13 @@ class SyncManager {
       if (results[10]) updatedTables.add('yoghurt_returns');
       if (results[11]) updatedTables.add('yoghurt_expenses');
       if (results[8] || results[9] || results[10] || results[11]) updatedTables.add('yoghurt');
+      if (results[12]) updatedTables.add('poultry');
+      if (results[13]) updatedTables.add('hatchery');
+      if (results[14]) updatedTables.add('feed_items');
+      if (results[15]) updatedTables.add('inventory');
+      if (results[16]) updatedTables.add('medical_records');
+      if (results[17]) updatedTables.add('salary_advances');
+      if (results[18]) updatedTables.add('staff_queries');
 
       if (updatedTables.isNotEmpty) {
         SyncEventBus().fire(SyncCompletedEvent(tablesUpdated: updatedTables));
@@ -371,6 +799,7 @@ class SyncManager {
           purpose: Value(r['purpose'] as String?),
           vaccinationStatus: Value(r['vaccination_status'] as String?),
           dewormingStatus: Value(r['deworming_status'] as String?),
+          generation: Value(r['generation'] as String? ?? 'F1'),
           status: Value(r['status'] as String? ?? 'active'),
           sireId: Value(r['sire_id'] as String?),
           damId: Value(r['dam_id'] as String?),
@@ -734,6 +1163,228 @@ class SyncManager {
       if (companions.isNotEmpty) {
         await db.batch((batch) {
           batch.insertAllOnConflictUpdate(db.localYoghurtExpenses, companions);
+        });
+        return true;
+      }
+    } catch (_) {}
+    return false;
+  }
+
+  Future<bool> _restorePoultryBatches() async {
+    try {
+      final res = await apiClient.dio.get('/poultry_batches', queryParameters: {'limit': '1000'});
+      final rows = (res.data as List?) ?? [];
+      final companions = <LocalPoultryBatchesCompanion>[];
+      for (final r in rows) {
+        final startDateStr = r['start_date'] as String?;
+        if (startDateStr == null) continue;
+        final locId = r['location_id'] as String? ?? '';
+        final parts = locId.split('|');
+        final batchNum = r['batch_name'] as String? ?? (parts.isNotEmpty && parts[0].isNotEmpty ? parts[0] : 'Batch');
+        final house = r['house_name'] as String? ?? (parts.length > 1 ? parts[1] : 'Main House');
+        companions.add(LocalPoultryBatchesCompanion.insert(
+          id: r['id'] as String,
+          batchNumber: batchNum,
+          houseName: house,
+          initialCount: (r['initial_count'] as num).toInt(),
+          currentCount: (r['current_count'] as num).toInt(),
+          startDate: DateTime.parse(startDateStr),
+          status: r['status'] as String? ?? 'active',
+          breed: Value(r['breed'] as String?),
+          purpose: Value(r['batch_type'] as String?),
+          acquisitionCost: Value((r['initial_chick_cost'] as num?)?.toDouble() ?? 0.0),
+        ));
+      }
+      if (companions.isNotEmpty) {
+        await db.batch((batch) {
+          batch.insertAllOnConflictUpdate(db.localPoultryBatches, companions);
+        });
+        return true;
+      }
+    } catch (_) {}
+    return false;
+  }
+
+  Future<bool> _restoreHatcheryBatches() async {
+    try {
+      final res = await apiClient.dio.get('/hatchery_batches', queryParameters: {'limit': '1000'});
+      final rows = (res.data as List?) ?? [];
+      final companions = <LocalHatcheryBatchesCompanion>[];
+      for (final r in rows) {
+        final setDateStr = r['set_date'] as String?;
+        final hatchDateStr = r['expected_hatch_date'] as String?;
+        if (setDateStr == null || hatchDateStr == null) continue;
+        companions.add(LocalHatcheryBatchesCompanion.insert(
+          id: r['id'] as String,
+          eggSource: r['egg_source'] as String? ?? 'Farm',
+          eggCount: (r['egg_count'] as num).toInt(),
+          breed: Value(r['breed'] as String?),
+          setDate: DateTime.parse(setDateStr),
+          expectedHatchDate: DateTime.parse(hatchDateStr),
+          fertileEggs: Value((r['fertile_eggs'] as num?)?.toInt()),
+          hatchedChicks: Value((r['hatched_chicks'] as num?)?.toInt()),
+          failedEggs: Value((r['failed_eggs'] as num?)?.toInt()),
+          initialEggCost: Value((r['initial_egg_cost'] as num?)?.toDouble() ?? 0.0),
+          status: Value(r['status'] as String? ?? 'incubating'),
+          crateNumber: Value(r['crate_number'] as String?),
+          crateSection: Value(r['crate_section'] as String?),
+        ));
+      }
+      if (companions.isNotEmpty) {
+        await db.batch((batch) {
+          batch.insertAllOnConflictUpdate(db.localHatcheryBatches, companions);
+        });
+        return true;
+      }
+    } catch (_) {}
+    return false;
+  }
+
+  Future<bool> _restoreFeedItems() async {
+    try {
+      final res = await apiClient.dio.get('/feed_items', queryParameters: {'limit': '1000'});
+      final rows = (res.data as List?) ?? [];
+      final companions = <LocalFeedItemsCompanion>[];
+      for (final r in rows) {
+        companions.add(LocalFeedItemsCompanion.insert(
+          id: r['id'] as String,
+          name: r['name'] as String,
+          category: r['category'] as String? ?? 'feed',
+          unit: r['unit'] as String? ?? 'kg',
+          purchaseUnit: Value(r['purchase_unit'] as String? ?? 'bag'),
+          currentStock: (r['current_stock'] as num?)?.toDouble() ?? 0.0,
+          reorderThreshold: (r['reorder_threshold'] as num?)?.toDouble() ?? 10.0,
+          costPerUnit: (r['cost_per_unit'] as num?)?.toDouble() ?? 0.0,
+          weightPerUnit: Value((r['weight_per_unit'] as num?)?.toDouble() ?? 1.0),
+          costPerKg: Value((r['cost_per_kg'] as num?)?.toDouble() ?? 0.0),
+          supplier: Value(r['supplier'] as String?),
+          isActive: Value(r['is_active'] as bool? ?? true),
+        ));
+      }
+      if (companions.isNotEmpty) {
+        await db.batch((batch) {
+          batch.insertAllOnConflictUpdate(db.localFeedItems, companions);
+        });
+        return true;
+      }
+    } catch (_) {}
+    return false;
+  }
+
+  Future<bool> _restoreInventoryLogs() async {
+    try {
+      final res = await apiClient.dio.get('/inventory_logs', queryParameters: {'limit': '2000'});
+      final rows = (res.data as List?) ?? [];
+      final companions = <LocalInventoryLogsCompanion>[];
+      for (final r in rows) {
+        final logDateStr = r['log_date'] as String?;
+        if (logDateStr == null) continue;
+        companions.add(LocalInventoryLogsCompanion.insert(
+          id: r['id'] as String,
+          itemId: r['item_id'] as String,
+          changeType: r['change_type'] as String? ?? 'consumption',
+          quantityChange: (r['quantity_change'] as num?)?.toDouble() ?? 0.0,
+          balanceAfter: (r['balance_after'] as num?)?.toDouble() ?? 0.0,
+          logDate: DateTime.parse(logDateStr),
+          relatedEntityType: Value(r['related_entity_type'] as String?),
+          relatedEntityId: Value(r['related_entity_id'] as String?),
+          notes: Value(r['notes'] as String?),
+        ));
+      }
+      if (companions.isNotEmpty) {
+        await db.batch((batch) {
+          batch.insertAllOnConflictUpdate(db.localInventoryLogs, companions);
+        });
+        return true;
+      }
+    } catch (_) {}
+    return false;
+  }
+
+  Future<bool> _restoreAnimalMedicalRecords() async {
+    try {
+      final res = await apiClient.dio.get('/animal_medical_records', queryParameters: {'limit': '2000'});
+      final rows = (res.data as List?) ?? [];
+      final companions = <LocalAnimalMedicalRecordsCompanion>[];
+      for (final r in rows) {
+        final treatDateStr = r['treatment_date'] as String?;
+        if (treatDateStr == null) continue;
+        companions.add(LocalAnimalMedicalRecordsCompanion.insert(
+          id: r['id'] as String,
+          animalId: r['animal_id'] as String? ?? '',
+          medicationId: r['medication_id'] as String? ?? '',
+          administeredDose: (r['administered_dose'] as num?)?.toDouble() ?? 0.0,
+          cost: (r['cost'] as num?)?.toDouble() ?? 0.0,
+          treatmentDate: DateTime.parse(treatDateStr),
+          diagnosedCondition: r['diagnosed_condition'] as String? ?? 'General Treatment',
+          administeredBy: Value(r['administered_by'] as String?),
+          withdrawalEndDate: Value(r['withdrawal_end_date'] != null ? DateTime.tryParse(r['withdrawal_end_date']) : null),
+          notes: Value(r['notes'] as String?),
+        ));
+      }
+      if (companions.isNotEmpty) {
+        await db.batch((batch) {
+          batch.insertAllOnConflictUpdate(db.localAnimalMedicalRecords, companions);
+        });
+        return true;
+      }
+    } catch (_) {}
+    return false;
+  }
+
+  Future<bool> _restoreSalaryAdvances() async {
+    try {
+      final res = await apiClient.dio.get('/salary_advances', queryParameters: {'limit': '1000'});
+      final rows = (res.data as List?) ?? [];
+      final companions = <LocalSalaryAdvancesCompanion>[];
+      for (final r in rows) {
+        final colDateStr = r['collection_date'] as String?;
+        if (colDateStr == null) continue;
+        companions.add(LocalSalaryAdvancesCompanion.insert(
+          id: r['id'] as String,
+          staffId: r['staff_id'] as String? ?? '',
+          advanceAmount: (r['advance_amount'] as num?)?.toDouble() ?? 0.0,
+          monthlyDeduction: (r['monthly_deduction'] as num?)?.toDouble() ?? 0.0,
+          totalRepaid: Value((r['total_repaid'] as num?)?.toDouble() ?? 0.0),
+          collectionDate: DateTime.parse(colDateStr),
+          isFullyRepaid: Value(r['is_fully_repaid'] as bool? ?? false),
+          isOneOffAdvance: Value(r['is_one_off_advance'] as bool? ?? false),
+          notes: Value(r['notes'] as String?),
+        ));
+      }
+      if (companions.isNotEmpty) {
+        await db.batch((batch) {
+          batch.insertAllOnConflictUpdate(db.localSalaryAdvances, companions);
+        });
+        return true;
+      }
+    } catch (_) {}
+    return false;
+  }
+
+  Future<bool> _restoreStaffQueries() async {
+    try {
+      final res = await apiClient.dio.get('/staff_queries', queryParameters: {'limit': '1000'});
+      final rows = (res.data as List?) ?? [];
+      final companions = <LocalStaffQueriesCompanion>[];
+      for (final r in rows) {
+        final issDateStr = r['issue_date'] as String?;
+        if (issDateStr == null) continue;
+        companions.add(LocalStaffQueriesCompanion.insert(
+          id: r['id'] as String,
+          staffId: r['staff_id'] as String? ?? '',
+          title: r['title'] as String? ?? 'Query',
+          description: Value(r['description'] as String?),
+          deductionAmount: Value((r['deduction_amount'] as num?)?.toDouble() ?? 0.0),
+          isResolved: Value(r['is_resolved'] as bool? ?? false),
+          resolutionNotes: Value(r['resolution_notes'] as String?),
+          resolvedAt: Value(r['resolved_at'] != null ? DateTime.tryParse(r['resolved_at']) : null),
+          issueDate: DateTime.parse(issDateStr),
+        ));
+      }
+      if (companions.isNotEmpty) {
+        await db.batch((batch) {
+          batch.insertAllOnConflictUpdate(db.localStaffQueries, companions);
         });
         return true;
       }

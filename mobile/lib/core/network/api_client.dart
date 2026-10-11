@@ -1,5 +1,7 @@
+import 'dart:convert';
 import 'package:dio/dio.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 import '../di/service_locator.dart';
 import 'notification_service.dart';
 
@@ -7,7 +9,18 @@ class ApiClient {
   final Dio dio;
   final FlutterSecureStorage _storage = const FlutterSecureStorage();
   static const String baseUrl = 'https://mhrhlkgouekkrqncewbb.supabase.co/rest/v1/';
+  static const String authBaseUrl = 'https://mhrhlkgouekkrqncewbb.supabase.co/auth/v1/';
   static const String anonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1ocmhsa2dvdWVra3JxbmNld2JiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI3MzgxMzAsImV4cCI6MjA5ODMxNDEzMH0.wezUbIxZa2GXsCiYqTZwrpWUbvJzYy2F1vRv8mcF6Bo';
+  static const String googleWebClientId = '10036986821-ilndripmt502ni879ncvtc32bf468ive.apps.googleusercontent.com';
+
+  final Dio _authDio = Dio(BaseOptions(
+    baseUrl: authBaseUrl,
+    connectTimeout: const Duration(seconds: 15),
+    headers: {
+      'apikey': anonKey,
+      'Content-Type': 'application/json',
+    },
+  ));
 
   ApiClient() : dio = Dio(BaseOptions(baseUrl: baseUrl, connectTimeout: const Duration(seconds: 10))) {
     dio.interceptors.add(InterceptorsWrapper(
@@ -238,6 +251,187 @@ class ApiClient {
   Future<void> clearTokens() async {
     await _storage.delete(key: 'access_token');
     await _storage.delete(key: 'refresh_token');
+    await _storage.delete(key: 'auth_user_json');
+  }
+
+  Future<bool> hasValidSession() async {
+    final token = await _storage.read(key: 'access_token');
+    return token != null && token.isNotEmpty;
+  }
+
+  Future<Map<String, dynamic>?> getStoredUser() async {
+    final userStr = await _storage.read(key: 'auth_user_json');
+    if (userStr != null) {
+      try {
+        return jsonDecode(userStr) as Map<String, dynamic>;
+      } catch (_) {}
+    }
+    return null;
+  }
+
+  /// Sign in with Email and Password via Supabase Auth
+  Future<Map<String, dynamic>> signInWithEmailPassword(String email, String password) async {
+    try {
+      final response = await _authDio.post(
+        'token',
+        queryParameters: {'grant_type': 'password'},
+        data: {
+          'email': email.trim(),
+          'password': password,
+        },
+      );
+      final data = response.data as Map<String, dynamic>;
+      final accessToken = data['access_token'] as String?;
+      final refreshToken = data['refresh_token'] as String?;
+      if (accessToken != null && refreshToken != null) {
+        await setTokens(accessToken, refreshToken);
+        if (data['user'] != null) {
+          await _storage.write(key: 'auth_user_json', value: jsonEncode(data['user']));
+        }
+      }
+      return data;
+    } on DioException catch (e) {
+      final msg = e.response?.data?['error_description'] ??
+          e.response?.data?['msg'] ??
+          e.response?.data?['message'] ??
+          e.message ??
+          'Email/Password sign-in failed.';
+      throw Exception(msg);
+    }
+  }
+
+  /// Register new user with Email and Password via Supabase Auth
+  Future<Map<String, dynamic>> signUpWithEmailPassword(
+    String email,
+    String password, {
+    String? fullName,
+    String? phone,
+  }) async {
+    try {
+      final response = await _authDio.post(
+        'signup',
+        data: {
+          'email': email.trim(),
+          'password': password,
+          'data': {
+            if (fullName != null && fullName.isNotEmpty) 'full_name': fullName.trim(),
+            if (phone != null && phone.isNotEmpty) 'phone': phone.trim(),
+          },
+        },
+      );
+      final data = response.data as Map<String, dynamic>;
+      final accessToken = data['access_token'] as String?;
+      final refreshToken = data['refresh_token'] as String?;
+      if (accessToken != null && refreshToken != null) {
+        await setTokens(accessToken, refreshToken);
+      }
+      if (data['user'] != null) {
+        await _storage.write(key: 'auth_user_json', value: jsonEncode(data['user']));
+      }
+      return data;
+    } on DioException catch (e) {
+      final msg = e.response?.data?['error_description'] ??
+          e.response?.data?['msg'] ??
+          e.response?.data?['message'] ??
+          e.message ??
+          'Registration failed.';
+      throw Exception(msg);
+    }
+  }
+
+  /// Sign in using Google OAuth via GoogleSignIn -> Supabase token exchange
+  Future<Map<String, dynamic>> signInWithGoogle() async {
+    try {
+      final googleSignIn = GoogleSignIn(
+        serverClientId: googleWebClientId,
+        scopes: ['email', 'profile'],
+      );
+
+      // Clean existing Google session to ensure fresh prompt
+      try {
+        await googleSignIn.signOut();
+      } catch (_) {}
+
+      final googleUser = await googleSignIn.signIn();
+      if (googleUser == null) {
+        throw Exception('Google sign-in was cancelled');
+      }
+
+      final googleAuth = await googleUser.authentication;
+      final idToken = googleAuth.idToken;
+      if (idToken == null || idToken.isEmpty) {
+        throw Exception('Failed to obtain Google ID token. Please check Google Play Services.');
+      }
+
+      final response = await _authDio.post(
+        'token',
+        queryParameters: {'grant_type': 'id_token'},
+        data: {
+          'provider': 'google',
+          'id_token': idToken,
+          'client_id': googleWebClientId,
+        },
+      );
+
+      final data = response.data as Map<String, dynamic>;
+      final accessToken = data['access_token'] as String?;
+      final refreshToken = data['refresh_token'] as String?;
+      if (accessToken != null && refreshToken != null) {
+        await setTokens(accessToken, refreshToken);
+        if (data['user'] != null) {
+          await _storage.write(key: 'auth_user_json', value: jsonEncode(data['user']));
+        }
+      }
+      return data;
+    } on DioException catch (e) {
+      final msg = e.response?.data?['error_description'] ??
+          e.response?.data?['msg'] ??
+          e.response?.data?['message'] ??
+          e.message ??
+          'Google authentication failed.';
+      throw Exception(msg);
+    }
+  }
+
+  /// Refresh existing session
+  Future<bool> refreshSession() async {
+    try {
+      final refreshToken = await _storage.read(key: 'refresh_token');
+      if (refreshToken == null || refreshToken.isEmpty) return false;
+      final response = await _authDio.post(
+        'token',
+        queryParameters: {'grant_type': 'refresh_token'},
+        data: {'refresh_token': refreshToken},
+      );
+      final data = response.data as Map<String, dynamic>;
+      final newAccessToken = data['access_token'] as String?;
+      final newRefreshToken = data['refresh_token'] as String?;
+      if (newAccessToken != null && newRefreshToken != null) {
+        await setTokens(newAccessToken, newRefreshToken);
+        return true;
+      }
+    } catch (_) {}
+    return false;
+  }
+
+  /// Sign out completely from Supabase and Google
+  Future<void> signOut() async {
+    try {
+      final token = await _storage.read(key: 'access_token');
+      if (token != null && token.isNotEmpty) {
+        await _authDio.post(
+          'logout',
+          options: Options(headers: {'Authorization': 'Bearer $token'}),
+        );
+      }
+    } catch (_) {}
+    try {
+      final googleSignIn = GoogleSignIn();
+      if (await googleSignIn.isSignedIn()) {
+        await googleSignIn.signOut();
+      }
+    } catch (_) {}
+    await clearTokens();
   }
 
   static bool isNetworkError(Object? e) {
