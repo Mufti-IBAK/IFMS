@@ -7,6 +7,7 @@ import '../database/local_db.dart';
 import '../network/api_client.dart';
 import '../di/service_locator.dart';
 import '../network/notification_service.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'sync_event_bus.dart';
 
 class SyncManager {
@@ -14,6 +15,7 @@ class SyncManager {
   final ApiClient apiClient;
   bool _isSyncing = false;
   bool _isRestoring = false;
+  bool _hasCompletedInitialRestore = false;
 
   SyncManager(this.db, this.apiClient) {
     Connectivity().onConnectivityChanged.listen((result) {
@@ -28,8 +30,8 @@ class SyncManager {
       triggerSync();
     });
 
-    // Inbound cloud sync check every 45 seconds for active multi-user sync
-    Timer.periodic(const Duration(seconds: 45), (timer) {
+    // Inbound cloud sync check every 20 seconds for active multi-user sync
+    Timer.periodic(const Duration(seconds: 20), (timer) {
       restoreFromSupabase();
     });
   }
@@ -743,6 +745,7 @@ class SyncManager {
         _restoreAnimalMedicalRecords(),
         _restoreSalaryAdvances(),
         _restoreStaffQueries(),
+        _restoreFarmSettings(),
       ]);
 
       if (results[0]) updatedTables.add('animals');
@@ -765,10 +768,16 @@ class SyncManager {
       if (results[16]) updatedTables.add('medical_records');
       if (results[17]) updatedTables.add('salary_advances');
       if (results[18]) updatedTables.add('staff_queries');
+      if (results[19]) {
+        updatedTables.add('farm_settings');
+        updatedTables.add('milk_price');
+        updatedTables.add('yoghurt_prices');
+      }
 
       if (updatedTables.isNotEmpty) {
         SyncEventBus().fire(SyncCompletedEvent(tablesUpdated: updatedTables));
       }
+      _hasCompletedInitialRestore = true;
     } finally {
       _isRestoring = false;
     }
@@ -806,6 +815,24 @@ class SyncManager {
         ));
       }
       if (companions.isNotEmpty) {
+        if (_hasCompletedInitialRestore) {
+          final existingIds = (await (db.selectOnly(db.localAnimals)..addColumns([db.localAnimals.id])).get())
+              .map((row) => row.read(db.localAnimals.id))
+              .whereType<String>()
+              .toSet();
+          final newRows = rows.where((r) => !existingIds.contains(r['id']?.toString())).toList();
+          if (newRows.isNotEmpty) {
+            final sample = newRows.first;
+            final tag = sample['tag_id'] ?? 'Animal';
+            final species = sample['species'] ?? 'Livestock';
+            sl<NotificationService>().showLocalNotification(
+              'New Livestock Registered',
+              newRows.length == 1
+                  ? '$species #$tag was recorded on another device.'
+                  : '${newRows.length} animals (including $species #$tag) were registered on another device.',
+            );
+          }
+        }
         await db.batch((batch) {
           batch.insertAllOnConflictUpdate(db.localAnimals, companions);
         });
@@ -863,6 +890,24 @@ class SyncManager {
         ));
       }
       if (companions.isNotEmpty) {
+        if (_hasCompletedInitialRestore) {
+          final existingIds = (await (db.selectOnly(db.localTransactions)..addColumns([db.localTransactions.id])).get())
+              .map((row) => row.read(db.localTransactions.id))
+              .whereType<String>()
+              .toSet();
+          final newRows = rows.where((r) => !existingIds.contains(r['id']?.toString())).toList();
+          if (newRows.isNotEmpty) {
+            final sample = newRows.first;
+            final type = (sample['transaction_type'] ?? sample['type'] ?? 'Transaction').toString().toUpperCase();
+            final amt = sample['amount'] ?? 0;
+            sl<NotificationService>().showLocalNotification(
+              'New Finance Record ($type)',
+              newRows.length == 1
+                  ? '₦$amt ($type) logged on another device: ${sample['description'] ?? ''}'
+                  : '${newRows.length} transactions recorded on another device.',
+            );
+          }
+        }
         await db.batch((batch) {
           batch.insertAllOnConflictUpdate(db.localTransactions, companions);
         });
@@ -954,6 +999,20 @@ class SyncManager {
         ));
       }
       if (companions.isNotEmpty) {
+        if (_hasCompletedInitialRestore) {
+          final existingIds = (await (db.selectOnly(db.localAlerts)..addColumns([db.localAlerts.id])).get())
+              .map((row) => row.read(db.localAlerts.id))
+              .whereType<String>()
+              .toSet();
+          final newRows = rows.where((r) => !existingIds.contains(r['id']?.toString())).toList();
+          if (newRows.isNotEmpty) {
+            final sample = newRows.first;
+            sl<NotificationService>().showLocalNotification(
+              sample['title']?.toString() ?? 'Farm Alert',
+              sample['message']?.toString() ?? 'New farm alert reported.',
+            );
+          }
+        }
         await db.batch((batch) {
           batch.insertAllOnConflictUpdate(db.localAlerts, companions);
         });
@@ -1100,6 +1159,26 @@ class SyncManager {
         ));
       }
       if (companions.isNotEmpty) {
+        if (_hasCompletedInitialRestore) {
+          final existingIds = (await (db.selectOnly(db.localYoghurtSales)..addColumns([db.localYoghurtSales.id])).get())
+              .map((row) => row.read(db.localYoghurtSales.id))
+              .whereType<String>()
+              .toSet();
+          final newRows = rows.where((r) => !existingIds.contains(r['id']?.toString())).toList();
+          if (newRows.isNotEmpty) {
+            final sample = newRows.first;
+            final cust = sample['customer_name'] ?? 'Customer';
+            final amt = sample['total_amount'] ?? 0;
+            final qty = sample['quantity_units'] ?? sample['total_bottles'] ?? '';
+            final unit = sample['sale_unit'] ?? 'bottles';
+            sl<NotificationService>().showLocalNotification(
+              'New Yoghurt Sale Recorded',
+              newRows.length == 1
+                  ? '₦$amt ($qty $unit to $cust) sold by ${sample['initiated_by_name'] ?? 'staff'}'
+                  : '${newRows.length} yoghurt sales registered on another device.',
+            );
+          }
+        }
         await db.batch((batch) {
           batch.insertAllOnConflictUpdate(db.localYoghurtSales, companions);
         });
@@ -1388,6 +1467,23 @@ class SyncManager {
         });
         return true;
       }
+    } catch (_) {}
+    return false;
+  }
+
+  Future<bool> _restoreFarmSettings() async {
+    try {
+      final res = await apiClient.dio.get('/farm_settings', queryParameters: {'limit': '50'});
+      final rows = (res.data as List?) ?? [];
+      const storage = FlutterSecureStorage();
+      for (final r in rows) {
+        final k = r['key']?.toString();
+        final v = r['value']?.toString();
+        if (k != null && v != null) {
+          await storage.write(key: k, value: v);
+        }
+      }
+      return rows.isNotEmpty;
     } catch (_) {}
     return false;
   }

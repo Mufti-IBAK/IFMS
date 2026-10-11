@@ -21,6 +21,23 @@ class DairyRepository {
   DairyRepository(this.db, this.apiClient);
 
   Future<double> getMilkPrice() async {
+    // 1. Try to fetch latest price from Supabase farm_settings
+    try {
+      final res = await apiClient.dio.get('/farm_settings', queryParameters: {'key': 'eq.$_priceKey'});
+      final list = res.data as List?;
+      if (list != null && list.isNotEmpty) {
+        final valStr = list.first['value']?.toString();
+        final val = double.tryParse(valStr ?? '');
+        if (val != null && val > 0) {
+          _currentMilkPrice = val;
+          defaultMilkPrice = val;
+          await _storage.write(key: _priceKey, value: val.toString());
+          return val;
+        }
+      }
+    } catch (_) {}
+
+    // 2. Fallback to cached secure storage
     try {
       final str = await _storage.read(key: _priceKey);
       if (str != null) {
@@ -41,6 +58,23 @@ class DairyRepository {
     defaultMilkPrice = newPrice;
     await _storage.write(key: _priceKey, value: newPrice.toString());
 
+    // Push to Supabase farm_settings cloud database
+    try {
+      await apiClient.dio.post(
+        '/farm_settings',
+        data: {'key': _priceKey, 'value': newPrice.toString()},
+      );
+    } catch (_) {
+      await db.into(db.syncQueue).insert(
+        SyncQueueCompanion.insert(
+          endpoint: '/farm_settings',
+          method: 'POST',
+          body: jsonEncode({'key': _priceKey, 'value': newPrice.toString()}),
+          queuedAt: DateTime.now(),
+        ),
+      );
+    }
+
     sl<AuditRepository>().logAction(
       userName: 'Farm Manager',
       actionType: 'UPDATE',
@@ -52,7 +86,7 @@ class DairyRepository {
     );
 
     // Notify listeners across app
-    SyncEventBus().fire(SyncCompletedEvent(tablesUpdated: {'milk_records', 'milk_price', 'transactions'}));
+    SyncEventBus().fire(SyncCompletedEvent(tablesUpdated: {'milk_records', 'milk_price', 'transactions', 'farm_settings'}));
   }
 
   Future<void> addMilkRecord(Map<String, dynamic> recordData) async {

@@ -145,7 +145,17 @@ class ApiClient {
         } else if (path.startsWith('/yoghurt/returns') || path.startsWith('/yoghurt_returns')) {
            path = '/yoghurt_returns';
         } else if (path.startsWith('/yoghurt/expenses') || path.startsWith('/yoghurt_expenses')) {
-           path = '/yoghurt_expenses';
+          path = '/yoghurt_expenses';
+        } else if (path.startsWith('/farm_settings')) {
+          path = '/farm_settings';
+          if (options.method == 'POST') {
+            options.headers['Prefer'] = 'resolution=merge-duplicates';
+          }
+        } else if (path.startsWith('/auth/fcm-token') || path.startsWith('/device_tokens')) {
+          path = '/device_tokens';
+          if (options.method == 'POST') {
+            options.headers['Prefer'] = 'resolution=merge-duplicates';
+          }
         }
 
         // Let Supabase handle created_by/logged_by via DEFAULT auth.uid()

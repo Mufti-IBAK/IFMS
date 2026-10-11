@@ -24,6 +24,29 @@ class YoghurtRepository {
   Future<Map<String, double>> getYoghurtPrices() async {
     double bottlePrice = 500.0;
     double packPrice = 6000.0;
+
+    // 1. Try to fetch latest from Supabase farm_settings
+    try {
+      final res = await _apiClient.dio.get('/farm_settings', queryParameters: {'key': 'in.($_bottlePriceKey,$_packPriceKey)'});
+      final list = res.data as List?;
+      if (list != null) {
+        for (final item in list) {
+          final k = item['key']?.toString();
+          final v = double.tryParse(item['value']?.toString() ?? '');
+          if (v != null && v > 0) {
+            if (k == _bottlePriceKey) {
+              bottlePrice = v;
+              await _storage.write(key: _bottlePriceKey, value: v.toString());
+            } else if (k == _packPriceKey) {
+              packPrice = v;
+              await _storage.write(key: _packPriceKey, value: v.toString());
+            }
+          }
+        }
+      }
+    } catch (_) {}
+
+    // 2. Fallback to cached secure storage
     try {
       final bStr = await _storage.read(key: _bottlePriceKey);
       if (bStr != null && double.tryParse(bStr) != null) {
@@ -44,6 +67,39 @@ class YoghurtRepository {
     await _storage.write(key: _bottlePriceKey, value: pricePerBottle.toString());
     await _storage.write(key: _packPriceKey, value: pricePerPack.toString());
 
+    // Push both to Supabase farm_settings
+    try {
+      await _apiClient.dio.post(
+        '/farm_settings',
+        data: {'key': _bottlePriceKey, 'value': pricePerBottle.toString()},
+      );
+    } catch (_) {
+      await _db.into(_db.syncQueue).insert(
+        SyncQueueCompanion.insert(
+          endpoint: '/farm_settings',
+          method: 'POST',
+          body: jsonEncode({'key': _bottlePriceKey, 'value': pricePerBottle.toString()}),
+          queuedAt: DateTime.now(),
+        ),
+      );
+    }
+
+    try {
+      await _apiClient.dio.post(
+        '/farm_settings',
+        data: {'key': _packPriceKey, 'value': pricePerPack.toString()},
+      );
+    } catch (_) {
+      await _db.into(_db.syncQueue).insert(
+        SyncQueueCompanion.insert(
+          endpoint: '/farm_settings',
+          method: 'POST',
+          body: jsonEncode({'key': _packPriceKey, 'value': pricePerPack.toString()}),
+          queuedAt: DateTime.now(),
+        ),
+      );
+    }
+
     sl<AuditRepository>().logAction(
       userName: 'Farm Manager',
       actionType: 'UPDATE',
@@ -52,7 +108,7 @@ class YoghurtRepository {
       description: 'Updated Yoghurt Selling Prices: ₦${pricePerBottle.toStringAsFixed(0)}/Bottle, ₦${pricePerPack.toStringAsFixed(0)}/Pack',
     );
 
-    SyncEventBus().fire(SyncCompletedEvent(tablesUpdated: {'yoghurt'}));
+    SyncEventBus().fire(SyncCompletedEvent(tablesUpdated: {'yoghurt', 'yoghurt_prices', 'farm_settings'}));
   }
 
   Future<List<LocalYoghurtBatche>> getAllBatches() async {

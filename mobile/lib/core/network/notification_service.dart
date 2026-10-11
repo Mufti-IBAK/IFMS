@@ -56,7 +56,10 @@ class NotificationService {
   Future<void> _sendTokenToBackend(String token) async {
     try {
       final apiClient = sl<ApiClient>();
-      await apiClient.dio.post('/auth/fcm-token', data: {'token': token});
+      await apiClient.dio.post('/device_tokens', data: {
+        'fcm_token': token,
+        'device_type': 'android',
+      });
     } catch (e) {
       debugPrint('Failed to send FCM token to backend: $e');
     }
