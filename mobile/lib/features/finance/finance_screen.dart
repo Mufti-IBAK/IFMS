@@ -90,20 +90,57 @@ class _FinanceScreenState extends State<FinanceScreen> with SingleTickerProvider
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
-        title: const Text('Financial Management', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
-        backgroundColor: Colors.white,
-        foregroundColor: AppColors.onSurface,
+        title: Row(
+          children: [
+            Container(
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(6),
+              ),
+              padding: const EdgeInsets.all(2),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(4),
+                child: Image.asset(
+                  'assets/images/app_icon.png',
+                  width: 26,
+                  height: 26,
+                  fit: BoxFit.contain,
+                  errorBuilder: (_, __, ___) => const Icon(
+                    Icons.account_balance_wallet_rounded,
+                    color: AppColors.primary,
+                    size: 22,
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(width: 10),
+            const Expanded(
+              child: Text(
+                'FINANCIAL MANAGEMENT',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 16,
+                  letterSpacing: 0.5,
+                ),
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+          ],
+        ),
+        backgroundColor: AppColors.primary,
+        foregroundColor: Colors.white,
         elevation: 0,
         actions: [
           IconButton(
-            icon: const Icon(Icons.refresh, color: AppColors.primary),
+            icon: const Icon(Icons.refresh, color: Colors.white),
             tooltip: 'Sync & Refresh',
             onPressed: () {
               BlocProvider.of<FinanceBloc>(context).add(LoadFinanceData());
             },
           ),
           PopupMenuButton<String>(
-            icon: const Icon(Icons.more_vert, color: AppColors.primary),
+            icon: const Icon(Icons.more_vert, color: Colors.white),
             onSelected: (val) {
               if (val == 'clear_all') {
                 _confirmClearLedger(context);
@@ -125,9 +162,9 @@ class _FinanceScreenState extends State<FinanceScreen> with SingleTickerProvider
         ],
         bottom: TabBar(
           controller: _tabController,
-          labelColor: AppColors.primary,
-          unselectedLabelColor: Colors.grey,
-          indicatorColor: AppColors.primary,
+          labelColor: AppColors.secondary,
+          unselectedLabelColor: Colors.white70,
+          indicatorColor: AppColors.secondary,
           indicatorWeight: 3,
           tabs: const [
             Tab(icon: Icon(Icons.insights, size: 20), text: 'INSIGHTS'),
@@ -844,7 +881,7 @@ class _FinanceScreenState extends State<FinanceScreen> with SingleTickerProvider
   // TAB 2: CONSOLIDATED LEDGER (PER DAY VIEW)
   // ──────────────────────────────────────────────
   Widget _buildDateSelectorHeader(FinanceLoaded state) {
-    final dayFormat = DateFormat('EEEE, d MMMM yyyy');
+    final dayFormat = DateFormat('EEE, d MMM yyyy');
     final monthFormat = DateFormat('MMMM yyyy');
     final isToday = _selectedDate.year == DateTime.now().year &&
                     _selectedDate.month == DateTime.now().month &&
@@ -861,10 +898,12 @@ class _FinanceScreenState extends State<FinanceScreen> with SingleTickerProvider
       child: Column(
         children: [
           Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               IconButton(
-                icon: const Icon(Icons.chevron_left, color: Colors.purple),
+                visualDensity: VisualDensity.compact,
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
+                icon: const Icon(Icons.chevron_left, color: Colors.purple, size: 22),
                 tooltip: _isDayView ? 'Previous Day' : 'Previous Month',
                 onPressed: () {
                   setState(() {
@@ -876,45 +915,53 @@ class _FinanceScreenState extends State<FinanceScreen> with SingleTickerProvider
                   });
                 },
               ),
-              InkWell(
-                borderRadius: BorderRadius.circular(8),
-                onTap: () async {
-                  final picked = await showResponsiveCalendarPicker(
-                    context: context,
-                    initialDate: _selectedDate,
-                    firstDate: DateTime(2020),
-                    lastDate: DateTime(2035),
-                  );
-                  if (picked != null) {
-                    setState(() {
-                      _selectedDate = picked;
-                    });
-                  }
-                },
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
-                  child: Row(
-                    children: [
-                      const Icon(Icons.calendar_today, color: Colors.purple, size: 16),
-                      const SizedBox(width: 6),
-                      Text(
-                        _isDayView ? dayFormat.format(_selectedDate) : monthFormat.format(_selectedDate).toUpperCase(),
-                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Colors.purple),
-                      ),
-                      if (_isDayView && isToday) ...[
-                        const SizedBox(width: 6),
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                          decoration: BoxDecoration(
-                            color: Colors.purple,
-                            borderRadius: BorderRadius.circular(10),
+              Expanded(
+                child: InkWell(
+                  borderRadius: BorderRadius.circular(8),
+                  onTap: () async {
+                    final picked = await showResponsiveCalendarPicker(
+                      context: context,
+                      initialDate: _selectedDate,
+                      firstDate: DateTime(2020),
+                      lastDate: DateTime(2035),
+                    );
+                    if (picked != null) {
+                      setState(() {
+                        _selectedDate = picked;
+                      });
+                    }
+                  },
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(Icons.calendar_today, color: Colors.purple, size: 15),
+                        const SizedBox(width: 5),
+                        Flexible(
+                          child: Text(
+                            _isDayView ? dayFormat.format(_selectedDate) : monthFormat.format(_selectedDate).toUpperCase(),
+                            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Colors.purple),
+                            overflow: TextOverflow.ellipsis,
+                            maxLines: 1,
                           ),
-                          child: const Text('TODAY', style: TextStyle(color: Colors.white, fontSize: 9, fontWeight: FontWeight.bold)),
                         ),
+                        if (_isDayView && isToday) ...[
+                          const SizedBox(width: 4),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: Colors.purple,
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: const Text('TODAY', style: TextStyle(color: Colors.white, fontSize: 8.5, fontWeight: FontWeight.bold)),
+                          ),
+                        ],
+                        const SizedBox(width: 2),
+                        const Icon(Icons.arrow_drop_down, color: Colors.purple, size: 18),
                       ],
-                      const SizedBox(width: 4),
-                      const Icon(Icons.arrow_drop_down, color: Colors.purple),
-                    ],
+                    ),
                   ),
                 ),
               ),
@@ -924,7 +971,7 @@ class _FinanceScreenState extends State<FinanceScreen> with SingleTickerProvider
                   if (_isDayView && !isToday)
                     TextButton(
                       style: TextButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                        padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
                         minimumSize: Size.zero,
                         tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                       ),
@@ -936,7 +983,10 @@ class _FinanceScreenState extends State<FinanceScreen> with SingleTickerProvider
                       child: const Text('TODAY', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.purple)),
                     ),
                   IconButton(
-                    icon: const Icon(Icons.chevron_right, color: Colors.purple),
+                    visualDensity: VisualDensity.compact,
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
+                    icon: const Icon(Icons.chevron_right, color: Colors.purple, size: 22),
                     tooltip: _isDayView ? 'Next Day' : 'Next Month',
                     onPressed: () {
                       setState(() {
@@ -1046,6 +1096,74 @@ class _FinanceScreenState extends State<FinanceScreen> with SingleTickerProvider
     );
   }
 
+  Widget _buildSummaryCard({
+    required String title,
+    required double amount,
+    required Color color,
+    required Color bgColor,
+    required Color borderColor,
+    required IconData icon,
+    bool showSign = true,
+  }) {
+    final prefix = showSign ? (amount > 0 ? '+' : (amount < 0 ? '-' : '')) : '';
+    final absAmount = amount.abs();
+
+    return Expanded(
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
+        decoration: BoxDecoration(
+          color: bgColor,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: borderColor, width: 1),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.02),
+              blurRadius: 4,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(icon, size: 13, color: color),
+                const SizedBox(width: 4),
+                Expanded(
+                  child: Text(
+                    title,
+                    style: TextStyle(
+                      fontSize: 9.5,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.grey.shade700,
+                      letterSpacing: 0.2,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 6),
+            FittedBox(
+              fit: BoxFit.scaleDown,
+              alignment: Alignment.centerLeft,
+              child: Text(
+                '$prefix${_currencyFormatter.format(absAmount)}',
+                style: TextStyle(
+                  fontSize: 13.5,
+                  fontWeight: FontWeight.bold,
+                  color: color,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget _buildLedgerTab(BuildContext context, FinanceLoaded state) {
     // 1. Time-filtered transactions
     final timeFilteredTransactions = state.transactions.where((tx) {
@@ -1090,48 +1208,44 @@ class _FinanceScreenState extends State<FinanceScreen> with SingleTickerProvider
           child: _buildDateSelectorHeader(state),
         ),
 
-        // Quick Period Summary Strip
+        // Quick Period Summary Responsive Cards
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16),
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(10),
-              border: Border.all(color: Colors.grey.shade200),
-            ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(_isDayView ? 'DAILY INCOME' : 'MONTHLY INCOME', style: const TextStyle(fontSize: 9, color: Colors.grey, fontWeight: FontWeight.bold)),
-                    Text('+${_currencyFormatter.format(periodIncome)}', style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.green)),
-                  ],
-                ),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    Text(_isDayView ? 'DAILY EXPENSES' : 'MONTHLY EXPENSES', style: const TextStyle(fontSize: 9, color: Colors.grey, fontWeight: FontWeight.bold)),
-                    Text('-${_currencyFormatter.format(periodExpense)}', style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.red)),
-                  ],
-                ),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  children: [
-                    Text(_isDayView ? 'DAILY NET' : 'MONTHLY NET', style: const TextStyle(fontSize: 9, color: Colors.grey, fontWeight: FontWeight.bold)),
-                    Text(
-                      _currencyFormatter.format(periodNet),
-                      style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: periodNet >= 0 ? AppColors.primary : Colors.orange),
-                    ),
-                  ],
-                ),
-              ],
-            ),
+          child: Row(
+            children: [
+              _buildSummaryCard(
+                title: _isDayView ? 'DAY INCOME' : 'MONTH INCOME',
+                amount: periodIncome,
+                color: Colors.green.shade700,
+                bgColor: Colors.green.shade50,
+                borderColor: Colors.green.shade200,
+                icon: Icons.arrow_downward_rounded,
+                showSign: true,
+              ),
+              const SizedBox(width: 8),
+              _buildSummaryCard(
+                title: _isDayView ? 'DAY EXPENSE' : 'MONTH EXPENSE',
+                amount: periodExpense,
+                color: Colors.red.shade700,
+                bgColor: Colors.red.shade50,
+                borderColor: Colors.red.shade200,
+                icon: Icons.arrow_upward_rounded,
+                showSign: true,
+              ),
+              const SizedBox(width: 8),
+              _buildSummaryCard(
+                title: _isDayView ? 'DAY NET' : 'MONTH NET',
+                amount: periodNet,
+                color: periodNet >= 0 ? AppColors.primary : Colors.orange.shade800,
+                bgColor: periodNet >= 0 ? const Color(0xFFF0F4FA) : Colors.orange.shade50,
+                borderColor: periodNet >= 0 ? const Color(0xFFD0DCEB) : Colors.orange.shade200,
+                icon: Icons.account_balance_rounded,
+                showSign: false,
+              ),
+            ],
           ),
         ),
-        const SizedBox(height: 6),
+        const SizedBox(height: 8),
 
         // Category Filter Chips
         SingleChildScrollView(
@@ -1185,82 +1299,165 @@ class _FinanceScreenState extends State<FinanceScreen> with SingleTickerProvider
                     final isManual = _isManualTransaction(tx);
                     final isYoghurt = tx.category.toLowerCase().contains('yoghurt');
 
-                    return Card(
-                      elevation: 1,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                      child: ListTile(
-                        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    return Material(
+                      color: Colors.white,
+                      elevation: 1.5,
+                      shadowColor: Colors.black12,
+                      borderRadius: BorderRadius.circular(14),
+                      child: InkWell(
+                        borderRadius: BorderRadius.circular(14),
                         onTap: () => _showLedgerActionsBottomSheet(context, tx),
-                        leading: CircleAvatar(
-                          backgroundColor: isYoghurt
-                              ? (isIncome ? Colors.cyan.shade100 : Colors.amber.shade100)
-                              : (isIncome ? Colors.green.shade50 : Colors.red.shade50),
-                          child: Icon(
-                            _getCategoryIcon(tx.category, isIncome),
-                            color: isYoghurt
-                                ? (isIncome ? Colors.cyan.shade800 : Colors.amber.shade900)
-                                : (isIncome ? Colors.green : Colors.red),
-                            size: 22,
-                          ),
-                        ),
-                        title: Row(
-                          children: [
-                            Expanded(
-                              child: Text(
-                                tx.description?.isNotEmpty == true ? tx.description! : _formatCategoryLabel(tx.category),
-                                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
-                              ),
+                        child: Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(14),
+                            border: Border.all(
+                              color: isIncome ? Colors.green.shade100 : Colors.red.shade100,
+                              width: 1,
                             ),
-                            if (isYoghurt)
-                              Container(
-                                margin: const EdgeInsets.only(left: 6),
-                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                                decoration: BoxDecoration(
-                                  color: Colors.cyan.shade50,
-                                  borderRadius: BorderRadius.circular(4),
-                                  border: Border.all(color: Colors.cyan.shade300, width: 0.5),
-                                ),
-                                child: const Text('YOGHURT', style: TextStyle(color: Colors.cyan, fontSize: 8, fontWeight: FontWeight.bold)),
-                              ),
-                            if (isManual)
-                              Container(
-                                margin: const EdgeInsets.only(left: 6),
-                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                                decoration: BoxDecoration(
-                                  color: Colors.purple.shade50,
-                                  borderRadius: BorderRadius.circular(4),
-                                  border: Border.all(color: Colors.purple.shade200, width: 0.5),
-                                ),
-                                child: const Text('MANUAL', style: TextStyle(color: Colors.purple, fontSize: 8, fontWeight: FontWeight.bold)),
-                              ),
-                            Container(
-                              margin: const EdgeInsets.only(left: 6),
-                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                              decoration: BoxDecoration(
-                                color: isReconciled ? Colors.green.shade50 : Colors.orange.shade50,
-                                borderRadius: BorderRadius.circular(4),
-                                border: Border.all(color: isReconciled ? Colors.green.shade200 : Colors.orange.shade200, width: 0.5),
-                              ),
-                              child: Text(
-                                isReconciled ? 'APPROVED' : 'PENDING',
-                                style: TextStyle(color: isReconciled ? Colors.green : Colors.orange.shade900, fontSize: 8, fontWeight: FontWeight.bold),
-                              ),
-                            ),
-                          ],
-                        ),
-                        subtitle: Padding(
-                          padding: const EdgeInsets.only(top: 4),
-                          child: Text(
-                            '${_formatCategoryLabel(tx.category)} • ${DateFormat('yyyy-MM-dd HH:mm').format(tx.transactionDate)}',
-                            style: TextStyle(fontSize: 11, color: Colors.grey.shade600),
                           ),
-                        ),
-                        trailing: Text(
-                          '${isIncome ? '+' : '-'}${_currencyFormatter.format(tx.amount)}',
-                          style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                            color: isIncome ? Colors.green : Colors.red,
-                            fontSize: 14,
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              // Top Badges & Status Row
+                              Row(
+                                children: [
+                                  CircleAvatar(
+                                    radius: 14,
+                                    backgroundColor: isYoghurt
+                                        ? (isIncome ? Colors.cyan.shade100 : Colors.amber.shade100)
+                                        : (isIncome ? Colors.green.shade50 : Colors.red.shade50),
+                                    child: Icon(
+                                      _getCategoryIcon(tx.category, isIncome),
+                                      color: isYoghurt
+                                          ? (isIncome ? Colors.cyan.shade800 : Colors.amber.shade900)
+                                          : (isIncome ? Colors.green : Colors.red),
+                                      size: 15,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2.5),
+                                    decoration: BoxDecoration(
+                                      color: isIncome ? Colors.green.shade50 : Colors.red.shade50,
+                                      borderRadius: BorderRadius.circular(6),
+                                      border: Border.all(
+                                        color: isIncome ? Colors.green.shade200 : Colors.red.shade200,
+                                        width: 0.5,
+                                      ),
+                                    ),
+                                    child: Text(
+                                      _formatCategoryLabel(tx.category).toUpperCase(),
+                                      style: TextStyle(
+                                        color: isIncome ? Colors.green.shade800 : Colors.red.shade800,
+                                        fontSize: 9,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                  ),
+                                  if (isYoghurt) ...[
+                                    const SizedBox(width: 5),
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2.5),
+                                      decoration: BoxDecoration(
+                                        color: Colors.cyan.shade50,
+                                        borderRadius: BorderRadius.circular(6),
+                                        border: Border.all(color: Colors.cyan.shade300, width: 0.5),
+                                      ),
+                                      child: const Text('YOGHURT', style: TextStyle(color: Colors.cyan, fontSize: 8.5, fontWeight: FontWeight.bold)),
+                                    ),
+                                  ],
+                                  if (isManual) ...[
+                                    const SizedBox(width: 5),
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2.5),
+                                      decoration: BoxDecoration(
+                                        color: Colors.purple.shade50,
+                                        borderRadius: BorderRadius.circular(6),
+                                        border: Border.all(color: Colors.purple.shade200, width: 0.5),
+                                      ),
+                                      child: const Text('MANUAL', style: TextStyle(color: Colors.purple, fontSize: 8.5, fontWeight: FontWeight.bold)),
+                                    ),
+                                  ],
+                                  const Spacer(),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2.5),
+                                    decoration: BoxDecoration(
+                                      color: isReconciled ? Colors.green.shade50 : Colors.orange.shade50,
+                                      borderRadius: BorderRadius.circular(6),
+                                      border: Border.all(color: isReconciled ? Colors.green.shade300 : Colors.orange.shade300, width: 0.5),
+                                    ),
+                                    child: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Icon(
+                                          isReconciled ? Icons.check_circle : Icons.hourglass_top,
+                                          size: 10,
+                                          color: isReconciled ? Colors.green.shade800 : Colors.orange.shade900,
+                                        ),
+                                        const SizedBox(width: 3),
+                                        Text(
+                                          isReconciled ? 'APPROVED' : 'PENDING',
+                                          style: TextStyle(
+                                            color: isReconciled ? Colors.green.shade800 : Colors.orange.shade900,
+                                            fontSize: 8.5,
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 8),
+
+                              // Description & Amount Row
+                              Row(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Expanded(
+                                    child: Text(
+                                      tx.description?.isNotEmpty == true ? tx.description! : _formatCategoryLabel(tx.category),
+                                      style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13.5, color: Colors.black87),
+                                      maxLines: 2,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 12),
+                                  Text(
+                                    '${isIncome ? '+' : '-'}${_currencyFormatter.format(tx.amount)}',
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      color: isIncome ? Colors.green.shade700 : Colors.red.shade700,
+                                      fontSize: 14.5,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 6),
+
+                              // Footer: Date & Time + Details
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Row(
+                                    children: [
+                                      Icon(Icons.schedule, size: 12, color: Colors.grey.shade500),
+                                      const SizedBox(width: 4),
+                                      Text(
+                                        DateFormat('dd MMM yyyy, HH:mm').format(tx.transactionDate),
+                                        style: TextStyle(fontSize: 11, color: Colors.grey.shade600),
+                                      ),
+                                    ],
+                                  ),
+                                  if (tx.relatedEntityType != null && tx.relatedEntityType!.isNotEmpty)
+                                    Text(
+                                      tx.relatedEntityType!.toUpperCase(),
+                                      style: TextStyle(fontSize: 10, color: Colors.grey.shade500, fontWeight: FontWeight.w500),
+                                    ),
+                                ],
+                              ),
+                            ],
                           ),
                         ),
                       ),
